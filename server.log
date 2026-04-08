@@ -1,0 +1,15 @@
+
+> next-app@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.2 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 556ms
+
+○ Compiling / ...
+ GET / 200 in 6.0s (next.js: 5.2s, application-code: 808ms)
+ GET /exams 200 in 1070ms (next.js: 768ms, application-code: 302ms)
+ GET /analytics 200 in 1389ms (next.js: 921ms, application-code: 468ms)
+ GET /dashboard 200 in 975ms (next.js: 740ms, application-code: 235ms)
+ GET /mock-exam 200 in 634ms (next.js: 477ms, application-code: 157ms)
