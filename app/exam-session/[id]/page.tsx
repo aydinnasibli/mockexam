@@ -52,7 +52,12 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
       {/* TopAppBar */}
       <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-sm h-16 flex items-center justify-between px-6 border-b border-outline-variant/10">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-xl font-bold tracking-tighter text-blue-950 font-headline hover:text-blue-700 transition-colors">Məşqçi</Link>
+          <Link href="/dashboard" className="flex items-center gap-2 group">
+              <div className="w-7 h-7 rounded-lg tc-gradient flex items-center justify-center">
+                <span className="material-symbols-outlined text-white text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+              </div>
+              <span className="text-base font-extrabold tracking-tight text-primary font-headline group-hover:text-primary-mid transition-colors">Test Centre</span>
+            </Link>
           <div className="h-6 w-px bg-slate-200"></div>
           <div className="flex flex-col">
             <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">İmtahan Rejimi</span>

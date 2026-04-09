@@ -6,13 +6,13 @@ export default function Analytics() {
   return (
     <>
       <Navbar />
-      <div className="flex pt-20">
+      <div className="flex pt-16">
         <Sidebar />
-        <main className="flex-1 md:ml-64 p-6 md:p-10 bg-surface min-h-screen">
+        <main className="flex-1 md:ml-64 p-6 md:p-10 bg-surface-subtle min-h-screen">
           {/* Hero Results Section */}
           <section className="mb-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Score Card */}
-            <div className="lg:col-span-2 bg-gradient-to-br from-primary to-primary-container p-10 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
+            <div className="lg:col-span-2 tc-gradient-hero p-10 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-8">
                   <div>
@@ -316,17 +316,17 @@ export default function Analytics() {
         </main>
       </div>
       {/* We add a simpler footer here to match the dashboard style */}
-      <footer className="w-full bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 ml-0 md:ml-64 relative z-10">
-        <div className="w-full py-12 px-6 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
-          <div className="flex flex-col items-center md:items-start gap-2 mb-6 md:mb-0">
-            <div className="text-base font-bold text-blue-900 font-headline">Məşqçi Platforması</div>
-            <p className="font-inter text-xs text-slate-500">© 2024 Məşqçi Platforması. Bütün hüquqlar qorunur.</p>
+      <footer className="w-full bg-surface-container-low border-t border-outline-variant ml-0 md:ml-64 relative z-10">
+        <div className="w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
+          <div className="flex flex-col items-center md:items-start gap-1 mb-4 md:mb-0">
+            <div className="text-sm font-bold text-primary font-headline">Test Centre</div>
+            <p className="text-xs text-on-surface-variant">© 2025 Test Centre. All rights reserved.</p>
           </div>
-          <div className="flex gap-8">
-            <a className="font-inter text-xs text-slate-500 hover:text-blue-600 underline-offset-4 hover:underline" href="#">İstifadə şərtləri</a>
-            <a className="font-inter text-xs text-slate-500 hover:text-blue-600 underline-offset-4 hover:underline" href="#">Məxfilik siyasəti</a>
-            <a className="font-inter text-xs text-slate-500 hover:text-blue-600 underline-offset-4 hover:underline" href="#">Dəstək</a>
-            <a className="font-inter text-xs text-slate-500 hover:text-blue-600 underline-offset-4 hover:underline" href="#">Əlaqə</a>
+          <div className="flex gap-6">
+            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Terms of Use</a>
+            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Privacy Policy</a>
+            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Support</a>
+            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Contact</a>
           </div>
         </div>
       </footer>
