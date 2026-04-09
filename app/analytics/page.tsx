@@ -1,12 +1,12 @@
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
-import Footer from "@/components/layout/Footer";
+import { Timer, CheckCircle2, AlertCircle, TrendingUp, Download, Lightbulb, Brain, Gauge, BookOpen } from "lucide-react";
 
 export default function Analytics() {
   return (
     <>
       <Navbar />
-      <div className="flex pt-16">
+      <div className="flex pt-20">
         <Sidebar />
         <main className="flex-1 md:ml-64 p-6 md:p-10 bg-surface-subtle min-h-screen">
           {/* Hero Results Section */}
@@ -29,29 +29,28 @@ export default function Analytics() {
                   Təbriklər! Sizin nəticəniz müraciət edənlərin top 1%-lik hissəsinə daxildir.
                 </p>
               </div>
-              {/* Decorative Graphic */}
-              <div className="absolute right-[-10%] bottom-[-20%] w-64 h-64 bg-secondary rounded-full blur-[80px] opacity-20"></div>
+              <div className="absolute right-[-10%] bottom-[-20%] w-64 h-64 bg-secondary rounded-full blur-[80px] opacity-20" />
             </div>
 
             {/* Quick Stats Bento */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <span className="material-symbols-outlined text-secondary text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>timer</span>
+                <Timer className="text-secondary mb-2" size={30} />
                 <span className="text-2xl font-bold font-headline">172 dəq</span>
                 <span className="text-xs text-outline font-medium">Ümumi vaxt</span>
               </div>
               <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <span className="material-symbols-outlined text-primary text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                <CheckCircle2 className="text-primary mb-2" size={30} />
                 <span className="text-2xl font-bold font-headline">94%</span>
                 <span className="text-xs text-outline font-medium">Düzgünlük</span>
               </div>
               <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <span className="material-symbols-outlined text-error text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+                <AlertCircle className="text-error mb-2" size={30} />
                 <span className="text-2xl font-bold font-headline">6</span>
                 <span className="text-xs text-outline font-medium">Səhv cavab</span>
               </div>
               <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <span className="material-symbols-outlined text-tertiary text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
+                <TrendingUp className="text-tertiary mb-2" size={30} />
                 <span className="text-2xl font-bold font-headline">+40</span>
                 <span className="text-xs text-outline font-medium">Artım</span>
               </div>
@@ -62,7 +61,6 @@ export default function Analytics() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold font-headline mb-6 px-2">Bölmələr üzrə göstəricilər</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Math Section */}
               <div className="bg-surface-container-low p-8 rounded-3xl hover:bg-surface-bright transition-all duration-300">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg font-headline">SAT Math</h3>
@@ -74,8 +72,8 @@ export default function Analytics() {
                       <span className="text-outline">Düzgün cavablar</span>
                       <span>56 / 58</span>
                     </div>
-                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden flex">
-                      <div className="h-full bg-secondary" style={{ width: '96%' }}></div>
+                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
+                      <div className="h-full bg-secondary" style={{ width: '96%' }} />
                     </div>
                   </div>
                   <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
@@ -91,7 +89,6 @@ export default function Analytics() {
                 </div>
               </div>
 
-              {/* Reading Section */}
               <div className="bg-surface-container-low p-8 rounded-3xl hover:bg-surface-bright transition-all duration-300">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg font-headline">Reading</h3>
@@ -103,8 +100,8 @@ export default function Analytics() {
                       <span className="text-outline">Düzgün cavablar</span>
                       <span>48 / 52</span>
                     </div>
-                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden flex">
-                      <div className="h-full bg-secondary" style={{ width: '92%' }}></div>
+                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
+                      <div className="h-full bg-secondary" style={{ width: '92%' }} />
                     </div>
                   </div>
                   <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
@@ -120,7 +117,6 @@ export default function Analytics() {
                 </div>
               </div>
 
-              {/* Writing Section */}
               <div className="bg-surface-container-low p-8 rounded-3xl hover:bg-surface-bright transition-all duration-300">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg font-headline">Writing</h3>
@@ -132,8 +128,8 @@ export default function Analytics() {
                       <span className="text-outline">Düzgün cavablar</span>
                       <span>40 / 44</span>
                     </div>
-                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden flex">
-                      <div className="h-full bg-secondary" style={{ width: '90%' }}></div>
+                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
+                      <div className="h-full bg-secondary" style={{ width: '90%' }} />
                     </div>
                   </div>
                   <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
@@ -159,13 +155,12 @@ export default function Analytics() {
                 <p className="text-outline max-w-lg">Səhv cavablandırdığınız sualların detallı izahı və mövzu üzrə təsnifatı.</p>
               </div>
               <button className="bg-surface-container-high text-primary font-bold py-3 px-6 rounded-xl hover:bg-surface-dim transition-colors flex items-center gap-2">
-                <span className="material-symbols-outlined">download</span>
+                <Download size={18} />
                 PDF Yüklə
               </button>
             </div>
 
             <div className="space-y-6">
-              {/* Error Question Item 1 */}
               <div className="p-6 bg-surface-container-low rounded-2xl group hover:bg-surface-bright transition-all">
                 <div className="flex flex-wrap gap-3 mb-4">
                   <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full text-[10px] font-bold uppercase">Sual 14</span>
@@ -178,29 +173,24 @@ export default function Analytics() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 p-6 bg-white rounded-xl">
                   <div>
                     <p className="text-[10px] font-black text-error mb-3 tracking-widest">SİZİN CAVABINIZ</p>
-                    <div className="p-4 border-2 border-error/20 bg-error/5 rounded-lg font-medium text-error">
-                      B) 7
-                    </div>
+                    <div className="p-4 border-2 border-error/20 bg-error/5 rounded-lg font-medium text-error">B) 7</div>
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-secondary mb-3 tracking-widest">DÜZGÜN CAVAB</p>
-                    <div className="p-4 border-2 border-secondary/20 bg-secondary/5 rounded-lg font-medium text-secondary">
-                      A) 1
-                    </div>
+                    <div className="p-4 border-2 border-secondary/20 bg-secondary/5 rounded-lg font-medium text-secondary">A) 1</div>
                   </div>
                 </div>
                 <div className="mt-6 p-6 border-t border-outline-variant/10">
                   <p className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm">lightbulb</span>
+                    <Lightbulb size={16} />
                     Ekspert İzahı:
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
-                    f(0) = 3 olduğu üçün c = 3 tapılır. f(1) = 4 olduğu üçün a(1)² + b(1) + 3 = 4, yəni a + b + 3 = 4. Buradan a + b = 1 nəticəsi alınır. Siz c-ni nəzərə almadan birbaşa hesablama apardığınız üçün səhv etmisiniz.
+                    f(0) = 3 olduğu üçün c = 3 tapılır. f(1) = 4 olduğu üçün a(1)² + b(1) + 3 = 4, yəni a + b + 3 = 4. Buradan a + b = 1 nəticəsi alınır.
                   </p>
                 </div>
               </div>
 
-              {/* Error Question Item 2 */}
               <div className="p-6 bg-surface-container-low rounded-2xl group hover:bg-surface-bright transition-all">
                 <div className="flex flex-wrap gap-3 mb-4">
                   <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full text-[10px] font-bold uppercase">Sual 32</span>
@@ -213,20 +203,16 @@ export default function Analytics() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 p-6 bg-white rounded-xl">
                   <div>
                     <p className="text-[10px] font-black text-error mb-3 tracking-widest">SİZİN CAVABINIZ</p>
-                    <div className="p-4 border-2 border-error/20 bg-error/5 rounded-lg font-medium text-error">
-                      D) Complete disappearance of traditions
-                    </div>
+                    <div className="p-4 border-2 border-error/20 bg-error/5 rounded-lg font-medium text-error">D) Complete disappearance of traditions</div>
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-secondary mb-3 tracking-widest">DÜZGÜN CAVAB</p>
-                    <div className="p-4 border-2 border-secondary/20 bg-secondary/5 rounded-lg font-medium text-secondary">
-                      C) Gradual transformation and adaptation
-                    </div>
+                    <div className="p-4 border-2 border-secondary/20 bg-secondary/5 rounded-lg font-medium text-secondary">C) Gradual transformation and adaptation</div>
                   </div>
                 </div>
                 <div className="mt-6 p-6 border-t border-outline-variant/10">
                   <p className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm">lightbulb</span>
+                    <Lightbulb size={16} />
                     Ekspert İzahı:
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -237,26 +223,16 @@ export default function Analytics() {
             </div>
           </section>
 
-          {/* Chart/Visualization Placeholder Section */}
+          {/* Chart Section */}
           <section className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm">
               <h3 className="font-bold font-headline mb-6">Nəticə Trendi</h3>
               <div className="h-64 flex items-end justify-between gap-2 px-2">
-                <div className="w-full bg-primary-fixed-dim/20 rounded-t-lg relative group h-[40%]">
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">1240</div>
-                </div>
-                <div className="w-full bg-primary-fixed-dim/40 rounded-t-lg relative group h-[55%]">
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">1380</div>
-                </div>
-                <div className="w-full bg-primary-fixed-dim/60 rounded-t-lg relative group h-[65%]">
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">1420</div>
-                </div>
-                <div className="w-full bg-primary-fixed-dim/80 rounded-t-lg relative group h-[85%]">
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">1510</div>
-                </div>
-                <div className="w-full bg-primary rounded-t-lg relative group h-full">
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">1540</div>
-                </div>
+                {[['40%','1240'],['55%','1380'],['65%','1420'],['85%','1510'],['100%','1540']].map(([h, val]) => (
+                  <div key={val} className="w-full bg-primary-fixed-dim/20 rounded-t-lg relative group" style={{ height: h }}>
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">{val}</div>
+                  </div>
+                ))}
               </div>
               <div className="flex justify-between mt-4 text-[10px] font-bold text-outline">
                 <span>Sentyabr</span>
@@ -264,13 +240,13 @@ export default function Analytics() {
               </div>
             </div>
 
-            <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm relative overflow-hidden">
+            <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm">
               <h3 className="font-bold font-headline mb-2">Güclü Tərəfləriniz</h3>
               <p className="text-xs text-outline mb-8">Data analiz əsasında fokuslanmalı olduğunuz sahələr.</p>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="p-2 bg-secondary/10 text-secondary rounded-lg">
-                    <span className="material-symbols-outlined">psychology</span>
+                    <Brain size={22} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between text-xs font-bold mb-1">
@@ -278,13 +254,13 @@ export default function Analytics() {
                       <span>98%</span>
                     </div>
                     <div className="h-1.5 w-full bg-surface-container rounded-full">
-                      <div className="h-full bg-secondary rounded-full" style={{ width: '98%' }}></div>
+                      <div className="h-full bg-secondary rounded-full" style={{ width: '98%' }} />
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                    <span className="material-symbols-outlined">speed</span>
+                    <Gauge size={22} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between text-xs font-bold mb-1">
@@ -292,13 +268,13 @@ export default function Analytics() {
                       <span>85%</span>
                     </div>
                     <div className="h-1.5 w-full bg-surface-container rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: '85%' }}></div>
+                      <div className="h-full bg-primary rounded-full" style={{ width: '85%' }} />
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="p-2 bg-tertiary/10 text-tertiary rounded-lg">
-                    <span className="material-symbols-outlined">menu_book</span>
+                    <BookOpen size={22} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between text-xs font-bold mb-1">
@@ -306,7 +282,7 @@ export default function Analytics() {
                       <span>72%</span>
                     </div>
                     <div className="h-1.5 w-full bg-surface-container rounded-full">
-                      <div className="h-full bg-tertiary rounded-full" style={{ width: '72%' }}></div>
+                      <div className="h-full bg-tertiary rounded-full" style={{ width: '72%' }} />
                     </div>
                   </div>
                 </div>
@@ -315,18 +291,17 @@ export default function Analytics() {
           </section>
         </main>
       </div>
-      {/* We add a simpler footer here to match the dashboard style */}
       <footer className="w-full bg-surface-container-low border-t border-outline-variant ml-0 md:ml-64 relative z-10">
         <div className="w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
           <div className="flex flex-col items-center md:items-start gap-1 mb-4 md:mb-0">
             <div className="text-sm font-bold text-primary font-headline">Test Centre</div>
-            <p className="text-xs text-on-surface-variant">© 2025 Test Centre. All rights reserved.</p>
+            <p className="text-xs text-on-surface-variant">© 2024 Test Centre. Bütün hüquqlar qorunur.</p>
           </div>
           <div className="flex gap-6">
-            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Terms of Use</a>
-            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Privacy Policy</a>
-            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Support</a>
-            <a className="text-xs text-on-surface-variant hover:text-primary-mid transition-colors" href="#">Contact</a>
+            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">İstifadəçi şərtləri</a>
+            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">Məxfilik siyasəti</a>
+            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">Dəstək</a>
+            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">Əlaqə</a>
           </div>
         </div>
       </footer>
