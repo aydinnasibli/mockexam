@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
     // Price in cents (exam.price is in AZN)
     const customPrice = Math.round(exam.price * 100);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const reqOrigin = req.headers.get('origin') || req.nextUrl.origin;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || reqOrigin || 'http://localhost:3000';
 
     const { data, error } = await createCheckout(storeId!, variantId, {
       customPrice,
