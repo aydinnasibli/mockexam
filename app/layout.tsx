@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
+import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-body",
 });
 
 const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-manrope",
+  variable: "--font-headline",
 });
 
 export const metadata: Metadata = {
@@ -23,15 +24,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="az">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-      </head>
-      <body
-        className={`${inter.variable} ${manrope.variable} antialiased font-body bg-background text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed`}
-      >
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="az">
+        <head>
+          <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        </head>
+        <body
+          className={`${inter.variable} ${manrope.variable} antialiased bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed`}
+        >
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

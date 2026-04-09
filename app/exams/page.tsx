@@ -1,246 +1,196 @@
+'use client';
+
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
+import { mockExams, ExamType, examTypeLabels } from "@/lib/data";
+
+const examTypeImages: Record<ExamType, string> = {
+  sat: "https://lh3.googleusercontent.com/aida-public/AB6AXuBORwBxeFQQ9zI3gWcDIjuoqPlBx6HSvuLO4KllcFAzqGZ2kHoqBO7dLYk5wkhKd6kzYEouTXEsa7YLg_IWISjBlWi1eq5o5JP1DErpGKG9-3XuGMoWpqhzSW7ju_3_Bpbi5H0eL1487PN6m9oBauKPfhdhPejW8da_ZkrNaUTnEg5OLky7-mG2xPr7gjPfZHFqmsrc16WaDljWupfpzEH5Vylj8LHKIWLG5xvG_CDMzamJYLUcDzZWjbeuPyeatV94Amp-EdvqaCgU",
+  ielts: "https://lh3.googleusercontent.com/aida-public/AB6AXuBgnB_DWqXR9h8C0ooDR3IJBSZ45SBab96k9R5Q0Su8JPUl4afhijKaZDE3oulHJcNespLdvTn5j6_eI10W1so28m9v4ZvkNTHdDwNp71dTK4UDY1EwoAV8G5EUuYWpIJPoFPRvZhPYsqzwByFMKczvl9J3Jem3Gwh2gljkEVuk8mnkKcVPLoEROLWB83W5ZcHpYgl4Anc-kG_3hEzEYXY6jkhy_NkSmS05_whLff9AFstIxk6A7NGvapjmVXCKPsAmkBzR5ZGRLJ8L",
+  toefl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCMuRuaJ7vyi1iiyAaHG6I6oEOjrn89FwAN2kxPqMLJlNvRvwWCTRKC2Z0zxZqVPsr8guj5WyaglsOWZezTdNKqabxxHSZrwiOBcnnkcZX4E52n7YGLmzLjnJ-d7lBslOq8wiVrAz_UUL6PVfYBdqj6mAc5AYLIjzTW9uVeKmxcf6lOCyDUmNZFSeLLQ7mt4EENy7gVaHn_0kFCgTTzlL8_QHorzcrnUg7Ef0M_UhPWbRrQNpLAGyaunpZye2iqxT4AnYBcYTRHKOV9",
+  dim: "https://lh3.googleusercontent.com/aida-public/AB6AXuCIPOQeIOnSUIkTIzkNIt_Zoxz2Qza2nkglFDxK0_M4S4jLs333LtMV8MIeFDMxXREgPRjbaPFx2FM3zKyRuj0z2oI06Yu94WRJALJG1dXKhItHqePvV3c3pkYngE8UryTPyN7qN8Sn7Hv2PLKxdKLO3_snAP4IEL_7brTPEezUYhdWUWJasNoEXhhl6nUYNxr1B3O4Xj2OIPxNSjzyz0spo81yd1r-r9Q47ndeijTNQAM8LD05KhakUZ5qg7H16iFu88c0eJcB9KuI",
+  gre: "https://lh3.googleusercontent.com/aida-public/AB6AXuBgnB_DWqXR9h8C0ooDR3IJBSZ45SBab96k9R5Q0Su8JPUl4afhijKaZDE3oulHJcNespLdvTn5j6_eI10W1so28m9v4ZvkNTHdDwNp71dTK4UDY1EwoAV8G5EUuYWpIJPoFPRvZhPYsqzwByFMKczvl9J3Jem3Gwh2gljkEVuk8mnkKcVPLoEROLWB83W5ZcHpYgl4Anc-kG_3hEzEYXY6jkhy_NkSmS05_whLff9AFstIxk6A7NGvapjmVXCKPsAmkBzR5ZGRLJ8L",
+};
+
+const allTypes: ExamType[] = ['sat', 'ielts', 'toefl', 'dim', 'gre'];
 
 export default function ExamsCatalog() {
+  const [selectedTypes, setSelectedTypes] = useState<ExamType[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
+
+  const toggleType = (type: ExamType) => {
+    setSelectedTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedTypes([]);
+    setSearchQuery("");
+    setSortOrder('newest');
+  };
+
+  const filteredExams = mockExams
+    .filter(exam => {
+      if (selectedTypes.length > 0 && !selectedTypes.includes(exam.type)) return false;
+      if (searchQuery && !exam.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'price-asc') return a.price - b.price;
+      if (sortOrder === 'price-desc') return b.price - a.price;
+      return 0; // newest = data order
+    });
+
   return (
     <>
       <Navbar />
-      <main className="pt-24 pb-12 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
+      <main className="pt-24 pb-12 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 min-h-screen">
         {/* Sidebar Filters */}
-        <aside className="w-full md:w-64 flex-shrink-0 space-y-8">
+        <aside className="w-full md:w-64 flex-shrink-0 space-y-6">
           <section className="bg-surface-container-low p-6 rounded-xl space-y-6">
-            <h2 className="text-lg font-bold text-primary">Filtrlər</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-primary font-headline">Filtrlər</h2>
+              {(selectedTypes.length > 0 || searchQuery) && (
+                <button
+                  onClick={clearFilters}
+                  className="text-xs font-bold text-secondary hover:text-on-secondary-container transition-colors"
+                >
+                  Təmizlə
+                </button>
+              )}
+            </div>
 
-            {/* Exam Type */}
+            {/* Exam Type Filters */}
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">İmtahan Növü</label>
               <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox" />
-                  <span className="text-sm font-medium text-on-surface-variant group-hover:text-primary transition-colors">SAT</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input defaultChecked className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox" />
-                  <span className="text-sm font-medium text-on-surface-variant group-hover:text-primary transition-colors">IELTS</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox" />
-                  <span className="text-sm font-medium text-on-surface-variant group-hover:text-primary transition-colors">TOEFL</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox" />
-                  <span className="text-sm font-medium text-on-surface-variant group-hover:text-primary transition-colors">DİM</span>
-                </label>
+                {allTypes.map(type => (
+                  <label key={type} className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedTypes.includes(type)}
+                      onChange={() => toggleType(type)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary/20 border-outline-variant accent-primary"
+                    />
+                    <span className={`text-sm font-medium transition-colors ${selectedTypes.includes(type) ? 'text-primary font-bold' : 'text-on-surface-variant group-hover:text-primary'}`}>
+                      {examTypeLabels[type]}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
 
-            {/* Level */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Səviyyə</label>
-              <select className="w-full bg-surface-container-lowest border-none rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/40 py-2.5">
-                <option>Bütün səviyyələr</option>
-                <option>Başlanğıc</option>
-                <option>Orta</option>
-                <option>Yüksək</option>
-              </select>
-            </div>
-
-            {/* Price Range */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Qiymət Aralığı (₼)</label>
-              <div className="flex gap-2 items-center">
-                <input className="w-full bg-surface-container-lowest border-none rounded-lg text-sm p-2" placeholder="Min" type="number" />
-                <span className="text-outline-variant">-</span>
-                <input className="w-full bg-surface-container-lowest border-none rounded-lg text-sm p-2" placeholder="Max" type="number" />
+            {/* Active filter count badge */}
+            {selectedTypes.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => toggleType(type)}
+                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-primary text-white rounded-full"
+                  >
+                    {examTypeLabels[type]}
+                    <span className="material-symbols-outlined text-xs leading-none">close</span>
+                  </button>
+                ))}
               </div>
-            </div>
-
-            <button className="w-full bg-surface-container-high text-primary py-3 rounded-xl font-bold text-sm hover:bg-surface-variant transition-colors">
-              Filtrləri Təmizlə
-            </button>
+            )}
           </section>
 
-          <div className="relative rounded-xl overflow-hidden aspect-[4/5] group">
-            <img
-              className="w-full h-full object-cover"
-              alt="Promotion"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQWKvqDNijTa7Ph27WRHYeGbJ8H81d_hQJYe0wjB1pwqISKcZV6CKGty6qdqo6eEEJQuu1i67-j9XosDQez1aNTgyQdh-elvDescG_lUbw378Rrgx_If_bVZeTjPd6Ofl899jxfr4miX72aY4Gqvu7VZ71eoc6iUwWhZBaNdJUtjTKP2LTgJm1wI2i8hvS5j2ElVgzppfXyR3-LO-T2GmvbMuV7jy5N6xVOE9xj4nzvf9yh6sNBSlMDu6FogdQRs09LWQqlgblVAEk"
-            />
-            <div className="absolute inset-0 bg-primary/40 backdrop-blur-[2px] flex flex-col justify-end p-6">
-              <h3 className="text-white font-bold text-xl leading-tight">Yeniliklərdən xəbərdar ol!</h3>
-              <p className="text-white/80 text-xs mt-2">Bülletenimizə abunə olaraq yeni imtahanlardan ilk sən xəbər tut.</p>
-            </div>
-          </div>
+          {/* Results count */}
+          <p className="text-sm text-on-surface-variant font-medium px-1">
+            <span className="font-bold text-primary">{filteredExams.length}</span> nəticə tapıldı
+          </p>
         </aside>
 
         {/* Main Content Area */}
-        <div className="flex-1 space-y-8">
-          {/* Search and Results Info */}
+        <div className="flex-1 space-y-6">
+
+          {/* Search and Sort */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="relative w-full md:max-w-md">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl">search</span>
               <input
-                className="w-full pl-12 pr-4 py-3.5 bg-surface-container-lowest border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 shadow-sm"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/40 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-sm"
                 placeholder="İmtahan axtar..."
                 type="text"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-on-surface-variant">Sırala:</span>
-              <select className="bg-transparent border-none text-sm font-bold text-primary focus:ring-0">
-                <option>Ən yenilər</option>
-                <option>Qiymət: Azdan çoxa</option>
-                <option>Qiymət: Çoxdan aza</option>
+              <span className="text-sm font-medium text-on-surface-variant whitespace-nowrap">Sırala:</span>
+              <select
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+                className="bg-surface-container-lowest border border-outline-variant/40 rounded-lg text-sm font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none px-3 py-2"
+              >
+                <option value="newest">Ən yenilər</option>
+                <option value="price-asc">Qiymət: Azdan çoxa</option>
+                <option value="price-desc">Qiymət: Çoxdan aza</option>
               </select>
             </div>
           </div>
 
-          {/* Exam Grid (Bento-inspired layout) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Card 1 (Highlight) */}
-            <div className="group bg-surface-container-lowest rounded-xl p-1 shadow-sm hover:shadow-xl transition-all duration-300">
-              <div className="relative rounded-lg overflow-hidden h-48 mb-4">
-                <img
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="IELTS Mock"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgnB_DWqXR9h8C0ooDR3IJBSZ45SBab96k9R5Q0Su8JPUl4afhijKaZDE3oulHJcNespLdvTn5j6_eI10W1so28m9v4ZvkNTHdDwNp71dTK4UDY1EwoAV8G5EUuYWpIJPoFPRvZhPYsqzwByFMKczvl9J3Jem3Gwh2gljkEVuk8mnkKcVPLoEROLWB83W5ZcHpYgl4Anc-kG_3hEzEYXY6jkhy_NkSmS05_whLff9AFstIxk6A7NGvapjmVXCKPsAmkBzR5ZGRLJ8L"
-                />
-                <span className="absolute top-4 left-4 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Populyar</span>
-              </div>
-              <div className="px-5 pb-5">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-extrabold text-primary leading-tight">IELTS Academic Mock</h3>
-                  <span className="text-secondary font-bold text-lg">15 ₼</span>
-                </div>
-                <p className="text-on-surface-variant text-sm mb-6 line-clamp-2">
-                  Həqiqi imtahan mühitini hiss edin. Bütün 4 bölmə üzrə tam simulyasiya.
-                </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">timer</span> 2s 45d
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">quiz</span> 80 sual
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">trending_up</span> Orta
-                  </div>
-                </div>
-                <Link href="/mock-exam" className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                  <span className="material-symbols-outlined text-xl">shopping_cart</span> Satın al
-                </Link>
-              </div>
+          {/* Exam Grid */}
+          {filteredExams.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <span className="material-symbols-outlined text-5xl text-outline mb-4">search_off</span>
+              <h3 className="text-xl font-bold text-primary mb-2">Nəticə tapılmadı</h3>
+              <p className="text-on-surface-variant text-sm">Filtrləri dəyişdirin və ya axtarış sorğusunu yenileyin.</p>
+              <button onClick={clearFilters} className="mt-4 px-5 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:opacity-90 transition-opacity">
+                Filtrləri Sıfırla
+              </button>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {filteredExams.map((exam) => (
+                <div key={exam.id} className="group bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col border border-outline-variant/20">
+                  <div className="relative h-44 overflow-hidden">
+                    <img
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={examTypeImages[exam.type]}
+                      alt={exam.title}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <span className="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                      {exam.tag}
+                    </span>
+                    <span className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-primary text-sm font-black px-3 py-1 rounded-full">
+                      {exam.price} ₼
+                    </span>
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <h3 className="text-lg font-extrabold text-primary leading-tight font-headline mb-2">{exam.title}</h3>
+                    <p className="text-on-surface-variant text-sm mb-4 line-clamp-2 flex-1">{exam.description}</p>
 
-            {/* Card 2 */}
-            <div className="group bg-surface-container-lowest rounded-xl p-1 shadow-sm hover:shadow-xl transition-all duration-300">
-              <div className="relative rounded-lg overflow-hidden h-48 mb-4">
-                <img
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="SAT Practice"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBORwBxeFQQ9zI3gWcDIjuoqPlBx6HSvuLO4KllcFAzqGZ2kHoqBO7dLYk5wkhKd6kzYEouTXEsa7YLg_IWISjBlWi1eq5o5JP1DErpGKG9-3XuGMoWpqhzSW7ju_3_Bpbi5H0eL1487PN6m9oBauKPfhdhPejW8da_ZkrNaUTnEg5OLky7-mG2xPr7gjPfZHFqmsrc16WaDljWupfpzEH5Vylj8LHKIWLG5xvG_CDMzamJYLUcDzZWjbeuPyeatV94Amp-EdvqaCgU"
-                />
-                <span className="absolute top-4 left-4 bg-secondary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Yeni</span>
-              </div>
-              <div className="px-5 pb-5">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-extrabold text-primary leading-tight">SAT Practice Test 1</h3>
-                  <span className="text-secondary font-bold text-lg">12 ₼</span>
-                </div>
-                <p className="text-on-surface-variant text-sm mb-6 line-clamp-2">
-                  Digital SAT formatına tam uyğunlaşdırılmış riyaziyyat və oxu testləri.
-                </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">timer</span> 2s 14d
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">quiz</span> 98 sual
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      <div className="flex items-center gap-1 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-2.5 py-1 rounded-lg">
+                        <span className="material-symbols-outlined text-sm">timer</span>
+                        {exam.durationMinutes} dəq
+                      </div>
+                      <div className="flex items-center gap-1 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-2.5 py-1 rounded-lg">
+                        <span className="material-symbols-outlined text-sm">quiz</span>
+                        {exam.totalQuestions} sual
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/exams/${exam.id}`}
+                      className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm"
+                    >
+                      <span className="material-symbols-outlined text-lg">visibility</span>
+                      Ətraflı bax
+                    </Link>
                   </div>
                 </div>
-                <Link href="/mock-exam" className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                  <span className="material-symbols-outlined text-xl">shopping_cart</span> Satın al
-                </Link>
-              </div>
+              ))}
             </div>
-
-            {/* Card 3 */}
-            <div className="group bg-surface-container-lowest rounded-xl p-1 shadow-sm hover:shadow-xl transition-all duration-300">
-              <div className="relative rounded-lg overflow-hidden h-48 mb-4">
-                <img
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="TOEFL"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMuRuaJ7vyi1iiyAaHG6I6oEOjrn89FwAN2kxPqMLJlNvRvwWCTRKC2Z0zxZqVPsr8guj5WyaglsOWZezTdNKqabxxHSZrwiOBcnnkcZX4E52n7YGLmzLjnJ-d7lBslOq8wiVrAz_UUL6PVfYBdqj6mAc5AYLIjzTW9uVeKmxcf6lOCyDUmNZFSeLLQ7mt4EENy7gVaHn_0kFCgTTzlL8_QHorzcrnUg7Ef0M_UhPWbRrQNpLAGyaunpZye2iqxT4AnYBcYTRHKOV9"
-                />
-              </div>
-              <div className="px-5 pb-5">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-extrabold text-primary leading-tight">TOEFL iBT Simulation</h3>
-                  <span className="text-secondary font-bold text-lg">18 ₼</span>
-                </div>
-                <p className="text-on-surface-variant text-sm mb-6 line-clamp-2">
-                  Real TOEFL interfeysi ilə tanış olun və nəticələrinizi dərhal əldə edin.
-                </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">timer</span> 3s 00d
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">quiz</span> 65 sual
-                  </div>
-                </div>
-                <Link href="/mock-exam" className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                  <span className="material-symbols-outlined text-xl">shopping_cart</span> Satın al
-                </Link>
-              </div>
-            </div>
-
-            {/* Card 4 */}
-            <div className="group bg-surface-container-lowest rounded-xl p-1 shadow-sm hover:shadow-xl transition-all duration-300">
-              <div className="relative rounded-lg overflow-hidden h-48 mb-4">
-                <img
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="DİM"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIPOQeIOnSUIkTIzkNIt_Zoxz2Qza2nkglFDxK0_M4S4jLs333LtMV8MIeFDMxXREgPRjbaPFx2FM3zKyRuj0z2oI06Yu94WRJALJG1dXKhItHqePvV3c3pkYngE8UryTPyN7qN8Sn7Hv2PLKxdKLO3_snAP4IEL_7brTPEezUYhdWUWJasNoEXhhl6nUYNxr1B3O4Xj2OIPxNSjzyz0spo81yd1r-r9Q47ndeijTNQAM8LD05KhakUZ5qg7H16iFu88c0eJcB9KuI"
-                />
-                <span className="absolute top-4 left-4 bg-tertiary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Dövlət İmtahanı</span>
-              </div>
-              <div className="px-5 pb-5">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-extrabold text-primary leading-tight">DİM Buraxılış İmtahanı</h3>
-                  <span className="text-secondary font-bold text-lg">10 ₼</span>
-                </div>
-                <p className="text-on-surface-variant text-sm mb-6 line-clamp-2">
-                  11-ci siniflər üçün yeni kurikulum əsasında hazırlanmış tam sınaq paketi.
-                </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">timer</span> 3s 15d
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-base">quiz</span> 90 sual
-                  </div>
-                </div>
-                <Link href="/mock-exam" className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                  <span className="material-symbols-outlined text-xl">shopping_cart</span> Satın al
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex justify-center items-center gap-2 pt-8">
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center text-outline hover:bg-surface-container-high transition-colors">
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary text-white font-bold">1</button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors font-semibold">2</button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors font-semibold">3</button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center text-outline hover:bg-surface-container-high transition-colors">
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
-          </div>
+          )}
         </div>
       </main>
       <Footer />
