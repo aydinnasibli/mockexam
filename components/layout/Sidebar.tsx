@@ -7,26 +7,22 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/dashboard", label: "Panel", icon: "dashboard" },
-    { href: "/exams/my", label: "İmtahanlarım", icon: "menu_book" },
-    { href: "/results", label: "Nəticələr", icon: "assessment" },
-    { href: "/analytics", label: "Analitika", icon: "analytics" },
-    { href: "/settings", label: "Ayarlar", icon: "settings" },
+    { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+    { href: "/exams", label: "Browse Exams", icon: "menu_book" },
+    { href: "/results", label: "Results", icon: "assessment" },
+    { href: "/analytics", label: "Analytics", icon: "analytics" },
+    { href: "/settings", label: "Settings", icon: "settings" },
   ];
 
   return (
-    <aside className="hidden md:flex h-[calc(100vh-80px)] w-64 bg-slate-50 dark:bg-slate-950 border-r-0 fixed left-0 top-20 flex-col p-4 gap-2 z-40">
-      <div className="flex items-center gap-3 px-2 py-4 mb-4">
-        <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden">
-          <img
-            className="w-full h-full object-cover"
-            alt="User avatar"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAea_5K6-XNLcFV-LbZHnvvqKE9b8KyLy21aw8obXHn016e6zmZIWdX-jaPBsAmvmy9QfsnlX44TcgtuZNyNV-iTFHlWeMba6tUqN_mwa8wJlpl7FElqPPOQhgSaByIneEQhD8Fm2P56MiZ_kXpIv3ScHBN8qNLPYQ3vcizuIPQmYj1x4r3YadrUMV3KWcs1OwCDc5BV0pl-0zhU-LGhZRVodKMtwP0pXFigSUFboVy_nzUZSx1jnlIdEstFCE1AFT7sKnre4A6A_cy"
-          />
+    <aside className="hidden md:flex h-[calc(100vh-4rem)] w-64 bg-surface border-r border-outline-variant fixed left-0 top-16 flex-col p-4 gap-2 z-40">
+      <div className="flex items-center gap-3 px-2 py-4 mb-2 border-b border-outline-variant">
+        <div className="w-9 h-9 rounded-lg tc-gradient flex items-center justify-center">
+          <span className="material-symbols-outlined text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
         </div>
         <div>
-          <p className="font-inter text-sm font-bold text-blue-900">İstifadəçi Paneli</p>
-          <p className="font-inter text-xs text-slate-500">Akademik tərəqqi</p>
+          <p className="text-sm font-bold text-primary">Test Centre</p>
+          <p className="text-xs text-on-surface-variant">Student Portal</p>
         </div>
       </div>
 
@@ -37,29 +33,29 @@ export default function Sidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-transform hover:translate-x-1 ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm ${
                 isActive
-                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-bold"
-                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ? "bg-accent-container text-primary-mid font-bold"
+                  : "text-on-surface-variant hover:bg-surface-container hover:text-primary"
               }`}
             >
               <span
-                className="material-symbols-outlined"
+                className="material-symbols-outlined text-xl"
                 style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
               >
                 {link.icon}
               </span>
-              <span className="font-inter text-sm font-medium">{link.label}</span>
+              <span className="font-medium">{link.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto p-4 bg-primary-container rounded-xl text-white">
-        <p className="text-xs text-on-primary-container font-medium mb-2">Hazırlıq səviyyəni artır</p>
-        <button className="w-full bg-secondary text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">
-          Yeni İmtahan Al
-        </button>
+      <div className="mt-auto p-4 bg-accent-container rounded-xl border border-accent/20">
+        <p className="text-xs text-primary-mid font-semibold mb-2">Boost your score</p>
+        <Link href="/exams" className="w-full block text-center bg-primary-mid text-white py-2 rounded-lg text-xs font-bold hover:bg-primary transition-colors">
+          Get New Exam
+        </Link>
       </div>
     </aside>
   );

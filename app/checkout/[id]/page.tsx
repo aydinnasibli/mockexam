@@ -112,7 +112,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         defer
       />
       <Navbar />
-      <main className="pt-24 min-h-screen bg-surface flex flex-col items-center justify-center p-6">
+      <main className="pt-16 min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
 
           {/* Header */}
@@ -193,7 +193,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
           {(status === 'idle' || status === 'processing' || status === 'ready' || status === 'error') && (
             <>
               {/* Order summary */}
-              <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 mb-6 shadow-sm">
+              <div className="tc-card p-6 mb-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">
                   Sifariş məlumatları
                 </p>
@@ -218,7 +218,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               </div>
 
               {isSignedIn ? (
-                <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
+                <div className="tc-card p-6">
                   <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-5">
                     Ödəniş metodunu seçin
                   </p>
@@ -246,7 +246,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                     id="pay-button"
                     onClick={handlePay}
                     disabled={status === 'processing'}
-                    className="w-full flex items-center justify-center gap-2 py-4 bg-secondary text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg shadow-secondary/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 py-4 tc-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg shadow-primary-mid/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {status === 'processing' ? (
                       <>

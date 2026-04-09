@@ -51,22 +51,22 @@ export default function ExamsCatalog() {
       <main className="pt-24 pb-12 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 min-h-screen">
         {/* Sidebar Filters */}
         <aside className="w-full md:w-64 flex-shrink-0 space-y-6">
-          <section className="bg-surface-container-low p-6 rounded-xl space-y-6">
+          <section className="tc-card p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-primary font-headline">Filtrlər</h2>
+              <h2 className="text-lg font-bold text-primary font-headline">Filters</h2>
               {(selectedTypes.length > 0 || searchQuery) && (
                 <button
                   onClick={clearFilters}
                   className="text-xs font-bold text-secondary hover:text-on-secondary-container transition-colors"
                 >
-                  Təmizlə
+                  Clear
                 </button>
               )}
             </div>
 
             {/* Exam Type Filters */}
             <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">İmtahan Növü</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Exam Type</label>
               <div className="flex flex-col gap-2">
                 {allTypes.map(type => (
                   <label key={type} className="flex items-center gap-3 cursor-pointer group">
@@ -103,7 +103,7 @@ export default function ExamsCatalog() {
 
           {/* Results count */}
           <p className="text-sm text-on-surface-variant font-medium px-1">
-            <span className="font-bold text-primary">{filteredExams.length}</span> nəticə tapıldı
+            <span className="font-bold text-primary">{filteredExams.length}</span> results found
           </p>
         </aside>
 
@@ -117,21 +117,21 @@ export default function ExamsCatalog() {
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/40 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-sm"
-                placeholder="İmtahan axtar..."
+                className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary-mid/20 focus:outline-none shadow-sm"
+                placeholder="Search exams..."
                 type="text"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-on-surface-variant whitespace-nowrap">Sırala:</span>
+              <span className="text-sm font-medium text-on-surface-variant whitespace-nowrap">Sort:</span>
               <select
                 value={sortOrder}
                 onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
-                className="bg-surface-container-lowest border border-outline-variant/40 rounded-lg text-sm font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none px-3 py-2"
+                className="bg-surface-container-lowest border border-outline-variant rounded-lg text-sm font-bold text-primary focus:ring-2 focus:ring-primary-mid/20 focus:outline-none px-3 py-2"
               >
-                <option value="newest">Ən yenilər</option>
-                <option value="price-asc">Qiymət: Azdan çoxa</option>
-                <option value="price-desc">Qiymət: Çoxdan aza</option>
+                <option value="newest">Newest</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
               </select>
             </div>
           </div>
@@ -140,16 +140,16 @@ export default function ExamsCatalog() {
           {filteredExams.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <span className="material-symbols-outlined text-5xl text-outline mb-4">search_off</span>
-              <h3 className="text-xl font-bold text-primary mb-2">Nəticə tapılmadı</h3>
-              <p className="text-on-surface-variant text-sm">Filtrləri dəyişdirin və ya axtarış sorğusunu yenileyin.</p>
-              <button onClick={clearFilters} className="mt-4 px-5 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:opacity-90 transition-opacity">
-                Filtrləri Sıfırla
+              <h3 className="text-xl font-bold text-primary mb-2">No results found</h3>
+              <p className="text-on-surface-variant text-sm">Try adjusting your filters or search query.</p>
+              <button onClick={clearFilters} className="mt-4 px-5 py-2 bg-primary-mid text-white rounded-lg text-sm font-bold hover:bg-primary transition-colors">
+                Clear Filters
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {filteredExams.map((exam) => (
-                <div key={exam.id} className="group bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col border border-outline-variant/20">
+                <div key={exam.id} className="group tc-card overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col">
                   <div className="relative h-44 overflow-hidden">
                     <img
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -157,7 +157,7 @@ export default function ExamsCatalog() {
                       alt={exam.title}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    <span className="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                    <span className="absolute top-3 left-3 bg-primary-mid text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
                       {exam.tag}
                     </span>
                     <span className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-primary text-sm font-black px-3 py-1 rounded-full">
@@ -181,10 +181,10 @@ export default function ExamsCatalog() {
 
                     <Link
                       href={`/exams/${exam.id}`}
-                      className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm"
+                      className="w-full tc-gradient text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm"
                     >
                       <span className="material-symbols-outlined text-lg">visibility</span>
-                      Ətraflı bax
+                      View Details
                     </Link>
                   </div>
                 </div>
