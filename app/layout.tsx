@@ -26,9 +26,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="az">
-        <head>
-          <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-        </head>
+        <head />
         <body
           className={`${inter.variable} ${manrope.variable} antialiased bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed`}
         >

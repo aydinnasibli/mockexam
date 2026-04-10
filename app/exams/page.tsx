@@ -5,13 +5,26 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import { mockExams, ExamType, examTypeLabels } from "@/lib/data";
+import {
+  Search, SearchX, Timer, HelpCircle, Banknote,
+  Monitor, Globe, GraduationCap, Brain, BookOpen,
+  X, ArrowRight,
+} from "lucide-react";
 
-const examTypeImages: Record<ExamType, string> = {
-  sat: "https://lh3.googleusercontent.com/aida-public/AB6AXuBORwBxeFQQ9zI3gWcDIjuoqPlBx6HSvuLO4KllcFAzqGZ2kHoqBO7dLYk5wkhKd6kzYEouTXEsa7YLg_IWISjBlWi1eq5o5JP1DErpGKG9-3XuGMoWpqhzSW7ju_3_Bpbi5H0eL1487PN6m9oBauKPfhdhPejW8da_ZkrNaUTnEg5OLky7-mG2xPr7gjPfZHFqmsrc16WaDljWupfpzEH5Vylj8LHKIWLG5xvG_CDMzamJYLUcDzZWjbeuPyeatV94Amp-EdvqaCgU",
-  ielts: "https://lh3.googleusercontent.com/aida-public/AB6AXuBgnB_DWqXR9h8C0ooDR3IJBSZ45SBab96k9R5Q0Su8JPUl4afhijKaZDE3oulHJcNespLdvTn5j6_eI10W1so28m9v4ZvkNTHdDwNp71dTK4UDY1EwoAV8G5EUuYWpIJPoFPRvZhPYsqzwByFMKczvl9J3Jem3Gwh2gljkEVuk8mnkKcVPLoEROLWB83W5ZcHpYgl4Anc-kG_3hEzEYXY6jkhy_NkSmS05_whLff9AFstIxk6A7NGvapjmVXCKPsAmkBzR5ZGRLJ8L",
-  toefl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCMuRuaJ7vyi1iiyAaHG6I6oEOjrn89FwAN2kxPqMLJlNvRvwWCTRKC2Z0zxZqVPsr8guj5WyaglsOWZezTdNKqabxxHSZrwiOBcnnkcZX4E52n7YGLmzLjnJ-d7lBslOq8wiVrAz_UUL6PVfYBdqj6mAc5AYLIjzTW9uVeKmxcf6lOCyDUmNZFSeLLQ7mt4EENy7gVaHn_0kFCgTTzlL8_QHorzcrnUg7Ef0M_UhPWbRrQNpLAGyaunpZye2iqxT4AnYBcYTRHKOV9",
-  dim: "https://lh3.googleusercontent.com/aida-public/AB6AXuCIPOQeIOnSUIkTIzkNIt_Zoxz2Qza2nkglFDxK0_M4S4jLs333LtMV8MIeFDMxXREgPRjbaPFx2FM3zKyRuj0z2oI06Yu94WRJALJG1dXKhItHqePvV3c3pkYngE8UryTPyN7qN8Sn7Hv2PLKxdKLO3_snAP4IEL_7brTPEezUYhdWUWJasNoEXhhl6nUYNxr1B3O4Xj2OIPxNSjzyz0spo81yd1r-r9Q47ndeijTNQAM8LD05KhakUZ5qg7H16iFu88c0eJcB9KuI",
-  gre: "https://lh3.googleusercontent.com/aida-public/AB6AXuBgnB_DWqXR9h8C0ooDR3IJBSZ45SBab96k9R5Q0Su8JPUl4afhijKaZDE3oulHJcNespLdvTn5j6_eI10W1so28m9v4ZvkNTHdDwNp71dTK4UDY1EwoAV8G5EUuYWpIJPoFPRvZhPYsqzwByFMKczvl9J3Jem3Gwh2gljkEVuk8mnkKcVPLoEROLWB83W5ZcHpYgl4Anc-kG_3hEzEYXY6jkhy_NkSmS05_whLff9AFstIxk6A7NGvapjmVXCKPsAmkBzR5ZGRLJ8L",
+const examTypeIcons: Record<ExamType, React.ElementType> = {
+  sat: Monitor,
+  ielts: Globe,
+  toefl: BookOpen,
+  dim: GraduationCap,
+  gre: Brain,
+};
+
+const examTypeColors: Record<ExamType, { bg: string; text: string; ring: string }> = {
+  sat:   { bg: "bg-blue-100",    text: "text-blue-700",    ring: "ring-blue-200" },
+  ielts: { bg: "bg-purple-100",  text: "text-purple-700",  ring: "ring-purple-200" },
+  toefl: { bg: "bg-cyan-100",    text: "text-cyan-700",    ring: "ring-cyan-200" },
+  dim:   { bg: "bg-emerald-100", text: "text-emerald-700", ring: "ring-emerald-200" },
+  gre:   { bg: "bg-amber-100",   text: "text-amber-700",   ring: "ring-amber-200" },
 };
 
 const allTypes: ExamType[] = ['sat', 'ielts', 'toefl', 'dim', 'gre'];
@@ -33,164 +46,209 @@ export default function ExamsCatalog() {
     setSortOrder('newest');
   };
 
+  const hasActiveFilters = selectedTypes.length > 0 || !!searchQuery;
+
   const filteredExams = mockExams
     .filter(exam => {
       if (selectedTypes.length > 0 && !selectedTypes.includes(exam.type)) return false;
-      if (searchQuery && !exam.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!exam.title.toLowerCase().includes(q) && !exam.description.toLowerCase().includes(q)) return false;
+      }
       return true;
     })
     .sort((a, b) => {
       if (sortOrder === 'price-asc') return a.price - b.price;
       if (sortOrder === 'price-desc') return b.price - a.price;
-      return 0; // newest = data order
+      return 0;
     });
 
   return (
     <>
       <Navbar />
-      <main className="pt-24 pb-12 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 min-h-screen">
-        {/* Sidebar Filters */}
-        <aside className="w-full md:w-64 flex-shrink-0 space-y-6">
-          <section className="tc-card p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-primary font-headline">Filters</h2>
-              {(selectedTypes.length > 0 || searchQuery) && (
-                <button
-                  onClick={clearFilters}
-                  className="text-xs font-bold text-secondary hover:text-on-secondary-container transition-colors"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+      <main className="pt-24 pb-16 min-h-screen bg-surface">
+        {/* Page Header */}
+        <div className="max-w-7xl mx-auto px-6 mb-8">
+          <div className="flex items-end gap-4 mb-2">
+            <h1 className="text-3xl font-black text-primary font-headline">Bütün İmtahanlar</h1>
+            <span className="mb-1 text-sm font-bold text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">
+              {filteredExams.length} sınaq
+            </span>
+          </div>
+          <p className="text-on-surface-variant">SAT, IELTS, TOEFL, DİM və GRE imtahanlarına professional hazırlıq üçün test paketləri</p>
+        </div>
 
-            {/* Exam Type Filters */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Exam Type</label>
-              <div className="flex flex-col gap-2">
-                {allTypes.map(type => (
-                  <label key={type} className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selectedTypes.includes(type)}
-                      onChange={() => toggleType(type)}
-                      className="w-4 h-4 rounded text-primary focus:ring-primary/20 border-outline-variant accent-primary"
-                    />
-                    <span className={`text-sm font-medium transition-colors ${selectedTypes.includes(type) ? 'text-primary font-bold' : 'text-on-surface-variant group-hover:text-primary'}`}>
-                      {examTypeLabels[type]}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Active filter count badge */}
-            {selectedTypes.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedTypes.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => toggleType(type)}
-                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-primary text-white rounded-full"
-                  >
-                    {examTypeLabels[type]}
-                    <span className="material-symbols-outlined text-xs leading-none">close</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Results count */}
-          <p className="text-sm text-on-surface-variant font-medium px-1">
-            <span className="font-bold text-primary">{filteredExams.length}</span> results found
-          </p>
-        </aside>
-
-        {/* Main Content Area */}
-        <div className="flex-1 space-y-6">
-
-          {/* Search and Sort */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="relative w-full md:max-w-md">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl">search</span>
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-8">
+          {/* Sidebar */}
+          <aside className="w-full md:w-72 flex-shrink-0 space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" size={18} />
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary-mid/20 focus:outline-none shadow-sm"
-                placeholder="Search exams..."
+                className="w-full pl-11 pr-4 py-3 bg-white border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-sm placeholder:text-outline"
+                placeholder="Sınaq axtar..."
                 type="text"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-on-surface-variant whitespace-nowrap">Sort:</span>
-              <select
-                value={sortOrder}
-                onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
-                className="bg-surface-container-lowest border border-outline-variant rounded-lg text-sm font-bold text-primary focus:ring-2 focus:ring-primary-mid/20 focus:outline-none px-3 py-2"
-              >
-                <option value="newest">Newest</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-              </select>
-            </div>
-          </div>
 
-          {/* Exam Grid */}
-          {filteredExams.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <span className="material-symbols-outlined text-5xl text-outline mb-4">search_off</span>
-              <h3 className="text-xl font-bold text-primary mb-2">No results found</h3>
-              <p className="text-on-surface-variant text-sm">Try adjusting your filters or search query.</p>
-              <button onClick={clearFilters} className="mt-4 px-5 py-2 bg-primary-mid text-white rounded-lg text-sm font-bold hover:bg-primary transition-colors">
-                Clear Filters
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {filteredExams.map((exam) => (
-                <div key={exam.id} className="group tc-card overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col">
-                  <div className="relative h-44 overflow-hidden">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      src={examTypeImages[exam.type]}
-                      alt={exam.title}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    <span className="absolute top-3 left-3 bg-primary-mid text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-                      {exam.tag}
-                    </span>
-                    <span className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-primary text-sm font-black px-3 py-1 rounded-full">
-                      {exam.price} ₼
-                    </span>
-                  </div>
-                  <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="text-lg font-extrabold text-primary leading-tight font-headline mb-2">{exam.title}</h3>
-                    <p className="text-on-surface-variant text-sm mb-4 line-clamp-2 flex-1">{exam.description}</p>
+            {/* Filter Card */}
+            <div className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xs font-black text-on-surface-variant uppercase tracking-widest">İmtahan növü</h2>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs font-bold text-secondary hover:text-primary transition-colors"
+                  >
+                    Sıfırla
+                  </button>
+                )}
+              </div>
 
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      <div className="flex items-center gap-1 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-2.5 py-1 rounded-lg">
-                        <span className="material-symbols-outlined text-sm">timer</span>
-                        {exam.durationMinutes} dəq
+              <div className="space-y-1">
+                {allTypes.map(type => {
+                  const Icon = examTypeIcons[type];
+                  const colors = examTypeColors[type];
+                  const isSelected = selectedTypes.includes(type);
+                  const count = mockExams.filter(e => e.type === type).length;
+                  return (
+                    <label
+                      key={type}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
+                        isSelected ? 'bg-primary/5' : 'hover:bg-surface-container'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleType(type)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary/20 border-outline-variant accent-primary"
+                      />
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${colors.bg}`}>
+                        <Icon size={14} className={colors.text} />
                       </div>
-                      <div className="flex items-center gap-1 text-xs font-semibold text-on-tertiary-fixed-variant bg-tertiary-fixed/30 px-2.5 py-1 rounded-lg">
-                        <span className="material-symbols-outlined text-sm">quiz</span>
-                        {exam.totalQuestions} sual
+                      <span className={`text-sm font-semibold flex-1 ${isSelected ? 'text-primary' : 'text-on-surface-variant'}`}>
+                        {examTypeLabels[type]}
+                      </span>
+                      <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
+                        {count}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {selectedTypes.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-outline-variant/30">
+                  {selectedTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => toggleType(type)}
+                      className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
+                    >
+                      {examTypeLabels[type]}
+                      <X size={10} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Main Grid */}
+          <div className="flex-1">
+            {/* Sort Bar */}
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-sm text-on-surface-variant font-medium">
+                <span className="font-bold text-primary">{filteredExams.length}</span> nəticə
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-on-surface-variant">Sıralama:</span>
+                <select
+                  value={sortOrder}
+                  onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+                  className="bg-white border border-outline-variant rounded-lg text-sm font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none px-3 py-2"
+                >
+                  <option value="newest">Ən yeni</option>
+                  <option value="price-asc">Qiymət: Aşağıdan yuxarı</option>
+                  <option value="price-desc">Qiymət: Yuxarıdan aşağı</option>
+                </select>
+              </div>
+            </div>
+
+            {filteredExams.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-outline-variant/50">
+                <SearchX className="text-outline mb-4" size={48} />
+                <h3 className="text-xl font-bold text-primary mb-2 font-headline">Nəticə tapılmadı</h3>
+                <p className="text-on-surface-variant text-sm mb-6">Filtrləri dəyişdirməyi cəhd edin</p>
+                <button
+                  onClick={clearFilters}
+                  className="px-5 py-2.5 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+                >
+                  Filtrləri sıfırla
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredExams.map(exam => {
+                  const Icon = examTypeIcons[exam.type];
+                  const colors = examTypeColors[exam.type];
+                  return (
+                    <div
+                      key={exam.id}
+                      className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden"
+                    >
+                      <div className="p-5 pb-4">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ring-4 ${colors.bg} ${colors.ring}`}>
+                            <Icon size={22} className={colors.text} />
+                          </div>
+                          <span className="editorial-gradient text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                            {exam.tag}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-extrabold text-primary font-headline leading-snug mb-2">
+                          {exam.title}
+                        </h3>
+                        <p className="text-on-surface-variant text-xs leading-relaxed line-clamp-2">
+                          {exam.description}
+                        </p>
+                      </div>
+
+                      <div className="mx-5 pb-4 flex items-center gap-3 border-t border-outline-variant/20 pt-4">
+                        <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
+                          <Timer size={13} />
+                          {exam.durationMinutes} dəq
+                        </div>
+                        <div className="w-px h-3 bg-outline-variant" />
+                        <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
+                          <HelpCircle size={13} />
+                          {exam.totalQuestions} sual
+                        </div>
+                        <div className="w-px h-3 bg-outline-variant" />
+                        <div className="flex items-center gap-1 text-xs font-bold text-primary ml-auto">
+                          <Banknote size={13} />
+                          {exam.price} ₼
+                        </div>
+                      </div>
+
+                      <div className="px-5 pb-5">
+                        <Link
+                          href={`/exams/${exam.id}`}
+                          className="flex items-center justify-center gap-2 w-full editorial-gradient text-white py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+                        >
+                          Sınağa başla
+                          <ArrowRight size={16} />
+                        </Link>
                       </div>
                     </div>
-
-                    <Link
-                      href={`/exams/${exam.id}`}
-                      className="w-full tc-gradient text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm"
-                    >
-                      <span className="material-symbols-outlined text-lg">visibility</span>
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </main>
       <Footer />

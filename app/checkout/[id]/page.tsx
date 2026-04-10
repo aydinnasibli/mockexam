@@ -7,6 +7,10 @@ import Script from "next/script";
 import { use, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notFound } from "next/navigation";
+import {
+  CheckCircle2, ShoppingBag, Package, Settings, UserLock,
+  Timer, HelpCircle, Infinity, AlertCircle, Lock, Shield, CreditCard, ShieldCheck
+} from "lucide-react";
 
 type CheckoutStatus = 'idle' | 'loading' | 'ready' | 'processing' | 'success' | 'already_owned' | 'error' | 'unconfigured';
 
@@ -24,14 +28,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
   if (!exam) return notFound();
 
-  // Handle redirect back from LemonSqueezy with ?purchased=examId
   useEffect(() => {
     if (searchParams.get('purchased') === exam.id) {
       setStatus('success');
     }
   }, [searchParams, exam.id]);
 
-  // Check if already purchased
   useEffect(() => {
     if (!isSignedIn) return;
     fetch('/api/purchases')
@@ -73,7 +75,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         throw new Error(data.error ?? 'Ödəniş sessiyası yaradılmadı');
       }
 
-      // Open LemonSqueezy checkout overlay
       const LemonSqueezy = (window as Window & {
         LemonSqueezy?: {
           Url: { Open: (url: string) => void };
@@ -93,7 +94,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         LemonSqueezy.Url.Open(data.checkoutUrl);
         setStatus('ready');
       } else {
-        // Fallback: redirect to hosted checkout page
         window.location.href = data.checkoutUrl;
       }
     } catch (err: unknown) {
@@ -105,7 +105,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
   return (
     <>
-      {/* LemonSqueezy Overlay JS */}
       <Script
         src="https://app.lemonsqueezy.com/js/lemon.js"
         onLoad={() => setLsScriptReady(true)}
@@ -115,20 +114,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       <main className="pt-16 min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
 
-          {/* Header */}
           <div className="text-center mb-6">
-            <span className="material-symbols-outlined text-4xl text-secondary">
-              {status === 'success' ? 'check_circle' : 'shopping_bag'}
-            </span>
+            {status === 'success'
+              ? <CheckCircle2 className="text-secondary mx-auto" size={40} />
+              : <ShoppingBag className="text-secondary mx-auto" size={40} />
+            }
             <h1 className="text-2xl font-black text-primary font-headline mt-2">
               {status === 'success' ? 'Ödəniş Tamamlandı!' : 'Sifarişi Tamamla'}
             </h1>
           </div>
 
-          {/* Success state */}
           {status === 'success' && (
             <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
-              <span className="material-symbols-outlined text-green-500 text-5xl">task_alt</span>
+              <CheckCircle2 className="text-green-500 mx-auto" size={48} />
               <h3 className="font-bold text-green-900 text-lg mt-3 mb-2">
                 Ödəniş müvəffəqiyyətlə tamamlandı!
               </h3>
@@ -146,10 +144,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             </div>
           )}
 
-          {/* Already owned state */}
           {status === 'already_owned' && (
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-center">
-              <span className="material-symbols-outlined text-blue-500 text-4xl">inventory</span>
+              <Package className="text-blue-500 mx-auto" size={40} />
               <h3 className="font-bold text-blue-900 text-lg mt-3 mb-2">Artıq satın alınıb</h3>
               <p className="text-sm text-blue-800/80 mb-6">
                 Bu imtahanı artıq satın almısınız. Panelinizdən başlaya bilərsiniz.
@@ -163,11 +160,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             </div>
           )}
 
-          {/* Not-configured state (dev helper) */}
           {status === 'unconfigured' && (
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-6">
               <div className="flex items-start gap-3 mb-4">
-                <span className="material-symbols-outlined text-amber-500">settings</span>
+                <Settings className="text-amber-500 shrink-0" size={20} />
                 <h3 className="font-bold text-amber-900">LemonSqueezy konfiqurasiya tələb olunur</h3>
               </div>
               <p className="text-sm text-amber-800 mb-4 leading-relaxed">
@@ -189,10 +185,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             </div>
           )}
 
-          {/* Normal checkout flow */}
           {(status === 'idle' || status === 'processing' || status === 'ready' || status === 'error') && (
             <>
-              {/* Order summary */}
               <div className="tc-card p-6 mb-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">
                   Sifariş məlumatları
@@ -203,15 +197,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                 </div>
                 <div className="flex items-center gap-4 text-xs text-on-surface-variant mt-3 pt-3 border-t border-outline-variant/20">
                   <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">timer</span>
+                    <Timer size={14} />
                     {exam.durationMinutes} dəq
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">quiz</span>
+                    <HelpCircle size={14} />
                     {exam.totalQuestions} sual
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">all_inclusive</span>
+                    <Infinity size={14} />
                     Limitsiz baxış
                   </span>
                 </div>
@@ -223,30 +217,27 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                     Ödəniş metodunu seçin
                   </p>
 
-                  {/* What you get */}
                   <div className="space-y-3 mb-6">
                     {exam.features.map((f, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm text-on-surface-variant">
-                        <span className="material-symbols-outlined text-secondary text-base">check_circle</span>
+                        <CheckCircle2 className="text-secondary shrink-0" size={16} />
                         {f}
                       </div>
                     ))}
                   </div>
 
-                  {/* Error message */}
                   {status === 'error' && errorMessage && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
-                      <span className="material-symbols-outlined text-red-500 text-sm mt-0.5">error</span>
+                      <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
                       <p className="text-xs text-red-700">{errorMessage}</p>
                     </div>
                   )}
 
-                  {/* Pay button */}
                   <button
                     id="pay-button"
                     onClick={handlePay}
                     disabled={status === 'processing'}
-                    className="w-full flex items-center justify-center gap-2 py-4 tc-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg shadow-primary-mid/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {status === 'processing' ? (
                       <>
@@ -255,31 +246,30 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                       </>
                     ) : (
                       <>
-                        <span className="material-symbols-outlined">lock</span>
+                        <Lock size={18} />
                         Ödənişə Keç — {exam.price} AZN
                       </>
                     )}
                   </button>
 
-                  {/* Trust badges */}
                   <div className="flex items-center justify-center gap-4 mt-4">
                     <div className="flex items-center gap-1 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm">security</span>
+                      <Shield size={14} />
                       SSL şifrəli
                     </div>
                     <div className="flex items-center gap-1 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm">payments</span>
+                      <CreditCard size={14} />
                       Lemon Squeezy
                     </div>
                     <div className="flex items-center gap-1 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm">verified_user</span>
+                      <ShieldCheck size={14} />
                       Təhlükəsiz
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
-                  <span className="material-symbols-outlined text-amber-500 text-4xl">person_lock</span>
+                  <UserLock className="text-amber-500 mx-auto" size={40} />
                   <h3 className="font-bold text-amber-900 text-lg mt-3 mb-2">
                     Hesaba daxil olmaq lazımdır
                   </h3>

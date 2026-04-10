@@ -5,6 +5,10 @@ import { useAuth } from "@clerk/nextjs";
 import { SignUpButton } from "@clerk/nextjs";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import {
+  ArrowRight, Sparkles, Timer, BarChart2, Database, Brain,
+  Landmark, GraduationCap, UserSearch, TrendingUp, CheckCircle2, List
+} from "lucide-react";
 
 export default function Home() {
   const { isSignedIn } = useAuth();
@@ -12,343 +16,335 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-20">
 
         {/* Hero Section */}
-        <section className="relative overflow-hidden tc-gradient-hero px-6 py-24 lg:py-36">
-          {/* Decorative blobs */}
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
-
-          <div className="relative max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        <section className="relative overflow-hidden bg-surface py-24 px-8">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left */}
             <div className="z-10">
-              <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-accent/20 text-accent text-xs font-bold mb-6 border border-accent/30">
-                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                OFFICIAL MOCK EXAMS
+              <span className="inline-block px-4 py-1.5 mb-6 rounded-full bg-secondary-fixed text-on-secondary-fixed text-sm font-bold tracking-wide uppercase">
+                Gələcəyin İmtahan Platforması
               </span>
-              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-extrabold font-headline leading-tight tracking-tighter text-white mb-6">
-                Prepare for Your{" "}
-                <span className="text-accent">Dream Score</span>
+              <h1 className="text-5xl md:text-7xl font-headline font-extrabold text-primary leading-[1.1] tracking-tight mb-8">
+                Gələcəyinizi bizimlə{" "}
+                <span className="text-secondary">sınağa çəkin</span>
               </h1>
-              <p className="text-lg text-white/70 leading-relaxed mb-10 max-w-lg">
-                SAT, IELTS, TOEFL, GRE and DİM mock exams in a real exam environment. Instant results. Deep analytics.
+              <p className="text-lg md:text-xl text-on-surface-variant leading-relaxed mb-10 max-w-xl">
+                Müasir texnologiyalar və süni intellekt dəstəyi ilə imtahanlara daha peşəkar hazırlaşın. Bizimlə hər bir sual uğura atılan bir addımdır.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link href="/exams" className="tc-btn-primary shadow-lg shadow-accent/30 text-base px-8 py-3.5">
-                  Browse Exams
-                  <span className="material-symbols-outlined ml-2 text-[18px]">arrow_forward</span>
-                </Link>
                 {!isSignedIn ? (
                   <SignUpButton mode="modal">
-                    <button className="px-8 py-3.5 bg-white/10 text-white rounded-lg font-bold text-base border border-white/20 hover:bg-white/20 transition-colors">
-                      Create Free Account
+                    <button className="px-8 py-4 editorial-gradient text-white rounded-full font-bold text-lg shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all duration-200">
+                      İndi başlayın
                     </button>
                   </SignUpButton>
                 ) : (
-                  <Link href="/dashboard" className="px-8 py-3.5 bg-white/10 text-white rounded-lg font-bold text-base border border-white/20 hover:bg-white/20 transition-colors">
-                    My Dashboard
+                  <Link
+                    href="/dashboard"
+                    className="px-8 py-4 editorial-gradient text-white rounded-full font-bold text-lg shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all duration-200"
+                  >
+                    Kabinetim
                   </Link>
                 )}
+                <Link
+                  href="/exams"
+                  className="px-8 py-4 bg-surface-container-low text-primary rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all duration-200 border border-outline-variant"
+                >
+                  Daha çox öyrən
+                </Link>
               </div>
 
-              <div className="mt-12 flex items-center gap-8">
-                <div>
-                  <p className="text-2xl font-extrabold text-white">15,000+</p>
-                  <p className="text-xs text-white/50 mt-0.5">Students enrolled</p>
+              <div className="mt-12 flex items-center gap-6">
+                <div className="flex -space-x-4">
+                  {[
+                    "https://lh3.googleusercontent.com/aida-public/AB6AXuBf7ZzRxevJaAHLz6mtQ7mxwmw3Ih2l3qtbY6XTbsG1uoPwEvdBbLY0f3vR9KGPH_hxf-8pcWddKsNz4fGu7ByDxhLIYkMvwP7aqca1UG26dbyLF0LNV9aM9qxHK15dNSRtoJVT_kDnr6QH59VKXjPUacZ4eupuo-TGnqsM-QUqAoSZ-jI1ExxdgWmcsFOwJH1BX_t5s4pEhXleDpCE0YMxKu_A3rLtJzEsBUj3aY2mypNDWJjnwGecOJlOqKr-eEMCXfxOhBjYh2y_",
+                    "https://lh3.googleusercontent.com/aida-public/AB6AXuAnLUdyR00Rd4Jw-jwAFUGAzr4TcReu0YVgsyPE2nQnsMlElQemfX_qRZG4-srVxIis8-B-xWjrjtRHdGBS0m4-gDwD0bnFjHoXwYvKWVl3UBrUJC384ooDQi6ybkJa8wdSDIOP-g2cnxgG63obA1YY2Qaj64XI5ocCgam1SN874ER0XwoT3TkXY3rYqqHM9SrxiccGqNZ3XXVdS8DgmZKC3-4xw03Zk-uDsVvK2LgzzhXk_kFq1_wQftKL4XdAIBuFTsV6v6dEF7kl",
+                    "https://lh3.googleusercontent.com/aida-public/AB6AXuC0Z4tA4XFLVCXPFf-0Ir52ui16-tpd6T4VcDL2V8okiJ42xYfAGs8VfGz0zI4pi1Wnege6GnXENgpn3QUtdaM9gcRbwOvXRaLnH5Y3clPh_29MqYrrEHEXbb2x6EuPbS4cdCtzxax7y8pu8QWeajqLL-0Ds5KXWOiCKZqASK8yh6xeXbbhvT6KWqSUYtzjWPzVfEGZ_Lw4YaLCVhH2H16co0d7BXeauygJMRFCA3jPKKFCUyZ8AWCqIaiRk9Y3FhF8xLMB4rwbnls4",
+                  ].map((src, i) => (
+                    <div key={i} className="w-12 h-12 rounded-full border-4 border-surface overflow-hidden bg-surface-container">
+                      <img className="w-full h-full object-cover" src={src} alt="Tələbə" />
+                    </div>
+                  ))}
                 </div>
-                <div className="w-px h-10 bg-white/20"></div>
-                <div>
-                  <p className="text-2xl font-extrabold text-white">11</p>
-                  <p className="text-xs text-white/50 mt-0.5">Mock exams available</p>
-                </div>
-                <div className="w-px h-10 bg-white/20"></div>
-                <div>
-                  <p className="text-2xl font-extrabold text-white">98%</p>
-                  <p className="text-xs text-white/50 mt-0.5">Satisfaction rate</p>
-                </div>
+                <p className="text-sm font-medium text-on-surface-variant">
+                  <span className="text-primary font-bold">10,000+</span> tələbə tərəfindən etibar edilir
+                </p>
               </div>
             </div>
 
+            {/* Right */}
             <div className="relative hidden lg:block">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+              <div className="absolute -top-12 -right-12 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl transform lg:rotate-3 hover:rotate-0 transition-transform duration-500 bg-surface-container-lowest">
                 <img
-                  alt="Student studying"
-                  className="w-full h-[480px] object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiawthUEkW4Av6Eep1bs7kIew_URybrRK0hzvhwprx9ZF-uRI89skArkG8kOMrsA33PciCA28n7QRHQBo3dXeZqmXlr3eWS90h4sNwgnVjgF3g_MGDlnUuHhMusGFshE3TUHclioz8Hm6LnNZK2iidFmFkhPGNkUX7wz98BqqJm6xy3OyTYODzdTabyVRVvKWkUDJawOfkNjR68a2t7gHnVfsAaU19WsK35PheDPPmn6VqYs-GDZdB_waBbWe6LF_ksTWGBGlLs95r"
+                  className="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCF8V6bxNju_IU3lEpfRjGMnz5r4YRJ8ki55XRqqxaALbvCZmIHGrEMxDDogkjCFu53dNTWskgbFEnmMWBGkAo5NWeJM4kGswfN2I4jvXGnc2arWW4waECgSbjvEgBRItPYQV89xCc1-bU2VVerEgHtBMzYJNt9Y30i6clDOE1hIDDocBQWe1j58S5bffT8GsckXbWvNVgRh2S-sLj0YxD1eOuNHfQsCWY6TkcspdYGhBLdx_bzUISYtPuyAcCb_JPwqdPUldaGypGy"
+                  alt="Tələbə oxuyur"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent"></div>
-                <div className="absolute bottom-6 left-6 right-6 p-5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center text-white shrink-0">
-                      <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                <div className="absolute inset-0 bg-primary/10" />
+              </div>
+              {/* Floating Stat Card */}
+              <div className="absolute bottom-8 -left-8 bg-surface-container-lowest p-6 rounded-2xl shadow-xl max-w-[200px] border border-outline-variant/30">
+                <Sparkles className="text-secondary mb-2" size={36} />
+                <p className="text-2xl font-black text-primary">98%</p>
+                <p className="text-xs text-on-surface-variant font-medium">İstifadəçi müvəffəqiyyəti</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Bento Grid */}
+        <section className="py-24 bg-surface-container-low px-8" id="haqqimizda">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-headline font-extrabold text-primary mb-4">Üstünlüklərimiz</h2>
+              <p className="text-on-surface-variant max-w-2xl mx-auto">
+                Təhsil texnologiyalarındakı ən son yenilikləri sizin üçün bir araya gətirdik.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Feature 1 — wide */}
+              <div className="md:col-span-2 bg-surface-container-lowest p-10 rounded-3xl group hover:bg-primary transition-all duration-500 border border-outline-variant/30">
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    <div className="w-14 h-14 rounded-2xl bg-secondary-fixed flex items-center justify-center mb-8 group-hover:bg-on-primary-container transition-colors">
+                      <Timer className="text-secondary group-hover:text-primary-fixed transition-colors" size={28} />
                     </div>
-                    <div>
-                      <p className="text-white font-bold text-sm">Real exam conditions</p>
-                      <p className="text-white/60 text-xs">Timed, auto-scored, full analytics</p>
-                    </div>
+                    <h3 className="text-3xl font-headline font-bold text-primary mb-4 group-hover:text-on-primary">Real İmtahan Mühiti</h3>
+                    <p className="text-on-surface-variant group-hover:text-primary-fixed leading-relaxed text-lg max-w-lg">
+                      DİM və digər rəsmi qurumların imtahan formatına tam uyğun, vaxt limitli və stress-test mühiti. Həyəcanınızı sınaqlarla yenin.
+                    </p>
                   </div>
+                  <div className="mt-8 flex items-center gap-2 text-secondary font-bold group-hover:text-on-primary">
+                    Ətraflı məlumat <ArrowRight size={18} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="bg-surface-container-lowest p-10 rounded-3xl border border-outline-variant/30">
+                <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mb-8">
+                  <BarChart2 className="text-primary" size={28} />
+                </div>
+                <h3 className="text-2xl font-headline font-bold text-primary mb-4">Ətraflı Analitika</h3>
+                <p className="text-on-surface-variant leading-relaxed">
+                  Zəif və güclü tərəflərinizi süni intellekt analizi ilə müəyyən edin. Tərəqqinizi real zamanlı izləyin.
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="bg-surface-container-lowest p-10 rounded-3xl border border-outline-variant/30">
+                <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mb-8">
+                  <Database className="text-primary" size={28} />
+                </div>
+                <h3 className="text-2xl font-headline font-bold text-primary mb-4">Geniş Sual Bazası</h3>
+                <p className="text-on-surface-variant leading-relaxed">
+                  Ekspertlər tərəfindən hazırlanmış 50,000-dən çox unikal sual və video izahlar.
+                </p>
+              </div>
+
+              {/* Feature 4 — wide, gradient bg */}
+              <div className="md:col-span-2 editorial-gradient p-10 rounded-3xl relative overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-3xl font-headline font-bold text-white mb-4">Fərdi Öyrənmə Planı</h3>
+                  <p className="text-primary-fixed opacity-90 leading-relaxed text-lg max-w-md">
+                    Hər bir tələbənin ehtiyacına uyğun, sistemli və məqsədyönlü hazırlıq proqramı.
+                  </p>
+                </div>
+                <div className="absolute right-0 bottom-0 w-1/2 h-full opacity-10 select-none pointer-events-none flex items-end justify-end">
+                  <Brain size={200} className="text-white" />
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Exam Types Section */}
-        <section className="px-6 py-24 bg-surface" id="exams">
+        {/* Test Categories */}
+        <section className="py-24 bg-surface px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="inline-block text-xs font-bold text-accent uppercase tracking-widest mb-3">AVAILABLE EXAMS</span>
-              <h2 className="text-3xl lg:text-4xl font-extrabold font-headline text-primary mb-4">Every major test, one platform</h2>
-              <p className="text-on-surface-variant max-w-xl mx-auto">Choose from 11 professionally crafted mock exams designed to mirror the real thing exactly.</p>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+              <div className="max-w-2xl">
+                <h2 className="text-4xl font-headline font-extrabold text-primary mb-4">Populyar Kateqoriyalar</h2>
+                <p className="text-on-surface-variant">
+                  Sizin üçün ən aktual olan imtahan istiqamətlərini seçin və dərhal başlayın.
+                </p>
+              </div>
+              <Link href="/exams" className="flex items-center gap-2 text-secondary font-bold hover:underline">
+                Bütün kateqoriyalar <List size={20} />
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* SAT */}
-              <div className="tc-card p-7 hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="w-11 h-11 rounded-xl bg-accent-container flex items-center justify-center text-primary-mid">
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest bg-surface-container px-3 py-1 rounded-full">Global</span>
+              {/* Category 1 */}
+              <div className="group relative bg-surface-container-lowest p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <Landmark size={28} />
                   </div>
-                  <h3 className="text-xl font-bold mb-2 font-headline text-primary">SAT Mock</h3>
-                  <p className="text-on-surface-variant text-sm mb-5 leading-relaxed">Math and Evidence-Based Reading & Writing. Full Bluebook digital format.</p>
+                  <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">12 Sınaq</span>
                 </div>
-                <Link href="/exams?type=sat" className="inline-flex items-center gap-1.5 text-primary-mid font-bold text-sm group-hover:gap-3 transition-all">
-                  View exams <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                <h4 className="text-xl font-headline font-bold text-primary mb-2">Dövlət Qulluğu</h4>
+                <p className="text-sm text-on-surface-variant mb-6">BB, BA və digər kateqoriyalar üzrə qanunvericilik və məntiq sınaqları.</p>
+                <Link
+                  href="/exams"
+                  className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                >
+                  Sınaqlara bax
                 </Link>
               </div>
 
-              {/* IELTS */}
-              <div className="tc-card p-7 hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="w-11 h-11 rounded-xl bg-secondary-container flex items-center justify-center text-secondary">
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>language</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest bg-surface-container px-3 py-1 rounded-full">Academic</span>
+              {/* Category 2 */}
+              <div className="group relative bg-surface-container-lowest p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <GraduationCap size={28} />
                   </div>
-                  <h3 className="text-xl font-bold mb-2 font-headline text-primary">IELTS</h3>
-                  <p className="text-on-surface-variant text-sm mb-5 leading-relaxed">Listening, Reading, and Writing sections in one complete mock test.</p>
+                  <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">24 Sınaq</span>
                 </div>
-                <Link href="/exams?type=ielts" className="inline-flex items-center gap-1.5 text-secondary font-bold text-sm group-hover:gap-3 transition-all">
-                  View exams <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                <h4 className="text-xl font-headline font-bold text-primary mb-2">Magistratura</h4>
+                <p className="text-sm text-on-surface-variant mb-6">Məntiq, İnformatika və Xarici dil üzrə qəbul imtahanı səviyyəsində suallar.</p>
+                <Link
+                  href="/exams"
+                  className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                >
+                  Sınaqlara bax
                 </Link>
               </div>
 
-              {/* TOEFL */}
-              <div className="tc-card p-7 hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between bg-primary-mid border-primary-mid">
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-white">
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>public</span>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest bg-white/15 text-white px-3 py-1 rounded-full">iBT</span>
+              {/* Category 3 */}
+              <div className="group relative bg-surface-container-lowest p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <UserSearch size={28} />
                   </div>
-                  <h3 className="text-xl font-bold mb-2 font-headline text-white">TOEFL iBT</h3>
-                  <p className="text-white/70 text-sm mb-5 leading-relaxed">Full Academic English proficiency evaluation with integrated skills.</p>
+                  <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">18 Sınaq</span>
                 </div>
-                <Link href="/exams?type=toefl" className="inline-flex items-center gap-1.5 text-white font-bold text-sm group-hover:gap-3 transition-all">
-                  View exams <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                <h4 className="text-xl font-headline font-bold text-primary mb-2">Müəllimlərin İşə Qəbulu</h4>
+                <p className="text-sm text-on-surface-variant mb-6">İxtisas, metodika və pedaqogika üzrə ən son çərçivəyə uyğun imtahanlar.</p>
+                <Link
+                  href="/exams"
+                  className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                >
+                  Sınaqlara bax
                 </Link>
               </div>
-
-              {/* DIM */}
-              <div className="tc-card p-7 hover:shadow-md hover:-translate-y-0.5 transition-all group sm:col-span-2 flex flex-col sm:flex-row items-start sm:items-center gap-7">
-                <div className="flex-1">
-                  <div className="w-11 h-11 rounded-xl bg-tertiary-container flex items-center justify-center text-tertiary mb-5">
-                    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2 font-headline text-primary">DİM University Admission</h3>
-                  <p className="text-on-surface-variant text-sm mb-4 leading-relaxed">Block and graduation tests aligned with DİM curriculum for Groups I–IV.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-surface-container text-primary text-xs font-semibold rounded-full">Groups I–IV</span>
-                    <span className="px-3 py-1 bg-surface-container text-primary text-xs font-semibold rounded-full">Graduation</span>
-                    <span className="px-3 py-1 bg-surface-container text-primary text-xs font-semibold rounded-full">Block</span>
-                  </div>
-                </div>
-                <img
-                  alt="Exam writing"
-                  className="w-full sm:w-48 h-36 object-cover rounded-xl shrink-0"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1J279reGnnm-7SNXT2dUq9YGdYUGRp9k37_zaQ1IyldWERT6aZzOHsAi0GAQM2F6EAKZwGbirk3AhFuk-8dsdNF1xvFPBnUR0iFnHoLCaHRshfblr4sLgLr0ip1rE4drUFOE49B3j0zNmJZgDBEBe04RNul8Z85mV_PBuaiA-hE0xEzgYoag53Pt3BTotLvMxZO9HGmPQp3kgB2aKAUC4WbqfsDzUfmSWEMRYug2hJ3sUp8GQAFrkxnLvbHAqlmRPVUZpEPFbOkQE"
-                />
-              </div>
-
-              {/* GRE */}
-              <div className="tc-card p-7 hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="w-11 h-11 rounded-xl bg-tertiary-container flex items-center justify-center text-tertiary">
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest bg-surface-container px-3 py-1 rounded-full">Grad</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2 font-headline text-primary">GRE General</h3>
-                  <p className="text-on-surface-variant text-sm mb-5 leading-relaxed">Verbal, Quantitative, and Analytical Writing for graduate admissions.</p>
-                </div>
-                <Link href="/exams?type=gre" className="inline-flex items-center gap-1.5 text-tertiary font-bold text-sm group-hover:gap-3 transition-all">
-                  View exams <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="text-center mt-10">
-              <Link href="/exams" className="tc-btn-primary inline-flex">
-                See all exams
-                <span className="material-symbols-outlined ml-2 text-[18px]">arrow_forward</span>
-              </Link>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="px-6 py-24 bg-surface-container-low" id="about">
+        {/* How It Works */}
+        <section className="py-24 bg-surface-container-low px-8 overflow-hidden">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="inline-block text-xs font-bold text-accent uppercase tracking-widest mb-3">WHY TEST CENTRE</span>
-              <h2 className="text-3xl lg:text-4xl font-extrabold font-headline text-primary mb-4">Everything you need to succeed</h2>
-              <p className="text-on-surface-variant max-w-xl mx-auto">We replicate the real exam experience so there are no surprises on test day.</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="tc-card p-8 flex flex-col items-start gap-5">
-                <div className="w-12 h-12 rounded-xl bg-accent-container flex items-center justify-center text-primary-mid">
-                  <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>timer</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+              {/* Left: image */}
+              <div className="order-2 lg:order-1 relative">
+                <div className="relative rounded-3xl overflow-hidden aspect-square shadow-2xl">
+                  <img
+                    className="w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4bXqXD-p4ExpfzUX2XYdDjBWpMs0WBASK_RwCAvgl4qAP5xR0wgkvSVsei6PYKpaoSpG7lB4I1n6ESjg29QydEtmtq7g8uqxv3IQIw791XuI_P_AS5tWzpxlsmG5fkSHbFn9TPnqbRfu7LuU4j-1yRR3x4UYes36tXD3AJlgVuYOAILvtAWlP-_phz7Z6UGl31aoAyTr5enYXIiB_hOGJ2dNL_tPMeBDimAnttDj1h35HSKJFfuXQtn90Ow3PlkNaNnbHkdYZCVVZ"
+                    alt="Tələbələr birgə oxuyur"
+                  />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold mb-2 font-headline text-primary">Real Exam Environment</h3>
-                  <p className="text-on-surface-variant text-sm leading-relaxed">Strict timer, official interface, and exam conditions so you know exactly what to expect.</p>
-                </div>
-              </div>
-              <div className="tc-card p-8 flex flex-col items-start gap-5">
-                <div className="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center text-secondary">
-                  <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold mb-2 font-headline text-primary">Instant Results</h3>
-                  <p className="text-on-surface-variant text-sm leading-relaxed">Get your score the moment you finish. No waiting — just immediate, detailed feedback.</p>
+                <div className="absolute -right-8 top-1/2 -translate-y-1/2">
+                  <div className="bg-surface-container-lowest p-4 rounded-2xl shadow-lg border border-outline-variant/20 flex items-center gap-4 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+                      <TrendingUp className="text-error" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-on-surface-variant">Sürətli Artım</p>
+                      <p className="text-sm font-bold text-primary">+15% Nəticə</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="tc-card p-8 flex flex-col items-start gap-5">
-                <div className="w-12 h-12 rounded-xl bg-tertiary-container flex items-center justify-center text-tertiary">
-                  <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold mb-2 font-headline text-primary">Deep Analytics</h3>
-                  <p className="text-on-surface-variant text-sm leading-relaxed">See your performance by topic and skill. Know exactly where to focus your study time.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Pricing Section */}
-        <section className="px-6 py-24 bg-surface" id="pricing">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="inline-block text-xs font-bold text-accent uppercase tracking-widest mb-3">PRICING</span>
-              <h2 className="text-3xl lg:text-4xl font-extrabold font-headline text-primary mb-4">Simple, transparent pricing</h2>
-              <p className="text-on-surface-variant max-w-xl mx-auto">Pay only for what you need. No subscriptions, no hidden fees.</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8 items-start">
-              <div className="tc-card p-8 flex flex-col">
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Single Access</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-black text-primary">8+ AZN</span>
-                  <span className="text-sm text-on-surface-variant ml-2">/ exam</span>
+              {/* Right: steps */}
+              <div className="order-1 lg:order-2">
+                <h2 className="text-4xl font-headline font-extrabold text-primary mb-12">Necə işləyirik?</h2>
+                <div className="space-y-10">
+                  {[
+                    {
+                      step: "1",
+                      title: "Qeydiyyatdan keçin",
+                      desc: "Cəmi 30 saniyə ərzində öz profilinizi yaradın və hədəflərinizi təyin edin.",
+                    },
+                    {
+                      step: "2",
+                      title: "Sınağı seçin",
+                      desc: "Kataloqdan sizə uyğun olan sınağı seçin və real imtahan mühitinə daxil olun.",
+                    },
+                    {
+                      step: "3",
+                      title: "Nəticələri təhlil edin",
+                      desc: "İmtahan bitdikdən dərhal sonra ətraflı hesabatı alın və səhvləriniz üzərində işləyin.",
+                    },
+                  ].map(({ step, title, desc }) => (
+                    <div key={step} className="flex gap-6 group">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full editorial-gradient text-white flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform">
+                        {step}
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-headline font-bold text-primary mb-2">{title}</h4>
+                        <p className="text-on-surface-variant">{desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <ul className="space-y-3 mb-8 flex-1 text-sm text-on-surface-variant">
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    1 full mock exam
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Unlimited retakes
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Detailed score report
-                  </li>
-                </ul>
-                <Link href="/exams" className="w-full flex justify-center py-3 border-2 border-primary-mid text-primary-mid rounded-xl font-bold hover:bg-accent-container transition-colors">
-                  Browse Exams
-                </Link>
-              </div>
-
-              <div className="tc-card p-8 flex flex-col relative overflow-hidden ring-2 ring-primary-mid shadow-lg shadow-primary-mid/10">
-                <div className="absolute top-4 right-4 bg-accent text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">
-                  Best Value
-                </div>
-                <p className="text-xs font-bold text-accent uppercase tracking-widest mb-4">5-Exam Bundle</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-black text-primary">35 AZN</span>
-                  <span className="text-sm text-on-surface-variant ml-2">/ 5 exams</span>
-                </div>
-                <ul className="space-y-3 mb-8 flex-1 text-sm text-on-surface-variant">
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Any 5 mock exams
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Unlimited retakes
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Full result history
-                  </li>
-                </ul>
-                <Link href="/exams" className="w-full flex justify-center py-3 tc-gradient text-white rounded-xl font-bold hover:opacity-90 transition-opacity">
-                  Get Bundle
-                </Link>
-              </div>
-
-              <div className="tc-card p-8 flex flex-col">
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Institution</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-black text-primary">Custom</span>
-                </div>
-                <ul className="space-y-3 mb-8 flex-1 text-sm text-on-surface-variant">
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Corporate dashboard
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Unlimited students
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-accent text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Analytics & reporting
-                  </li>
-                </ul>
-                <button className="w-full py-3 border-2 border-outline text-on-surface-variant rounded-xl font-bold hover:border-primary-mid hover:text-primary-mid transition-colors">
-                  Contact Us
-                </button>
+                {!isSignedIn ? (
+                  <SignUpButton mode="modal">
+                    <button className="mt-12 px-8 py-4 editorial-gradient text-white rounded-full font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all">
+                      İndi sınağa başla
+                    </button>
+                  </SignUpButton>
+                ) : (
+                  <Link
+                    href="/exams"
+                    className="mt-12 inline-block px-8 py-4 editorial-gradient text-white rounded-full font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all"
+                  >
+                    İndi sınağa başla
+                  </Link>
+                )}
               </div>
             </div>
           </div>
         </section>
 
-        {/* CTA Banner */}
-        <section className="px-6 py-20 tc-gradient-hero">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl lg:text-4xl font-extrabold font-headline text-white mb-4">Ready to start practising?</h2>
-            <p className="text-white/70 text-lg mb-8">Join thousands of students who improved their scores with Test Centre.</p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/exams" className="tc-btn-primary text-base px-8 py-3.5 shadow-lg shadow-accent/30">
-                Browse Exams
-              </Link>
-              {!isSignedIn && (
-                <SignUpButton mode="modal">
-                  <button className="px-8 py-3.5 bg-white/10 text-white rounded-lg font-bold text-base border border-white/20 hover:bg-white/20 transition-colors">
-                    Sign Up Free
-                  </button>
-                </SignUpButton>
-              )}
+        {/* CTA Section */}
+        <section className="py-24 bg-surface px-8" id="elaqe">
+          <div className="max-w-5xl mx-auto editorial-gradient rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+              <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+              <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary-container rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
+            </div>
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-5xl font-headline font-extrabold text-white mb-8 leading-tight">
+                Uğur yolunda ilk addımı <br />bu gün atın
+              </h2>
+              <p className="text-primary-fixed text-lg mb-12 max-w-2xl mx-auto opacity-90">
+                Sizin müvəffəqiyyətiniz bizim əsas məqsədimizdir. Test Centre ilə hazırlıq fərqini hiss edin.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                {!isSignedIn ? (
+                  <SignUpButton mode="modal">
+                    <button className="bg-surface-container-lowest text-primary px-10 py-4 rounded-full font-bold text-lg hover:bg-secondary-fixed transition-colors">
+                      Pulsuz sınaqla başla
+                    </button>
+                  </SignUpButton>
+                ) : (
+                  <Link href="/dashboard" className="bg-surface-container-lowest text-primary px-10 py-4 rounded-full font-bold text-lg hover:bg-secondary-fixed transition-colors">
+                    Kabinetə keç
+                  </Link>
+                )}
+                <Link
+                  href="/exams"
+                  className="bg-transparent border-2 border-primary-fixed text-primary-fixed px-10 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-colors"
+                >
+                  Sınaqlarla tanış ol
+                </Link>
+              </div>
             </div>
           </div>
         </section>
