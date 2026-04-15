@@ -1,148 +1,71 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  Plus, Pencil, Trash2, ToggleLeft, ToggleRight,
-  BookOpen, Search, RefreshCw,
-} from 'lucide-react';
+import { BookOpen, Plus } from 'lucide-react';
+import dbConnect from '@/lib/mongodb';
+import ExamModel from '@/lib/models/Exam';
+import ExamSearch from './ExamSearch';
+import ExamRowActions from './ExamRowActions';
 
-interface Exam {
-  _id: string;
-  examId: string;
-  title: string;
-  type: string;
-  tag: string;
-  price: number;
-  durationMinutes: number;
-  totalQuestions: number;
-  isActive: boolean;
-  createdAt: string;
-}
+export const metadata = { title: 'İmtahanlar — Admin' };
 
 const TYPE_COLORS: Record<string, string> = {
-  sat: 'bg-blue-100 text-blue-700',
+  sat:   'bg-blue-100 text-blue-700',
   ielts: 'bg-green-100 text-green-700',
   toefl: 'bg-purple-100 text-purple-700',
-  dim: 'bg-orange-100 text-orange-700',
-  gre: 'bg-rose-100 text-rose-700',
+  dim:   'bg-orange-100 text-orange-700',
+  gre:   'bg-rose-100 text-rose-700',
 };
 
-export default function AdminExamsPage() {
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+interface Props {
+  searchParams: Promise<{ q?: string }>;
+}
 
-  const load = () => {
-    setLoading(true);
-    fetch('/api/admin/exams')
-      .then((r) => r.json())
-      .then((d) => setExams(d.exams ?? []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  };
+export default async function AdminExamsPage({ searchParams }: Props) {
+  const { q = '' } = await searchParams;
 
-  useEffect(() => { load(); }, []);
-
-  const handleDelete = async (examId: string) => {
-    if (!confirm(`"${examId}" imtahanını silmək istəyirsiniz?`)) return;
-    setDeletingId(examId);
-    try {
-      await fetch(`/api/admin/exams/${examId}`, { method: 'DELETE' });
-      setExams((prev) => prev.filter((e) => e.examId !== examId));
-    } catch {
-      alert('Silmə zamanı xəta baş verdi.');
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const handleToggle = async (exam: Exam) => {
-    setTogglingId(exam.examId);
-    try {
-      const res = await fetch(`/api/admin/exams/${exam.examId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !exam.isActive }),
-      });
-      const data = await res.json();
-      setExams((prev) =>
-        prev.map((e) => (e.examId === exam.examId ? { ...e, isActive: data.exam.isActive } : e))
-      );
-    } catch {
-      alert('Yeniləmə zamanı xəta baş verdi.');
-    } finally {
-      setTogglingId(null);
-    }
-  };
-
-  const filtered = exams.filter((e) =>
-    e.title.toLowerCase().includes(search.toLowerCase()) ||
-    e.examId.toLowerCase().includes(search.toLowerCase()) ||
-    e.type.toLowerCase().includes(search.toLowerCase())
-  );
+  await dbConnect();
+  const query = q
+    ? {
+        $or: [
+          { examId: { $regex: q, $options: 'i' } },
+          { title: { $regex: q, $options: 'i' } },
+          { type: { $regex: q, $options: 'i' } },
+        ],
+      }
+    : {};
+  const exams = await ExamModel.find(query).sort({ createdAt: -1 }).lean();
+  const activeCount = exams.filter((e) => e.isActive).length;
 
   return (
     <div>
-      {/* Header */}
       <header className="mb-8 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">
             İmtahanlar
           </h1>
           <p className="text-on-surface-variant font-medium text-sm">
-            {exams.length} imtahan · {exams.filter((e) => e.isActive).length} aktiv
+            {exams.length} imtahan · {activeCount} aktiv
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={load}
-            className="p-2.5 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors"
-            title="Yenilə"
-          >
-            <RefreshCw size={18} />
-          </button>
-          <Link
-            href="/admin/exams/new"
-            className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm"
-          >
-            <Plus size={16} />
-            Yeni İmtahan
-          </Link>
-        </div>
+        <Link
+          href="/admin/exams/new"
+          className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm"
+        >
+          <Plus size={16} /> Yeni İmtahan
+        </Link>
       </header>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-        <input
-          type="text"
-          placeholder="İmtahan axtar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-11 pr-4 py-3 bg-white border border-outline-variant/40 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-secondary/40 text-on-surface placeholder:text-on-surface-variant"
-        />
-      </div>
+      {/* Search (client component — updates URL) */}
+      <ExamSearch defaultValue={q} />
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-outline-variant/40 overflow-hidden shadow-sm">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
+        {exams.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
             <BookOpen className="text-outline mb-3" size={40} />
             <p className="text-sm font-semibold text-primary mb-1">
-              {search ? 'Nəticə tapılmadı' : 'İmtahan yoxdur'}
+              {q ? 'Nəticə tapılmadı' : 'İmtahan yoxdur'}
             </p>
-            {!search && (
-              <Link
-                href="/admin/exams/new"
-                className="mt-3 text-sm font-bold text-secondary hover:underline"
-              >
+            {!q && (
+              <Link href="/admin/exams/new" className="mt-3 text-sm font-bold text-secondary hover:underline">
                 İlk imtahanı əlavə et →
               </Link>
             )}
@@ -163,17 +86,10 @@ export default function AdminExamsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
-                {filtered.map((exam) => (
-                  <tr
-                    key={exam.examId}
-                    className="hover:bg-surface-container-low/60 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">
-                      {exam.examId}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-primary text-sm">{exam.title}</span>
-                    </td>
+                {exams.map((exam) => (
+                  <tr key={exam.examId} className="hover:bg-surface-container-low/60 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{exam.examId}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-primary">{exam.title}</td>
                     <td className="px-6 py-4">
                       <span
                         className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
@@ -183,53 +99,19 @@ export default function AdminExamsPage() {
                         {exam.tag}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-primary">
-                      {exam.price} ₼
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">
-                      {exam.durationMinutes} dəq
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">
-                      {exam.totalQuestions}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleToggle(exam)}
-                        disabled={togglingId === exam.examId}
-                        className="flex items-center gap-1.5 text-xs font-bold transition-colors disabled:opacity-50"
-                        title={exam.isActive ? 'Deaktiv et' : 'Aktiv et'}
-                      >
-                        {exam.isActive ? (
-                          <>
-                            <ToggleRight size={18} className="text-emerald-600" />
-                            <span className="text-emerald-700">Aktiv</span>
-                          </>
-                        ) : (
-                          <>
-                            <ToggleLeft size={18} className="text-on-surface-variant" />
-                            <span className="text-on-surface-variant">Deaktiv</span>
-                          </>
-                        )}
-                      </button>
+                    <td className="px-6 py-4 text-sm font-bold text-primary">{exam.price} ₼</td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{exam.durationMinutes} dəq</td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{exam.totalQuestions}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {exam.isActive ? (
+                        <span className="text-emerald-700 font-bold">Aktiv</span>
+                      ) : (
+                        <span className="text-on-surface-variant">Deaktiv</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/admin/exams/${exam.examId}/edit`}
-                          className="p-2 rounded-lg hover:bg-secondary/10 text-secondary transition-colors"
-                          title="Düzəliş et"
-                        >
-                          <Pencil size={15} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(exam.examId)}
-                          disabled={deletingId === exam.examId}
-                          className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50"
-                          title="Sil"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
+                      {/* Client component handles toggle + delete */}
+                      <ExamRowActions examId={exam.examId} isActive={exam.isActive} />
                     </td>
                   </tr>
                 ))}

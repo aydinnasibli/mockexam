@@ -1,122 +1,61 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X, Save, Loader2 } from 'lucide-react';
-
-export type ExamFormData = {
-  examId: string;
-  title: string;
-  type: string;
-  description: string;
-  tag: string;
-  price: string;
-  durationMinutes: string;
-  totalQuestions: string;
-  features: string[];
-  isActive: boolean;
-};
+import { createExam, updateExam, type ActionResult } from '@/lib/actions/admin';
 
 const EXAM_TYPES = [
-  { value: 'sat', label: 'SAT' },
+  { value: 'sat',   label: 'SAT' },
   { value: 'ielts', label: 'IELTS' },
   { value: 'toefl', label: 'TOEFL' },
-  { value: 'dim', label: 'DİM' },
-  { value: 'gre', label: 'GRE' },
+  { value: 'dim',   label: 'DİM' },
+  { value: 'gre',   label: 'GRE' },
 ];
-
-const defaultForm: ExamFormData = {
-  examId: '',
-  title: '',
-  type: 'sat',
-  description: '',
-  tag: 'SAT',
-  price: '',
-  durationMinutes: '',
-  totalQuestions: '',
-  features: [''],
-  isActive: true,
-};
 
 interface ExamFormProps {
   mode: 'create' | 'edit';
-  initialData?: Partial<ExamFormData>;
-  examId?: string; // for edit mode URL
+  examId?: string;
+  defaultValues?: {
+    title?: string;
+    type?: string;
+    description?: string;
+    tag?: string;
+    price?: number;
+    durationMinutes?: number;
+    totalQuestions?: number;
+    features?: string[];
+    isActive?: boolean;
+  };
 }
 
-export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
+const initialState: ActionResult = {};
+
+export default function ExamForm({ mode, examId, defaultValues }: ExamFormProps) {
   const router = useRouter();
-  const [form, setForm] = useState<ExamFormData>({ ...defaultForm, ...initialData });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const set = (field: keyof ExamFormData, value: string | boolean | string[]) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  // Bind the examId for edit mode so the action receives it as first arg
+  const action = mode === 'edit' && examId
+    ? updateExam.bind(null, examId)
+    : createExam;
 
-  const setFeature = (index: number, value: string) => {
-    setForm((prev) => {
-      const updated = [...prev.features];
-      updated[index] = value;
-      return { ...prev, features: updated };
-    });
-  };
+  const [state, formAction, pending] = useActionState(action, initialState);
 
-  const addFeature = () => setForm((prev) => ({ ...prev, features: [...prev.features, ''] }));
+  // Features need local state because they're dynamically added/removed
+  const [features, setFeatures] = useState<string[]>(
+    defaultValues?.features?.length ? defaultValues.features : ['']
+  );
 
-  const removeFeature = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    const payload = {
-      ...form,
-      price: parseFloat(form.price),
-      durationMinutes: parseInt(form.durationMinutes, 10),
-      totalQuestions: parseInt(form.totalQuestions, 10),
-      features: form.features.filter((f) => f.trim()),
-    };
-
-    try {
-      const url =
-        mode === 'create'
-          ? '/api/admin/exams'
-          : `/api/admin/exams/${examId}`;
-      const method = mode === 'create' ? 'POST' : 'PATCH';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? 'Xəta baş verdi.');
-        return;
-      }
-
-      router.push('/admin/exams');
-      router.refresh();
-    } catch {
-      setError('Şəbəkə xətası baş verdi.');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const addFeature    = () => setFeatures((f) => [...f, '']);
+  const removeFeature = (i: number) => setFeatures((f) => f.filter((_, idx) => idx !== i));
+  const setFeature    = (i: number, v: string) =>
+    setFeatures((f) => { const n = [...f]; n[i] = v; return n; });
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
-          {error}
+    <form action={formAction} className="max-w-3xl space-y-6">
+      {state.error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
+          {state.error}
         </div>
       )}
 
@@ -128,8 +67,8 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
           <Field label="İmtahan ID *" hint="URL-safe, unikal (məs. sat-mock-4)">
             <input
               type="text"
-              value={form.examId}
-              onChange={(e) => set('examId', e.target.value)}
+              name="examId"
+              defaultValue={defaultValues ? examId : ''}
               placeholder="sat-mock-4"
               required
               disabled={mode === 'edit'}
@@ -138,16 +77,7 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
           </Field>
 
           <Field label="Növ *">
-            <select
-              value={form.type}
-              onChange={(e) => {
-                const t = e.target.value;
-                set('type', t);
-                set('tag', t.toUpperCase().replace('dim', 'DİM'));
-              }}
-              className="input-field"
-              required
-            >
+            <select name="type" defaultValue={defaultValues?.type ?? 'sat'} className="input-field" required>
               {EXAM_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
@@ -157,8 +87,8 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
           <Field label="Başlıq *" className="sm:col-span-2">
             <input
               type="text"
-              value={form.title}
-              onChange={(e) => set('title', e.target.value)}
+              name="title"
+              defaultValue={defaultValues?.title ?? ''}
               placeholder="Digital SAT Full Mock #4"
               required
               className="input-field"
@@ -168,8 +98,8 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
           <Field label="Etiket (Tag) *">
             <input
               type="text"
-              value={form.tag}
-              onChange={(e) => set('tag', e.target.value)}
+              name="tag"
+              defaultValue={defaultValues?.tag ?? ''}
               placeholder="SAT"
               required
               className="input-field"
@@ -177,11 +107,12 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
           </Field>
 
           <Field label="Status">
-            <label className="flex items-center gap-3 h-11 cursor-pointer">
+            <label className="flex items-center gap-3 h-11 cursor-pointer select-none">
               <input
                 type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => set('isActive', e.target.checked)}
+                name="isActive"
+                value="true"
+                defaultChecked={defaultValues?.isActive !== false}
                 className="w-4 h-4 accent-secondary"
               />
               <span className="text-sm font-medium text-on-surface">
@@ -198,36 +129,23 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <Field label="Qiymət (₼) *">
             <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.price}
-              onChange={(e) => set('price', e.target.value)}
-              placeholder="12"
-              required
-              className="input-field"
+              type="number" name="price" min="0" step="0.01"
+              defaultValue={defaultValues?.price ?? ''}
+              placeholder="12" required className="input-field"
             />
           </Field>
-          <Field label="Müddət (dəqiqə) *">
+          <Field label="Müddət (dəq) *">
             <input
-              type="number"
-              min="1"
-              value={form.durationMinutes}
-              onChange={(e) => set('durationMinutes', e.target.value)}
-              placeholder="134"
-              required
-              className="input-field"
+              type="number" name="durationMinutes" min="1"
+              defaultValue={defaultValues?.durationMinutes ?? ''}
+              placeholder="134" required className="input-field"
             />
           </Field>
           <Field label="Sual sayı *">
             <input
-              type="number"
-              min="1"
-              value={form.totalQuestions}
-              onChange={(e) => set('totalQuestions', e.target.value)}
-              placeholder="98"
-              required
-              className="input-field"
+              type="number" name="totalQuestions" min="1"
+              defaultValue={defaultValues?.totalQuestions ?? ''}
+              placeholder="98" required className="input-field"
             />
           </Field>
         </div>
@@ -237,8 +155,8 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
       <div className="bg-white rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
         <h2 className="text-lg font-bold text-primary font-headline mb-5">Təsvir</h2>
         <textarea
-          value={form.description}
-          onChange={(e) => set('description', e.target.value)}
+          name="description"
+          defaultValue={defaultValues?.description ?? ''}
           rows={4}
           placeholder="İmtahan haqqında ətraflı məlumat..."
           required
@@ -251,24 +169,25 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-lg font-bold text-primary font-headline">Xüsusiyyətlər</h2>
           <button
-            type="button"
-            onClick={addFeature}
+            type="button" onClick={addFeature}
             className="flex items-center gap-1.5 text-sm font-bold text-secondary hover:underline"
           >
             <Plus size={14} /> Əlavə et
           </button>
         </div>
         <div className="space-y-3">
-          {form.features.map((f, i) => (
+          {features.map((f, i) => (
             <div key={i} className="flex gap-3">
+              {/* All feature inputs share name="features"; FormData.getAll('features') collects them */}
               <input
                 type="text"
+                name="features"
                 value={f}
                 onChange={(e) => setFeature(i, e.target.value)}
                 placeholder={`Xüsusiyyət ${i + 1}`}
                 className="input-field flex-1"
               />
-              {form.features.length > 1 && (
+              {features.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeFeature(i)}
@@ -286,10 +205,10 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={pending}
           className="editorial-gradient text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity disabled:opacity-60"
         >
-          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          {pending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
           {mode === 'create' ? 'İmtahan Yarat' : 'Dəyişiklikləri Saxla'}
         </button>
         <button
@@ -305,15 +224,9 @@ export default function ExamForm({ mode, initialData, examId }: ExamFormProps) {
 }
 
 function Field({
-  label,
-  hint,
-  className,
-  children,
+  label, hint, className, children,
 }: {
-  label: string;
-  hint?: string;
-  className?: string;
-  children: React.ReactNode;
+  label: string; hint?: string; className?: string; children: React.ReactNode;
 }) {
   return (
     <div className={className}>

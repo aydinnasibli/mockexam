@@ -16,21 +16,7 @@ export default async function EditExamPage({ params }: Props) {
 
   await dbConnect();
   const exam = await ExamModel.findOne({ examId: id }).lean();
-
   if (!exam) notFound();
-
-  const initialData = {
-    examId: exam.examId,
-    title: exam.title,
-    type: exam.type,
-    description: exam.description,
-    tag: exam.tag,
-    price: String(exam.price),
-    durationMinutes: String(exam.durationMinutes),
-    totalQuestions: String(exam.totalQuestions),
-    features: exam.features.length > 0 ? exam.features : [''],
-    isActive: exam.isActive,
-  };
 
   return (
     <div>
@@ -46,7 +32,21 @@ export default async function EditExamPage({ params }: Props) {
         İmtahanı Düzəlt
       </h1>
       <p className="text-on-surface-variant text-sm mb-8 font-mono">{id}</p>
-      <ExamForm mode="edit" initialData={initialData} examId={id} />
+      <ExamForm
+        mode="edit"
+        examId={id}
+        defaultValues={{
+          title: exam.title,
+          type: exam.type,
+          description: exam.description,
+          tag: exam.tag,
+          price: exam.price,
+          durationMinutes: exam.durationMinutes,
+          totalQuestions: exam.totalQuestions,
+          features: exam.features.length > 0 ? exam.features : [''],
+          isActive: exam.isActive,
+        }}
+      />
     </div>
   );
 }
