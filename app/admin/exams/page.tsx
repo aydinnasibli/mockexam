@@ -19,16 +19,22 @@ interface Props {
   searchParams: Promise<{ q?: string }>;
 }
 
+/** Escape all regex special characters so user input is treated as a literal string. */
+function escapeRegex(str: string) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export default async function AdminExamsPage({ searchParams }: Props) {
   const { q = '' } = await searchParams;
+  const safeQ = q.slice(0, 100); // cap length too
 
   await dbConnect();
-  const query = q
+  const query = safeQ
     ? {
         $or: [
-          { examId: { $regex: q, $options: 'i' } },
-          { title: { $regex: q, $options: 'i' } },
-          { type: { $regex: q, $options: 'i' } },
+          { examId: { $regex: escapeRegex(safeQ), $options: 'i' } },
+          { title: { $regex: escapeRegex(safeQ), $options: 'i' } },
+          { type: { $regex: escapeRegex(safeQ), $options: 'i' } },
         ],
       }
     : {};

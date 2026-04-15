@@ -14,6 +14,28 @@ async function requireAdmin() {
   if (!isAdmin(userId)) throw new Error('Forbidden');
 }
 
+/** Validates and returns a safe examId, or returns an error string. */
+const EXAM_ID_RE = /^[a-z0-9-]{1,64}$/;
+function validateExamId(raw: string): string | { error: string } {
+  if (!EXAM_ID_RE.test(raw)) {
+    return { error: 'ID yalnız kiçik hərf, rəqəm və tire (-) içərə bilər (maks. 64 simvol).' };
+  }
+  return raw;
+}
+
+/** Validates bounds on numeric exam fields. Returns an error string or undefined. */
+function validateNumericFields(price: number, durationMinutes: number, totalQuestions: number): string | undefined {
+  if (isNaN(price) || price < 0 || price > 10_000)
+    return 'Qiymət 0 ilə 10 000 arasında olmalıdır.';
+  if (isNaN(durationMinutes) || durationMinutes < 1 || durationMinutes > 1440)
+    return 'Müddət 1 ilə 1440 dəqiqə arasında olmalıdır.';
+  if (isNaN(totalQuestions) || totalQuestions < 1 || totalQuestions > 1000)
+    return 'Sual sayı 1 ilə 1000 arasında olmalıdır.';
+  return undefined;
+}
+
+const VALID_TYPES = new Set(['sat', 'ielts', 'toefl', 'dim', 'gre']);
+
 // ─── Exam Actions ─────────────────────────────────────────────────────────────
 
 export type ActionResult = { error?: string };
@@ -28,7 +50,7 @@ export async function createExam(
 ): Promise<ActionResult> {
   await requireAdmin();
 
-  const examId        = (formData.get('examId') as string)?.trim();
+  const rawExamId     = (formData.get('examId') as string)?.trim() ?? '';
   const title         = (formData.get('title') as string)?.trim();
   const type          = formData.get('type') as string;
   const description   = (formData.get('description') as string)?.trim();
@@ -36,12 +58,20 @@ export async function createExam(
   const price         = parseFloat(formData.get('price') as string);
   const durationMinutes = parseInt(formData.get('durationMinutes') as string, 10);
   const totalQuestions  = parseInt(formData.get('totalQuestions') as string, 10);
-  const features      = (formData.getAll('features') as string[]).filter((f) => f.trim());
+  const features      = (formData.getAll('features') as string[]).filter((f) => f.trim()).slice(0, 20);
   const isActive      = formData.get('isActive') === 'true';
 
-  if (!examId || !title || !type || !description || !tag || isNaN(price) || isNaN(durationMinutes) || isNaN(totalQuestions)) {
+  if (!rawExamId || !title || !type || !description || !tag) {
     return { error: 'Bütün tələb olunan sahələri doldurun.' };
   }
+  const examIdResult = validateExamId(rawExamId);
+  if (typeof examIdResult === 'object') return examIdResult;
+  const examId = examIdResult;
+
+  if (!VALID_TYPES.has(type)) return { error: 'Yanlış imtahan növü.' };
+
+  const numericError = validateNumericFields(price, durationMinutes, totalQuestions);
+  if (numericError) return { error: numericError };
 
   try {
     await dbConnect();
@@ -76,12 +106,16 @@ export async function updateExam(
   const price           = parseFloat(formData.get('price') as string);
   const durationMinutes = parseInt(formData.get('durationMinutes') as string, 10);
   const totalQuestions  = parseInt(formData.get('totalQuestions') as string, 10);
-  const features        = (formData.getAll('features') as string[]).filter((f) => f.trim());
+  const features        = (formData.getAll('features') as string[]).filter((f) => f.trim()).slice(0, 20);
   const isActive        = formData.get('isActive') === 'true';
 
-  if (!title || !type || !description || !tag || isNaN(price) || isNaN(durationMinutes) || isNaN(totalQuestions)) {
+  if (!title || !type || !description || !tag) {
     return { error: 'Bütün tələb olunan sahələri doldurun.' };
   }
+  if (!VALID_TYPES.has(type)) return { error: 'Yanlış imtahan növü.' };
+
+  const numericError = validateNumericFields(price, durationMinutes, totalQuestions);
+  if (numericError) return { error: numericError };
 
   try {
     await dbConnect();
