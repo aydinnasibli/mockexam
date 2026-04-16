@@ -1,6 +1,7 @@
 // Client-safe constants — no Mongoose imports
 
 export const MODULE_TYPES = [
+  { value: 'rw',           label: 'Reading & Writing (SAT)' },
   { value: 'reading',      label: 'Reading' },
   { value: 'writing',      label: 'Writing' },
   { value: 'listening',    label: 'Listening' },
