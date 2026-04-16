@@ -28,15 +28,15 @@ const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
 const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
   sat: {
     tag: 'SAT',
-    description: 'Digital SAT tam mock imtahanı. Reading & Writing (2 adaptiv modul, 54 sual) + Math (2 adaptiv modul, 44 sual). ETS formatına uyğun.',
+    description: 'Digital SAT tam mock imtahanı (College Board, 2024 format). Reading & Writing: 2 adaptiv modul × 27 sual × 32 dəq (54 sual). Math: 2 adaptiv modul × 22 sual × 35 dəq (44 sual). Cəmi: 98 sual, 134 dəq test vaxtı + 10 dəq fasilə.',
   },
   ielts: {
     tag: 'IELTS',
-    description: 'IELTS Academic tam sınaq imtahanı. Listening (30 dəq, 40 sual) + Reading (60 dəq, 40 sual) + Writing (60 dəq, 2 tapşırıq) + Speaking (~14 dəq).',
+    description: 'IELTS Academic tam sınaq imtahanı. Listening (40 dəq, 40 sual) + Reading (60 dəq, 40 sual) + Writing (60 dəq, 2 tapşırıq) + Speaking (14 dəq). Ümumi: 80 sual, Band 0–9 sistemi.',
   },
   toefl: {
     tag: 'TOEFL',
-    description: 'TOEFL iBT tam mock imtahanı. Reading (35 dəq) + Listening (36 dəq) + Speaking (16 dəq) + Writing (29 dəq). ETS formatına uyğun.',
+    description: 'TOEFL iBT tam mock imtahanı (ETS, 2023 format). Reading (35 dəq, 20 sual) + Listening (36 dəq, 28 sual) + Speaking (16 dəq, 4 tapşırıq) + Writing (29 dəq, 2 tapşırıq). 10 dəq fasilə daxil. Bal: 0–120.',
   },
 };
 
@@ -45,23 +45,102 @@ const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
 type PresetModule = Omit<ParsedModule, never>;
 
 const EXAM_PRESETS: Record<string, PresetModule[]> = {
+  // Digital SAT (College Board, 2024 format)
+  // Section 1 – Reading & Writing: 2 adaptive modules × 27 questions × 32 min
+  // 10-min break between sections
+  // Section 2 – Math: 2 adaptive modules × 22 questions × 35 min
+  // Total test time: 134 min | With break: 144 min | Questions: 98
   sat: [
-    { name: 'Reading & Writing — Module 1', type: 'reading',  durationMinutes: 32, questions: 27, breakAfterMinutes: 0,  isAdaptive: false, instructions: 'Bu bölmədə 27 sual var. Hər sualın yalnız bir düzgün cavabı var.' },
-    { name: 'Reading & Writing — Module 2', type: 'reading',  durationMinutes: 32, questions: 27, breakAfterMinutes: 10, isAdaptive: true,  instructions: 'Adaptiv modul: çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən edilir.' },
-    { name: 'Math — Module 1',              type: 'math',     durationMinutes: 35, questions: 22, breakAfterMinutes: 0,  isAdaptive: false, instructions: '22 sualdan 4-ü açıq cavab formatındadır.' },
-    { name: 'Math — Module 2',              type: 'math',     durationMinutes: 35, questions: 22, breakAfterMinutes: 0,  isAdaptive: true,  instructions: 'Adaptiv modul: çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən edilir.' },
+    {
+      name: 'Reading & Writing — Module 1',
+      type: 'reading', durationMinutes: 32, questions: 27,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Reading & Writing bölməsi, 1-ci modul. 27 sual, 32 dəqiqə. Suallar 4 kateqoriyadan ibarətdir: Information & Ideas, Craft & Structure, Expression of Ideas, Standard English Conventions. Hər sualın yalnız bir düzgün cavabı var.',
+    },
+    {
+      name: 'Reading & Writing — Module 2',
+      type: 'reading', durationMinutes: 32, questions: 27,
+      breakAfterMinutes: 10, isAdaptive: true,
+      instructions: 'Reading & Writing bölməsi, 2-ci modul (adaptiv). 27 sual, 32 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən avtomatik müəyyən olunur (asan və ya çətin versiya). Bu moduldan sonra 10 dəqiqəlik fasilə başlayır.',
+    },
+    {
+      name: 'Math — Module 1',
+      type: 'math', durationMinutes: 35, questions: 22,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Math bölməsi, 1-ci modul. 22 sual, 35 dəqiqə. 17 sual çoxseçimli, 5 sual student-produced response (SPR) formatındadır. Sual kateqoriyaları: Algebra, Advanced Math, Problem-Solving & Data Analysis, Geometry & Trigonometry. Kalkulyator bütün suallar üçün icazəlidir.',
+    },
+    {
+      name: 'Math — Module 2',
+      type: 'math', durationMinutes: 35, questions: 22,
+      breakAfterMinutes: 0, isAdaptive: true,
+      instructions: 'Math bölməsi, 2-ci modul (adaptiv). 22 sual, 35 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən olunur. 17 çoxseçimli + 5 SPR sual. Kalkulyator icazəlidir.',
+    },
   ],
+
+  // IELTS Academic (British Council / IDP / Cambridge, current format)
+  // Listening: 30 min test + 10 min answer transfer = 40 min total, 40 questions
+  // Reading: 60 min, 40 questions (3 academic texts)
+  // Writing: 60 min, 2 tasks (Task 1: 150+ words / Task 2: 250+ words)
+  // Speaking: 11–14 min, 3 parts (usually on a separate day)
   ielts: [
-    { name: 'Listening', type: 'listening', durationMinutes: 30, questions: 40, breakAfterMinutes: 0, isAdaptive: false, instructions: '4 hissə, 40 sual. Hər cavab 1 bal.' },
-    { name: 'Reading',   type: 'reading',   durationMinutes: 60, questions: 40, breakAfterMinutes: 0, isAdaptive: false, instructions: '3 mətn, 40 sual. Academic version.' },
-    { name: 'Writing',   type: 'writing',   durationMinutes: 60, questions: 2,  breakAfterMinutes: 0, isAdaptive: false, instructions: 'Task 1: qrafik/diaqram (150+ söz). Task 2: esse (250+ söz).' },
-    { name: 'Speaking',  type: 'speaking',  durationMinutes: 14, questions: 0,  breakAfterMinutes: 0, isAdaptive: false, instructions: '3 hissə: Giriş/Müsahibə, Uzun nitq (cue card), Müzakirə.' },
+    {
+      name: 'Listening',
+      type: 'listening', durationMinutes: 40, questions: 40,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Listening: 30 dəqiqə audio + 10 dəqiqə cavabların köçürülməsi = 40 dəqiqə. 4 hissə, 40 sual: Part 1 (gündəlik sosial dialoq, 10 sual), Part 2 (ictimai mövzu monoloqu, 10 sual), Part 3 (akademik müzakirə, 10 sual), Part 4 (akademik mühazirə, 10 sual). Hər düzgün cavab 1 xam bal verir.',
+    },
+    {
+      name: 'Reading',
+      type: 'reading', durationMinutes: 60, questions: 40,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Academic Reading: 60 dəqiqə, 40 sual. 3 uzun akademik mətn (jurnallar, kitablar, qəzetlər). Sual növləri: Multiple choice, Matching headings, True/False/Not Given, Yes/No/Not Given, Matching information, Sentence completion, Short-answer. Fasilə yoxdur.',
+    },
+    {
+      name: 'Writing',
+      type: 'writing', durationMinutes: 60, questions: 2,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Academic Writing: 60 dəqiqə, 2 tapşırıq. Task 1 (~20 dəq, 150+ söz): qrafik, cədvəl, diaqram və ya xəritəni təsvir edin. Task 2 (~40 dəq, 250+ söz): arqumentli esse yazın. Task 2 balı daha ağır çəkiyə malikdir.',
+    },
+    {
+      name: 'Speaking',
+      type: 'speaking', durationMinutes: 14, questions: 0,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Speaking: 11–14 dəqiqə, ekzaminatorla canlı müsahibə. Part 1 (4–5 dəq): tanışlıq, gündəlik mövzular. Part 2 (3–4 dəq): cue card — 1 dəq hazırlıq + 2 dəq nitq. Part 3 (4–5 dəq): Part 2 mövzusu üzrə dərin müzakirə. Qiymətləndirilir: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.',
+    },
   ],
+
+  // TOEFL iBT (ETS, revised 2023 format)
+  // Reading: 35 min, 20 questions (2 passages × 10)
+  // Listening: 36 min, 28 questions (3 lectures×6 + 2 conversations×5)
+  // 10-min break
+  // Speaking: 16 min, 4 tasks (1 independent + 3 integrated)
+  // Writing: 29 min, 2 tasks (integrated 20 min + academic discussion 10 min)
+  // Total: ~2 hours
   toefl: [
-    { name: 'Reading',   type: 'reading',   durationMinutes: 35, questions: 20, breakAfterMinutes: 0,  isAdaptive: false, instructions: '2 akademik mətn, hər birindən 10 sual.' },
-    { name: 'Listening', type: 'listening', durationMinutes: 36, questions: 28, breakAfterMinutes: 10, isAdaptive: false, instructions: '3 lecture + 2 conversation. 10 dəqiqəlik fasilə bu bölmədən sonra.' },
-    { name: 'Speaking',  type: 'speaking',  durationMinutes: 16, questions: 4,  breakAfterMinutes: 0,  isAdaptive: false, instructions: '1 Independent + 3 Integrated tapşırıq.' },
-    { name: 'Writing',   type: 'writing',   durationMinutes: 29, questions: 2,  breakAfterMinutes: 0,  isAdaptive: false, instructions: '1 Integrated (20 dəq) + 1 Academic Discussion (10 dəq).' },
+    {
+      name: 'Reading',
+      type: 'reading', durationMinutes: 35, questions: 20,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Reading: 35 dəqiqə, 20 sual. 2 akademik mətn, hər birindən 10 sual. Sual növləri: Factual Information, Negative Factual, Inference, Rhetorical Purpose, Vocabulary, Reference, Sentence Simplification, Insert Text, Prose Summary, Fill in a Table.',
+    },
+    {
+      name: 'Listening',
+      type: 'listening', durationMinutes: 36, questions: 28,
+      breakAfterMinutes: 10, isAdaptive: false,
+      instructions: 'TOEFL Listening: 36 dəqiqə, 28 sual. 3 akademik mühazirə (hər birindən 6 sual = 18) + 2 kampus söhbəti (hər birindən 5 sual = 10). Bu bölmədən sonra 10 dəqiqəlik fasilə başlayır.',
+    },
+    {
+      name: 'Speaking',
+      type: 'speaking', durationMinutes: 16, questions: 4,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Speaking: 16 dəqiqə, 4 tapşırıq. Task 1 (Independent, 45 san cavab): şəxsi fikir. Task 2 (Campus Announcement, 60 san): oxu + dinlə + danış. Task 3 (Academic Reading & Lecture, 60 san): oxu + dinlə + danış. Task 4 (Academic Lecture, 60 san): dinlə + danış. AI tərəfindən qiymətləndirilir.',
+    },
+    {
+      name: 'Writing',
+      type: 'writing', durationMinutes: 29, questions: 2,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Writing: 29 dəqiqə, 2 tapşırıq. Integrated Writing (~20 dəq): passage oxu + lecture dinlə + 150–225 söz esse yaz. Academic Discussion (~10 dəq): onlayn akademik müzakirəyə 100+ söz cavab yaz. Hər iki tapşırıq AI + insan ekspert tərəfindən qiymətləndirilir.',
+    },
   ],
 };
 

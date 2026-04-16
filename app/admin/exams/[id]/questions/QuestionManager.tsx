@@ -71,11 +71,11 @@ const MATH_TEMPLATES = [
 function renderMath(text: string): string {
   // Replace $$...$$ (block) then $...$ (inline)
   return text
-    .replace(/\$\$(.+?)\$\$/gs, (_, expr) => {
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
       try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
       catch { return _; }
     })
-    .replace(/\$(.+?)\$/g, (_, expr) => {
+    .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
       try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
       catch { return _; }
     });
