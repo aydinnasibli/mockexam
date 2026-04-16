@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { saveExamResult } from '@/lib/actions/results';
 import { Timer, Flag, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 
@@ -48,17 +49,13 @@ export default function ExamSessionClient({ exam }: Props) {
     setShowConfirm(false);
     setSubmitError('');
     try {
-      const res = await fetch('/api/results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          examId: exam.id,
-          startedAt: startedAtRef.current.toISOString(),
-          durationSeconds: Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000),
-          score: 0, // placeholder — real scoring requires actual Q&A implementation
-        }),
+      const result = await saveExamResult({
+        examId: exam.id,
+        startedAt: startedAtRef.current.toISOString(),
+        durationSeconds: Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000),
+        score: 0,
       });
-      if (!res.ok) throw new Error('Göndərmə xətası');
+      if ('error' in result) throw new Error(result.error);
       router.push(`/analytics/${exam.id}`);
     } catch {
       setSubmitError('Nəticə göndərilmədi. Yenidən cəhd edin.');
