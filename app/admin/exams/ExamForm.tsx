@@ -28,15 +28,15 @@ const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
 const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
   sat: {
     tag: 'SAT',
-    description: 'Digital SAT tam mock imtahanı (College Board, 2024 format). Reading & Writing: 2 adaptiv modul × 27 sual × 32 dəq (54 sual). Math: 2 adaptiv modul × 22 sual × 35 dəq (44 sual). Cəmi: 98 sual, 134 dəq test vaxtı + 10 dəq fasilə.',
+    description: 'Digital SAT tam mock imtahanı (College Board, 2025–2026 format). Reading & Writing: 2 adaptiv modul × 27 sual × 32 dəq (54 sual). Math: 2 adaptiv modul × 22 sual × 35 dəq (44 sual). Cəmi: 98 sual, 134 dəq test vaxtı + 10 dəq fasilə. Desmos kalkulyator daxildir.',
   },
   ielts: {
     tag: 'IELTS',
-    description: 'IELTS Academic tam sınaq imtahanı. Listening (40 dəq, 40 sual) + Reading (60 dəq, 40 sual) + Writing (60 dəq, 2 tapşırıq) + Speaking (14 dəq). Ümumi: 80 sual, Band 0–9 sistemi.',
+    description: 'IELTS Academic tam sınaq imtahanı. Listening (30 dəq, 40 sual) + Reading (60 dəq, 40 sual) + Writing (60 dəq, 2 tapşırıq) + Speaking (11–14 dəq). Ümumi: 80 sual, Band 0–9 sistemi.',
   },
   toefl: {
     tag: 'TOEFL',
-    description: 'TOEFL iBT tam mock imtahanı (ETS, 2023 format). Reading (35 dəq, 20 sual) + Listening (36 dəq, 28 sual) + Speaking (16 dəq, 4 tapşırıq) + Writing (29 dəq, 2 tapşırıq). 10 dəq fasilə daxil. Bal: 0–120.',
+    description: 'TOEFL iBT tam mock imtahanı (ETS, 2026 format — yanvar 21, 2026-dan etibarən). Reading + Listening (adaptiv, çoxmərhələli) + Speaking (~8 dəq, 11 tapşırıq) + Writing (~17 dəq, 3 tapşırıq). Cəmi ~67–85 dəq. Bal: 1.0–6.0 band (+ 0–120 keçid dövrü).',
   },
 };
 
@@ -77,69 +77,78 @@ const EXAM_PRESETS: Record<string, PresetModule[]> = {
     },
   ],
 
-  // IELTS Academic (British Council / IDP / Cambridge, current format)
-  // Listening: 30 min test + 10 min answer transfer = 40 min total, 40 questions
+  // IELTS Academic (British Council / IDP / Cambridge, 2025–2026 format — unchanged)
+  // Listening: 30 min test (digital mock — no paper transfer time needed)
   // Reading: 60 min, 40 questions (3 academic texts)
-  // Writing: 60 min, 2 tasks (Task 1: 150+ words / Task 2: 250+ words)
-  // Speaking: 11–14 min, 3 parts (usually on a separate day)
+  // Writing: 60 min, 2 tasks
+  // Speaking: 11–14 min, 3 parts
   ielts: [
     {
       name: 'Listening',
-      type: 'listening', durationMinutes: 40, questions: 40,
+      type: 'listening', durationMinutes: 30, questions: 40,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Listening: 30 dəqiqə audio + 10 dəqiqə cavabların köçürülməsi = 40 dəqiqə. 4 hissə, 40 sual: Part 1 (gündəlik sosial dialoq, 10 sual), Part 2 (ictimai mövzu monoloqu, 10 sual), Part 3 (akademik müzakirə, 10 sual), Part 4 (akademik mühazirə, 10 sual). Hər düzgün cavab 1 xam bal verir.',
+      instructions: 'IELTS Listening: 30 dəqiqə, 40 sual. 4 hissə: Part 1 — gündəlik sosial dialoq (10 sual), Part 2 — ictimai mövzu monoloqu (10 sual), Part 3 — akademik müzakirə (10 sual), Part 4 — akademik mühazirə (10 sual). Sual növləri: Multiple choice, Form/note/table completion, Sentence completion, Short-answer. Hər düzgün cavab 1 xam bal verir.',
     },
     {
       name: 'Reading',
       type: 'reading', durationMinutes: 60, questions: 40,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Academic Reading: 60 dəqiqə, 40 sual. 3 uzun akademik mətn (jurnallar, kitablar, qəzetlər). Sual növləri: Multiple choice, Matching headings, True/False/Not Given, Yes/No/Not Given, Matching information, Sentence completion, Short-answer. Fasilə yoxdur.',
+      instructions: 'IELTS Academic Reading: 60 dəqiqə, 40 sual. 3 uzun akademik mətn (jurnallar, kitablar, qəzetlər). Sual növləri: Multiple choice, Matching headings, True/False/Not Given, Yes/No/Not Given, Matching information, Sentence completion, Short-answer. Fasilə yoxdur, vaxtı özünüz bölün.',
     },
     {
       name: 'Writing',
       type: 'writing', durationMinutes: 60, questions: 2,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Academic Writing: 60 dəqiqə, 2 tapşırıq. Task 1 (~20 dəq, 150+ söz): qrafik, cədvəl, diaqram və ya xəritəni təsvir edin. Task 2 (~40 dəq, 250+ söz): arqumentli esse yazın. Task 2 balı daha ağır çəkiyə malikdir.',
+      instructions: 'IELTS Academic Writing: 60 dəqiqə, 2 tapşırıq. Task 1 (~20 dəq, minimum 150 söz): verilmiş qrafik, cədvəl, diaqram və ya xəritəni akademik üslubda təsvir edin. Task 2 (~40 dəq, minimum 250 söz): bir arqument və ya problemə dair esse yazın. Task 2-nin çəkisi daha yüksəkdir.',
     },
     {
       name: 'Speaking',
       type: 'speaking', durationMinutes: 14, questions: 0,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Speaking: 11–14 dəqiqə, ekzaminatorla canlı müsahibə. Part 1 (4–5 dəq): tanışlıq, gündəlik mövzular. Part 2 (3–4 dəq): cue card — 1 dəq hazırlıq + 2 dəq nitq. Part 3 (4–5 dəq): Part 2 mövzusu üzrə dərin müzakirə. Qiymətləndirilir: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.',
+      instructions: 'IELTS Speaking: 11–14 dəqiqə, ekzaminatorla canlı müsahibə. Part 1 (4–5 dəq): tanışlıq və gündəlik mövzular haqqında suallar. Part 2 (3–4 dəq): cue card — 1 dəq hazırlıq + 2 dəq fasiləsiz nitq. Part 3 (4–5 dəq): Part 2 mövzusu üzrə dərin abstrakt müzakirə. 4 kriteriya: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.',
     },
   ],
 
-  // TOEFL iBT (ETS, revised 2023 format)
-  // Reading: 35 min, 20 questions (2 passages × 10)
-  // Listening: 36 min, 28 questions (3 lectures×6 + 2 conversations×5)
-  // 10-min break
-  // Speaking: 16 min, 4 tasks (1 independent + 3 integrated)
-  // Writing: 29 min, 2 tasks (integrated 20 min + academic discussion 10 min)
-  // Total: ~2 hours
+  // TOEFL iBT (ETS — YENİ FORMAT, yanvar 21, 2026-dan etibarən)
+  // Əsas dəyişikliklər: adaptiv Reading + Listening, tamamilə yeni Speaking və Writing tapşırıqları
+  // Ümumi müddət: ~67–85 dəqiqə (adaptivdən asılı olaraq)
+  // Yeni bal sistemi: 1.0–6.0 band (keçid dövrü üçün 0–120 da göstərilir)
   toefl: [
     {
-      name: 'Reading',
-      type: 'reading', durationMinutes: 35, questions: 20,
+      name: 'Reading — Modul 1',
+      type: 'reading', durationMinutes: 18, questions: 20,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Reading: 35 dəqiqə, 20 sual. 2 akademik mətn, hər birindən 10 sual. Sual növləri: Factual Information, Negative Factual, Inference, Rhetorical Purpose, Vocabulary, Reference, Sentence Simplification, Insert Text, Prose Summary, Fill in a Table.',
+      instructions: 'TOEFL Reading 2026 — Modul 1 (ümumi səviyyə). Yeni format: akademik mətnlər + günlük materiallar (e-mail, elan). Sual növləri: ənənəvi reading comprehension, word completion (çatışan hərfləri tamamla), daily-life materials. Nəticəyə əsasən 2-ci modul çətinliyi müəyyən olunur.',
     },
     {
-      name: 'Listening',
-      type: 'listening', durationMinutes: 36, questions: 28,
-      breakAfterMinutes: 10, isAdaptive: false,
-      instructions: 'TOEFL Listening: 36 dəqiqə, 28 sual. 3 akademik mühazirə (hər birindən 6 sual = 18) + 2 kampus söhbəti (hər birindən 5 sual = 10). Bu bölmədən sonra 10 dəqiqəlik fasilə başlayır.',
+      name: 'Reading — Modul 2 (Adaptiv)',
+      type: 'reading', durationMinutes: 15, questions: 18,
+      breakAfterMinutes: 0, isAdaptive: true,
+      instructions: 'TOEFL Reading 2026 — Modul 2 (adaptiv). 1-ci modulun nəticəsinə əsasən "asan" və ya "çətin" versiya verilir. Sual sayı və müddət adaptiv formatdan asılı olaraq dəyişə bilər (35–48 sual, cəmi).',
+    },
+    {
+      name: 'Listening — Modul 1',
+      type: 'listening', durationMinutes: 18, questions: 20,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Listening 2026 — Modul 1 (ümumi səviyyə). Yeni tapşırıq növləri: Listen & Choose a Response (qısa cavablar), Listen to a Conversation (kampus/gündəlik söhbətlər, 2 sual), Listen to an Announcement (40–85 söz elanlar). Nəticəyə əsasən 2-ci modul müəyyən olunur.',
+    },
+    {
+      name: 'Listening — Modul 2 (Adaptiv)',
+      type: 'listening', durationMinutes: 15, questions: 18,
+      breakAfterMinutes: 0, isAdaptive: true,
+      instructions: 'TOEFL Listening 2026 — Modul 2 (adaptiv). Çətinlik 1-ci modulun nəticəsinə əsasən müəyyən olunur. Cəmi listening sualları: 35–45 (adaptivdən asılı). Hər iki modul birlikdə təxminən 36 dəqiqə çəkir.',
     },
     {
       name: 'Speaking',
-      type: 'speaking', durationMinutes: 16, questions: 4,
+      type: 'speaking', durationMinutes: 8, questions: 11,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Speaking: 16 dəqiqə, 4 tapşırıq. Task 1 (Independent, 45 san cavab): şəxsi fikir. Task 2 (Campus Announcement, 60 san): oxu + dinlə + danış. Task 3 (Academic Reading & Lecture, 60 san): oxu + dinlə + danış. Task 4 (Academic Lecture, 60 san): dinlə + danış. AI tərəfindən qiymətləndirilir.',
+      instructions: 'TOEFL Speaking 2026 — YENİ FORMAT, ~8 dəqiqə, 11 tapşırıq. Task 1 — Listen & Repeat (7 sual, 8–12 san): qısa cümləni eşidin və eyni ilə təkrarlayın; cümlə ekranda görünmür. Task 2 — Take an Interview (4 sual, 45 san): video müsahibə simulyasiyası — tanış mövzularda suallar eşidilir, cavab verin. AI tərəfindən qiymətləndirilir.',
     },
     {
       name: 'Writing',
-      type: 'writing', durationMinutes: 29, questions: 2,
+      type: 'writing', durationMinutes: 17, questions: 3,
       breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Writing: 29 dəqiqə, 2 tapşırıq. Integrated Writing (~20 dəq): passage oxu + lecture dinlə + 150–225 söz esse yaz. Academic Discussion (~10 dəq): onlayn akademik müzakirəyə 100+ söz cavab yaz. Hər iki tapşırıq AI + insan ekspert tərəfindən qiymətləndirilir.',
+      instructions: 'TOEFL Writing 2026 — YENİ FORMAT, ~17 dəqiqə, 3 tapşırıq. Task 1 — E-mail (7 dəq): verilmiş situasiyaya uyğun e-mail yazın. Task 2 — Sentence Building/Unscrambling: cümlə qurun. Task 3 — Academic Discussion (10 dəq): onlayn dərs müzakirəsinə 100+ söz cavab yazın (köhnə formatla eyni). AI + insan ekspert qiymətləndirir.',
     },
   ],
 };
