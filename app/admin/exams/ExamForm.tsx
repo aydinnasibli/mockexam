@@ -19,7 +19,7 @@ const EXAM_TYPES = [
 
 // Module types allowed per exam type
 const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
-  sat:   ['reading', 'math'],
+  sat:   ['rw', 'math'],
   ielts: ['listening', 'reading', 'writing', 'speaking'],
   toefl: ['reading', 'listening', 'speaking', 'writing'],
 };
@@ -53,13 +53,13 @@ const EXAM_PRESETS: Record<string, PresetModule[]> = {
   sat: [
     {
       name: 'Reading & Writing — Module 1',
-      type: 'reading', durationMinutes: 32, questions: 27,
+      type: 'rw', durationMinutes: 32, questions: 27,
       breakAfterMinutes: 0, isAdaptive: false,
       instructions: 'Reading & Writing bölməsi, 1-ci modul. 27 sual, 32 dəqiqə. Suallar 4 kateqoriyadan ibarətdir: Information & Ideas, Craft & Structure, Expression of Ideas, Standard English Conventions. Hər sualın yalnız bir düzgün cavabı var.',
     },
     {
       name: 'Reading & Writing — Module 2',
-      type: 'reading', durationMinutes: 32, questions: 27,
+      type: 'rw', durationMinutes: 32, questions: 27,
       breakAfterMinutes: 10, isAdaptive: true,
       instructions: 'Reading & Writing bölməsi, 2-ci modul (adaptiv). 27 sual, 32 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən avtomatik müəyyən olunur (asan və ya çətin versiya). Bu moduldan sonra 10 dəqiqəlik fasilə başlayır.',
     },
