@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { LayoutDashboard } from "lucide-react";
 
 const navLinks = [
@@ -14,6 +14,7 @@ const navLinks = [
 
 export default function Navbar() {
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
   const pathname = usePathname();
 
   return (
@@ -86,14 +87,15 @@ export default function Navbar() {
               {/* Thin divider */}
               <div className="w-px h-6 bg-outline-variant/60 mx-1" />
 
-              {/* Avatar */}
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8 ring-2 ring-primary/20 ring-offset-1",
-                  },
-                }}
-              />
+              {/* Avatar — non-clickable */}
+              <div className="w-8 h-8 rounded-full ring-2 ring-primary/20 ring-offset-1 overflow-hidden pointer-events-none select-none shrink-0 flex items-center justify-center">
+                {user?.imageUrl
+                  ? <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full editorial-gradient flex items-center justify-center text-white text-xs font-black">
+                      {user?.firstName?.[0] ?? '?'}
+                    </div>
+                }
+              </div>
             </>
           )}
         </div>

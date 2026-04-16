@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import Link from 'next/link';
-import { Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Pencil, Trash2, ToggleLeft, ToggleRight, BookOpen } from 'lucide-react';
 import { deleteExam, toggleExamActive } from '@/lib/actions/admin';
 
 interface Props {
@@ -35,6 +35,13 @@ export default function ExamRowActions({ examId, isActive }: Props) {
           ? <ToggleRight size={18} className="text-emerald-600" />
           : <ToggleLeft size={18} className="text-on-surface-variant" />}
       </button>
+      <Link
+        href={`/admin/exams/${examId}/questions`}
+        className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors"
+        title="Suallar"
+      >
+        <BookOpen size={15} />
+      </Link>
       <Link
         href={`/admin/exams/${examId}/edit`}
         className="p-2 rounded-lg hover:bg-secondary/10 text-secondary transition-colors"

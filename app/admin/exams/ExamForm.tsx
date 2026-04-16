@@ -17,28 +17,139 @@ const EXAM_TYPES = [
   { value: 'toefl', label: 'TOEFL' },
 ];
 
+// Module types allowed per exam type
+const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
+  sat:   ['reading', 'math'],
+  ielts: ['listening', 'reading', 'writing', 'speaking'],
+  toefl: ['reading', 'listening', 'speaking', 'writing'],
+};
+
+// Auto-fill defaults per exam type
+const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
+  sat: {
+    tag: 'SAT',
+    description: 'Digital SAT tam mock imtahanı (College Board, 2025–2026 format). Reading & Writing: 2 adaptiv modul × 27 sual × 32 dəq (54 sual). Math: 2 adaptiv modul × 22 sual × 35 dəq (44 sual). Cəmi: 98 sual, 134 dəq test vaxtı + 10 dəq fasilə. Desmos kalkulyator daxildir.',
+  },
+  ielts: {
+    tag: 'IELTS',
+    description: 'IELTS Academic tam sınaq imtahanı. Listening (30 dəq, 40 sual) + Reading (60 dəq, 40 sual) + Writing (60 dəq, 2 tapşırıq) + Speaking (11–14 dəq). Ümumi: 80 sual, Band 0–9 sistemi.',
+  },
+  toefl: {
+    tag: 'TOEFL',
+    description: 'TOEFL iBT tam mock imtahanı (ETS, 2026 format — yanvar 21, 2026-dan etibarən). Reading + Listening (adaptiv, çoxmərhələli) + Speaking (~8 dəq, 11 tapşırıq) + Writing (~17 dəq, 3 tapşırıq). Cəmi ~67–85 dəq. Bal: 1.0–6.0 band (+ 0–120 keçid dövrü).',
+  },
+};
+
 // ─── Type-specific module presets ─────────────────────────────────────────────
 
 type PresetModule = Omit<ParsedModule, never>;
 
 const EXAM_PRESETS: Record<string, PresetModule[]> = {
+  // Digital SAT (College Board, 2024 format)
+  // Section 1 – Reading & Writing: 2 adaptive modules × 27 questions × 32 min
+  // 10-min break between sections
+  // Section 2 – Math: 2 adaptive modules × 22 questions × 35 min
+  // Total test time: 134 min | With break: 144 min | Questions: 98
   sat: [
-    { name: 'Reading & Writing — Module 1', type: 'reading',  durationMinutes: 32, questions: 27, breakAfterMinutes: 0,  isAdaptive: false, instructions: 'Bu bölmədə 27 sual var. Hər sualın yalnız bir düzgün cavabı var.' },
-    { name: 'Reading & Writing — Module 2', type: 'reading',  durationMinutes: 32, questions: 27, breakAfterMinutes: 10, isAdaptive: true,  instructions: 'Adaptiv modul: çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən edilir.' },
-    { name: 'Math — Module 1',              type: 'math',     durationMinutes: 35, questions: 22, breakAfterMinutes: 0,  isAdaptive: false, instructions: '22 sualdan 4-ü açıq cavab formatındadır.' },
-    { name: 'Math — Module 2',              type: 'math',     durationMinutes: 35, questions: 22, breakAfterMinutes: 0,  isAdaptive: true,  instructions: 'Adaptiv modul: çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən edilir.' },
+    {
+      name: 'Reading & Writing — Module 1',
+      type: 'reading', durationMinutes: 32, questions: 27,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Reading & Writing bölməsi, 1-ci modul. 27 sual, 32 dəqiqə. Suallar 4 kateqoriyadan ibarətdir: Information & Ideas, Craft & Structure, Expression of Ideas, Standard English Conventions. Hər sualın yalnız bir düzgün cavabı var.',
+    },
+    {
+      name: 'Reading & Writing — Module 2',
+      type: 'reading', durationMinutes: 32, questions: 27,
+      breakAfterMinutes: 10, isAdaptive: true,
+      instructions: 'Reading & Writing bölməsi, 2-ci modul (adaptiv). 27 sual, 32 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən avtomatik müəyyən olunur (asan və ya çətin versiya). Bu moduldan sonra 10 dəqiqəlik fasilə başlayır.',
+    },
+    {
+      name: 'Math — Module 1',
+      type: 'math', durationMinutes: 35, questions: 22,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Math bölməsi, 1-ci modul. 22 sual, 35 dəqiqə. 17 sual çoxseçimli, 5 sual student-produced response (SPR) formatındadır. Sual kateqoriyaları: Algebra, Advanced Math, Problem-Solving & Data Analysis, Geometry & Trigonometry. Kalkulyator bütün suallar üçün icazəlidir.',
+    },
+    {
+      name: 'Math — Module 2',
+      type: 'math', durationMinutes: 35, questions: 22,
+      breakAfterMinutes: 0, isAdaptive: true,
+      instructions: 'Math bölməsi, 2-ci modul (adaptiv). 22 sual, 35 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən olunur. 17 çoxseçimli + 5 SPR sual. Kalkulyator icazəlidir.',
+    },
   ],
+
+  // IELTS Academic (British Council / IDP / Cambridge, 2025–2026 format — unchanged)
+  // Listening: 30 min test (digital mock — no paper transfer time needed)
+  // Reading: 60 min, 40 questions (3 academic texts)
+  // Writing: 60 min, 2 tasks
+  // Speaking: 11–14 min, 3 parts
   ielts: [
-    { name: 'Listening', type: 'listening', durationMinutes: 30, questions: 40, breakAfterMinutes: 0, isAdaptive: false, instructions: '4 hissə, 40 sual. Hər cavab 1 bal.' },
-    { name: 'Reading',   type: 'reading',   durationMinutes: 60, questions: 40, breakAfterMinutes: 0, isAdaptive: false, instructions: '3 mətn, 40 sual. Academic version.' },
-    { name: 'Writing',   type: 'writing',   durationMinutes: 60, questions: 2,  breakAfterMinutes: 0, isAdaptive: false, instructions: 'Task 1: qrafik/diaqram (150+ söz). Task 2: esse (250+ söz).' },
-    { name: 'Speaking',  type: 'speaking',  durationMinutes: 14, questions: 0,  breakAfterMinutes: 0, isAdaptive: false, instructions: '3 hissə: Giriş/Müsahibə, Uzun nitq (cue card), Müzakirə.' },
+    {
+      name: 'Listening',
+      type: 'listening', durationMinutes: 30, questions: 40,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Listening: 30 dəqiqə, 40 sual. 4 hissə: Part 1 — gündəlik sosial dialoq (10 sual), Part 2 — ictimai mövzu monoloqu (10 sual), Part 3 — akademik müzakirə (10 sual), Part 4 — akademik mühazirə (10 sual). Sual növləri: Multiple choice, Form/note/table completion, Sentence completion, Short-answer. Hər düzgün cavab 1 xam bal verir.',
+    },
+    {
+      name: 'Reading',
+      type: 'reading', durationMinutes: 60, questions: 40,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Academic Reading: 60 dəqiqə, 40 sual. 3 uzun akademik mətn (jurnallar, kitablar, qəzetlər). Sual növləri: Multiple choice, Matching headings, True/False/Not Given, Yes/No/Not Given, Matching information, Sentence completion, Short-answer. Fasilə yoxdur, vaxtı özünüz bölün.',
+    },
+    {
+      name: 'Writing',
+      type: 'writing', durationMinutes: 60, questions: 2,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Academic Writing: 60 dəqiqə, 2 tapşırıq. Task 1 (~20 dəq, minimum 150 söz): verilmiş qrafik, cədvəl, diaqram və ya xəritəni akademik üslubda təsvir edin. Task 2 (~40 dəq, minimum 250 söz): bir arqument və ya problemə dair esse yazın. Task 2-nin çəkisi daha yüksəkdir.',
+    },
+    {
+      name: 'Speaking',
+      type: 'speaking', durationMinutes: 14, questions: 0,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'IELTS Speaking: 11–14 dəqiqə, ekzaminatorla canlı müsahibə. Part 1 (4–5 dəq): tanışlıq və gündəlik mövzular haqqında suallar. Part 2 (3–4 dəq): cue card — 1 dəq hazırlıq + 2 dəq fasiləsiz nitq. Part 3 (4–5 dəq): Part 2 mövzusu üzrə dərin abstrakt müzakirə. 4 kriteriya: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.',
+    },
   ],
+
+  // TOEFL iBT (ETS — YENİ FORMAT, yanvar 21, 2026-dan etibarən)
+  // Əsas dəyişikliklər: adaptiv Reading + Listening, tamamilə yeni Speaking və Writing tapşırıqları
+  // Ümumi müddət: ~67–85 dəqiqə (adaptivdən asılı olaraq)
+  // Yeni bal sistemi: 1.0–6.0 band (keçid dövrü üçün 0–120 da göstərilir)
   toefl: [
-    { name: 'Reading',   type: 'reading',   durationMinutes: 35, questions: 20, breakAfterMinutes: 0,  isAdaptive: false, instructions: '2 akademik mətn, hər birindən 10 sual.' },
-    { name: 'Listening', type: 'listening', durationMinutes: 36, questions: 28, breakAfterMinutes: 10, isAdaptive: false, instructions: '3 lecture + 2 conversation. 10 dəqiqəlik fasilə bu bölmədən sonra.' },
-    { name: 'Speaking',  type: 'speaking',  durationMinutes: 16, questions: 4,  breakAfterMinutes: 0,  isAdaptive: false, instructions: '1 Independent + 3 Integrated tapşırıq.' },
-    { name: 'Writing',   type: 'writing',   durationMinutes: 29, questions: 2,  breakAfterMinutes: 0,  isAdaptive: false, instructions: '1 Integrated (20 dəq) + 1 Academic Discussion (10 dəq).' },
+    {
+      name: 'Reading — Modul 1',
+      type: 'reading', durationMinutes: 18, questions: 20,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Reading 2026 — Modul 1 (ümumi səviyyə). Yeni format: akademik mətnlər + günlük materiallar (e-mail, elan). Sual növləri: ənənəvi reading comprehension, word completion (çatışan hərfləri tamamla), daily-life materials. Nəticəyə əsasən 2-ci modul çətinliyi müəyyən olunur.',
+    },
+    {
+      name: 'Reading — Modul 2 (Adaptiv)',
+      type: 'reading', durationMinutes: 15, questions: 18,
+      breakAfterMinutes: 0, isAdaptive: true,
+      instructions: 'TOEFL Reading 2026 — Modul 2 (adaptiv). 1-ci modulun nəticəsinə əsasən "asan" və ya "çətin" versiya verilir. Sual sayı və müddət adaptiv formatdan asılı olaraq dəyişə bilər (35–48 sual, cəmi).',
+    },
+    {
+      name: 'Listening — Modul 1',
+      type: 'listening', durationMinutes: 18, questions: 20,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Listening 2026 — Modul 1 (ümumi səviyyə). Yeni tapşırıq növləri: Listen & Choose a Response (qısa cavablar), Listen to a Conversation (kampus/gündəlik söhbətlər, 2 sual), Listen to an Announcement (40–85 söz elanlar). Nəticəyə əsasən 2-ci modul müəyyən olunur.',
+    },
+    {
+      name: 'Listening — Modul 2 (Adaptiv)',
+      type: 'listening', durationMinutes: 15, questions: 18,
+      breakAfterMinutes: 0, isAdaptive: true,
+      instructions: 'TOEFL Listening 2026 — Modul 2 (adaptiv). Çətinlik 1-ci modulun nəticəsinə əsasən müəyyən olunur. Cəmi listening sualları: 35–45 (adaptivdən asılı). Hər iki modul birlikdə təxminən 36 dəqiqə çəkir.',
+    },
+    {
+      name: 'Speaking',
+      type: 'speaking', durationMinutes: 8, questions: 11,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Speaking 2026 — YENİ FORMAT, ~8 dəqiqə, 11 tapşırıq. Task 1 — Listen & Repeat (7 sual, 8–12 san): qısa cümləni eşidin və eyni ilə təkrarlayın; cümlə ekranda görünmür. Task 2 — Take an Interview (4 sual, 45 san): video müsahibə simulyasiyası — tanış mövzularda suallar eşidilir, cavab verin. AI tərəfindən qiymətləndirilir.',
+    },
+    {
+      name: 'Writing',
+      type: 'writing', durationMinutes: 17, questions: 3,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'TOEFL Writing 2026 — YENİ FORMAT, ~17 dəqiqə, 3 tapşırıq. Task 1 — E-mail (7 dəq): verilmiş situasiyaya uyğun e-mail yazın. Task 2 — Sentence Building/Unscrambling: cümlə qurun. Task 3 — Academic Discussion (10 dəq): onlayn dərs müzakirəsinə 100+ söz cavab yazın (köhnə formatla eyni). AI + insan ekspert qiymətləndirir.',
+    },
   ],
 };
 
@@ -100,6 +211,8 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
   const [examType, setExamType] = useState(defaultValues?.type ?? 'sat');
+  const [tag, setTag] = useState(defaultValues?.tag ?? TYPE_DEFAULTS['sat'].tag);
+  const [description, setDescription] = useState(defaultValues?.description ?? '');
 
   const [features, setFeatures] = useState<string[]>(
     defaultValues?.features?.length ? defaultValues.features : ['']
@@ -140,6 +253,11 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
     setExamType(newType);
     if (mode === 'create') {
       setModules(makePreset(newType));
+      const defaults = TYPE_DEFAULTS[newType];
+      if (defaults) {
+        setTag(defaults.tag);
+        setDescription(defaults.description);
+      }
     }
   };
 
@@ -205,7 +323,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
             <input type="text" name="title" defaultValue={defaultValues?.title ?? ''} placeholder="Digital SAT Full Mock #4" required className="input-field" />
           </Field>
           <Field label="Etiket (Tag) *">
-            <input type="text" name="tag" defaultValue={defaultValues?.tag ?? ''} placeholder="SAT" required className="input-field" />
+            <input type="text" name="tag" value={tag} onChange={e => setTag(e.target.value)} placeholder="SAT" required className="input-field" />
           </Field>
           <Field label="Qiymət (₼) *">
             <input type="number" name="price" min="0" step="0.01" defaultValue={defaultValues?.price ?? ''} placeholder="12" required className="input-field" />
@@ -221,7 +339,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
       {/* ── Description ────────────────────────────────────────────────────── */}
       <Section title="Təsvir">
-        <textarea name="description" defaultValue={defaultValues?.description ?? ''} rows={4} placeholder="İmtahan haqqında ətraflı məlumat..." required className="input-field w-full resize-none" />
+        <textarea name="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="İmtahan haqqında ətraflı məlumat..." required className="input-field w-full resize-none" />
       </Section>
 
       {/* ── Modules ────────────────────────────────────────────────────────── */}
@@ -256,6 +374,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
               mod={mod}
               index={idx}
               total={modules.length}
+              examType={examType}
               onUpdate={patch => updateModule(mod._key, patch)}
               onRemove={() => removeModule(mod._key)}
               onMoveUp={() => moveModule(mod._key, -1)}
@@ -331,6 +450,7 @@ interface ModuleCardProps {
   mod: ModuleRow;
   index: number;
   total: number;
+  examType: string;
   onUpdate: (patch: Partial<ModuleRow>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -338,7 +458,9 @@ interface ModuleCardProps {
   onToggle: () => void;
 }
 
-function ModuleCard({ mod, index, total, onUpdate, onRemove, onMoveUp, onMoveDown, onToggle }: ModuleCardProps) {
+function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp, onMoveDown, onToggle }: ModuleCardProps) {
+  const allowedTypes = ALLOWED_MODULE_TYPES[examType] ?? MODULE_TYPES.map(t => t.value);
+  const filteredModuleTypes = MODULE_TYPES.filter(t => allowedTypes.includes(t.value));
   return (
     <div className="px-6 py-4">
       {/* Header row */}
@@ -388,7 +510,7 @@ function ModuleCard({ mod, index, total, onUpdate, onRemove, onMoveUp, onMoveDow
             <div>
               <label className="field-label">Modul növü *</label>
               <select value={mod.type} onChange={e => onUpdate({ type: e.target.value as ModuleRow['type'] })} className="input-field">
-                {MODULE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {filteredModuleTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>

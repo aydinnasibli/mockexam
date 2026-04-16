@@ -7,7 +7,7 @@ import { getUserResults } from '@/lib/db/results';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import {
-  LayoutDashboard, LogOut, BarChart2,
+  LayoutDashboard, LogOut, BarChart2, Settings,
   GraduationCap, ShoppingBag, PlusCircle, Play,
   Inbox, Timer, HelpCircle, ArrowRight, Trophy,
 } from 'lucide-react';
@@ -85,6 +85,9 @@ export default async function DashboardPage() {
           </Link>
           <Link href="/analytics" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
             <BarChart2 size={18} className="opacity-70" /> Nəticələr
+          </Link>
+          <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
+            <Settings size={18} className="opacity-70" /> Parametrlər
           </Link>
         </nav>
 
