@@ -7,8 +7,8 @@ import { getUserResults } from '@/lib/db/results';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import {
-  LayoutDashboard, BookOpen, LogOut, BarChart2,
-  GraduationCap, ShoppingBag, Play,
+  LayoutDashboard, LogOut, BarChart2,
+  GraduationCap, ShoppingBag, PlusCircle, Play,
   Inbox, Timer, HelpCircle, ArrowRight, Trophy,
 } from 'lucide-react';
 import type { ResultSummary } from '@/lib/db/results';
@@ -83,15 +83,15 @@ export default async function DashboardPage() {
           <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-white text-primary shadow-sm">
             <LayoutDashboard size={18} className="text-secondary" /> Panel
           </Link>
-          <Link href="/exams" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
-            <BookOpen size={18} className="opacity-70" /> İmtahanlar
-          </Link>
           <Link href="/analytics" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
             <BarChart2 size={18} className="opacity-70" /> Nəticələr
           </Link>
         </nav>
 
         <div className="px-4 mt-4 space-y-2">
+          <Link href="/exams" className="w-full editorial-gradient text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm">
+            <PlusCircle size={16} /> Sınaq Əldə Et
+          </Link>
           <SignOutButton>
             <button className="w-full text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:text-error transition-colors text-sm font-medium rounded-xl hover:bg-white/50">
               <LogOut size={16} /> Çıxış
