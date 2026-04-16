@@ -17,6 +17,29 @@ const EXAM_TYPES = [
   { value: 'toefl', label: 'TOEFL' },
 ];
 
+// Module types allowed per exam type
+const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
+  sat:   ['reading', 'math'],
+  ielts: ['listening', 'reading', 'writing', 'speaking'],
+  toefl: ['reading', 'listening', 'speaking', 'writing'],
+};
+
+// Auto-fill defaults per exam type
+const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
+  sat: {
+    tag: 'SAT',
+    description: 'Digital SAT tam mock imtahanı. Reading & Writing (2 adaptiv modul, 54 sual) + Math (2 adaptiv modul, 44 sual). ETS formatına uyğun.',
+  },
+  ielts: {
+    tag: 'IELTS',
+    description: 'IELTS Academic tam sınaq imtahanı. Listening (30 dəq, 40 sual) + Reading (60 dəq, 40 sual) + Writing (60 dəq, 2 tapşırıq) + Speaking (~14 dəq).',
+  },
+  toefl: {
+    tag: 'TOEFL',
+    description: 'TOEFL iBT tam mock imtahanı. Reading (35 dəq) + Listening (36 dəq) + Speaking (16 dəq) + Writing (29 dəq). ETS formatına uyğun.',
+  },
+};
+
 // ─── Type-specific module presets ─────────────────────────────────────────────
 
 type PresetModule = Omit<ParsedModule, never>;
@@ -100,6 +123,8 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
   const [examType, setExamType] = useState(defaultValues?.type ?? 'sat');
+  const [tag, setTag] = useState(defaultValues?.tag ?? TYPE_DEFAULTS['sat'].tag);
+  const [description, setDescription] = useState(defaultValues?.description ?? '');
 
   const [features, setFeatures] = useState<string[]>(
     defaultValues?.features?.length ? defaultValues.features : ['']
@@ -140,6 +165,11 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
     setExamType(newType);
     if (mode === 'create') {
       setModules(makePreset(newType));
+      const defaults = TYPE_DEFAULTS[newType];
+      if (defaults) {
+        setTag(defaults.tag);
+        setDescription(defaults.description);
+      }
     }
   };
 
@@ -205,7 +235,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
             <input type="text" name="title" defaultValue={defaultValues?.title ?? ''} placeholder="Digital SAT Full Mock #4" required className="input-field" />
           </Field>
           <Field label="Etiket (Tag) *">
-            <input type="text" name="tag" defaultValue={defaultValues?.tag ?? ''} placeholder="SAT" required className="input-field" />
+            <input type="text" name="tag" value={tag} onChange={e => setTag(e.target.value)} placeholder="SAT" required className="input-field" />
           </Field>
           <Field label="Qiymət (₼) *">
             <input type="number" name="price" min="0" step="0.01" defaultValue={defaultValues?.price ?? ''} placeholder="12" required className="input-field" />
@@ -221,7 +251,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
       {/* ── Description ────────────────────────────────────────────────────── */}
       <Section title="Təsvir">
-        <textarea name="description" defaultValue={defaultValues?.description ?? ''} rows={4} placeholder="İmtahan haqqında ətraflı məlumat..." required className="input-field w-full resize-none" />
+        <textarea name="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="İmtahan haqqında ətraflı məlumat..." required className="input-field w-full resize-none" />
       </Section>
 
       {/* ── Modules ────────────────────────────────────────────────────────── */}
@@ -256,6 +286,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
               mod={mod}
               index={idx}
               total={modules.length}
+              examType={examType}
               onUpdate={patch => updateModule(mod._key, patch)}
               onRemove={() => removeModule(mod._key)}
               onMoveUp={() => moveModule(mod._key, -1)}
@@ -331,6 +362,7 @@ interface ModuleCardProps {
   mod: ModuleRow;
   index: number;
   total: number;
+  examType: string;
   onUpdate: (patch: Partial<ModuleRow>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -338,7 +370,9 @@ interface ModuleCardProps {
   onToggle: () => void;
 }
 
-function ModuleCard({ mod, index, total, onUpdate, onRemove, onMoveUp, onMoveDown, onToggle }: ModuleCardProps) {
+function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp, onMoveDown, onToggle }: ModuleCardProps) {
+  const allowedTypes = ALLOWED_MODULE_TYPES[examType] ?? MODULE_TYPES.map(t => t.value);
+  const filteredModuleTypes = MODULE_TYPES.filter(t => allowedTypes.includes(t.value));
   return (
     <div className="px-6 py-4">
       {/* Header row */}
@@ -388,7 +422,7 @@ function ModuleCard({ mod, index, total, onUpdate, onRemove, onMoveUp, onMoveDow
             <div>
               <label className="field-label">Modul növü *</label>
               <select value={mod.type} onChange={e => onUpdate({ type: e.target.value as ModuleRow['type'] })} className="input-field">
-                {MODULE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {filteredModuleTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
