@@ -1,17 +1,18 @@
 'use client';
 
 import Navbar from '@/components/layout/Navbar';
-import { useAuth, useUser, SignInButton } from '@clerk/nextjs';
+import { useAuth, SignInButton } from '@clerk/nextjs';
 import Script from 'next/script';
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  CheckCircle2, ShoppingBag, Package, Settings, UserLock,
+  CheckCircle2, ShoppingBag, Settings, UserLock,
   Timer, HelpCircle, Infinity, AlertCircle, Lock, Shield, CreditCard, ShieldCheck,
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
+import { createCheckoutSession } from '@/lib/actions/checkout';
 
-type CheckoutStatus = 'idle' | 'loading' | 'ready' | 'processing' | 'success' | 'already_owned' | 'error' | 'unconfigured';
+type CheckoutStatus = 'idle' | 'processing' | 'ready' | 'success' | 'error' | 'unconfigured';
 
 interface Props {
   exam: PublicExam;
@@ -19,52 +20,39 @@ interface Props {
 
 export default function CheckoutClient({ exam }: Props) {
   const { isSignedIn } = useAuth();
-  const { user } = useUser();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [status, setStatus] = useState<CheckoutStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [lsScriptReady, setLsScriptReady] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get('purchased') === exam.id) setStatus('success');
-  }, [searchParams, exam.id]);
-
-  useEffect(() => {
-    if (!isSignedIn) return;
-    fetch('/api/purchases')
-      .then(r => r.json())
-      .then(data => { if (data.examIds?.includes(exam.id)) setStatus('already_owned'); })
-      .catch(() => {});
-  }, [isSignedIn, exam.id]);
 
   const handlePay = useCallback(async () => {
     if (status === 'processing' || status === 'success') return;
     setStatus('processing');
     setErrorMessage('');
     try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ examId: exam.id }),
-      });
-      const data = await res.json();
+      const result = await createCheckoutSession(exam.id);
 
-      if (res.status === 409 && data.alreadyPurchased) { setStatus('already_owned'); return; }
-      if (res.status === 503) { setStatus('unconfigured'); setErrorMessage(data.error); return; }
-      if (!res.ok || !data.checkoutUrl) throw new Error(data.error ?? 'Ödəniş sessiyası yaradılmadı');
+      if ('alreadyPurchased' in result) { router.push('/dashboard'); return; }
+      if ('unconfigured' in result) { setStatus('unconfigured'); setErrorMessage(result.error); return; }
+      if ('error' in result) throw new Error(result.error);
 
       const LemonSqueezy = (window as Window & {
         LemonSqueezy?: { Url: { Open: (url: string) => void }; Setup: (c: { eventHandler: (e: { event: string }) => void }) => void };
       }).LemonSqueezy;
 
       if (LemonSqueezy) {
-        LemonSqueezy.Setup({ eventHandler: (event) => { if (event.event === 'Checkout.Success') { setStatus('success'); setTimeout(() => router.push('/dashboard'), 2500); } } });
-        LemonSqueezy.Url.Open(data.checkoutUrl);
+        LemonSqueezy.Setup({
+          eventHandler: (event) => {
+            if (event.event === 'Checkout.Success') {
+              setStatus('success');
+              setTimeout(() => router.push('/dashboard'), 2500);
+            }
+          },
+        });
+        LemonSqueezy.Url.Open(result.checkoutUrl);
         setStatus('ready');
       } else {
-        window.location.href = data.checkoutUrl;
+        window.location.href = result.checkoutUrl;
       }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Bilinməyən xəta baş verdi');
@@ -76,7 +64,7 @@ export default function CheckoutClient({ exam }: Props) {
 
   return (
     <>
-      <Script src="https://app.lemonsqueezy.com/js/lemon.js" onLoad={() => setLsScriptReady(true)} defer />
+      <Script src="https://app.lemonsqueezy.com/js/lemon.js" defer />
       <Navbar />
       <main className="pt-16 min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
@@ -98,22 +86,13 @@ export default function CheckoutClient({ exam }: Props) {
             </div>
           )}
 
-          {status === 'already_owned' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-center">
-              <Package className="text-blue-500 mx-auto" size={40} />
-              <h3 className="font-bold text-blue-900 text-lg mt-3 mb-2">Artıq satın alınıb</h3>
-              <p className="text-sm text-blue-800/80 mb-6">Bu imtahanı artıq satın almısınız.</p>
-              <button onClick={() => router.push('/dashboard')} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors">Panelə Get</button>
-            </div>
-          )}
-
           {status === 'unconfigured' && (
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-6">
               <div className="flex items-start gap-3 mb-4">
                 <Settings className="text-amber-500 shrink-0" size={20} />
                 <h3 className="font-bold text-amber-900">LemonSqueezy konfiqurasiya tələb olunur</h3>
               </div>
-              <p className="text-sm text-amber-800 mb-4 leading-relaxed">LEMONSQUEEZY_VARIANT_ID dəyişənini <code className="bg-amber-100 px-1 rounded">.env.local</code> faylına əlavə edin.</p>
+              <p className="text-sm text-amber-800 mb-4 leading-relaxed">{errorMessage}</p>
               <button onClick={() => { setStatus('idle'); setErrorMessage(''); }} className="mt-2 text-sm text-amber-700 underline">Geri</button>
             </div>
           )}
@@ -151,8 +130,14 @@ export default function CheckoutClient({ exam }: Props) {
                       <p className="text-xs text-red-700">{errorMessage}</p>
                     </div>
                   )}
-                  <button id="pay-button" onClick={handlePay} disabled={status === 'processing'} className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
-                    {status === 'processing' ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Hazırlanır...</>) : (<><Lock size={18} />Ödənişə Keç — {exam.price} AZN</>)}
+                  <button
+                    onClick={handlePay}
+                    disabled={status === 'processing'}
+                    className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {status === 'processing'
+                      ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Hazırlanır...</>)
+                      : (<><Lock size={18} />Ödənişə Keç — {exam.price} AZN</>)}
                   </button>
                   <div className="flex items-center justify-center gap-4 mt-4">
                     <div className="flex items-center gap-1 text-xs text-on-surface-variant"><Shield size={14} />SSL şifrəli</div>

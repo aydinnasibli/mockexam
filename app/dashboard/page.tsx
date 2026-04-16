@@ -1,21 +1,17 @@
-'use client';
-
+import { currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { useUser, SignOutButton } from '@clerk/nextjs';
-import { useState, useEffect } from 'react';
-import type { PublicExam } from '@/lib/db/exams';
+import { SignOutButton } from '@clerk/nextjs';
+import { getActiveExams } from '@/lib/db/exams';
+import { getUserResults } from '@/lib/db/results';
+import dbConnect from '@/lib/mongodb';
+import Purchase from '@/lib/models/Purchase';
 import {
   LayoutDashboard, BookOpen, LogOut, BarChart2,
-  GraduationCap, ShoppingBag, PlusCircle, Play,
+  GraduationCap, ShoppingBag, Play,
   Inbox, Timer, HelpCircle, ArrowRight, Trophy,
 } from 'lucide-react';
-
-interface ResultSummary {
-  examId: string;
-  score: number;
-  completedAt: string;
-  attemptNumber: number;
-}
+import type { ResultSummary } from '@/lib/db/results';
 
 function todayString() {
   return new Date().toLocaleDateString('az-AZ', {
@@ -23,55 +19,36 @@ function todayString() {
   });
 }
 
-export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
-  const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
-  const [allExams, setAllExams] = useState<PublicExam[]>([]);
-  const [results, setResults] = useState<ResultSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+export const metadata = { title: 'Panel — Test Centre' };
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/purchases').then(r => r.json()),
-      fetch('/api/exams').then(r => r.json()),
-      fetch('/api/results').then(r => r.json()),
-    ])
-      .then(([purchases, examsData, resultsData]) => {
-        if (purchases.examIds)   setPurchasedIds(purchases.examIds);
-        if (examsData.exams)     setAllExams(examsData.exams);
-        if (resultsData.results) setResults(resultsData.results);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+export default async function DashboardPage() {
+  const user = await currentUser();
+  if (!user) redirect('/sign-in');
 
+  await dbConnect();
+  const [allExams, results, purchases] = await Promise.all([
+    getActiveExams(),
+    getUserResults(user.id),
+    Purchase.find({ userId: user.id, status: 'COMPLETED' }, { examId: 1 }).lean(),
+  ]);
+
+  const purchasedIds = purchases.map(p => p.examId as string);
   const purchasedExams = allExams.filter(e => purchasedIds.includes(e.id));
 
-  // Related = same type as any purchased exam, but not yet purchased
   const purchasedTypes = new Set(purchasedExams.map(e => e.type));
   const relatedExams = allExams
     .filter(e => !purchasedIds.includes(e.id) && (purchasedTypes.size === 0 || purchasedTypes.has(e.type)))
     .slice(0, 3);
 
-  // Latest result per exam
   const lastResultByExam = new Map<string, ResultSummary>();
   for (const r of results) {
     if (!lastResultByExam.has(r.examId)) lastResultByExam.set(r.examId, r);
   }
 
-  const firstName = user?.firstName ?? 'Tələbə';
-  const fullName  = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Tələbə';
-
-  if (!isLoaded || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-on-surface-variant font-medium">Yüklənir...</p>
-        </div>
-      </div>
-    );
-  }
+  const firstName = user.firstName ?? 'Tələbə';
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Tələbə';
+  const email = user.emailAddresses?.[0]?.emailAddress ?? '';
+  const imageUrl = user.imageUrl;
 
   return (
     <div className="bg-surface text-on-surface min-h-screen">
@@ -88,8 +65,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center px-6 mb-7 gap-3">
-          {user?.imageUrl ? (
-            <img src={user.imageUrl} alt="Avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="Avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
           ) : (
             <div className="w-10 h-10 rounded-full editorial-gradient flex items-center justify-center flex-shrink-0">
               <span className="text-white text-sm font-black">{firstName[0]}</span>
@@ -97,9 +75,7 @@ export default function DashboardPage() {
           )}
           <div className="min-w-0">
             <p className="font-bold text-primary text-sm leading-tight truncate">{fullName}</p>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5 truncate">
-              {user?.emailAddresses?.[0]?.emailAddress ?? ''}
-            </p>
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5 truncate">{email}</p>
           </div>
         </div>
 
@@ -116,9 +92,6 @@ export default function DashboardPage() {
         </nav>
 
         <div className="px-4 mt-4 space-y-2">
-          <Link href="/exams" className="w-full editorial-gradient text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm">
-            <PlusCircle size={16} /> Sınaq Əldə Et
-          </Link>
           <SignOutButton>
             <button className="w-full text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:text-error transition-colors text-sm font-medium rounded-xl hover:bg-white/50">
               <LogOut size={16} /> Çıxış
