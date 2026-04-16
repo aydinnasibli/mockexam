@@ -1,20 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { MODULE_TYPES, type ModuleType } from '@/lib/exam-types';
 
-export type ExamType = 'sat' | 'ielts' | 'toefl' | 'dim' | 'gre';
-
-export const MODULE_TYPES = [
-  { value: 'reading',      label: 'Reading' },
-  { value: 'writing',      label: 'Writing' },
-  { value: 'listening',    label: 'Listening' },
-  { value: 'speaking',     label: 'Speaking' },
-  { value: 'math',         label: 'Math / Riyaziyyat' },
-  { value: 'verbal',       label: 'Verbal Reasoning' },
-  { value: 'quantitative', label: 'Quantitative Reasoning' },
-  { value: 'analytical',   label: 'Analytical Writing' },
-  { value: 'general',      label: 'Ümumi / General' },
-] as const;
-
-export type ModuleType = typeof MODULE_TYPES[number]['value'];
+export type ExamType = 'sat' | 'ielts' | 'toefl';
+export { MODULE_TYPES, type ModuleType };
 
 export interface IModule {
   name: string;

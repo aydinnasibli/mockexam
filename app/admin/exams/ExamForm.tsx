@@ -7,7 +7,7 @@ import {
   Clock, HelpCircle, Coffee, ChevronDown, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { createExam, updateExam, type ActionResult, type ParsedModule } from '@/lib/actions/admin';
-import { MODULE_TYPES } from '@/lib/models/Exam';
+import { MODULE_TYPES } from '@/lib/exam-types';
 
 // ─── Exam types ───────────────────────────────────────────────────────────────
 
