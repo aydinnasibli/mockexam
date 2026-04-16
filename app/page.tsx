@@ -76,19 +76,52 @@ export default function Home() {
 
             {/* Right */}
             <div className="relative hidden lg:block">
-              <div className="absolute -top-12 -right-12 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -top-12 -right-12 w-64 h-64 bg-secondary-container/30 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl transform lg:rotate-3 hover:rotate-0 transition-transform duration-500 bg-surface-container-lowest">
-                <img
-                  className="w-full h-full object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCF8V6bxNju_IU3lEpfRjGMnz5r4YRJ8ki55XRqqxaALbvCZmIHGrEMxDDogkjCFu53dNTWskgbFEnmMWBGkAo5NWeJM4kGswfN2I4jvXGnc2arWW4waECgSbjvEgBRItPYQV89xCc1-bU2VVerEgHtBMzYJNt9Y30i6clDOE1hIDDocBQWe1j58S5bffT8GsckXbWvNVgRh2S-sLj0YxD1eOuNHfQsCWY6TkcspdYGhBLdx_bzUISYtPuyAcCb_JPwqdPUldaGypGy"
-                  alt="Tələbə oxuyur"
-                />
-                <div className="absolute inset-0 bg-primary/10" />
+
+              {/* Main gradient card */}
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl transform lg:rotate-3 hover:rotate-0 transition-transform duration-500 editorial-gradient p-8 min-h-[420px] flex flex-col justify-between">
+                {/* Decorative circles */}
+                <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full translate-x-1/3 -translate-y-1/3 blur-2xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full -translate-x-1/4 translate-y-1/4 blur-xl pointer-events-none" />
+
+                {/* Mock exam header */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-widest">SAT Mock Exam</span>
+                    <span className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      <Timer size={12} /> 32:14
+                    </span>
+                  </div>
+                  <p className="text-white/90 text-sm leading-relaxed mb-6 max-w-xs">
+                    If <span className="font-bold text-white">f(x) = 3x² − 5x + 2</span>, what is the value of <span className="font-bold text-white">f(−1)</span>?
+                  </p>
+                  {/* Mock options */}
+                  <div className="space-y-2.5">
+                    {['A  −6', 'B  0', 'C  10', 'D  14'].map((opt, i) => (
+                      <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${i === 2 ? 'bg-white text-primary shadow-md' : 'bg-white/10 text-white/80'}`}>
+                        {opt}
+                        {i === 2 && <CheckCircle2 size={14} className="ml-auto text-secondary" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="relative z-10 mt-6">
+                  <div className="flex justify-between text-xs text-white/60 mb-1.5">
+                    <span>Sual 14 / 27</span>
+                    <span>52%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full w-[52%] bg-white rounded-full" />
+                  </div>
+                </div>
               </div>
+
               {/* Floating Stat Card */}
-              <div className="absolute bottom-8 -left-8 bg-surface-container-lowest p-6 rounded-2xl shadow-xl max-w-[200px] border border-outline-variant/30">
-                <Sparkles className="text-secondary mb-2" size={36} />
+              <div className="absolute bottom-8 -left-8 bg-surface-container-lowest p-5 rounded-2xl shadow-xl max-w-[190px] border border-outline-variant/30">
+                <Sparkles className="text-secondary mb-2" size={28} />
                 <p className="text-2xl font-black text-primary">98%</p>
                 <p className="text-xs text-on-surface-variant font-medium">İstifadəçi müvəffəqiyyəti</p>
               </div>
