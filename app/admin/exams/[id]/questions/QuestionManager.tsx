@@ -2,6 +2,7 @@
 
 import 'katex/dist/katex.min.css';
 import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import katex from 'katex';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2,
@@ -211,6 +212,7 @@ function QuestionForm({
   onDone: () => void; onCancel: () => void;
 }) {
   const isEdit = !!initial;
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(
     initial
       ? { moduleIndex: initial.moduleIndex, type: initial.type, passage: initial.passage, stem: initial.stem, options: initial.options.length === 4 ? [...initial.options] : ['', '', '', ''], correctIndex: initial.correctIndex, explanation: initial.explanation }
@@ -235,6 +237,7 @@ function QuestionForm({
       }
       if ('error' in result) { setError(result.error); return; }
       onDone();
+      router.refresh();
     });
   }
 
@@ -317,6 +320,7 @@ function QuestionForm({
 // ─── Question card ────────────────────────────────────────────────────────────
 
 function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; examId: string }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [deleting, startDelete] = useTransition();
 
@@ -359,7 +363,7 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
         <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-secondary/10 text-secondary transition-colors" title="Düzəliş et">
           <Pencil size={14} />
         </button>
-        <button onClick={() => { if (!confirm('Bu sualı silmək istəyirsiniz?')) return; startDelete(() => { deleteQuestion(q.id).catch(() => {}); }); }}
+        <button onClick={() => { if (!confirm('Bu sualı silmək istəyirsiniz?')) return; startDelete(() => { deleteQuestion(q.id).then(() => router.refresh()).catch(() => {}); }); }}
           disabled={deleting} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50" title="Sil">
           <Trash2 size={14} />
         </button>
