@@ -1,310 +1,191 @@
-import Navbar from "@/components/layout/Navbar";
-import Sidebar from "@/components/layout/Sidebar";
-import { Timer, CheckCircle2, AlertCircle, TrendingUp, Download, Lightbulb, Brain, Gauge, BookOpen } from "lucide-react";
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import Navbar from '@/components/layout/Navbar';
+import { getUserResults } from '@/lib/db/results';
+import { getActiveExams } from '@/lib/db/exams';
+import dbConnect from '@/lib/mongodb';
+import Purchase from '@/lib/models/Purchase';
+import {
+  BarChart2, Timer, Trophy, ArrowRight, Play, Inbox, ChevronRight,
+} from 'lucide-react';
 
-export default function Analytics() {
+export const metadata = { title: 'Nəticələr — Məşqçi' };
+
+function formatDuration(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('az-AZ', {
+    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+export default async function AnalyticsPage() {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+
+  const [results, allExams] = await Promise.all([
+    getUserResults(userId),
+    getActiveExams(),
+  ]);
+
+  await dbConnect();
+  const purchases = await Purchase.find({ userId, status: 'COMPLETED' }, { examId: 1 }).lean();
+  const purchasedIds = new Set(purchases.map(p => p.examId));
+  const purchasedExams = allExams.filter(e => purchasedIds.has(e.id));
+
+  // Group results by examId
+  const byExam = new Map<string, typeof results>();
+  for (const r of results) {
+    if (!byExam.has(r.examId)) byExam.set(r.examId, []);
+    byExam.get(r.examId)!.push(r);
+  }
+
+  const totalAttempts = results.length;
+  const attemptedExams = byExam.size;
+  const bestScore = results.length > 0 ? Math.max(...results.map(r => r.score)) : null;
+
   return (
     <>
       <Navbar />
-      <div className="flex pt-20">
-        <Sidebar />
-        <main className="flex-1 md:ml-64 p-6 md:p-10 bg-surface-subtle min-h-screen">
-          {/* Hero Results Section */}
-          <section className="mb-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Score Card */}
-            <div className="lg:col-span-2 tc-gradient-hero p-10 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <h1 className="text-3xl font-extrabold font-headline tracking-tight mb-2">SAT Mock #432</h1>
-                    <p className="text-on-primary-container font-medium">24 Oktyabr, 2024</p>
-                  </div>
-                  <span className="bg-secondary px-4 py-1 rounded-full text-xs font-bold tracking-widest">ƏLA NƏTİCƏ</span>
-                </div>
-                <div className="flex items-baseline gap-4 mb-2">
-                  <span className="text-[5rem] font-black font-headline leading-none">1540</span>
-                  <span className="text-2xl text-on-primary-container font-medium">/ 1600</span>
-                </div>
-                <p className="text-lg text-white/80 max-w-md">
-                  Təbriklər! Sizin nəticəniz müraciət edənlərin top 1%-lik hissəsinə daxildir.
-                </p>
-              </div>
-              <div className="absolute right-[-10%] bottom-[-20%] w-64 h-64 bg-secondary rounded-full blur-[80px] opacity-20" />
-            </div>
+      <main className="pt-16 min-h-screen bg-surface-subtle">
+        <div className="max-w-5xl mx-auto px-6 py-10">
 
-            {/* Quick Stats Bento */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <Timer className="text-secondary mb-2" size={30} />
-                <span className="text-2xl font-bold font-headline">172 dəq</span>
-                <span className="text-xs text-outline font-medium">Ümumi vaxt</span>
-              </div>
-              <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <CheckCircle2 className="text-primary mb-2" size={30} />
-                <span className="text-2xl font-bold font-headline">94%</span>
-                <span className="text-xs text-outline font-medium">Düzgünlük</span>
-              </div>
-              <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <AlertCircle className="text-error mb-2" size={30} />
-                <span className="text-2xl font-bold font-headline">6</span>
-                <span className="text-xs text-outline font-medium">Səhv cavab</span>
-              </div>
-              <div className="bg-surface-container-lowest p-6 rounded-3xl flex flex-col justify-center items-center shadow-sm">
-                <TrendingUp className="text-tertiary mb-2" size={30} />
-                <span className="text-2xl font-bold font-headline">+40</span>
-                <span className="text-xs text-outline font-medium">Artım</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Categories Breakdown */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold font-headline mb-6 px-2">Bölmələr üzrə göstəricilər</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-surface-container-low p-8 rounded-3xl hover:bg-surface-bright transition-all duration-300">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-lg font-headline">SAT Math</h3>
-                  <span className="text-secondary font-bold">790/800</span>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-outline">Düzgün cavablar</span>
-                      <span>56 / 58</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
-                      <div className="h-full bg-secondary" style={{ width: '96%' }} />
-                    </div>
-                  </div>
-                  <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
-                    <div className="flex-1">
-                      <p className="text-[10px] text-outline font-bold uppercase mb-1">Cəbr</p>
-                      <p className="font-bold text-sm">Mükəmməl</p>
-                    </div>
-                    <div className="flex-1 border-l border-outline-variant/10 pl-4">
-                      <p className="text-[10px] text-outline font-bold uppercase mb-1">Həndəsə</p>
-                      <p className="font-bold text-sm">Təkmilləşdirilməli</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-surface-container-low p-8 rounded-3xl hover:bg-surface-bright transition-all duration-300">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-lg font-headline">Reading</h3>
-                  <span className="text-secondary font-bold">380/400</span>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-outline">Düzgün cavablar</span>
-                      <span>48 / 52</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
-                      <div className="h-full bg-secondary" style={{ width: '92%' }} />
-                    </div>
-                  </div>
-                  <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
-                    <div className="flex-1">
-                      <p className="text-[10px] text-outline font-bold uppercase mb-1">Analiz</p>
-                      <p className="font-bold text-sm">Yüksək</p>
-                    </div>
-                    <div className="flex-1 border-l border-outline-variant/10 pl-4">
-                      <p className="text-[10px] text-outline font-bold uppercase mb-1">Lüğət</p>
-                      <p className="font-bold text-sm">Orta</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-surface-container-low p-8 rounded-3xl hover:bg-surface-bright transition-all duration-300">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-lg font-headline">Writing</h3>
-                  <span className="text-secondary font-bold">370/400</span>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-outline">Düzgün cavablar</span>
-                      <span>40 / 44</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
-                      <div className="h-full bg-secondary" style={{ width: '90%' }} />
-                    </div>
-                  </div>
-                  <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
-                    <div className="flex-1">
-                      <p className="text-[10px] text-outline font-bold uppercase mb-1">Qrammatika</p>
-                      <p className="font-bold text-sm">Əla</p>
-                    </div>
-                    <div className="flex-1 border-l border-outline-variant/10 pl-4">
-                      <p className="text-[10px] text-outline font-bold uppercase mb-1">Punktuasiya</p>
-                      <p className="font-bold text-sm">Təkrarlamalı</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Error Analysis Section */}
-          <section className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-              <div>
-                <h2 className="text-3xl font-extrabold font-headline tracking-tight mb-2">Səhvlərin analizi</h2>
-                <p className="text-outline max-w-lg">Səhv cavablandırdığınız sualların detallı izahı və mövzu üzrə təsnifatı.</p>
-              </div>
-              <button className="bg-surface-container-high text-primary font-bold py-3 px-6 rounded-xl hover:bg-surface-dim transition-colors flex items-center gap-2">
-                <Download size={18} />
-                PDF Yüklə
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div className="p-6 bg-surface-container-low rounded-2xl group hover:bg-surface-bright transition-all">
-                <div className="flex flex-wrap gap-3 mb-4">
-                  <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full text-[10px] font-bold uppercase">Sual 14</span>
-                  <span className="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full text-[10px] font-bold uppercase">Math - Functions</span>
-                  <span className="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-bold uppercase">Çətinlik: Orta</span>
-                </div>
-                <h4 className="font-headline font-bold text-lg mb-4 leading-relaxed">
-                  If f(x) = ax² + bx + c and the graph of y = f(x) passes through the points (0, 3) and (1, 4), which of the following could be the value of a + b?
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 p-6 bg-white rounded-xl">
-                  <div>
-                    <p className="text-[10px] font-black text-error mb-3 tracking-widest">SİZİN CAVABINIZ</p>
-                    <div className="p-4 border-2 border-error/20 bg-error/5 rounded-lg font-medium text-error">B) 7</div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-secondary mb-3 tracking-widest">DÜZGÜN CAVAB</p>
-                    <div className="p-4 border-2 border-secondary/20 bg-secondary/5 rounded-lg font-medium text-secondary">A) 1</div>
-                  </div>
-                </div>
-                <div className="mt-6 p-6 border-t border-outline-variant/10">
-                  <p className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-                    <Lightbulb size={16} />
-                    Ekspert İzahı:
-                  </p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    f(0) = 3 olduğu üçün c = 3 tapılır. f(1) = 4 olduğu üçün a(1)² + b(1) + 3 = 4, yəni a + b + 3 = 4. Buradan a + b = 1 nəticəsi alınır.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-6 bg-surface-container-low rounded-2xl group hover:bg-surface-bright transition-all">
-                <div className="flex flex-wrap gap-3 mb-4">
-                  <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full text-[10px] font-bold uppercase">Sual 32</span>
-                  <span className="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full text-[10px] font-bold uppercase">Reading - Evidence Based</span>
-                  <span className="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-bold uppercase">Çətinlik: Çətin</span>
-                </div>
-                <h4 className="font-headline font-bold text-lg mb-4 leading-relaxed">
-                  Which choice best describes the central theme of the passage regarding the industrial revolution&apos;s impact on rural communities?
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 p-6 bg-white rounded-xl">
-                  <div>
-                    <p className="text-[10px] font-black text-error mb-3 tracking-widest">SİZİN CAVABINIZ</p>
-                    <div className="p-4 border-2 border-error/20 bg-error/5 rounded-lg font-medium text-error">D) Complete disappearance of traditions</div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-secondary mb-3 tracking-widest">DÜZGÜN CAVAB</p>
-                    <div className="p-4 border-2 border-secondary/20 bg-secondary/5 rounded-lg font-medium text-secondary">C) Gradual transformation and adaptation</div>
-                  </div>
-                </div>
-                <div className="mt-6 p-6 border-t border-outline-variant/10">
-                  <p className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-                    <Lightbulb size={16} />
-                    Ekspert İzahı:
-                  </p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    Mətndə 14-cü sətirdə qeyd olunduğu kimi, kənd həyatı tamamilə yox olmur, əksinə yeni iqtisadi reallıqlara uyğunlaşır. &quot;Complete disappearance&quot; ifadəsi mətndəki &quot;evolution&quot; sözü ilə ziddiyyət təşkil edir.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Chart Section */}
-          <section className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm">
-              <h3 className="font-bold font-headline mb-6">Nəticə Trendi</h3>
-              <div className="h-64 flex items-end justify-between gap-2 px-2">
-                {[['40%','1240'],['55%','1380'],['65%','1420'],['85%','1510'],['100%','1540']].map(([h, val]) => (
-                  <div key={val} className="w-full bg-primary-fixed-dim/20 rounded-t-lg relative group" style={{ height: h }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-white text-[10px] px-2 py-1 rounded">{val}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-4 text-[10px] font-bold text-outline">
-                <span>Sentyabr</span>
-                <span>Oktyabr</span>
-              </div>
-            </div>
-
-            <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm">
-              <h3 className="font-bold font-headline mb-2">Güclü Tərəfləriniz</h3>
-              <p className="text-xs text-outline mb-8">Data analiz əsasında fokuslanmalı olduğunuz sahələr.</p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-secondary/10 text-secondary rounded-lg">
-                    <Brain size={22} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span>Məntiqi Təfəkkür</span>
-                      <span>98%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-surface-container rounded-full">
-                      <div className="h-full bg-secondary rounded-full" style={{ width: '98%' }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                    <Gauge size={22} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span>Vaxt İdarəetməsi</span>
-                      <span>85%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-surface-container rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: '85%' }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-tertiary/10 text-tertiary rounded-lg">
-                    <BookOpen size={22} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span>Sürətli Oxuma</span>
-                      <span>72%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-surface-container rounded-full">
-                      <div className="h-full bg-tertiary rounded-full" style={{ width: '72%' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
-      <footer className="w-full bg-surface-container-low border-t border-outline-variant ml-0 md:ml-64 relative z-10">
-        <div className="w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
-          <div className="flex flex-col items-center md:items-start gap-1 mb-4 md:mb-0">
-            <div className="text-sm font-bold text-primary font-headline">Test Centre</div>
-            <p className="text-xs text-on-surface-variant">© 2024 Test Centre. Bütün hüquqlar qorunur.</p>
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-extrabold text-primary font-headline mb-1">Nəticələrim</h1>
+            <p className="text-on-surface-variant text-sm">Bütün imtahan cəhdlərinin tarixi və statistikası</p>
           </div>
-          <div className="flex gap-6">
-            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">İstifadəçi şərtləri</a>
-            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">Məxfilik siyasəti</a>
-            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">Dəstək</a>
-            <a className="text-xs text-on-surface-variant hover:text-secondary transition-colors" href="#">Əlaqə</a>
-          </div>
+
+          {/* Summary stats */}
+          {totalAttempts > 0 && (
+            <div className="grid grid-cols-3 gap-4 mb-10">
+              <div className="bg-white rounded-2xl border border-outline-variant/40 p-5 shadow-sm text-center">
+                <div className="text-3xl font-black text-primary mb-1">{totalAttempts}</div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Ümumi cəhd</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-outline-variant/40 p-5 shadow-sm text-center">
+                <div className="text-3xl font-black text-primary mb-1">{attemptedExams}</div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">İmtahan növü</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-outline-variant/40 p-5 shadow-sm text-center">
+                <div className="text-3xl font-black text-secondary mb-1">{bestScore != null ? `${bestScore}%` : '—'}</div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Ən yüksək bal</p>
+              </div>
+            </div>
+          )}
+
+          {/* Per-exam results */}
+          {purchasedExams.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-outline-variant/40 p-16 flex flex-col items-center text-center shadow-sm">
+              <Inbox className="text-outline mb-4" size={40} />
+              <h3 className="text-base font-bold text-primary mb-2">Hələ sınaq yoxdur</h3>
+              <p className="text-sm text-on-surface-variant mb-6">Sınaq aldıqdan sonra nəticələriniz burada görünəcək.</p>
+              <Link href="/exams" className="editorial-gradient text-white px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
+                Sınaqları kəşf et
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {purchasedExams.map(exam => {
+                const examResults = byExam.get(exam.id) ?? [];
+                const attempts = examResults.length;
+                const best = attempts > 0 ? Math.max(...examResults.map(r => r.score)) : null;
+                const last = examResults[0];
+                const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
+
+                return (
+                  <div key={exam.id} className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+                    {/* Exam header */}
+                    <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-secondary-fixed/60 text-secondary rounded-full">
+                            {exam.tag}
+                          </span>
+                          {attempts > 0 && (
+                            <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
+                              {attempts} cəhd
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-bold text-primary font-headline text-base">{exam.title}</h3>
+                        <div className="flex items-center gap-4 mt-1.5 text-xs text-on-surface-variant">
+                          <span className="flex items-center gap-1"><Timer size={11} />{examMinutes} dəq</span>
+                          {best != null && (
+                            <span className="flex items-center gap-1"><Trophy size={11} className="text-secondary" />Ən yaxşı: {best}%</span>
+                          )}
+                          {last && (
+                            <span className="flex items-center gap-1"><BarChart2 size={11} />Son: {last.score}%</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {attempts > 0 && (
+                          <Link
+                            href={`/analytics/${exam.id}`}
+                            className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors"
+                          >
+                            <BarChart2 size={14} /> Nəticələr
+                          </Link>
+                        )}
+                        <Link
+                          href={`/exam-session/${exam.id}`}
+                          className="flex items-center gap-1.5 px-4 py-2 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity shadow-sm"
+                        >
+                          <Play size={14} /> {attempts === 0 ? 'Başla' : 'Yenidən'}
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Last 3 attempts */}
+                    {examResults.length > 0 && (
+                      <div className="border-t border-outline-variant/20">
+                        <div className="divide-y divide-outline-variant/10">
+                          {examResults.slice(0, 3).map(r => (
+                            <div key={r.id} className="px-6 py-3 flex items-center justify-between text-sm">
+                              <span className="text-on-surface-variant font-medium">
+                                #{r.attemptNumber} · {formatDate(r.completedAt)}
+                              </span>
+                              <div className="flex items-center gap-4">
+                                <span className="flex items-center gap-1 text-xs text-on-surface-variant">
+                                  <Timer size={11} />{formatDuration(r.durationSeconds)}
+                                </span>
+                                <span className={`font-black text-sm ${r.score >= 80 ? 'text-green-600' : r.score >= 60 ? 'text-amber-600' : 'text-red-500'}`}>
+                                  {r.score}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {examResults.length > 3 && (
+                          <Link href={`/analytics/${exam.id}`} className="flex items-center justify-center gap-1 py-3 text-xs font-bold text-secondary hover:bg-surface-container transition-colors">
+                            Hamısına bax <ChevronRight size={12} />
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Exams not yet attempted */}
+          {purchasedExams.some(e => !byExam.has(e.id)) && (
+            <div className="mt-8 p-5 bg-white rounded-2xl border border-outline-variant/40 shadow-sm">
+              <p className="text-sm text-on-surface-variant">
+                <span className="font-bold text-primary">{purchasedExams.filter(e => !byExam.has(e.id)).length}</span> sınağa hələ başlamadınız.{' '}
+                <Link href="/dashboard" className="text-secondary font-bold hover:underline">Panelə get →</Link>
+              </p>
+            </div>
+          )}
         </div>
-      </footer>
+      </main>
     </>
   );
 }
