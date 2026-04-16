@@ -76,13 +76,11 @@ export async function POST(req: NextRequest) {
   try {
     await dbConnect();
 
-    // Upsert — idempotent: if we receive the same event twice, do nothing
+    // Upsert by (userId, examId) — idempotent even if webhook fires twice
     await Purchase.findOneAndUpdate(
-      { lsOrderId },
+      { userId, examId },
       {
-        $setOnInsert: {
-          userId,
-          examId,
+        $set: {
           lsOrderId,
           amountCents: totalCents,
           currency,
