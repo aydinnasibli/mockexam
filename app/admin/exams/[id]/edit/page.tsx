@@ -16,29 +16,12 @@ export default async function EditExamPage({ params }: Props) {
 
   await dbConnect();
   const exam = await ExamModel.findOne({ examId: id }).lean();
-
   if (!exam) notFound();
-
-  const initialData = {
-    examId: exam.examId,
-    title: exam.title,
-    type: exam.type,
-    description: exam.description,
-    tag: exam.tag,
-    price: String(exam.price),
-    durationMinutes: String(exam.durationMinutes),
-    totalQuestions: String(exam.totalQuestions),
-    features: exam.features.length > 0 ? exam.features : [''],
-    isActive: exam.isActive,
-  };
 
   return (
     <div>
       <div className="mb-6">
-        <Link
-          href="/admin/exams"
-          className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
-        >
+        <Link href="/admin/exams" className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors">
           <ChevronLeft size={16} /> İmtahanlara qayıt
         </Link>
       </div>
@@ -46,7 +29,28 @@ export default async function EditExamPage({ params }: Props) {
         İmtahanı Düzəlt
       </h1>
       <p className="text-on-surface-variant text-sm mb-8 font-mono">{id}</p>
-      <ExamForm mode="edit" initialData={initialData} examId={id} />
+      <ExamForm
+        mode="edit"
+        examId={id}
+        defaultValues={{
+          title:       exam.title,
+          type:        exam.type,
+          description: exam.description,
+          tag:         exam.tag,
+          price:       exam.price,
+          features:    exam.features.length > 0 ? exam.features : [''],
+          isActive:    exam.isActive,
+          modules:     exam.modules.map(m => ({
+            name:              m.name,
+            type:              m.type,
+            durationMinutes:   m.durationMinutes,
+            questions:         m.questions,
+            breakAfterMinutes: m.breakAfterMinutes,
+            isAdaptive:        m.isAdaptive ?? false,
+            instructions:      m.instructions ?? '',
+          })),
+        }}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import { mockExams } from '@/lib/data';
+import { getExamById } from '@/lib/db/exams';
 
 /**
  * POST /api/checkout
@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const exam = mockExams.find((e) => e.id === examId);
+    await dbConnect();
+    const exam = await getExamById(examId);
     if (!exam) {
       return NextResponse.json({ error: 'Exam not found' }, { status: 404 });
     }
@@ -49,7 +50,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Prevent double-purchase
-    await dbConnect();
     const existing = await Purchase.findOne({ userId, examId });
     if (existing) {
       return NextResponse.json({ alreadyPurchased: true }, { status: 409 });

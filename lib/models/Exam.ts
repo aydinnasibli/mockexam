@@ -2,43 +2,87 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export type ExamType = 'sat' | 'ielts' | 'toefl' | 'dim' | 'gre';
 
+export const MODULE_TYPES = [
+  { value: 'reading',      label: 'Reading' },
+  { value: 'writing',      label: 'Writing' },
+  { value: 'listening',    label: 'Listening' },
+  { value: 'speaking',     label: 'Speaking' },
+  { value: 'math',         label: 'Math / Riyaziyyat' },
+  { value: 'verbal',       label: 'Verbal Reasoning' },
+  { value: 'quantitative', label: 'Quantitative Reasoning' },
+  { value: 'analytical',   label: 'Analytical Writing' },
+  { value: 'general',      label: 'Ümumi / General' },
+] as const;
+
+export type ModuleType = typeof MODULE_TYPES[number]['value'];
+
+export interface IModule {
+  name: string;
+  type: ModuleType;
+  durationMinutes: number;
+  questions: number;        // 0 for open-ended (speaking/writing)
+  breakAfterMinutes: number; // rest before next module; 0 = no break
+  isAdaptive: boolean;
+  instructions: string;     // shown to user before the module starts
+}
+
 export interface IExam extends Document {
-  examId: string;        // URL-safe unique identifier (e.g. "sat-mock-1")
+  examId: string;
   title: string;
   type: ExamType;
   description: string;
   tag: string;
-  price: number;         // AZN
-  durationMinutes: number;
-  totalQuestions: number;
+  price: number;
   features: string[];
+  modules: IModule[];
+  // stored, auto-computed from modules when modules are present
+  totalQuestions: number;
+  durationMinutes: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
+const ModuleSchema = new Schema<IModule>(
+  {
+    name:               { type: String, required: true, trim: true },
+    type:               { type: String, required: true, enum: MODULE_TYPES.map(t => t.value) },
+    durationMinutes:    { type: Number, required: true, min: 1 },
+    questions:          { type: Number, required: true, min: 0, default: 0 },
+    breakAfterMinutes:  { type: Number, required: true, min: 0, default: 0 },
+    isAdaptive:         { type: Boolean, default: false },
+    instructions:       { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const ExamSchema = new Schema<IExam>(
   {
-    examId: { type: String, required: true, unique: true, trim: true },
-    title: { type: String, required: true, trim: true },
-    type: {
-      type: String,
-      required: true,
-      enum: ['sat', 'ielts', 'toefl', 'dim', 'gre'],
-    },
-    description: { type: String, required: true },
-    tag: { type: String, required: true, trim: true },
-    price: { type: Number, required: true, min: 0 },
-    durationMinutes: { type: Number, required: true, min: 1 },
-    totalQuestions: { type: Number, required: true, min: 1 },
-    features: [{ type: String }],
-    isActive: { type: Boolean, default: true },
+    examId:         { type: String, required: true, unique: true, trim: true },
+    title:          { type: String, required: true, trim: true },
+    type:           { type: String, required: true, enum: ['sat', 'ielts', 'toefl', 'dim', 'gre'] },
+    description:    { type: String, required: true },
+    tag:            { type: String, required: true, trim: true },
+    price:          { type: Number, required: true, min: 0 },
+    features:       [{ type: String }],
+    modules:        [ModuleSchema],
+    totalQuestions: { type: Number, required: true, default: 0 },
+    durationMinutes:{ type: Number, required: true, default: 0 },
+    isActive:       { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
 ExamSchema.index({ type: 1 });
 ExamSchema.index({ isActive: 1 });
+
+/** Compute totalQuestions and durationMinutes from the modules array. */
+export function computeExamTotals(modules: Pick<IModule, 'questions' | 'durationMinutes' | 'breakAfterMinutes'>[]) {
+  return {
+    totalQuestions:  modules.reduce((s, m) => s + (m.questions ?? 0), 0),
+    durationMinutes: modules.reduce((s, m) => s + m.durationMinutes + (m.breakAfterMinutes ?? 0), 0),
+  };
+}
 
 const ExamModel: Model<IExam> =
   (mongoose.models.Exam as Model<IExam>) ||
