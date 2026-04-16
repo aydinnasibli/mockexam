@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { getExamById } from '@/lib/db/exams';
+import { getExamQuestions } from '@/lib/actions/questions';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamSessionClient from './ExamSessionClient';
@@ -31,5 +32,7 @@ export default async function ExamSessionPage({ params }: Props) {
   if (!exam) notFound();
   if (!purchase) redirect(`/checkout/${id}`);
 
-  return <ExamSessionClient exam={exam} />;
+  const questions = await getExamQuestions(id);
+
+  return <ExamSessionClient exam={exam} questions={questions} />;
 }
