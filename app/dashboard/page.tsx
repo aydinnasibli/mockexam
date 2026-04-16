@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useUser, SignOutButton } from "@clerk/nextjs";
-import { mockExams } from "@/lib/data";
 import { useState, useEffect } from "react";
+import type { PublicExam } from "@/lib/db/exams";
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, BarChart2,
   User, HelpCircle, LogOut, Bell, Settings,
@@ -38,20 +38,26 @@ function todayString() {
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
-  const [purchasesLoading, setPurchasesLoading] = useState(true);
+  const [allExams, setAllExams] = useState<PublicExam[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/purchases")
-      .then(r => r.json())
-      .then(data => { if (data.examIds) setPurchasedIds(data.examIds); })
+    Promise.all([
+      fetch("/api/purchases").then(r => r.json()),
+      fetch("/api/exams").then(r => r.json()),
+    ])
+      .then(([purchases, examsData]) => {
+        if (purchases.examIds) setPurchasedIds(purchases.examIds);
+        if (examsData.exams) setAllExams(examsData.exams);
+      })
       .catch(() => {})
-      .finally(() => setPurchasesLoading(false));
+      .finally(() => setLoading(false));
   }, []);
 
-  const purchasedExams = mockExams.filter(e => purchasedIds.includes(e.id));
-  const recommendedExams = mockExams.filter(e => !purchasedIds.includes(e.id)).slice(0, 2);
+  const purchasedExams = allExams.filter(e => purchasedIds.includes(e.id));
+  const recommendedExams = allExams.filter(e => !purchasedIds.includes(e.id)).slice(0, 2);
 
-  if (!isLoaded || purchasesLoading) {
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-3">

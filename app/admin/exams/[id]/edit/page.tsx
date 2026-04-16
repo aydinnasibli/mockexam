@@ -21,10 +21,7 @@ export default async function EditExamPage({ params }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <Link
-          href="/admin/exams"
-          className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
-        >
+        <Link href="/admin/exams" className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors">
           <ChevronLeft size={16} /> İmtahanlara qayıt
         </Link>
       </div>
@@ -36,15 +33,22 @@ export default async function EditExamPage({ params }: Props) {
         mode="edit"
         examId={id}
         defaultValues={{
-          title: exam.title,
-          type: exam.type,
+          title:       exam.title,
+          type:        exam.type,
           description: exam.description,
-          tag: exam.tag,
-          price: exam.price,
-          durationMinutes: exam.durationMinutes,
-          totalQuestions: exam.totalQuestions,
-          features: exam.features.length > 0 ? exam.features : [''],
-          isActive: exam.isActive,
+          tag:         exam.tag,
+          price:       exam.price,
+          features:    exam.features.length > 0 ? exam.features : [''],
+          isActive:    exam.isActive,
+          modules:     exam.modules.map(m => ({
+            name:              m.name,
+            type:              m.type,
+            durationMinutes:   m.durationMinutes,
+            questions:         m.questions,
+            breakAfterMinutes: m.breakAfterMinutes,
+            isAdaptive:        m.isAdaptive ?? false,
+            instructions:      m.instructions ?? '',
+          })),
         }}
       />
     </div>
