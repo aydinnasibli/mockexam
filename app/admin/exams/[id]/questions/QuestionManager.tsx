@@ -359,7 +359,7 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
         <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-secondary/10 text-secondary transition-colors" title="Düzəliş et">
           <Pencil size={14} />
         </button>
-        <button onClick={() => { if (!confirm('Bu sualı silmək istəyirsiniz?')) return; startDelete(() => deleteQuestion(q.id)); }}
+        <button onClick={() => { if (!confirm('Bu sualı silmək istəyirsiniz?')) return; startDelete(() => { deleteQuestion(q.id).catch(() => {}); }); }}
           disabled={deleting} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50" title="Sil">
           <Trash2 size={14} />
         </button>
