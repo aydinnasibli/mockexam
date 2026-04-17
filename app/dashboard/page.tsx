@@ -6,7 +6,7 @@ import { getUserResults } from '@/lib/db/results';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import {
-  BarChart2,
+  BarChart2, Settings,
   GraduationCap, ShoppingBag, PlusCircle, Play,
   Timer, HelpCircle, ArrowRight,
   Monitor, Globe, BookOpen, TrendingUp, Sparkles, Clock,
