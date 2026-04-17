@@ -17,8 +17,10 @@ export async function saveExamResult(data: {
 
   const { examId, startedAt, durationSeconds, score } = data;
 
-  if (typeof durationSeconds !== 'number' || durationSeconds < 0) return { error: 'Invalid durationSeconds' };
-  if (typeof score !== 'number' || score < 0 || score > 100) return { error: 'Invalid score' };
+  if (typeof durationSeconds !== 'number' || durationSeconds < 0 || !Number.isFinite(durationSeconds)) return { error: 'Invalid durationSeconds' };
+  if (typeof score !== 'number' || score < 0 || score > 100 || !Number.isFinite(score)) return { error: 'Invalid score' };
+  const startDate = new Date(startedAt);
+  if (isNaN(startDate.getTime())) return { error: 'Invalid startedAt date' };
 
   await dbConnect();
 
@@ -36,7 +38,7 @@ export async function saveExamResult(data: {
     examTitle: exam.title,
     examTag: exam.tag,
     attemptNumber,
-    startedAt: new Date(startedAt),
+    startedAt: startDate,
     completedAt: new Date(),
     durationSeconds,
     totalQuestions: exam.totalQuestions,

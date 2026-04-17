@@ -3,18 +3,18 @@ import mongoose from 'mongoose';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error('MONGODB_URI environment variable is not defined');
 }
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
-let cached = (global as any).mongoose;
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongooseCache: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
+}
+
+let cached = global._mongooseCache;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = global._mongooseCache = { conn: null, promise: null };
 }
 
 async function dbConnect() {
@@ -42,7 +42,6 @@ async function dbConnect() {
   // Drop legacy indexes left over from previous schema versions
   try {
     await mongoose.connection.collection('purchases').dropIndex('squarePaymentId_1');
-    console.log('[db] Dropped legacy squarePaymentId_1 index');
   } catch {
     // Index doesn't exist — nothing to do
   }
