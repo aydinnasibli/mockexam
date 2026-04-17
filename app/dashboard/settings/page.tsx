@@ -2,10 +2,8 @@
 
 import { useClerk, useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
-import Link from 'next/link';
 import {
-  LayoutDashboard, BarChart2, Settings, PlusCircle, LogOut,
-  User, Mail, Shield, ChevronRight, Pencil, CalendarDays,
+  User, Mail, Shield, ChevronRight, Pencil, CalendarDays, LogOut,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -21,60 +19,7 @@ export default function SettingsPage() {
     : '';
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen">
-
-      {/* ── Sidebar ── */}
-      <aside className="h-screen w-64 fixed left-0 top-0 flex flex-col py-6 bg-surface-container-low border-r border-outline-variant/40 z-40">
-        <div className="px-6 mb-6">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-lg editorial-gradient flex items-center justify-center">
-              <span className="text-white text-[10px] font-black">TC</span>
-            </div>
-            <span className="text-base font-extrabold text-primary tracking-tight font-headline">Test Centre</span>
-          </Link>
-        </div>
-
-        <div className="flex items-center px-6 mb-7 gap-3">
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="Avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
-          ) : (
-            <div className="w-10 h-10 rounded-full editorial-gradient flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-black">{firstName[0]}</span>
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="font-bold text-primary text-sm leading-tight truncate">{fullName}</p>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5 truncate">{email}</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 flex flex-col gap-0.5 px-3">
-          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
-            <LayoutDashboard size={18} className="opacity-70" /> Panel
-          </Link>
-          <Link href="/analytics" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
-            <BarChart2 size={18} className="opacity-70" /> Nəticələr
-          </Link>
-          <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-white text-primary shadow-sm">
-            <Settings size={18} className="text-secondary" /> Parametrlər
-          </Link>
-        </nav>
-
-        <div className="px-4 mt-4 space-y-2">
-          <Link href="/exams" className="w-full editorial-gradient text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm">
-            <PlusCircle size={16} /> Sınaq Əldə Et
-          </Link>
-          <SignOutButton>
-            <button className="w-full text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:text-error transition-colors text-sm font-medium rounded-xl hover:bg-white/50">
-              <LogOut size={16} /> Çıxış
-            </button>
-          </SignOutButton>
-        </div>
-      </aside>
-
-      {/* ── Main ── */}
-      <main className="ml-64 min-h-screen bg-surface-subtle">
+    <main className="min-h-screen bg-[#f0f2f5]">
         <div className="max-w-2xl mx-auto px-8 py-10">
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">Parametrlər</h1>
@@ -176,6 +121,5 @@ export default function SettingsPage() {
         </div>
         </div>
       </main>
-    </div>
   );
 }
