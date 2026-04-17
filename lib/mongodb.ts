@@ -39,6 +39,14 @@ async function dbConnect() {
     throw e;
   }
 
+  // Drop legacy indexes left over from previous schema versions
+  try {
+    await mongoose.connection.collection('purchases').dropIndex('squarePaymentId_1');
+    console.log('[db] Dropped legacy squarePaymentId_1 index');
+  } catch {
+    // Index doesn't exist — nothing to do
+  }
+
   return cached.conn;
 }
 
