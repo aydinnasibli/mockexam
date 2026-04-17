@@ -93,7 +93,8 @@ export async function POST(req: NextRequest) {
     console.log(`[webhook] Purchase recorded: userId=${userId}, examId=${examId}, orderId=${lsOrderId}`);
     return NextResponse.json({ received: true });
   } catch (err) {
-    console.error('[webhook] DB error:', err);
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error('[webhook] DB error:', detail);
+    return NextResponse.json({ error: 'Database error', detail }, { status: 500 });
   }
 }
