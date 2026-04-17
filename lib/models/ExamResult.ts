@@ -1,5 +1,22 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
+export interface IAnswerRecord {
+  questionId: string;
+  moduleIndex: number;
+  userAnswer: number;    // -1 = unanswered, 0-3 = selected option
+  correctIndex: number;
+  isCorrect: boolean;
+  timeSeconds: number;
+}
+
+export interface IModuleScore {
+  moduleIndex: number;
+  moduleName: string;
+  correct: number;
+  total: number;
+  scorePercent: number;
+}
+
 export interface IExamResult extends Document {
   userId: string;
   examId: string;
@@ -10,9 +27,28 @@ export interface IExamResult extends Document {
   completedAt: Date;
   durationSeconds: number;
   totalQuestions: number;
-  score: number; // 0–100 percentage
+  score: number;
+  answers: IAnswerRecord[];
+  moduleScores: IModuleScore[];
   createdAt: Date;
 }
+
+const AnswerRecordSchema = new Schema<IAnswerRecord>({
+  questionId:   { type: String, required: true },
+  moduleIndex:  { type: Number, required: true },
+  userAnswer:   { type: Number, required: true },
+  correctIndex: { type: Number, required: true },
+  isCorrect:    { type: Boolean, required: true },
+  timeSeconds:  { type: Number, required: true, default: 0 },
+}, { _id: false });
+
+const ModuleScoreSchema = new Schema<IModuleScore>({
+  moduleIndex:  { type: Number, required: true },
+  moduleName:   { type: String, required: true },
+  correct:      { type: Number, required: true },
+  total:        { type: Number, required: true },
+  scorePercent: { type: Number, required: true },
+}, { _id: false });
 
 const ExamResultSchema = new Schema<IExamResult>(
   {
@@ -26,6 +62,8 @@ const ExamResultSchema = new Schema<IExamResult>(
     durationSeconds: { type: Number, required: true, min: 0 },
     totalQuestions:  { type: Number, required: true, min: 0 },
     score:           { type: Number, required: true, min: 0, max: 100 },
+    answers:         { type: [AnswerRecordSchema], default: [] },
+    moduleScores:    { type: [ModuleScoreSchema],  default: [] },
   },
   { timestamps: true }
 );

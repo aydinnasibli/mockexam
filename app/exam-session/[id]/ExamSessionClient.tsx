@@ -28,7 +28,6 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// Render text with inline $...$ and block $$...$$ LaTeX
 function MathText({ text, block = false }: { text: string; block?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -49,19 +48,23 @@ function MathText({ text, block = false }: { text: string; block?: boolean }) {
 
 export default function ExamSessionClient({ exam, questions }: Props) {
   const router = useRouter();
-  const startedAtRef = useRef(new Date());
-  const [elapsed, setElapsed] = useState(0);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Map<string, number>>(new Map());
+  const startedAtRef    = useRef(new Date());
+  const currentIdxRef   = useRef(0);
+  const qEnterTimeRef   = useRef<number>(Date.now());
+  const qTimeSecsRef    = useRef<Map<string, number>>(new Map());
+
+  const [elapsed, setElapsed]         = useState(0);
+  const [currentIdx, setCurrentIdx]   = useState(0);
+  const [answers, setAnswers]         = useState<Map<string, number>>(new Map());
   const [openAnswers, setOpenAnswers] = useState<Map<string, string>>(new Map());
-  const [flagged, setFlagged] = useState<Set<string>>(new Set());
-  const [showGrid, setShowGrid] = useState(false);
+  const [flagged, setFlagged]         = useState<Set<string>>(new Set());
+  const [showGrid, setShowGrid]       = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   const totalSeconds = exam.durationMinutes * 60;
-  const remaining = Math.max(0, totalSeconds - elapsed);
+  const remaining    = Math.max(0, totalSeconds - elapsed);
 
   useEffect(() => {
     const id = setInterval(() => setElapsed(s => s + 1), 1000);
@@ -73,6 +76,14 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining]);
 
+  function recordCurrentQuestionTime() {
+    const q = questions[currentIdxRef.current];
+    if (!q) return;
+    const secs = (Date.now() - qEnterTimeRef.current) / 1000;
+    qTimeSecsRef.current.set(q.id, (qTimeSecsRef.current.get(q.id) ?? 0) + secs);
+    qEnterTimeRef.current = Date.now();
+  }
+
   const calculateScore = useCallback(() => {
     const mcq = questions.filter(q => q.type === 'mcq');
     if (mcq.length === 0) return 0;
@@ -81,26 +92,52 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   }, [questions, answers]);
 
   const handleSubmit = useCallback(async () => {
+    recordCurrentQuestionTime();
     setSubmitting(true);
     setShowConfirm(false);
     setSubmitError('');
     try {
       const score = calculateScore();
+
+      const answerRecords = questions.map(q => ({
+        questionId:   q.id,
+        moduleIndex:  q.moduleIndex,
+        userAnswer:   answers.get(q.id) ?? -1,
+        correctIndex: q.correctIndex,
+        isCorrect:    q.type === 'mcq' && (answers.get(q.id) ?? -1) === q.correctIndex,
+        timeSeconds:  Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
+      }));
+
+      const moduleScores = exam.modules.map((mod, modIdx) => {
+        const modQs  = questions.filter(q => q.moduleIndex === modIdx && q.type === 'mcq');
+        const correct = modQs.filter(q => answers.get(q.id) === q.correctIndex).length;
+        return {
+          moduleIndex:  modIdx,
+          moduleName:   mod.name,
+          correct,
+          total:        modQs.length,
+          scorePercent: modQs.length > 0 ? Math.round((correct / modQs.length) * 100) : 0,
+        };
+      });
+
       const result = await saveExamResult({
-        examId: exam.id,
-        startedAt: startedAtRef.current.toISOString(),
+        examId:          exam.id,
+        startedAt:       startedAtRef.current.toISOString(),
         durationSeconds: Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000),
         score,
+        answers:         answerRecords,
+        moduleScores,
       });
       if ('error' in result) throw new Error(result.error);
-      router.push(`/analytics/${exam.id}`);
+      router.push(`/analytics/${exam.id}/${result.attemptNumber}/review`);
     } catch {
       setSubmitError('Nəticə göndərilmədi. Yenidən cəhd edin.');
       setSubmitting(false);
     }
-  }, [exam.id, router, calculateScore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exam, router, calculateScore, answers, questions]);
 
-  const current = questions[currentIdx] ?? null;
+  const current       = questions[currentIdx] ?? null;
   const currentModule = current ? exam.modules[current.moduleIndex] : null;
   const answeredCount = answers.size;
   const hasNoQuestions = questions.length === 0;
@@ -118,11 +155,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   }
 
   function goTo(idx: number) {
-    setCurrentIdx(Math.max(0, Math.min(questions.length - 1, idx)));
+    recordCurrentQuestionTime();
+    const newIdx = Math.max(0, Math.min(questions.length - 1, idx));
+    currentIdxRef.current = newIdx;
+    setCurrentIdx(newIdx);
     setShowGrid(false);
   }
 
-  // Group questions by module for the grid
   const questionsByModule = exam.modules.map((mod, modIdx) => ({
     mod, modIdx,
     qs: questions.filter(q => q.moduleIndex === modIdx),
@@ -173,7 +212,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             </button>
           </div>
         </div>
-        {/* Progress bar */}
         {!hasNoQuestions && questions.length > 0 && (
           <div className="h-0.5 w-full bg-outline-variant/20">
             <div
@@ -203,15 +241,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     {qs.map(q => {
                       const globalIdx = questions.indexOf(q);
                       const isAnswered = answers.has(q.id);
-                      const isFlagged = flagged.has(q.id);
-                      const isCurrent = globalIdx === currentIdx;
+                      const isFlagged  = flagged.has(q.id);
+                      const isCurrent  = globalIdx === currentIdx;
                       return (
                         <button
                           key={q.id}
                           onClick={() => goTo(globalIdx)}
-                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                            isCurrent ? 'ring-2 ring-primary ring-offset-1' : ''
-                          } ${
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${isCurrent ? 'ring-2 ring-primary ring-offset-1' : ''} ${
                             isAnswered
                               ? isFlagged ? 'bg-amber-400 text-white' : 'bg-secondary text-white'
                               : isFlagged ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-surface-container text-on-surface-variant border border-outline-variant/40'
@@ -283,7 +319,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           </div>
         </main>
       ) : (
-        /* ── Main exam layout ── */
         <main className="pt-16 h-screen flex overflow-hidden">
 
           {/* Left panel — passage or module overview */}
@@ -312,7 +347,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   </div>
                 </article>
               ) : (
-                /* No passage — show module info + mini progress */
                 <div>
                   <div className="bg-white rounded-2xl border border-outline-variant/40 p-5 mb-6 shadow-sm">
                     <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-2">Cari Modul</p>
@@ -329,8 +363,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         .map(q => {
                           const idx = questions.indexOf(q);
                           const isAnswered = answers.has(q.id);
-                          const isFlagged = flagged.has(q.id);
-                          const isCurrent = idx === currentIdx;
+                          const isFlagged  = flagged.has(q.id);
+                          const isCurrent  = idx === currentIdx;
                           return (
                             <button
                               key={q.id}
@@ -356,7 +390,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             <div className="flex-1 overflow-y-auto px-10 py-8 no-scrollbar pb-24">
               <div className="max-w-2xl">
 
-                {/* Question number + flag */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <span className="bg-primary text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
@@ -380,14 +413,12 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   )}
                 </div>
 
-                {/* Stem */}
                 {current && (
                   <div className="text-base font-medium leading-relaxed text-on-surface mb-7">
                     <MathText text={current.stem} block />
                   </div>
                 )}
 
-                {/* MCQ options */}
                 {current?.type === 'mcq' && (
                   <div className="space-y-2.5">
                     {current.options.map((opt, i) => {
@@ -417,7 +448,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   </div>
                 )}
 
-                {/* Open question */}
                 {current?.type === 'open' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
@@ -437,7 +467,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </div>
             </div>
 
-            {/* Navigation footer */}
             <footer className="absolute bottom-0 w-full h-20 bg-surface-container-low border-t border-slate-200 px-8 flex items-center justify-between shrink-0">
               <button
                 onClick={() => goTo(currentIdx - 1)}

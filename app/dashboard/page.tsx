@@ -3,13 +3,14 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getActiveExams } from '@/lib/db/exams';
 import { getUserResults } from '@/lib/db/results';
+import { getUserSettings } from '@/lib/actions/settings';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import {
   BarChart2, Settings,
   GraduationCap, ShoppingBag, PlusCircle, Play,
   Timer, HelpCircle, ArrowRight,
-  Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock,
+  Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock, CalendarDays,
 } from 'lucide-react';
 
 function todayString() {
@@ -63,10 +64,11 @@ export default async function DashboardPage() {
   if (!user) redirect('/sign-in');
 
   await dbConnect();
-  const [allExams, results, purchases] = await Promise.all([
+  const [allExams, results, purchases, userSettings] = await Promise.all([
     getActiveExams(),
     getUserResults(user.id),
     Purchase.find({ userId: user.id, status: 'COMPLETED' }, { examId: 1 }).lean(),
+    getUserSettings(),
   ]);
 
   const purchasedIds   = purchases.map(p => p.examId as string);
@@ -95,6 +97,26 @@ export default async function DashboardPage() {
       ? Math.round(results.slice(3).reduce((s, r) => s + r.score, 0) / (results.length - 3))
       : null;
   const scoreTrend = last3Avg != null && prev3Avg != null ? last3Avg - prev3Avg : null;
+
+  // Countdown card
+  const countdown = (() => {
+    if (!userSettings?.targetExamDate) return null;
+    const target = new Date(userSettings.targetExamDate);
+    const now    = new Date();
+    now.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    const days = Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) return null;
+    const type = (userSettings.targetExamType ?? 'sat') as keyof typeof examTypeConfig;
+    const cfg  = examTypeConfig[type] ?? examTypeConfig.sat;
+    return {
+      days,
+      type,
+      cfg,
+      dateStr: new Date(userSettings.targetExamDate).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' }),
+      urgency: days <= 7 ? 'red' : days <= 30 ? 'amber' : 'green',
+    };
+  })();
 
   const nextStepCard = (() => {
     if (purchasedExams.length === 0) return {
@@ -410,6 +432,43 @@ export default async function DashboardPage() {
 
             {/* ── Right column — Recent activity ── */}
             <div className="space-y-4">
+
+              {/* Countdown card */}
+              {countdown && (() => {
+                const { days, cfg, dateStr, urgency } = countdown;
+                const TypeIcon = cfg.icon;
+                const borderCls = urgency === 'red' ? 'border-red-300' : urgency === 'amber' ? 'border-amber-300' : 'border-green-300';
+                const bgCls    = urgency === 'red' ? 'bg-red-50' : urgency === 'amber' ? 'bg-amber-50' : 'bg-green-50';
+                const textCls  = urgency === 'red' ? 'text-red-600' : urgency === 'amber' ? 'text-amber-600' : 'text-green-600';
+                return (
+                  <div className={`rounded-2xl border ${borderCls} ${bgCls} p-4 shadow-sm`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-9 h-9 rounded-xl ${cfg.accent} flex items-center justify-center shrink-0`}>
+                        <TypeIcon size={16} className="text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-black uppercase tracking-widest ${textCls}`}>İmtahan geri sayımı</p>
+                        <p className="text-xs text-on-surface-variant truncate">{dateStr}</p>
+                      </div>
+                      <Link href="/dashboard/settings" className="text-[10px] font-bold text-on-surface-variant hover:text-primary transition-colors">
+                        Dəyişdir
+                      </Link>
+                    </div>
+                    <div className="text-center py-2">
+                      <p className={`text-4xl font-black ${textCls}`}>{days}</p>
+                      <p className="text-xs font-bold text-on-surface-variant mt-0.5">
+                        {days === 0 ? 'Bugün!' : days === 1 ? 'gün qalıb' : 'gün qalır'}
+                      </p>
+                    </div>
+                    {days <= 14 && (
+                      <Link href={`/exams?type=${countdown.type}`}
+                        className={`mt-3 flex items-center justify-center gap-1.5 w-full py-2 ${cfg.accent} text-white rounded-xl text-xs font-bold hover:opacity-90 transition-opacity`}>
+                        {countdown.type.toUpperCase()} sınaqlarına bax <ArrowRight size={11} />
+                      </Link>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Recent activity */}
               {recentResults.length > 0 ? (
