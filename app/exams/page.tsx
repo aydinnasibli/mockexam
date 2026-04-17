@@ -6,7 +6,11 @@ export const metadata = {
   description: 'SAT, IELTS və TOEFL imtahanlarına professional hazırlıq üçün test paketləri',
 };
 
-export default async function ExamsPage() {
-  const exams = await getActiveExams();
-  return <ExamsCatalog exams={exams} />;
+interface Props {
+  searchParams: Promise<{ type?: string }>;
+}
+
+export default async function ExamsPage({ searchParams }: Props) {
+  const [exams, { type }] = await Promise.all([getActiveExams(), searchParams]);
+  return <ExamsCatalog exams={exams} initialType={type} />;
 }

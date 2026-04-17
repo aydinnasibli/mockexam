@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Search, SearchX, Timer, HelpCircle, Banknote,
+  Search, SearchX, Timer, HelpCircle,
   Monitor, Globe, BookOpen,
   X, ArrowRight,
 } from 'lucide-react';
@@ -29,10 +29,14 @@ const allTypes: ExamType[] = ['sat', 'ielts', 'toefl'];
 
 interface Props {
   exams: PublicExam[];
+  initialType?: string;
 }
 
-export default function ExamsCatalog({ exams }: Props) {
-  const [selectedTypes, setSelectedTypes] = useState<ExamType[]>([]);
+export default function ExamsCatalog({ exams, initialType }: Props) {
+  const [selectedTypes, setSelectedTypes] = useState<ExamType[]>(() => {
+    if (initialType && (allTypes as string[]).includes(initialType)) return [initialType as ExamType];
+    return [];
+  });
   const [searchQuery, setSearchQuery]     = useState('');
   const [sortOrder, setSortOrder]         = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
 

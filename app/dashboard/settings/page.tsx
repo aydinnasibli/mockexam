@@ -1,21 +1,28 @@
 'use client';
 
-import { UserProfile } from '@clerk/nextjs';
-import Link from 'next/link';
+import { useClerk, useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
-import { LayoutDashboard, BarChart2, LogOut, Settings, PlusCircle } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
+import {
+  LayoutDashboard, BarChart2, Settings, PlusCircle, LogOut,
+  User, Mail, Shield, ChevronRight, Pencil, CalendarDays,
+} from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useUser();
+  const { openUserProfile } = useClerk();
 
-  const firstName = user?.firstName ?? 'İstifadəçi';
-  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'İstifadəçi';
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? '';
-  const imageUrl = user?.imageUrl;
+  const firstName  = user?.firstName ?? 'İstifadəçi';
+  const fullName   = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'İstifadəçi';
+  const email      = user?.emailAddresses?.[0]?.emailAddress ?? '';
+  const imageUrl   = user?.imageUrl;
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
 
   return (
     <div className="bg-surface text-on-surface min-h-screen">
+
       {/* ── Sidebar ── */}
       <aside className="h-screen w-64 fixed left-0 top-0 flex flex-col py-6 bg-surface-container-low border-r border-outline-variant/40 z-40">
         <div className="px-6 mb-6">
@@ -70,24 +77,102 @@ export default function SettingsPage() {
       <main className="ml-64 p-8 min-h-screen">
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">Parametrlər</h1>
-          <p className="text-on-surface-variant text-sm font-medium">Profil məlumatlarınızı, parolunuzu və hesabınızı idarə edin.</p>
+          <p className="text-on-surface-variant text-sm font-medium">Hesab məlumatlarınızı idarə edin.</p>
         </header>
 
-        <UserProfile
-          appearance={{
-            elements: {
-              rootBox: 'w-full',
-              card: 'shadow-none border border-outline-variant/40 rounded-2xl',
-              navbar: 'border-r border-outline-variant/20',
-              navbarButton: 'text-sm font-semibold',
-              headerTitle: 'font-headline text-primary',
-              headerSubtitle: 'text-on-surface-variant',
-              formButtonPrimary: 'editorial-gradient shadow-none hover:opacity-90',
-              formFieldInput: 'border-outline-variant rounded-xl',
-              badge: 'bg-secondary-fixed/60 text-secondary',
-            },
-          }}
-        />
+        <div className="max-w-2xl space-y-4">
+
+          {/* Profile */}
+          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/20">
+              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Profil</h2>
+            </div>
+            <div className="p-6">
+              {/* Avatar + name */}
+              <div className="flex items-center gap-5 mb-6 pb-6 border-b border-outline-variant/10">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover ring-4 ring-primary/10 shrink-0" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full editorial-gradient flex items-center justify-center ring-4 ring-primary/10 shrink-0">
+                    <span className="text-white text-xl font-black">{firstName[0]}</span>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-bold text-primary text-lg leading-tight">{fullName}</p>
+                  <p className="text-sm text-on-surface-variant mt-0.5">{email}</p>
+                  {memberSince && (
+                    <p className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-1.5">
+                      <CalendarDays size={12} /> Üzv olduğu tarix: {memberSince}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Info rows */}
+              <div className="space-y-0 divide-y divide-outline-variant/10 mb-5">
+                <div className="flex items-center justify-between py-3">
+                  <span className="flex items-center gap-2.5 text-sm text-on-surface-variant">
+                    <User size={15} /> Ad Soyad
+                  </span>
+                  <span className="font-semibold text-primary text-sm">{fullName}</span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="flex items-center gap-2.5 text-sm text-on-surface-variant">
+                    <Mail size={15} /> E-poçt
+                  </span>
+                  <span className="font-semibold text-primary text-sm truncate max-w-[220px]">{email}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => openUserProfile()}
+                className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-low hover:bg-surface-container rounded-xl transition-colors group"
+              >
+                <span className="flex items-center gap-2.5 text-sm font-semibold text-on-surface-variant group-hover:text-primary">
+                  <Pencil size={15} /> Profili düzənlə — ad, şəkil, e-poçt
+                </span>
+                <ChevronRight size={15} className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Security */}
+          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/20">
+              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Təhlükəsizlik</h2>
+            </div>
+            <div className="p-6">
+              <button
+                onClick={() => openUserProfile()}
+                className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-low hover:bg-surface-container rounded-xl transition-colors group"
+              >
+                <span className="flex items-center gap-2.5 text-sm font-semibold text-on-surface-variant group-hover:text-primary">
+                  <Shield size={15} /> Şifrəni dəyiş
+                </span>
+                <ChevronRight size={15} className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Account / danger zone */}
+          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/20">
+              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Hesab</h2>
+            </div>
+            <div className="p-6">
+              <SignOutButton>
+                <button className="w-full flex items-center justify-between px-4 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-xl transition-colors group">
+                  <span className="flex items-center gap-2.5 text-sm font-semibold">
+                    <LogOut size={15} /> Hesabdan çıx
+                  </span>
+                  <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </SignOutButton>
+            </div>
+          </div>
+
+        </div>
       </main>
     </div>
   );
