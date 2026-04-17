@@ -74,13 +74,14 @@ export default function SettingsPage() {
       </aside>
 
       {/* ── Main ── */}
-      <main className="ml-64 p-8 min-h-screen">
+      <main className="ml-64 min-h-screen bg-surface-subtle">
+        <div className="max-w-2xl mx-auto px-8 py-10">
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">Parametrlər</h1>
           <p className="text-on-surface-variant text-sm font-medium">Hesab məlumatlarınızı idarə edin.</p>
         </header>
 
-        <div className="max-w-2xl space-y-4">
+        <div className="space-y-4">
 
           {/* Profile */}
           <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
@@ -172,6 +173,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
+        </div>
         </div>
       </main>
     </div>
