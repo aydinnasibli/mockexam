@@ -17,9 +17,9 @@ export default function DashboardSidebar() {
   const imageUrl  = user?.imageUrl;
 
   const navItems = [
-    { href: '/dashboard',          icon: LayoutDashboard, label: 'Panel' },
-    { href: '/analytics',          icon: BarChart2,       label: 'Nəticələr' },
-    { href: '/dashboard/settings', icon: Settings,        label: 'Parametrlər' },
+    { href: '/dashboard',          icon: LayoutDashboard, label: 'Panel',       active: pathname === '/dashboard' },
+    { href: '/analytics',          icon: BarChart2,       label: 'Nəticələr',   active: pathname === '/analytics' || pathname.startsWith('/analytics/') },
+    { href: '/dashboard/settings', icon: Settings,        label: 'Parametrlər', active: pathname === '/dashboard/settings' },
   ];
 
   return (
@@ -53,8 +53,7 @@ export default function DashboardSidebar() {
 
       <nav className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto">
         <p className="px-3 mb-2 text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40">Menyu</p>
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href;
+        {navItems.map(({ href, icon: Icon, label, active: isActive }) => {
           return (
             <Link
               key={href}
