@@ -147,15 +147,26 @@ export default async function AnalyticsPage() {
                       <div className="border-t border-outline-variant/20">
                         <div className="divide-y divide-outline-variant/10">
                           {examResults.slice(0, 3).map(r => (
-                            <div key={r.id} className="px-6 py-3 flex items-center justify-between text-sm">
-                              <span className="text-on-surface-variant font-medium">
-                                #{r.attemptNumber} · {formatDate(r.completedAt)}
+                            <div key={r.id} className="px-6 py-3 flex items-center gap-4 text-sm">
+                              <span className="text-on-surface-variant font-medium text-xs shrink-0">
+                                #{r.attemptNumber}
                               </span>
-                              <div className="flex items-center gap-4">
+                              <div className="flex-1 min-w-0 hidden sm:block">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-on-surface-variant truncate">{formatDate(r.completedAt)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${r.score >= 80 ? 'bg-green-500' : r.score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                    style={{ width: `${r.score}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0 ml-auto">
                                 <span className="flex items-center gap-1 text-xs text-on-surface-variant">
                                   <Timer size={11} />{formatDuration(r.durationSeconds)}
                                 </span>
-                                <span className={`font-black text-sm ${r.score >= 80 ? 'text-green-600' : r.score >= 60 ? 'text-amber-600' : 'text-red-500'}`}>
+                                <span className={`font-black text-sm min-w-[3rem] text-right ${r.score >= 80 ? 'text-green-600' : r.score >= 60 ? 'text-amber-600' : 'text-red-500'}`}>
                                   {r.score}%
                                 </span>
                               </div>

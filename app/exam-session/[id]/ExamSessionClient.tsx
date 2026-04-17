@@ -132,45 +132,56 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     <div className="text-on-surface select-none bg-surface min-h-screen">
 
       {/* ── Top bar ── */}
-      <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl shadow-sm h-16 flex items-center justify-between px-6 border-b border-outline-variant/10">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-lg editorial-gradient flex items-center justify-center">
-              <span className="text-white text-xs font-black">TC</span>
+      <header className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-xl shadow-sm border-b border-outline-variant/10">
+        <div className="h-16 flex items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="flex items-center gap-2 group">
+              <div className="w-7 h-7 rounded-lg editorial-gradient flex items-center justify-center">
+                <span className="text-white text-xs font-black">TC</span>
+              </div>
+              <span className="text-base font-extrabold tracking-tight text-primary font-headline group-hover:text-secondary transition-colors hidden sm:block">Test Centre</span>
+            </Link>
+            <div className="h-6 w-px bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant">İmtahan Rejimi</span>
+              <span className="text-sm font-bold text-primary leading-tight max-w-[200px] truncate">{exam.title}</span>
             </div>
-            <span className="text-base font-extrabold tracking-tight text-primary font-headline group-hover:text-secondary transition-colors hidden sm:block">Test Centre</span>
-          </Link>
-          <div className="h-6 w-px bg-slate-200" />
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant">İmtahan Rejimi</span>
-            <span className="text-sm font-bold text-primary leading-tight">{exam.title}</span>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {!hasNoQuestions && (
+          <div className="flex items-center gap-3">
+            {!hasNoQuestions && (
+              <button
+                onClick={() => setShowGrid(g => !g)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-colors ${showGrid ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
+              >
+                <Grid3X3 size={15} />
+                <span className="hidden sm:inline font-mono">{answeredCount}/{questions.length}</span>
+              </button>
+            )}
+            <div className={`flex items-center gap-2 px-4 py-2 border rounded-full shadow-sm transition-all ${remaining < 300 ? 'bg-red-50 border-red-200 animate-pulse' : remaining < 600 ? 'bg-amber-50 border-amber-200' : 'bg-surface-container-lowest border-primary/10'}`}>
+              <Timer className={remaining < 300 ? 'text-red-500' : remaining < 600 ? 'text-amber-600' : 'text-primary'} size={16} />
+              <span className={`font-headline font-bold tabular-nums text-sm ${remaining < 300 ? 'text-red-600' : remaining < 600 ? 'text-amber-700' : 'text-primary'}`}>
+                {formatTime(remaining)}
+              </span>
+            </div>
             <button
-              onClick={() => setShowGrid(g => !g)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-colors ${showGrid ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
+              onClick={() => setShowConfirm(true)}
+              disabled={submitting}
+              className="editorial-gradient hover:opacity-90 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md disabled:opacity-60"
             >
-              <Grid3X3 size={15} />
-              <span className="hidden sm:inline">{answeredCount}/{questions.length}</span>
+              {submitting ? 'Göndərilir...' : 'Bitir'}
             </button>
-          )}
-          <div className={`flex items-center gap-2 px-4 py-2 border rounded-full shadow-sm transition-colors ${remaining < 300 ? 'bg-red-50 border-red-200' : 'bg-surface-container-lowest border-primary/10'}`}>
-            <Timer className={remaining < 300 ? 'text-red-500' : 'text-primary'} size={16} />
-            <span className={`font-headline font-bold tabular-nums text-sm ${remaining < 300 ? 'text-red-600' : 'text-primary'}`}>
-              {formatTime(remaining)}
-            </span>
           </div>
-          <button
-            onClick={() => setShowConfirm(true)}
-            disabled={submitting}
-            className="editorial-gradient hover:opacity-90 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md disabled:opacity-60"
-          >
-            {submitting ? 'Göndərilir...' : 'Bitir'}
-          </button>
         </div>
+        {/* Progress bar */}
+        {!hasNoQuestions && questions.length > 0 && (
+          <div className="h-0.5 w-full bg-outline-variant/20">
+            <div
+              className="h-full bg-secondary transition-all duration-500 ease-out"
+              style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+            />
+          </div>
+        )}
       </header>
 
       {/* ── Question grid overlay ── */}
@@ -278,13 +289,18 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           {/* Left panel — passage or module overview */}
           <section className="w-[45%] border-r border-slate-100 bg-surface flex flex-col overflow-hidden">
             <div className="px-6 py-3 border-b border-slate-100 flex justify-between items-center bg-surface-container-low shrink-0">
-              <div>
+              <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">
                   {currentModule?.name ?? 'Modul'}
                 </span>
+                {exam.modules.length > 1 && current && (
+                  <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                    {current.moduleIndex + 1}/{exam.modules.length}
+                  </span>
+                )}
               </div>
-              <span className="text-xs text-on-surface-variant">
-                Sual {currentIdx + 1} / {questions.length}
+              <span className="text-xs font-medium text-on-surface-variant tabular-nums">
+                {currentIdx + 1} / {questions.length}
               </span>
             </div>
 
@@ -382,18 +398,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                           onClick={() => selectAnswer(current.id, i)}
                           className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left group ${
                             selected
-                              ? 'border-secondary bg-secondary/5'
-                              : 'border-transparent bg-surface-container-low hover:bg-surface-container-high hover:border-outline-variant/40'
+                              ? 'border-secondary bg-secondary/5 shadow-sm'
+                              : 'border-outline-variant/30 bg-surface-container-low hover:bg-surface-container hover:border-secondary/40 hover:shadow-sm'
                           }`}
                         >
-                          <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black mt-0.5 transition-colors ${
-                            selected ? 'bg-secondary text-white' : 'bg-white border-2 border-outline-variant text-on-surface-variant group-hover:border-secondary/50'
+                          <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black mt-0.5 transition-all ${
+                            selected ? 'bg-secondary text-white scale-110' : 'bg-white border-2 border-outline-variant text-on-surface-variant group-hover:border-secondary/50'
                           }`}>
                             {OPTION_LABELS[i]}
                           </span>
                           <div className="text-sm leading-relaxed text-on-surface flex-1 pt-0.5">
                             <MathText text={opt} />
                           </div>
+                          {selected && <CheckCircle2 size={16} className="text-secondary shrink-0 mt-0.5" />}
                         </button>
                       );
                     })}

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowLeft, CheckCircle2, ShoppingCart, Clock, HelpCircle, Coffee } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ShoppingCart, Clock, HelpCircle, Coffee, Shield, Zap, RefreshCw } from 'lucide-react';
 import { getExamById } from '@/lib/db/exams';
 
 interface Props {
@@ -120,39 +120,59 @@ export default async function ExamDetails({ params }: Props) {
               </div>
 
               {/* Right: Purchase card */}
-              <div className="w-full md:w-80 tc-card p-8 shadow-xl sticky top-24 flex-shrink-0">
-                <div className="mb-6 pb-6 border-b border-outline-variant">
-                  <span className="block text-on-surface-variant font-medium text-xs uppercase tracking-wider mb-3">Giriş haqqı</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-primary">{exam.price}</span>
-                    <span className="text-xl font-bold text-on-surface-variant">AZN</span>
+              <div className="w-full md:w-80 sticky top-24 flex-shrink-0 space-y-4">
+                <div className="tc-card overflow-hidden shadow-xl">
+                  <div className="h-1 w-full editorial-gradient" />
+                  <div className="p-8">
+                    <div className="mb-6 pb-6 border-b border-outline-variant">
+                      <span className="block text-on-surface-variant font-medium text-xs uppercase tracking-wider mb-3">Giriş haqqı</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-5xl font-black text-primary">{exam.price}</span>
+                        <span className="text-xl font-bold text-on-surface-variant">AZN</span>
+                      </div>
+                      <p className="text-xs text-on-surface-variant mt-2">Birdəfəlik ödəniş · Ömürlük giriş</p>
+                    </div>
+
+                    <div className="space-y-3 mb-8 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-on-surface-variant"><Clock size={14} /> Müddət</span>
+                        <span className="font-bold text-primary">{examTime} dəq</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-on-surface-variant"><HelpCircle size={14} /> Suallar</span>
+                        <span className="font-bold text-primary">{exam.totalQuestions}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-on-surface-variant"><Zap size={14} /> Modullar</span>
+                        <span className="font-bold text-primary">{exam.modules.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-on-surface-variant"><RefreshCw size={14} /> Yenidən cəhd</span>
+                        <span className="font-bold text-secondary">Limitsiz</span>
+                      </div>
+                    </div>
+
+                    <Link href={`/checkout/${exam.id}`} className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg">
+                      <ShoppingCart size={20} /> Giriş əldə et
+                    </Link>
+
+                    <div className="flex items-center justify-center gap-1.5 mt-4 text-[11px] text-on-surface-variant">
+                      <Shield size={12} className="text-green-600" />
+                      <span>Güvənli ödəniş · Dərhal giriş</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-on-surface-variant mt-2">Birdəfəlik ödəniş · Ömürlük giriş</p>
                 </div>
 
-                <div className="space-y-3 mb-8 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-on-surface-variant">Müddət</span>
-                    <span className="font-bold text-primary">{examTime} dəq</span>
+                {/* Feature highlight pills */}
+                {exam.features.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {exam.features.slice(0, 4).map((f, i) => (
+                      <span key={i} className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-white border border-outline-variant/50 px-3 py-1.5 rounded-full shadow-sm">
+                        <CheckCircle2 size={11} className="text-secondary shrink-0" />{f}
+                      </span>
+                    ))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-on-surface-variant">Suallar</span>
-                    <span className="font-bold text-primary">{exam.totalQuestions}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-on-surface-variant">Modullar</span>
-                    <span className="font-bold text-primary">{exam.modules.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-on-surface-variant">Yenidən cəhd</span>
-                    <span className="font-bold text-secondary">Limitsiz</span>
-                  </div>
-                </div>
-
-                <Link href={`/checkout/${exam.id}`} className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg">
-                  <ShoppingCart size={20} /> Giriş əldə et
-                </Link>
-                <p className="text-xs text-center text-on-surface-variant mt-4">Ödənişdən dərhal sonra giriş</p>
+                )}
               </div>
             </div>
           </div>

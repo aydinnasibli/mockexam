@@ -7,7 +7,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
   ArrowRight, Sparkles, Timer, BarChart2, Database, Brain,
-  Landmark, GraduationCap, UserSearch, TrendingUp, CheckCircle2, List
+  Monitor, Globe, BookOpen, TrendingUp, CheckCircle2, List
 } from "lucide-react";
 
 export default function Home() {
@@ -211,58 +211,67 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Category 1 */}
-              <div className="group relative bg-surface-container-lowest p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    <Landmark size={28} />
+              {/* SAT */}
+              <div className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
+                <div className="h-1 w-full bg-blue-500" />
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:bg-primary group-hover:text-white transition-colors">
+                      <Monitor size={28} />
+                    </div>
+                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">3 Sınaq</span>
                   </div>
-                  <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">12 Sınaq</span>
+                  <h4 className="text-xl font-headline font-bold text-primary mb-2">Digital SAT</h4>
+                  <p className="text-sm text-on-surface-variant mb-6">College Board Bluebook formatına tam uyğun adaptive test sistemi. Reading/Writing + Math bölmələri.</p>
+                  <Link
+                    href="/exams"
+                    className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                  >
+                    Sınaqlara bax
+                  </Link>
                 </div>
-                <h4 className="text-xl font-headline font-bold text-primary mb-2">Dövlət Qulluğu</h4>
-                <p className="text-sm text-on-surface-variant mb-6">BB, BA və digər kateqoriyalar üzrə qanunvericilik və məntiq sınaqları.</p>
-                <Link
-                  href="/exams"
-                  className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
-                >
-                  Sınaqlara bax
-                </Link>
               </div>
 
-              {/* Category 2 */}
-              <div className="group relative bg-surface-container-lowest p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    <GraduationCap size={28} />
+              {/* IELTS */}
+              <div className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
+                <div className="h-1 w-full bg-purple-500" />
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="p-3 bg-purple-50 rounded-xl text-purple-600 group-hover:bg-primary group-hover:text-white transition-colors">
+                      <Globe size={28} />
+                    </div>
+                    <span className="text-xs font-bold text-purple-700 bg-purple-50 px-3 py-1 rounded-full">2 Sınaq</span>
                   </div>
-                  <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">24 Sınaq</span>
+                  <h4 className="text-xl font-headline font-bold text-primary mb-2">IELTS</h4>
+                  <p className="text-sm text-on-surface-variant mb-6">Academic və General Training formatlarında Listening, Reading, Writing band score sınaqları.</p>
+                  <Link
+                    href="/exams"
+                    className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                  >
+                    Sınaqlara bax
+                  </Link>
                 </div>
-                <h4 className="text-xl font-headline font-bold text-primary mb-2">Magistratura</h4>
-                <p className="text-sm text-on-surface-variant mb-6">Məntiq, İnformatika və Xarici dil üzrə qəbul imtahanı səviyyəsində suallar.</p>
-                <Link
-                  href="/exams"
-                  className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
-                >
-                  Sınaqlara bax
-                </Link>
               </div>
 
-              {/* Category 3 */}
-              <div className="group relative bg-surface-container-lowest p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    <UserSearch size={28} />
+              {/* TOEFL */}
+              <div className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
+                <div className="h-1 w-full bg-cyan-500" />
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="p-3 bg-cyan-50 rounded-xl text-cyan-600 group-hover:bg-primary group-hover:text-white transition-colors">
+                      <BookOpen size={28} />
+                    </div>
+                    <span className="text-xs font-bold text-cyan-700 bg-cyan-50 px-3 py-1 rounded-full">2 Sınaq</span>
                   </div>
-                  <span className="text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">18 Sınaq</span>
+                  <h4 className="text-xl font-headline font-bold text-primary mb-2">TOEFL iBT</h4>
+                  <p className="text-sm text-on-surface-variant mb-6">ETS formatına uyğun Reading, Listening, Speaking, Writing bölmələrini əhatə edən tam sınaq.</p>
+                  <Link
+                    href="/exams"
+                    className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                  >
+                    Sınaqlara bax
+                  </Link>
                 </div>
-                <h4 className="text-xl font-headline font-bold text-primary mb-2">Müəllimlərin İşə Qəbulu</h4>
-                <p className="text-sm text-on-surface-variant mb-6">İxtisas, metodika və pedaqogika üzrə ən son çərçivəyə uyğun imtahanlar.</p>
-                <Link
-                  href="/exams"
-                  className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
-                >
-                  Sınaqlara bax
-                </Link>
               </div>
             </div>
           </div>
