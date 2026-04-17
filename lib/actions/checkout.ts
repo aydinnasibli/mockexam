@@ -21,11 +21,12 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
 
   const variantId = process.env.LEMONSQUEEZY_VARIANT_ID;
   const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY;
 
-  if (!variantId || variantId === 'REPLACE_WITH_YOUR_VARIANT_ID') {
+  if (!variantId || !storeId || !apiKey) {
     return {
       unconfigured: true,
-      error: 'LemonSqueezy variant not configured. Set LEMONSQUEEZY_VARIANT_ID in your environment.',
+      error: 'LemonSqueezy is not fully configured. Set LEMONSQUEEZY_VARIANT_ID, LEMONSQUEEZY_STORE_ID, and LEMONSQUEEZY_API_KEY.',
     };
   }
 
@@ -37,13 +38,13 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   const existing = await Purchase.findOne({ userId, examId });
   if (existing) return { alreadyPurchased: true };
 
-  lemonSqueezySetup({ apiKey: process.env.LEMONSQUEEZY_API_KEY! });
+  lemonSqueezySetup({ apiKey });
 
   const customPrice = Math.round(exam.price * 100);
   const headersList = await headers();
   const host = headersList.get('host') ?? 'localhost:3000';
   const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`;
 
   const { data, error } = await createCheckout(storeId!, variantId, {
     customPrice,

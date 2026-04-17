@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import QuestionModel, { type QuestionType } from '@/lib/models/Question';
 import { isAdmin } from '@/lib/admin';
@@ -22,6 +23,10 @@ export interface QuestionData {
 async function requireAdmin() {
   const { userId } = await auth();
   if (!isAdmin(userId)) throw new Error('Unauthorized');
+}
+
+function validId(id: string): boolean {
+  return mongoose.isValidObjectId(id);
 }
 
 export async function getExamQuestions(examId: string): Promise<QuestionData[]> {
@@ -60,6 +65,7 @@ export async function addQuestion(data: {
     revalidatePath(`/admin/exams/${data.examId}/questions`);
     return { id: String(doc._id) };
   } catch (err) {
+    console.error('[addQuestion]', err);
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -75,6 +81,7 @@ export async function updateQuestion(
     explanation: string;
   }>
 ): Promise<{ ok: true } | { error: string }> {
+  if (!validId(id)) return { error: 'Invalid question ID' };
   try {
     await requireAdmin();
     await dbConnect();
@@ -83,22 +90,24 @@ export async function updateQuestion(
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
+    console.error('[updateQuestion]', err);
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
 
 export async function deleteQuestion(id: string): Promise<{ ok: true } | { error: string }> {
+  if (!validId(id)) return { error: 'Invalid question ID' };
   try {
     await requireAdmin();
     await dbConnect();
     const doc = await QuestionModel.findByIdAndDelete(id);
     if (!doc) return { error: 'Not found' };
-    // Re-sequence remaining questions in that module
     const remaining = await QuestionModel.find({ examId: doc.examId, moduleIndex: doc.moduleIndex }).sort({ order: 1 });
     await Promise.all(remaining.map((q, i) => QuestionModel.updateOne({ _id: q._id }, { order: i })));
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
+    console.error('[deleteQuestion]', err);
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -108,6 +117,7 @@ export async function reorderQuestions(
   moduleIndex: number,
   orderedIds: string[]
 ): Promise<{ ok: true } | { error: string }> {
+  if (orderedIds.some(id => !validId(id))) return { error: 'Invalid question ID in list' };
   try {
     await requireAdmin();
     await dbConnect();
@@ -115,6 +125,7 @@ export async function reorderQuestions(
     revalidatePath(`/admin/exams/${examId}/questions`);
     return { ok: true };
   } catch (err) {
+    console.error('[reorderQuestions]', err);
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }

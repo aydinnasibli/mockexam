@@ -137,7 +137,8 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
     const result = validateModules(parsed);
     if ('error' in result) return result;
     modules = result;
-  } catch {
+  } catch (err) {
+    console.error('[createExam] module parse error', err);
     return { error: 'Modul məlumatları yanlışdır.' };
   }
 
@@ -183,7 +184,8 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
     const result = validateModules(parsed);
     if ('error' in result) return result;
     modules = result;
-  } catch {
+  } catch (err) {
+    console.error('[updateExam] module parse error', err);
     return { error: 'Modul məlumatları yanlışdır.' };
   }
 
@@ -214,19 +216,27 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
 }
 
 export async function toggleExamActive(examId: string, newActive: boolean): Promise<void> {
-  await requireAdmin();
-  await dbConnect();
-  await ExamModel.findOneAndUpdate({ examId }, { $set: { isActive: newActive } });
-  revalidatePath('/admin/exams');
-  revalidatePath('/exams');
+  try {
+    await requireAdmin();
+    await dbConnect();
+    await ExamModel.findOneAndUpdate({ examId }, { $set: { isActive: newActive } });
+    revalidatePath('/admin/exams');
+    revalidatePath('/exams');
+  } catch (err) {
+    console.error('[toggleExamActive]', err);
+  }
 }
 
 export async function deleteExam(examId: string): Promise<void> {
-  await requireAdmin();
-  await dbConnect();
-  await ExamModel.findOneAndDelete({ examId });
-  revalidatePath('/admin/exams');
-  revalidatePath('/exams');
+  try {
+    await requireAdmin();
+    await dbConnect();
+    await ExamModel.findOneAndDelete({ examId });
+    revalidatePath('/admin/exams');
+    revalidatePath('/exams');
+  } catch (err) {
+    console.error('[deleteExam]', err);
+  }
 }
 
 // ─── Seed Action ──────────────────────────────────────────────────────────────

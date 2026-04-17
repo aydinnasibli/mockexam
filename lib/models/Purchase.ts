@@ -29,8 +29,10 @@ const PurchaseSchema = new Schema<IPurchase>(
   { timestamps: true }
 );
 
-// Compound index: one purchase per user per exam
+// One purchase per user per exam
 PurchaseSchema.index({ userId: 1, examId: 1 }, { unique: true });
+// Optimise the common query: findOne({ userId, examId, status })
+PurchaseSchema.index({ userId: 1, examId: 1, status: 1 });
 
 const Purchase: Model<IPurchase> =
   (mongoose.models.Purchase as Model<IPurchase>) ||
