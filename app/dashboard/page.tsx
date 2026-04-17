@@ -35,8 +35,6 @@ export default async function DashboardPage() {
   const purchasedIds = purchases.map(p => p.examId as string);
   const purchasedExams = allExams.filter(e => purchasedIds.includes(e.id));
 
-  const bestScore = results.length > 0 ? Math.max(...results.map(r => r.score)) : null;
-
   const purchasedTypes = new Set(purchasedExams.map(e => e.type));
   const relatedExams = allExams
     .filter(e => !purchasedIds.includes(e.id) && (purchasedTypes.size === 0 || purchasedTypes.has(e.type)))
@@ -116,11 +114,11 @@ export default async function DashboardPage() {
         </header>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 max-w-2xl">
           <div className="bg-white p-5 rounded-2xl border border-outline-variant/40 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><GraduationCap size={16} /></div>
-              <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Sınaqlar</span>
+              <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Sınaqlarım</span>
             </div>
             <div className="text-3xl font-black text-primary">{purchasedExams.length}</div>
             <p className="text-xs text-on-surface-variant mt-0.5">aktiv sınaq</p>
@@ -131,15 +129,7 @@ export default async function DashboardPage() {
               <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Cəhdlər</span>
             </div>
             <div className="text-3xl font-black text-primary">{results.length}</div>
-            <p className="text-xs text-on-surface-variant mt-0.5">tamamlanan</p>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-outline-variant/40 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 bg-amber-50 text-amber-600 rounded-xl"><Trophy size={16} /></div>
-              <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Rekord</span>
-            </div>
-            <div className="text-3xl font-black text-secondary">{bestScore != null ? `${bestScore}%` : '—'}</div>
-            <p className="text-xs text-on-surface-variant mt-0.5">ən yüksək bal</p>
+            <p className="text-xs text-on-surface-variant mt-0.5">tamamlanan imtahan</p>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-outline-variant/40 shadow-sm">
             <div className="flex items-center gap-2 mb-3">

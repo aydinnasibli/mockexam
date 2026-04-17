@@ -2,8 +2,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowLeft, CheckCircle2, ShoppingCart, Clock, HelpCircle, Coffee, Shield, Zap, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ShoppingCart, Clock, HelpCircle, Coffee, Shield, Zap, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { getExamById } from '@/lib/db/exams';
+import { auth } from '@clerk/nextjs/server';
+import dbConnect from '@/lib/mongodb';
+import Purchase from '@/lib/models/Purchase';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -18,11 +21,21 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ExamDetails({ params }: Props) {
   const { id } = await params;
-  const exam = await getExamById(id);
+  const { userId } = await auth();
+
+  await dbConnect();
+  const [exam, purchase] = await Promise.all([
+    getExamById(id),
+    userId
+      ? Purchase.findOne({ userId, examId: id, status: 'COMPLETED' }).lean()
+      : null,
+  ]);
+
   if (!exam) notFound();
 
-  const totalBreak = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
-  const examTime   = exam.durationMinutes - totalBreak;
+  const hasPurchased = !!purchase;
+  const totalBreak   = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
+  const examTime     = exam.durationMinutes - totalBreak;
 
   return (
     <>
@@ -124,46 +137,90 @@ export default async function ExamDetails({ params }: Props) {
                 <div className="tc-card overflow-hidden shadow-xl">
                   <div className="h-1 w-full editorial-gradient" />
                   <div className="p-8">
-                    <div className="mb-6 pb-6 border-b border-outline-variant">
-                      <span className="block text-on-surface-variant font-medium text-xs uppercase tracking-wider mb-3">Giriş haqqı</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black text-primary">{exam.price}</span>
-                        <span className="text-xl font-bold text-on-surface-variant">AZN</span>
-                      </div>
-                      <p className="text-xs text-on-surface-variant mt-2">Birdəfəlik ödəniş · Ömürlük giriş</p>
-                    </div>
+                    {hasPurchased ? (
+                      /* Already purchased state */
+                      <>
+                        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-outline-variant">
+                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={20} className="text-green-600" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-primary text-sm">Artıq alınmışdır</p>
+                            <p className="text-xs text-on-surface-variant mt-0.5">Bu sınağa girişiniz var</p>
+                          </div>
+                        </div>
 
-                    <div className="space-y-3 mb-8 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-on-surface-variant"><Clock size={14} /> Müddət</span>
-                        <span className="font-bold text-primary">{examTime} dəq</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-on-surface-variant"><HelpCircle size={14} /> Suallar</span>
-                        <span className="font-bold text-primary">{exam.totalQuestions}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-on-surface-variant"><Zap size={14} /> Modullar</span>
-                        <span className="font-bold text-primary">{exam.modules.length}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-on-surface-variant"><RefreshCw size={14} /> Yenidən cəhd</span>
-                        <span className="font-bold text-secondary">Limitsiz</span>
-                      </div>
-                    </div>
+                        <div className="space-y-3 mb-8 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><Clock size={14} /> Müddət</span>
+                            <span className="font-bold text-primary">{examTime} dəq</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><HelpCircle size={14} /> Suallar</span>
+                            <span className="font-bold text-primary">{exam.totalQuestions}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><RefreshCw size={14} /> Yenidən cəhd</span>
+                            <span className="font-bold text-secondary">Limitsiz</span>
+                          </div>
+                        </div>
 
-                    <Link href={`/checkout/${exam.id}`} className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg">
-                      <ShoppingCart size={20} /> Giriş əldə et
-                    </Link>
+                        <Link
+                          href="/dashboard"
+                          className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-base transition-colors shadow-lg"
+                        >
+                          <LayoutDashboard size={20} /> Paneldən başla
+                        </Link>
+                        <p className="text-xs text-center text-on-surface-variant mt-3">Paneldən sınağa başlaya bilərsiniz</p>
+                      </>
+                    ) : (
+                      /* Not purchased state */
+                      <>
+                        <div className="mb-6 pb-6 border-b border-outline-variant">
+                          <span className="block text-on-surface-variant font-medium text-xs uppercase tracking-wider mb-3">Giriş haqqı</span>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-5xl font-black text-primary">{exam.price}</span>
+                            <span className="text-xl font-bold text-on-surface-variant">AZN</span>
+                          </div>
+                          <p className="text-xs text-on-surface-variant mt-2">Birdəfəlik ödəniş · Ömürlük giriş</p>
+                        </div>
 
-                    <div className="flex items-center justify-center gap-1.5 mt-4 text-[11px] text-on-surface-variant">
-                      <Shield size={12} className="text-green-600" />
-                      <span>Güvənli ödəniş · Dərhal giriş</span>
-                    </div>
+                        <div className="space-y-3 mb-8 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><Clock size={14} /> Müddət</span>
+                            <span className="font-bold text-primary">{examTime} dəq</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><HelpCircle size={14} /> Suallar</span>
+                            <span className="font-bold text-primary">{exam.totalQuestions}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><Zap size={14} /> Modullar</span>
+                            <span className="font-bold text-primary">{exam.modules.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-on-surface-variant"><RefreshCw size={14} /> Yenidən cəhd</span>
+                            <span className="font-bold text-secondary">Limitsiz</span>
+                          </div>
+                        </div>
+
+                        <Link
+                          href={`/checkout/${exam.id}`}
+                          className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg"
+                        >
+                          <ShoppingCart size={20} /> Giriş əldə et
+                        </Link>
+
+                        <div className="flex items-center justify-center gap-1.5 mt-4 text-[11px] text-on-surface-variant">
+                          <Shield size={12} className="text-green-600" />
+                          <span>Güvənli ödəniş · Dərhal giriş</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Feature highlight pills */}
+                {/* Feature pills */}
                 {exam.features.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {exam.features.slice(0, 4).map((f, i) => (

@@ -139,19 +139,19 @@ export default function Home() {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Feature 1 — wide */}
-              <div className="md:col-span-2 bg-surface-container-lowest p-10 rounded-3xl group hover:bg-primary transition-all duration-500 border border-outline-variant/30">
+              {/* Feature 1 — wide, always blue */}
+              <div className="md:col-span-2 bg-primary p-10 rounded-3xl border border-primary/30">
                 <div className="flex flex-col h-full justify-between">
                   <div>
-                    <div className="w-14 h-14 rounded-2xl bg-secondary-fixed flex items-center justify-center mb-8 group-hover:bg-on-primary-container transition-colors">
-                      <Timer className="text-secondary group-hover:text-primary-fixed transition-colors" size={28} />
+                    <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center mb-8">
+                      <Timer className="text-white" size={28} />
                     </div>
-                    <h3 className="text-3xl font-headline font-bold text-primary mb-4 group-hover:text-on-primary">Real İmtahan Mühiti</h3>
-                    <p className="text-on-surface-variant group-hover:text-primary-fixed leading-relaxed text-lg max-w-lg">
+                    <h3 className="text-3xl font-headline font-bold text-white mb-4">Real İmtahan Mühiti</h3>
+                    <p className="text-white/70 leading-relaxed text-lg max-w-lg">
                       DİM və digər rəsmi qurumların imtahan formatına tam uyğun, vaxt limitli və stress-test mühiti. Həyəcanınızı sınaqlarla yenin.
                     </p>
                   </div>
-                  <div className="mt-8 flex items-center gap-2 text-secondary font-bold group-hover:text-on-primary">
+                  <div className="mt-8 flex items-center gap-2 text-white/60 font-bold">
                     Ətraflı məlumat <ArrowRight size={18} />
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function Home() {
                   <h4 className="text-xl font-headline font-bold text-primary mb-2">Digital SAT</h4>
                   <p className="text-sm text-on-surface-variant mb-6">College Board Bluebook formatına tam uyğun adaptive test sistemi. Reading/Writing + Math bölmələri.</p>
                   <Link
-                    href="/exams"
+                    href="/exams?type=sat"
                     className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
                   >
                     Sınaqlara bax
@@ -245,7 +245,7 @@ export default function Home() {
                   <h4 className="text-xl font-headline font-bold text-primary mb-2">IELTS</h4>
                   <p className="text-sm text-on-surface-variant mb-6">Academic və General Training formatlarında Listening, Reading, Writing band score sınaqları.</p>
                   <Link
-                    href="/exams"
+                    href="/exams?type=ielts"
                     className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
                   >
                     Sınaqlara bax
@@ -266,7 +266,7 @@ export default function Home() {
                   <h4 className="text-xl font-headline font-bold text-primary mb-2">TOEFL iBT</h4>
                   <p className="text-sm text-on-surface-variant mb-6">ETS formatına uyğun Reading, Listening, Speaking, Writing bölmələrini əhatə edən tam sınaq.</p>
                   <Link
-                    href="/exams"
+                    href="/exams?type=toefl"
                     className="w-full py-3 rounded-xl border border-outline-variant text-primary font-bold flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
                   >
                     Sınaqlara bax
