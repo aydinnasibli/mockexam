@@ -1,7 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import Navbar from '@/components/layout/Navbar';
 import { getExamResults } from '@/lib/db/results';
 import { getExamById } from '@/lib/db/exams';
 import dbConnect from '@/lib/mongodb';
@@ -103,9 +102,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
   const expectedSecPerQ = exam.totalQuestions > 0 ? (examNetMin * 60) / exam.totalQuestions : 0;
 
   return (
-    <>
-      <Navbar />
-      <main className="pt-16 min-h-screen bg-surface-subtle">
+    <main className="min-h-screen bg-surface-subtle">
         <div className="max-w-4xl mx-auto px-6 py-10">
 
           <Link href="/analytics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-secondary mb-6 transition-colors">
@@ -324,6 +321,5 @@ export default async function ExamAnalyticsPage({ params }: Props) {
           )}
         </div>
       </main>
-    </>
   );
 }

@@ -1,7 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import { getUserResults } from '@/lib/db/results';
 import { getActiveExams } from '@/lib/db/exams';
 import dbConnect from '@/lib/mongodb';
@@ -68,9 +67,7 @@ export default async function AnalyticsPage() {
     : null;
 
   return (
-    <>
-      <Navbar />
-      <main className="pt-16 min-h-screen bg-surface-subtle">
+    <main className="min-h-screen bg-surface-subtle">
         <div className="max-w-5xl mx-auto px-6 py-10">
 
           {/* Header */}
@@ -212,6 +209,5 @@ export default async function AnalyticsPage() {
           )}
         </div>
       </main>
-    </>
   );
 }

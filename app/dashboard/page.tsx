@@ -81,20 +81,33 @@ export default async function DashboardPage() {
   }
 
   const recentResults = results.slice(0, 6);
-  const avgScore = results.length > 0
-    ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-    : null;
+
+  // Per-type averages (SAT/IELTS/TOEFL are incomparable — never mix them)
+  const typeAvgs = (['SAT', 'IELTS', 'TOEFL'] as const).map(tag => {
+    const typeResults = results.filter(r => r.examTag === tag);
+    if (typeResults.length === 0) return null;
+    return {
+      tag,
+      avg: Math.round(typeResults.reduce((s, r) => s + r.score, 0) / typeResults.length),
+      count: typeResults.length,
+    };
+  }).filter((x): x is NonNullable<typeof x> => x !== null);
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const weeklyAttempts = results.filter(r => r.completedAt >= weekAgo).length;
 
-  const last3Avg = results.length >= 3
-    ? Math.round(results.slice(0, 3).reduce((s, r) => s + r.score, 0) / 3)
+  // Score trend: use only the most-attempted exam type to keep it meaningful
+  const dominantTag = typeAvgs.length > 0
+    ? typeAvgs.reduce((a, b) => a.count >= b.count ? a : b).tag
     : null;
-  const prev3Avg = results.length >= 6
-    ? Math.round(results.slice(3, 6).reduce((s, r) => s + r.score, 0) / 3)
-    : results.length >= 4
-      ? Math.round(results.slice(3).reduce((s, r) => s + r.score, 0) / (results.length - 3))
+  const dominantResults = dominantTag ? results.filter(r => r.examTag === dominantTag) : [];
+  const last3Avg = dominantResults.length >= 3
+    ? Math.round(dominantResults.slice(0, 3).reduce((s, r) => s + r.score, 0) / 3)
+    : null;
+  const prev3Avg = dominantResults.length >= 6
+    ? Math.round(dominantResults.slice(3, 6).reduce((s, r) => s + r.score, 0) / 3)
+    : dominantResults.length >= 4
+      ? Math.round(dominantResults.slice(3).reduce((s, r) => s + r.score, 0) / (dominantResults.length - 3))
       : null;
   const scoreTrend = last3Avg != null && prev3Avg != null ? last3Avg - prev3Avg : null;
 
@@ -191,16 +204,13 @@ export default async function DashboardPage() {
                   : `${purchasedExams.length} aktiv sınaq · ${results.length} tamamlanan cəhd`}
               </p>
             </div>
-            <div className="hidden sm:flex items-center gap-3 shrink-0">
-              {results.length > 0 && (
+            {results.length > 0 && (
+              <div className="hidden sm:flex items-center gap-3 shrink-0">
                 <Link href="/analytics" className="flex items-center gap-2 bg-white/12 hover:bg-white/20 text-white border border-white/15 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
                   <BarChart2 size={15} /> Nəticələr
                 </Link>
-              )}
-              <Link href="/exams" className="flex items-center gap-2 bg-white/12 hover:bg-white/20 text-white border border-white/15 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
-                <ShoppingBag size={15} /> Katalog
-              </Link>
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -260,17 +270,37 @@ export default async function DashboardPage() {
                   <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
                     <BarChart2 size={16} className="text-amber-600" />
                   </div>
-                  <div className={`text-2xl font-black ${avgScore != null ? scoreColor(avgScore) : 'text-on-surface-variant'}`}>
-                    {avgScore != null ? `${avgScore}%` : '—'}
-                  </div>
-                  <p className="text-[11px] text-on-surface-variant mt-0.5">Ortalama</p>
-                  {scoreTrend != null
-                    ? <p className={`text-[10px] font-semibold mt-1 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-green-600' : scoreTrend < 0 ? 'text-red-500' : 'text-on-surface-variant/40'}`}>
-                        {scoreTrend > 0 ? <TrendingUp size={10} /> : scoreTrend < 0 ? <TrendingDown size={10} /> : null}
-                        {scoreTrend > 0 ? `+${scoreTrend}` : scoreTrend}% son 3 cəhd
-                      </p>
-                    : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">məlumat yoxdur</p>
-                  }
+                  {typeAvgs.length === 0 ? (
+                    <>
+                      <div className="text-2xl font-black text-on-surface-variant">—</div>
+                      <p className="text-[11px] text-on-surface-variant mt-0.5">Ortalama</p>
+                      <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">məlumat yoxdur</p>
+                    </>
+                  ) : typeAvgs.length === 1 ? (
+                    <>
+                      <div className={`text-2xl font-black ${scoreColor(typeAvgs[0].avg)}`}>{typeAvgs[0].avg}%</div>
+                      <p className="text-[11px] text-on-surface-variant mt-0.5">{typeAvgs[0].tag} ortalama</p>
+                      {scoreTrend != null
+                        ? <p className={`text-[10px] font-semibold mt-1 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-green-600' : scoreTrend < 0 ? 'text-red-500' : 'text-on-surface-variant/40'}`}>
+                            {scoreTrend > 0 ? <TrendingUp size={10} /> : scoreTrend < 0 ? <TrendingDown size={10} /> : null}
+                            {scoreTrend > 0 ? `+${scoreTrend}` : scoreTrend}% son 3 cəhd
+                          </p>
+                        : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">son 3 cəhd yoxdur</p>
+                      }
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-on-surface-variant mb-2">Növ üzrə ortalama</p>
+                      <div className="space-y-1">
+                        {typeAvgs.map(t => (
+                          <div key={t.tag} className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-on-surface-variant">{t.tag}</span>
+                            <span className={`text-[11px] font-black ${scoreColor(t.avg)}`}>{t.avg}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
