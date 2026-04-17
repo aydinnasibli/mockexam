@@ -19,10 +19,10 @@ const examTypeIcons: Record<ExamType, React.ElementType> = {
   sat: Monitor, ielts: Globe, toefl: BookOpen,
 };
 
-const examTypeColors: Record<ExamType, { bg: string; text: string; ring: string }> = {
-  sat:   { bg: 'bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-200' },
-  ielts: { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-200' },
-  toefl: { bg: 'bg-cyan-100',   text: 'text-cyan-700',   ring: 'ring-cyan-200' },
+const examTypeColors: Record<ExamType, { bg: string; text: string; ring: string; accent: string }> = {
+  sat:   { bg: 'bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-200',   accent: 'bg-blue-500' },
+  ielts: { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-200', accent: 'bg-purple-500' },
+  toefl: { bg: 'bg-cyan-100',   text: 'text-cyan-700',   ring: 'ring-cyan-200',   accent: 'bg-cyan-500' },
 };
 
 const allTypes: ExamType[] = ['sat', 'ielts', 'toefl'];
@@ -154,29 +154,33 @@ export default function ExamsCatalog({ exams }: Props) {
                   const Icon = examTypeIcons[type] ?? BookOpen;
                   const colors = examTypeColors[type] ?? examTypeColors.sat;
                   return (
-                    <div key={exam.id} className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden">
+                    <div key={exam.id} className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col overflow-hidden group">
+                      <div className={`h-1 w-full ${colors.accent} transition-all`} />
                       <div className="p-5 pb-4">
                         <div className="flex items-start justify-between mb-4">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ring-4 ${colors.bg} ${colors.ring}`}>
-                            <Icon size={22} className={colors.text} />
+                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ring-2 ${colors.bg} ${colors.ring}`}>
+                            <Icon size={20} className={colors.text} />
                           </div>
-                          <span className="editorial-gradient text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">{exam.tag}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="editorial-gradient text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest">{exam.tag}</span>
+                            <span className="text-base font-black text-primary">{exam.price} ₼</span>
+                          </div>
                         </div>
-                        <h3 className="text-base font-extrabold text-primary font-headline leading-snug mb-2">{exam.title}</h3>
+                        <h3 className="text-base font-extrabold text-primary font-headline leading-snug mb-2 group-hover:text-secondary transition-colors">{exam.title}</h3>
                         <p className="text-on-surface-variant text-xs leading-relaxed line-clamp-2">{exam.description}</p>
                       </div>
 
-                      <div className="mx-5 pb-4 flex items-center gap-3 border-t border-outline-variant/20 pt-4">
+                      <div className="mx-5 pb-4 flex items-center gap-3 border-t border-outline-variant/20 pt-3">
                         <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
-                          <Timer size={13} />{exam.durationMinutes} dəq
+                          <Timer size={12} />{exam.durationMinutes} dəq
                         </div>
                         <div className="w-px h-3 bg-outline-variant" />
                         <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
-                          <HelpCircle size={13} />{exam.totalQuestions} sual
+                          <HelpCircle size={12} />{exam.totalQuestions} sual
                         </div>
                         <div className="w-px h-3 bg-outline-variant" />
-                        <div className="flex items-center gap-1 text-xs font-bold text-primary ml-auto">
-                          <Banknote size={13} />{exam.price} ₼
+                        <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant ml-auto">
+                          {exam.modules.length} modul
                         </div>
                       </div>
 
