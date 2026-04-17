@@ -9,7 +9,7 @@ import {
   BarChart2, Settings,
   GraduationCap, ShoppingBag, PlusCircle, Play,
   Timer, HelpCircle, ArrowRight,
-  Monitor, Globe, BookOpen, TrendingUp, Sparkles, Clock,
+  Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock,
 } from 'lucide-react';
 
 function todayString() {
@@ -83,6 +83,66 @@ export default async function DashboardPage() {
     ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
     : null;
 
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const weeklyAttempts = results.filter(r => r.completedAt >= weekAgo).length;
+
+  const last3Avg = results.length >= 3
+    ? Math.round(results.slice(0, 3).reduce((s, r) => s + r.score, 0) / 3)
+    : null;
+  const prev3Avg = results.length >= 6
+    ? Math.round(results.slice(3, 6).reduce((s, r) => s + r.score, 0) / 3)
+    : results.length >= 4
+      ? Math.round(results.slice(3).reduce((s, r) => s + r.score, 0) / (results.length - 3))
+      : null;
+  const scoreTrend = last3Avg != null && prev3Avg != null ? last3Avg - prev3Avg : null;
+
+  const nextStepCard = (() => {
+    if (purchasedExams.length === 0) return {
+      iconClass: 'bg-primary/10 text-primary', Icon: ShoppingBag,
+      label: 'İlk sınağınızı əldə edin',
+      desc: 'SAT, IELTS və ya TOEFL sınaqlarını kəşf edin və hazırlığa başlayın.',
+      href: '/exams', cta: 'Kataloqa bax', btnClass: 'editorial-gradient text-white',
+    };
+    const untouched = purchasedExams.find(e => !lastResultByExam.has(e.id));
+    if (untouched) {
+      const cfg = examTypeConfig[untouched.type as keyof typeof examTypeConfig] ?? examTypeConfig.sat;
+      return {
+        iconClass: cfg.badge, Icon: cfg.icon,
+        label: `${untouched.tag} sınağınızı başladın!`,
+        desc: `"${untouched.title}" — hələ başlamadınız. İlk addımı atın.`,
+        href: `/exam-session/${untouched.id}`, cta: 'İndi başla', btnClass: `${cfg.accent} text-white`,
+      };
+    }
+    const worst = purchasedExams
+      .map(e => ({ exam: e, score: lastResultByExam.get(e.id)!.score }))
+      .sort((a, b) => a.score - b.score)[0];
+    const cfg = examTypeConfig[worst.exam.type as keyof typeof examTypeConfig] ?? examTypeConfig.sat;
+    if (worst.score < 60) return {
+      iconClass: 'bg-red-50 text-red-600', Icon: cfg.icon,
+      label: 'Nəticənizi yaxşılaşdırın',
+      desc: `"${worst.exam.title}" — son nəticə ${worst.score}%. Daha yaxşı ola bilər!`,
+      href: `/exam-session/${worst.exam.id}`, cta: 'Yenidən cəhd et', btnClass: 'bg-red-500 text-white',
+    };
+    if (worst.score < 80) return {
+      iconClass: 'bg-amber-50 text-amber-600', Icon: TrendingUp,
+      label: 'Hədəfinizə çatın',
+      desc: `"${worst.exam.title}" — son nəticə ${worst.score}%. 80%+ üçün bir cəhd daha!`,
+      href: `/exam-session/${worst.exam.id}`, cta: 'Yenidən başla', btnClass: 'bg-amber-500 text-white',
+    };
+    if (exploreExams.length > 0) return {
+      iconClass: 'bg-green-50 text-green-600', Icon: Sparkles,
+      label: 'Əla! Yeni sınaq kəşf edin',
+      desc: 'Bütün sınaqlarınızda 80%+ nəticə göstərdiniz.',
+      href: '/exams', cta: 'Yeni sınaq tap', btnClass: 'bg-green-500 text-white',
+    };
+    return {
+      iconClass: 'bg-green-50 text-green-600', Icon: Sparkles,
+      label: 'Bütün sınaqlar tamamlandı!',
+      desc: 'Möhtəşəm nəticələr. Analitikanıza nəzər salın.',
+      href: '/analytics', cta: 'Nəticələrə bax', btnClass: 'bg-green-500 text-white',
+    };
+  })();
+
   const firstName = user.firstName ?? 'Tələbə';
 
   return (
@@ -130,6 +190,26 @@ export default async function DashboardPage() {
             {/* ── Left column ── */}
             <div className="space-y-6 min-w-0">
 
+              {/* Next step card */}
+              {(() => {
+                const { iconClass, Icon, label, desc, href, cta, btnClass } = nextStepCard;
+                return (
+                  <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-4 flex items-center gap-4">
+                    <div className={`w-11 h-11 rounded-xl ${iconClass} flex items-center justify-center shrink-0`}>
+                      <Icon size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-primary">{label}</p>
+                      <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-1">{desc}</p>
+                    </div>
+                    <Link href={href}
+                      className={`shrink-0 flex items-center gap-1.5 px-3 py-2 ${btnClass} rounded-xl text-xs font-bold hover:opacity-90 transition-opacity whitespace-nowrap`}>
+                      {cta} <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                );
+              })()}
+
               {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
@@ -138,6 +218,10 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-2xl font-black text-primary">{purchasedExams.length}</div>
                   <p className="text-[11px] text-on-surface-variant mt-0.5">Sınaqlarım</p>
+                  {exploreExams.length > 0
+                    ? <p className="text-[10px] text-secondary font-semibold mt-1">+{exploreExams.length} kataloqda</p>
+                    : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">hamısı əldə edilib</p>
+                  }
                 </div>
                 <div className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
@@ -145,6 +229,10 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-2xl font-black text-primary">{results.length}</div>
                   <p className="text-[11px] text-on-surface-variant mt-0.5">Cəhdlər</p>
+                  {weeklyAttempts > 0
+                    ? <p className="text-[10px] text-green-600 font-semibold mt-1">+{weeklyAttempts} bu həftə</p>
+                    : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">bu həftə yoxdur</p>
+                  }
                 </div>
                 <div className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
@@ -154,6 +242,13 @@ export default async function DashboardPage() {
                     {avgScore != null ? `${avgScore}%` : '—'}
                   </div>
                   <p className="text-[11px] text-on-surface-variant mt-0.5">Ortalama</p>
+                  {scoreTrend != null
+                    ? <p className={`text-[10px] font-semibold mt-1 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-green-600' : scoreTrend < 0 ? 'text-red-500' : 'text-on-surface-variant/40'}`}>
+                        {scoreTrend > 0 ? <TrendingUp size={10} /> : scoreTrend < 0 ? <TrendingDown size={10} /> : null}
+                        {scoreTrend > 0 ? `+${scoreTrend}` : scoreTrend}% son 3 cəhd
+                      </p>
+                    : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">məlumat yoxdur</p>
+                  }
                 </div>
               </div>
 
