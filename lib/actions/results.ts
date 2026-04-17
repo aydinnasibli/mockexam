@@ -6,16 +6,35 @@ import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
 import { getExamById } from '@/lib/db/exams';
 
+export type AnswerRecord = {
+  questionId: string;
+  moduleIndex: number;
+  userAnswer: number;
+  correctIndex: number;
+  isCorrect: boolean;
+  timeSeconds: number;
+};
+
+export type ModuleScoreRecord = {
+  moduleIndex: number;
+  moduleName: string;
+  correct: number;
+  total: number;
+  scorePercent: number;
+};
+
 export async function saveExamResult(data: {
   examId: string;
   startedAt: string;
   durationSeconds: number;
   score: number;
+  answers: AnswerRecord[];
+  moduleScores: ModuleScoreRecord[];
 }): Promise<{ resultId: string; attemptNumber: number } | { error: string }> {
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
 
-  const { examId, startedAt, durationSeconds, score } = data;
+  const { examId, startedAt, durationSeconds, score, answers, moduleScores } = data;
 
   if (typeof durationSeconds !== 'number' || durationSeconds < 0 || !Number.isFinite(durationSeconds)) return { error: 'Invalid durationSeconds' };
   if (typeof score !== 'number' || score < 0 || score > 100 || !Number.isFinite(score)) return { error: 'Invalid score' };
@@ -35,14 +54,16 @@ export async function saveExamResult(data: {
   const result = await ExamResult.create({
     userId,
     examId,
-    examTitle: exam.title,
-    examTag: exam.tag,
+    examTitle:       exam.title,
+    examTag:         exam.tag,
     attemptNumber,
-    startedAt: startDate,
-    completedAt: new Date(),
+    startedAt:       startDate,
+    completedAt:     new Date(),
     durationSeconds,
-    totalQuestions: exam.totalQuestions,
+    totalQuestions:  exam.totalQuestions,
     score,
+    answers,
+    moduleScores,
   });
 
   return { resultId: result._id.toString(), attemptNumber };

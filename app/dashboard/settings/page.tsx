@@ -2,80 +2,60 @@
 
 import { useClerk, useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
-import Link from 'next/link';
+import { useState, useEffect, useTransition } from 'react';
 import {
-  LayoutDashboard, BarChart2, Settings, PlusCircle, LogOut,
   User, Mail, Shield, ChevronRight, Pencil, CalendarDays,
+  LogOut, Target, Save, Loader2,
 } from 'lucide-react';
+import { getUserSettings, saveUserSettings } from '@/lib/actions/settings';
+
+const examTypeOptions = [
+  { value: 'sat',   label: 'SAT' },
+  { value: 'ielts', label: 'IELTS' },
+  { value: 'toefl', label: 'TOEFL' },
+];
 
 export default function SettingsPage() {
-  const { user } = useUser();
+  const { user }           = useUser();
   const { openUserProfile } = useClerk();
 
-  const firstName  = user?.firstName ?? 'İstifadəçi';
-  const fullName   = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'İstifadəçi';
-  const email      = user?.emailAddresses?.[0]?.emailAddress ?? '';
-  const imageUrl   = user?.imageUrl;
+  const firstName   = user?.firstName ?? 'İstifadəçi';
+  const fullName    = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'İstifadəçi';
+  const email       = user?.emailAddresses?.[0]?.emailAddress ?? '';
+  const imageUrl    = user?.imageUrl;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
 
+  const [targetDate, setTargetDate]     = useState('');
+  const [targetType, setTargetType]     = useState('');
+  const [saveStatus, setSaveStatus]     = useState<'idle' | 'saved' | 'error'>('idle');
+  const [isPending, startTransition]    = useTransition();
+
+  useEffect(() => {
+    getUserSettings().then(s => {
+      if (!s) return;
+      setTargetDate(s.targetExamDate ?? '');
+      setTargetType(s.targetExamType ?? '');
+    });
+  }, []);
+
+  function handleSaveGoal() {
+    startTransition(async () => {
+      const res = await saveUserSettings({
+        targetExamDate: targetDate || null,
+        targetExamType: targetType || null,
+      });
+      setSaveStatus('error' in res ? 'error' : 'saved');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    });
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
   return (
-    <div className="bg-surface text-on-surface min-h-screen">
-
-      {/* ── Sidebar ── */}
-      <aside className="h-screen w-64 fixed left-0 top-0 flex flex-col py-6 bg-surface-container-low border-r border-outline-variant/40 z-40">
-        <div className="px-6 mb-6">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-lg editorial-gradient flex items-center justify-center">
-              <span className="text-white text-[10px] font-black">TC</span>
-            </div>
-            <span className="text-base font-extrabold text-primary tracking-tight font-headline">Test Centre</span>
-          </Link>
-        </div>
-
-        <div className="flex items-center px-6 mb-7 gap-3">
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="Avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
-          ) : (
-            <div className="w-10 h-10 rounded-full editorial-gradient flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-black">{firstName[0]}</span>
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="font-bold text-primary text-sm leading-tight truncate">{fullName}</p>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5 truncate">{email}</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 flex flex-col gap-0.5 px-3">
-          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
-            <LayoutDashboard size={18} className="opacity-70" /> Panel
-          </Link>
-          <Link href="/analytics" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-white/60 hover:text-primary transition-all">
-            <BarChart2 size={18} className="opacity-70" /> Nəticələr
-          </Link>
-          <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-white text-primary shadow-sm">
-            <Settings size={18} className="text-secondary" /> Parametrlər
-          </Link>
-        </nav>
-
-        <div className="px-4 mt-4 space-y-2">
-          <Link href="/exams" className="w-full editorial-gradient text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm">
-            <PlusCircle size={16} /> Sınaq Əldə Et
-          </Link>
-          <SignOutButton>
-            <button className="w-full text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:text-error transition-colors text-sm font-medium rounded-xl hover:bg-white/50">
-              <LogOut size={16} /> Çıxış
-            </button>
-          </SignOutButton>
-        </div>
-      </aside>
-
-      {/* ── Main ── */}
-      <main className="ml-64 min-h-screen bg-surface-subtle">
-        <div className="max-w-2xl mx-auto px-8 py-10">
+    <main className="min-h-screen bg-[#f0f2f5]">
+      <div className="max-w-2xl mx-auto px-8 py-10">
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">Parametrlər</h1>
           <p className="text-on-surface-variant text-sm font-medium">Hesab məlumatlarınızı idarə edin.</p>
@@ -89,7 +69,6 @@ export default function SettingsPage() {
               <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Profil</h2>
             </div>
             <div className="p-6">
-              {/* Avatar + name */}
               <div className="flex items-center gap-5 mb-6 pb-6 border-b border-outline-variant/10">
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -110,7 +89,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Info rows */}
               <div className="space-y-0 divide-y divide-outline-variant/10 mb-5">
                 <div className="flex items-center justify-between py-3">
                   <span className="flex items-center gap-2.5 text-sm text-on-surface-variant">
@@ -138,6 +116,63 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Target exam goal */}
+          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/20">
+              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">İmtahan Hədəfi</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-on-surface-variant">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-on-surface-variant block mb-1.5">İmtahan növü</label>
+                  <select
+                    value={targetType}
+                    onChange={e => setTargetType(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-outline-variant rounded-xl text-sm font-semibold text-primary bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Seçin...</option>
+                    {examTypeOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-on-surface-variant block mb-1.5">İmtahan tarixi</label>
+                  <input
+                    type="date"
+                    value={targetDate}
+                    min={today}
+                    onChange={e => setTargetDate(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-outline-variant rounded-xl text-sm font-semibold text-primary bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveGoal}
+                  disabled={isPending}
+                  className="flex items-center gap-2 px-4 py-2.5 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60 shadow-sm"
+                >
+                  {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  Yadda saxla
+                </button>
+                {saveStatus === 'saved' && <span className="text-xs text-green-600 font-semibold">✓ Saxlanıldı</span>}
+                {saveStatus === 'error' && <span className="text-xs text-red-500 font-semibold">Xəta baş verdi</span>}
+                {(targetDate || targetType) && (
+                  <button
+                    onClick={() => { setTargetDate(''); setTargetType(''); }}
+                    className="text-xs text-on-surface-variant hover:text-primary font-medium ml-auto"
+                  >
+                    Sıfırla
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Security */}
           <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-outline-variant/20">
@@ -156,7 +191,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Account / danger zone */}
+          {/* Account */}
           <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-outline-variant/20">
               <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Hesab</h2>
@@ -174,8 +209,7 @@ export default function SettingsPage() {
           </div>
 
         </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
