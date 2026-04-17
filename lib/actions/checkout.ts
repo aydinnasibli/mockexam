@@ -2,6 +2,7 @@
 
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
+import { headers } from 'next/headers';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
@@ -40,10 +41,10 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   lemonSqueezySetup({ apiKey });
 
   const customPrice = Math.round(exam.price * 100);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) {
-    return { unconfigured: true, error: 'NEXT_PUBLIC_APP_URL environment variable is not set.' };
-  }
+  const headersList = await headers();
+  const host = headersList.get('host') ?? 'localhost:3000';
+  const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`;
 
   const { data, error } = await createCheckout(storeId!, variantId, {
     customPrice,
