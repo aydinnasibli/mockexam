@@ -129,7 +129,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         moduleScores,
       });
       if ('error' in result) throw new Error(result.error);
-      router.push(`/analytics/${exam.id}/${result.attemptNumber}/review`);
+      router.push(`/dashboard/analytics/${exam.id}/${result.attemptNumber}/review`);
     } catch {
       setSubmitError('Nəticə göndərilmədi. Yenidən cəhd edin.');
       setSubmitting(false);

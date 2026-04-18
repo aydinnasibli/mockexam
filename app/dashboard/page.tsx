@@ -206,7 +206,7 @@ export default async function DashboardPage() {
             </div>
             {results.length > 0 && (
               <div className="hidden sm:flex items-center gap-3 shrink-0">
-                <Link href="/analytics" className="flex items-center gap-2 bg-white/12 hover:bg-white/20 text-white border border-white/15 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                <Link href="/dashboard/analytics" className="flex items-center gap-2 bg-white/12 hover:bg-white/20 text-white border border-white/15 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
                   <BarChart2 size={15} /> Nəticələr
                 </Link>
               </div>
@@ -309,7 +309,7 @@ export default async function DashboardPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Mənim Sınaqlarım</h2>
                   {results.length > 0 && (
-                    <Link href="/analytics" className="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                    <Link href="/dashboard/analytics" className="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
                       Nəticələr <ArrowRight size={13} />
                     </Link>
                   )}
@@ -394,7 +394,7 @@ export default async function DashboardPage() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <Link href={`/analytics/${exam.id}`}
+                                  <Link href={`/dashboard/analytics/${exam.id}`}
                                     className="flex items-center gap-1 px-3 py-1.5 border border-outline-variant/60 rounded-lg text-xs font-bold text-on-surface-variant hover:bg-[#f0f2f5] transition-colors">
                                     <BarChart2 size={12} /> Analiz
                                   </Link>
@@ -505,7 +505,7 @@ export default async function DashboardPage() {
                 <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
                   <div className="px-5 py-4 border-b border-outline-variant/15 flex items-center justify-between">
                     <h2 className="text-sm font-bold text-primary font-headline">Son Fəaliyyət</h2>
-                    <Link href="/analytics" className="text-xs font-bold text-secondary hover:underline">Hamısı</Link>
+                    <Link href="/dashboard/analytics" className="text-xs font-bold text-secondary hover:underline">Hamısı</Link>
                   </div>
                   <div className="divide-y divide-outline-variant/10">
                     {recentResults.map(r => {

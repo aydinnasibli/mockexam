@@ -78,7 +78,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/8 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-4xl mx-auto">
-          <Link href={`/analytics/${exam.id}`} className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-semibold mb-4 transition-colors">
+          <Link href={`/dashboard/analytics/${exam.id}`} className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-semibold mb-4 transition-colors">
             <ArrowLeft size={14} /> Analitikaya qayıt
           </Link>
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -118,7 +118,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
         {/* Action buttons */}
         <div className="flex gap-3 mb-6">
-          <Link href={`/analytics/${exam.id}`}
+          <Link href={`/dashboard/analytics/${exam.id}`}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant/40 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors shadow-sm">
             <BarChart2 size={14} /> Analitika
           </Link>

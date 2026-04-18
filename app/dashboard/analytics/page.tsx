@@ -158,7 +158,7 @@ export default async function AnalyticsPage() {
                         </div>
                       </div>
                       <Link
-                        href={`/analytics/${exam.id}`}
+                        href={`/dashboard/analytics/${exam.id}`}
                         className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors shrink-0"
                       >
                         <BarChart2 size={14} /> Ətraflı
@@ -183,7 +183,7 @@ export default async function AnalyticsPage() {
                       </div>
                       {examResults.length > 3 && (
                         <Link
-                          href={`/analytics/${exam.id}`}
+                          href={`/dashboard/analytics/${exam.id}`}
                           className="flex items-center justify-center gap-1 py-3 text-xs font-bold text-secondary hover:bg-surface-container transition-colors"
                         >
                           Bütün cəhdlərə bax <ChevronRight size={12} />
