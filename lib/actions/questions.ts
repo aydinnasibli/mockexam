@@ -20,6 +20,18 @@ export interface QuestionData {
   explanation: string;
 }
 
+/** Safe subset served to exam-takers — correctIndex and explanation are omitted. */
+export interface SessionQuestion {
+  id: string;
+  examId: string;
+  moduleIndex: number;
+  order: number;
+  type: QuestionType;
+  passage: string;
+  stem: string;
+  options: string[];
+}
+
 async function requireAdmin() {
   const { userId } = await auth();
   if (!isAdmin(userId)) throw new Error('Unauthorized');
@@ -27,6 +39,22 @@ async function requireAdmin() {
 
 function validId(id: string): boolean {
   return mongoose.isValidObjectId(id);
+}
+
+/** Fetch questions without correct answers for active exam sessions. */
+export async function getExamQuestionsForSession(examId: string): Promise<SessionQuestion[]> {
+  await dbConnect();
+  const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
+  return docs.map(d => ({
+    id:          String(d._id),
+    examId:      d.examId,
+    moduleIndex: d.moduleIndex,
+    order:       d.order,
+    type:        d.type,
+    passage:     d.passage ?? '',
+    stem:        d.stem,
+    options:     d.options ?? [],
+  }));
 }
 
 export async function getExamQuestions(examId: string): Promise<QuestionData[]> {

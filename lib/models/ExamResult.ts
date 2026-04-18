@@ -70,6 +70,7 @@ const ExamResultSchema = new Schema<IExamResult>(
 
 ExamResultSchema.index({ userId: 1, examId: 1 });
 ExamResultSchema.index({ userId: 1, completedAt: -1 });
+ExamResultSchema.index({ userId: 1, examId: 1, attemptNumber: 1 }, { unique: true });
 
 const ExamResult: Model<IExamResult> =
   (mongoose.models.ExamResult as Model<IExamResult>) ||

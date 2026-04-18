@@ -8,6 +8,7 @@ export interface IPurchase extends Document {
   amountCents: number;
   currency: string;
   status: 'COMPLETED' | 'FAILED';
+  attemptCount: number;
   createdAt: Date;
 }
 
@@ -25,6 +26,7 @@ const PurchaseSchema = new Schema<IPurchase>(
       required: true,
       default: 'COMPLETED',
     },
+    attemptCount: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 );
