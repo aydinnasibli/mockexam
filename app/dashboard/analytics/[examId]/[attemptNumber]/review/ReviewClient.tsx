@@ -154,7 +154,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
             {/* Questions */}
             <div className="space-y-4">
-              {moduleGroups[activeModule]?.qs.map((q, qIdx) => {
+              {moduleGroups[activeModule]?.qs.map((q) => {
                 const answer = answerMap.get(q.id);
                 const globalIdx = questions.indexOf(q);
                 const userChoice = answer?.userAnswer ?? -1;

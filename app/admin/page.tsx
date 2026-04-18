@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { ArrowRight, Users, BookOpen, ShoppingBag, TrendingUp } from 'lucide-react';
-import { auth } from '@clerk/nextjs/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
@@ -45,7 +44,6 @@ async function getStats() {
 }
 
 export default async function AdminOverviewPage() {
-  const { userId } = await auth();
   const stats = await getStats();
   const revenue = (stats.totalRevenueCents / 100).toFixed(2);
 

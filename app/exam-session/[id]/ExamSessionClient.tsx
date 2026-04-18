@@ -46,9 +46,9 @@ function MathText({ text, block = false }: { text: string; block?: boolean }) {
 
 export default function ExamSessionClient({ exam, questions }: Props) {
   const router = useRouter();
-  const startedAtRef    = useRef(new Date());
+  const startedAtRef    = useRef<Date | null>(null);
   const currentIdxRef   = useRef(0);
-  const qEnterTimeRef   = useRef<number>(Date.now());
+  const qEnterTimeRef   = useRef<number>(0);
   const qTimeSecsRef    = useRef<Map<string, number>>(new Map());
 
   const [elapsed, setElapsed]         = useState(0);
@@ -63,6 +63,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
   const totalSeconds = exam.durationMinutes * 60;
   const remaining    = Math.max(0, totalSeconds - elapsed);
+
+  useEffect(() => {
+    startedAtRef.current  = new Date();
+    qEnterTimeRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setElapsed(s => s + 1), 1000);
@@ -90,10 +95,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         timeSeconds: Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
       }));
 
+      const sessionStart = startedAtRef.current ?? new Date();
       const result = await saveExamResult({
         examId:          exam.id,
-        startedAt:       startedAtRef.current.toISOString(),
-        durationSeconds: Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000),
+        startedAt:       sessionStart.toISOString(),
+        durationSeconds: Math.floor((Date.now() - sessionStart.getTime()) / 1000),
         answers:         answerInputs,
       });
       if ('error' in result) throw new Error(result.error);
@@ -105,7 +111,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   }, [exam, router, answers, questions, recordCurrentQuestionTime]);
 
   useEffect(() => {
-    if (remaining === 0 && !submitting) handleSubmit();
+    if (remaining === 0 && !submitting) {
+      const id = setTimeout(() => void handleSubmit(), 0);
+      return () => clearTimeout(id);
+    }
   }, [remaining, submitting, handleSubmit]);
 
   const current       = questions[currentIdx] ?? null;
