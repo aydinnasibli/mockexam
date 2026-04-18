@@ -73,8 +73,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
   useEffect(() => {
     if (remaining === 0 && !submitting) handleSubmit();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining]);
+  }, [remaining, submitting, handleSubmit]);
 
   function recordCurrentQuestionTime() {
     const q = questions[currentIdxRef.current];

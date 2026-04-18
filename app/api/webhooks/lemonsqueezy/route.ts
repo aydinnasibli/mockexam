@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
   try {
     await dbConnect();
 
-    // Upsert by (userId, examId) — idempotent even if webhook fires twice
+    // Upsert by (userId, examId) — idempotent even if webhook fires twice.
+    // $addToSet preserves all historical order IDs even after refund/repurchase.
     await Purchase.findOneAndUpdate(
       { userId, examId },
       {
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
           currency,
           status: 'COMPLETED',
         },
+        $addToSet: { orderHistory: lsOrderId },
       },
       { upsert: true, new: true }
     );

@@ -5,7 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
 import QuestionModel from '@/lib/models/Question';
-import { getExamById } from '@/lib/db/exams';
+import { getExamByIdAdmin } from '@/lib/db/exams';
 
 export type ClientAnswerInput = {
   questionId: string;
@@ -40,7 +40,7 @@ export async function saveExamResult(data: {
   if (!updatedPurchase) return { error: 'Exam not purchased' };
   const attemptNumber = updatedPurchase.attemptCount;
 
-  const exam = await getExamById(examId);
+  const exam = await getExamByIdAdmin(examId);
   if (!exam) return { error: 'Exam not found' };
 
   // Fetch authoritative correct answers from the database

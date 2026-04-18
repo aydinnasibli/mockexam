@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getResultDetail } from '@/lib/db/results';
-import { getExamById } from '@/lib/db/exams';
+import { getExamByIdAdmin } from '@/lib/db/exams';
 import { getExamQuestions } from '@/lib/actions/questions';
 import ReviewClient from './ReviewClient';
 
@@ -13,7 +13,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { examId, attemptNumber } = await params;
-  const exam = await getExamById(examId);
+  const exam = await getExamByIdAdmin(examId);
   if (!exam) return {};
   return { title: `${exam.title} — Cəhd #${attemptNumber} İcmalı` };
 }
@@ -31,7 +31,7 @@ export default async function ReviewPage({ params }: Props) {
   if (!purchase) redirect(`/exams/${examId}`);
 
   const [exam, result, questions] = await Promise.all([
-    getExamById(examId),
+    getExamByIdAdmin(examId),
     getResultDetail(userId, examId, attemptNumber),
     getExamQuestions(examId),
   ]);

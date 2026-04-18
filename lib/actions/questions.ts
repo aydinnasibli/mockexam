@@ -5,6 +5,7 @@ import { auth } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import QuestionModel, { type QuestionType } from '@/lib/models/Question';
+import Purchase from '@/lib/models/Purchase';
 import { isAdmin } from '@/lib/admin';
 
 export interface QuestionData {
@@ -43,7 +44,13 @@ function validId(id: string): boolean {
 
 /** Fetch questions without correct answers for active exam sessions. */
 export async function getExamQuestionsForSession(examId: string): Promise<SessionQuestion[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
   await dbConnect();
+  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
+  if (!purchase) throw new Error('Exam not purchased');
+
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({
     id:          String(d._id),

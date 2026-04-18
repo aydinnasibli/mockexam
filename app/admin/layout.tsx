@@ -10,9 +10,8 @@ export const metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
 
-  if (!isAdmin(userId)) {
-    redirect('/dashboard');
-  }
+  if (!userId) redirect('/sign-in');
+  if (!isAdmin(userId)) redirect('/dashboard');
 
   return (
     <div className="min-h-screen bg-surface flex">
