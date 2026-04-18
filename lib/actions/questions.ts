@@ -65,6 +65,7 @@ export async function getExamQuestionsForSession(examId: string): Promise<Sessio
 }
 
 export async function getExamQuestions(examId: string): Promise<QuestionData[]> {
+  await requireAdmin();
   await dbConnect();
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({

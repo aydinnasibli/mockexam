@@ -10,6 +10,7 @@ const isProtectedRoute = createRouteMatcher([
   '/exam-session(.*)',
   '/checkout(.*)',
   '/analytics(.*)',
+  '/api/purchase-status(.*)',
 ]);
 
 /**
