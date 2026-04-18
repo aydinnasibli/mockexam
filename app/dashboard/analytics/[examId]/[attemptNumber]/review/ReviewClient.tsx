@@ -3,7 +3,7 @@
 import 'katex/dist/katex.min.css';
 import { useState } from 'react';
 import Link from 'next/link';
-import katex from 'katex';
+import { renderMath } from '@/lib/render-math';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
   ArrowLeft, RotateCcw, BarChart2,
@@ -20,17 +20,6 @@ interface Props {
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
-function renderMath(text: string): string {
-  return text
-    .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
-      try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
-      catch { return _; }
-    })
-    .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
-      try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
-      catch { return _; }
-    });
-}
 
 function MathText({ text }: { text: string }) {
   return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;

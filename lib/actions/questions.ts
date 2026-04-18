@@ -64,6 +64,30 @@ export async function getExamQuestionsForSession(examId: string): Promise<Sessio
   }));
 }
 
+/** Fetch full question data (with correct answers) for a user who has completed the exam — used by the review page. */
+export async function getExamQuestionsForReview(examId: string): Promise<QuestionData[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  await dbConnect();
+  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
+  if (!purchase) throw new Error('Exam not purchased');
+
+  const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
+  return docs.map(d => ({
+    id:           String(d._id),
+    examId:       d.examId,
+    moduleIndex:  d.moduleIndex,
+    order:        d.order,
+    type:         d.type,
+    passage:      d.passage ?? '',
+    stem:         d.stem,
+    options:      d.options ?? [],
+    correctIndex: d.correctIndex ?? -1,
+    explanation:  d.explanation ?? '',
+  }));
+}
+
 export async function getExamQuestions(examId: string): Promise<QuestionData[]> {
   await requireAdmin();
   await dbConnect();

@@ -28,6 +28,7 @@ export async function saveExamResult(data: {
   if (typeof durationSeconds !== 'number' || durationSeconds < 0 || !Number.isFinite(durationSeconds)) return { error: 'Invalid durationSeconds' };
   const startDate = new Date(startedAt);
   if (isNaN(startDate.getTime())) return { error: 'Invalid startedAt date' };
+  if (!Array.isArray(answers) || answers.length > 2000) return { error: 'Invalid answers' };
 
   await dbConnect();
 

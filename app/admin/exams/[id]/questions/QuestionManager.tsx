@@ -3,7 +3,7 @@
 import 'katex/dist/katex.min.css';
 import { useState, useTransition, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import katex from 'katex';
+import { renderMath } from '@/lib/render-math';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2,
   Circle, FileText, Pencil, X, Save, Sigma, Eye, EyeOff,
@@ -67,20 +67,6 @@ const MATH_TEMPLATES = [
   { label: 'Çevrə', insert: 'A = \\pi r^2' },
 ];
 
-// ─── Math rendering helpers ──────────────────────────────────────────────────
-
-function renderMath(text: string): string {
-  // Replace $$...$$ (block) then $...$ (inline)
-  return text
-    .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
-      try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
-      catch { return _; }
-    })
-    .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
-      try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
-      catch { return _; }
-    });
-}
 
 function MathPreview({ text, className = '' }: { text: string; className?: string }) {
   const rendered = renderMath(text) || '<span class="text-on-surface-variant italic text-xs">Önizləmə...</span>';

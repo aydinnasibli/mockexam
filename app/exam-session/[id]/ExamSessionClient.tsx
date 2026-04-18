@@ -4,12 +4,12 @@ import 'katex/dist/katex.min.css';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import katex from 'katex';
 import { saveExamResult } from '@/lib/actions/results';
 import {
   Timer, Flag, ChevronLeft, ChevronRight,
   CheckCircle2, AlertCircle, Grid3X3, BookOpen, Pencil,
 } from 'lucide-react';
+import { renderMath } from '@/lib/render-math';
 import type { PublicExam } from '@/lib/db/exams';
 import type { SessionQuestion } from '@/lib/actions/questions';
 
@@ -28,17 +28,6 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function renderMath(text: string): string {
-  return text
-    .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
-      try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
-      catch { return _; }
-    })
-    .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
-      try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
-      catch { return _; }
-    });
-}
 
 function MathText({ text, block = false }: { text: string; block?: boolean }) {
   return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className={block ? 'leading-relaxed' : 'inline leading-normal'} />;
