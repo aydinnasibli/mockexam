@@ -28,22 +28,20 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+function renderMath(text: string): string {
+  return text
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
+      try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
+      catch { return _; }
+    })
+    .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
+      try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
+      catch { return _; }
+    });
+}
+
 function MathText({ text, block = false }: { text: string; block?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const rendered = text
-      .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
-        try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
-        catch { return _; }
-      })
-      .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
-        try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
-        catch { return _; }
-      });
-    ref.current.innerHTML = rendered;
-  }, [text]);
-  return <div ref={ref} className={block ? 'leading-relaxed' : 'inline leading-normal'} />;
+  return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className={block ? 'leading-relaxed' : 'inline leading-normal'} />;
 }
 
 export default function ExamSessionClient({ exam, questions }: Props) {
@@ -71,17 +69,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (remaining === 0 && !submitting) handleSubmit();
-  }, [remaining, submitting, handleSubmit]);
-
-  function recordCurrentQuestionTime() {
+  const recordCurrentQuestionTime = useCallback(() => {
     const q = questions[currentIdxRef.current];
     if (!q) return;
     const secs = (Date.now() - qEnterTimeRef.current) / 1000;
     qTimeSecsRef.current.set(q.id, (qTimeSecsRef.current.get(q.id) ?? 0) + secs);
     qEnterTimeRef.current = Date.now();
-  }
+  }, [questions]);
 
   const handleSubmit = useCallback(async () => {
     recordCurrentQuestionTime();
@@ -108,8 +102,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       setSubmitError('Nəticə göndərilmədi. Yenidən cəhd edin.');
       setSubmitting(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exam, router, answers, questions]);
+  }, [exam, router, answers, questions, recordCurrentQuestionTime]);
+
+  useEffect(() => {
+    if (remaining === 0 && !submitting) handleSubmit();
+  }, [remaining, submitting, handleSubmit]);
 
   const current       = questions[currentIdx] ?? null;
   const currentModule = current ? exam.modules[current.moduleIndex] : null;

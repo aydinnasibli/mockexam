@@ -12,7 +12,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
-  const exam = await getExamById(id);
+  const exam = await getExamByIdAdmin(id);
   if (!exam) return {};
   return { title: `${exam.title} — İmtahan` };
 }

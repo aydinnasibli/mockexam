@@ -1,7 +1,7 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import katex from 'katex';
 import {
@@ -20,22 +20,20 @@ interface Props {
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
+function renderMath(text: string): string {
+  return text
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
+      try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
+      catch { return _; }
+    })
+    .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
+      try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
+      catch { return _; }
+    });
+}
+
 function MathText({ text }: { text: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const rendered = text
-      .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
-        try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
-        catch { return _; }
-      })
-      .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
-        try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
-        catch { return _; }
-      });
-    ref.current.innerHTML = rendered;
-  }, [text]);
-  return <div ref={ref} className="leading-relaxed" />;
+  return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
 }
 
 function formatTime(secs: number) {

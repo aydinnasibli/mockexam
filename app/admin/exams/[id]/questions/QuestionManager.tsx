@@ -1,7 +1,7 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
-import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
+import { useState, useTransition, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import katex from 'katex';
 import {
@@ -83,11 +83,8 @@ function renderMath(text: string): string {
 }
 
 function MathPreview({ text, className = '' }: { text: string; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (ref.current) ref.current.innerHTML = renderMath(text) || '<span class="text-on-surface-variant italic text-xs">Önizləmə...</span>';
-  }, [text]);
-  return <div ref={ref} className={`prose prose-sm max-w-none leading-relaxed ${className}`} />;
+  const rendered = renderMath(text) || '<span class="text-on-surface-variant italic text-xs">Önizləmə...</span>';
+  return <div dangerouslySetInnerHTML={{ __html: rendered }} className={`prose prose-sm max-w-none leading-relaxed ${className}`} />;
 }
 
 // ─── Math toolbar ────────────────────────────────────────────────────────────
