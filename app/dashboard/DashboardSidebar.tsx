@@ -18,7 +18,7 @@ export default function DashboardSidebar() {
 
   const navItems = [
     { href: '/dashboard',          icon: LayoutDashboard, label: 'Panel',       active: pathname === '/dashboard' },
-    { href: '/analytics',          icon: BarChart2,       label: 'Nəticələr',   active: pathname === '/analytics' || pathname.startsWith('/analytics/') },
+    { href: '/dashboard/analytics',          icon: BarChart2,       label: 'Nəticələr',   active: pathname === '/dashboard/analytics' || pathname.startsWith('/dashboard/analytics/') },
     { href: '/dashboard/settings', icon: Settings,        label: 'Parametrlər', active: pathname === '/dashboard/settings' },
   ];
 

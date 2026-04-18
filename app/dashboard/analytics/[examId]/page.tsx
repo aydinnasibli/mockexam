@@ -105,7 +105,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
     <main className="min-h-screen bg-surface-subtle">
         <div className="max-w-4xl mx-auto px-6 py-10">
 
-          <Link href="/analytics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-secondary mb-6 transition-colors">
+          <Link href="/dashboard/analytics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-secondary mb-6 transition-colors">
             <ArrowLeft size={16} /> Bütün nəticələrə qayıt
           </Link>
 
@@ -295,7 +295,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                             <span className={`text-xl font-black ${scoreColor(r.score)}`}>{r.score}%</span>
                             {r.score === best && <p className="text-[10px] text-secondary font-bold">Ən yaxşı</p>}
                           </div>
-                          <Link href={`/analytics/${exam.id}/${r.attemptNumber}/review`}
+                          <Link href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container hover:bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs font-bold text-on-surface-variant transition-colors">
                             <BookOpen size={12} /> İcmal
                           </Link>
