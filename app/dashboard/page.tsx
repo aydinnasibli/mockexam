@@ -93,8 +93,8 @@ export default async function DashboardPage() {
     };
   }).filter((x): x is NonNullable<typeof x> => x !== null);
 
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const weeklyAttempts = results.filter(r => r.completedAt >= weekAgo).length;
+  const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weeklyAttempts = results.filter(r => new Date(r.completedAt).getTime() >= weekAgoMs).length;
 
   // Score trend: use only the most-attempted exam type to keep it meaningful
   const dominantTag = typeAvgs.length > 0

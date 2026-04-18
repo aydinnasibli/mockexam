@@ -11,11 +11,11 @@ import {
   CheckCircle2, AlertCircle, Grid3X3, BookOpen, Pencil,
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
-import type { QuestionData } from '@/lib/actions/questions';
+import type { SessionQuestion } from '@/lib/actions/questions';
 
 interface Props {
   exam: PublicExam;
-  questions: QuestionData[];
+  questions: SessionQuestion[];
 }
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
@@ -73,8 +73,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
   useEffect(() => {
     if (remaining === 0 && !submitting) handleSubmit();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining]);
+  }, [remaining, submitting, handleSubmit]);
 
   function recordCurrentQuestionTime() {
     const q = questions[currentIdxRef.current];
@@ -84,49 +83,24 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     qEnterTimeRef.current = Date.now();
   }
 
-  const calculateScore = useCallback(() => {
-    const mcq = questions.filter(q => q.type === 'mcq');
-    if (mcq.length === 0) return 0;
-    const correct = mcq.filter(q => answers.get(q.id) === q.correctIndex).length;
-    return Math.round((correct / mcq.length) * 100);
-  }, [questions, answers]);
-
   const handleSubmit = useCallback(async () => {
     recordCurrentQuestionTime();
     setSubmitting(true);
     setShowConfirm(false);
     setSubmitError('');
     try {
-      const score = calculateScore();
-
-      const answerRecords = questions.map(q => ({
-        questionId:   q.id,
-        moduleIndex:  q.moduleIndex,
-        userAnswer:   answers.get(q.id) ?? -1,
-        correctIndex: q.correctIndex,
-        isCorrect:    q.type === 'mcq' && (answers.get(q.id) ?? -1) === q.correctIndex,
-        timeSeconds:  Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
+      const answerInputs = questions.map(q => ({
+        questionId:  q.id,
+        moduleIndex: q.moduleIndex,
+        userAnswer:  answers.get(q.id) ?? -1,
+        timeSeconds: Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
       }));
-
-      const moduleScores = exam.modules.map((mod, modIdx) => {
-        const modQs  = questions.filter(q => q.moduleIndex === modIdx && q.type === 'mcq');
-        const correct = modQs.filter(q => answers.get(q.id) === q.correctIndex).length;
-        return {
-          moduleIndex:  modIdx,
-          moduleName:   mod.name,
-          correct,
-          total:        modQs.length,
-          scorePercent: modQs.length > 0 ? Math.round((correct / modQs.length) * 100) : 0,
-        };
-      });
 
       const result = await saveExamResult({
         examId:          exam.id,
         startedAt:       startedAtRef.current.toISOString(),
         durationSeconds: Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000),
-        score,
-        answers:         answerRecords,
-        moduleScores,
+        answers:         answerInputs,
       });
       if ('error' in result) throw new Error(result.error);
       router.push(`/dashboard/analytics/${exam.id}/${result.attemptNumber}/review`);
@@ -135,7 +109,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       setSubmitting(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exam, router, calculateScore, answers, questions]);
+  }, [exam, router, answers, questions]);
 
   const current       = questions[currentIdx] ?? null;
   const currentModule = current ? exam.modules[current.moduleIndex] : null;

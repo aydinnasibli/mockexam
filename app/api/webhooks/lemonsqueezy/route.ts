@@ -14,7 +14,7 @@ function verifyWebhookSignature(rawBody: string, signature: string, secret: stri
     .digest('hex');
   // Use timing-safe comparison
   try {
-    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
+    return crypto.timingSafeEqual(Buffer.from(digest, 'hex'), Buffer.from(signature, 'hex'));
   } catch {
     return false;
   }
@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
   try {
     await dbConnect();
 
-    // Upsert by (userId, examId) — idempotent even if webhook fires twice
+    // Upsert by (userId, examId) — idempotent even if webhook fires twice.
+    // $addToSet preserves all historical order IDs even after refund/repurchase.
     await Purchase.findOneAndUpdate(
       { userId, examId },
       {
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
           currency,
           status: 'COMPLETED',
         },
+        $addToSet: { orderHistory: lsOrderId },
       },
       { upsert: true, new: true }
     );

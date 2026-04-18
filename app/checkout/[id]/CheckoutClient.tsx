@@ -14,6 +14,26 @@ import { createCheckoutSession } from '@/lib/actions/checkout';
 
 type CheckoutStatus = 'idle' | 'processing' | 'ready' | 'success' | 'error' | 'unconfigured';
 
+const POLL_INTERVAL_MS = 2000;
+const POLL_MAX_ATTEMPTS = 15; // 30 s total before giving up and redirecting anyway
+
+function pollPurchaseConfirmed(examId: string, onConfirmed: () => void) {
+  let attempts = 0;
+  const tick = async () => {
+    attempts++;
+    try {
+      const res = await fetch(`/api/purchase-status/${examId}`);
+      const json = await res.json() as { confirmed: boolean };
+      if (json.confirmed) { onConfirmed(); return; }
+    } catch {
+      // network blip — keep polling
+    }
+    if (attempts < POLL_MAX_ATTEMPTS) setTimeout(tick, POLL_INTERVAL_MS);
+    else onConfirmed(); // webhook too slow — send to dashboard anyway
+  };
+  setTimeout(tick, POLL_INTERVAL_MS);
+}
+
 interface Props {
   exam: PublicExam;
 }
@@ -45,7 +65,7 @@ export default function CheckoutClient({ exam }: Props) {
           eventHandler: (event) => {
             if (event.event === 'Checkout.Success') {
               setStatus('success');
-              setTimeout(() => router.push('/dashboard'), 2500);
+              pollPurchaseConfirmed(exam.id, () => router.push('/dashboard'));
             }
           },
         });

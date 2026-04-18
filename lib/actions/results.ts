@@ -4,52 +4,86 @@ import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
-import { getExamById } from '@/lib/db/exams';
+import QuestionModel from '@/lib/models/Question';
+import { getExamByIdAdmin } from '@/lib/db/exams';
 
-export type AnswerRecord = {
+export type ClientAnswerInput = {
   questionId: string;
   moduleIndex: number;
-  userAnswer: number;
-  correctIndex: number;
-  isCorrect: boolean;
+  userAnswer: number;   // -1 = unanswered, 0-3 = selected option
   timeSeconds: number;
-};
-
-export type ModuleScoreRecord = {
-  moduleIndex: number;
-  moduleName: string;
-  correct: number;
-  total: number;
-  scorePercent: number;
 };
 
 export async function saveExamResult(data: {
   examId: string;
   startedAt: string;
   durationSeconds: number;
-  score: number;
-  answers: AnswerRecord[];
-  moduleScores: ModuleScoreRecord[];
+  answers: ClientAnswerInput[];
 }): Promise<{ resultId: string; attemptNumber: number } | { error: string }> {
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
 
-  const { examId, startedAt, durationSeconds, score, answers, moduleScores } = data;
+  const { examId, startedAt, durationSeconds, answers } = data;
 
   if (typeof durationSeconds !== 'number' || durationSeconds < 0 || !Number.isFinite(durationSeconds)) return { error: 'Invalid durationSeconds' };
-  if (typeof score !== 'number' || score < 0 || score > 100 || !Number.isFinite(score)) return { error: 'Invalid score' };
   const startDate = new Date(startedAt);
   if (isNaN(startDate.getTime())) return { error: 'Invalid startedAt date' };
 
   await dbConnect();
 
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-  if (!purchase) return { error: 'Exam not purchased' };
+  // Atomically claim the next attempt number — also validates the purchase exists
+  const updatedPurchase = await Purchase.findOneAndUpdate(
+    { userId, examId, status: 'COMPLETED' },
+    { $inc: { attemptCount: 1 } },
+    { new: true }
+  );
+  if (!updatedPurchase) return { error: 'Exam not purchased' };
+  const attemptNumber = updatedPurchase.attemptCount;
 
-  const exam = await getExamById(examId);
+  const exam = await getExamByIdAdmin(examId);
   if (!exam) return { error: 'Exam not found' };
 
-  const attemptNumber = (await ExamResult.countDocuments({ userId, examId })) + 1;
+  // Fetch authoritative correct answers from the database
+  const questionDocs = await QuestionModel.find({ examId })
+    .select('_id correctIndex moduleIndex type')
+    .lean();
+  const correctMap = new Map(
+    questionDocs.map(q => [String(q._id), { correctIndex: q.correctIndex, moduleIndex: q.moduleIndex, type: q.type }])
+  );
+
+  // Build verified answer records — correctIndex and isCorrect come from DB, not client
+  const answerRecords = answers.map(a => {
+    const authoritative = correctMap.get(a.questionId);
+    const correctIndex = authoritative?.correctIndex ?? -1;
+    const isCorrect = authoritative?.type === 'mcq' && a.userAnswer !== -1 && a.userAnswer === correctIndex;
+    return {
+      questionId:  a.questionId,
+      moduleIndex: a.moduleIndex,
+      userAnswer:  a.userAnswer,
+      correctIndex,
+      isCorrect,
+      timeSeconds: Math.max(0, Math.round(a.timeSeconds)),
+    };
+  });
+
+  // Compute overall score from MCQ questions only
+  const mcqRecords = answerRecords.filter(a => correctMap.get(a.questionId)?.type === 'mcq');
+  const score = mcqRecords.length > 0
+    ? Math.round(mcqRecords.filter(a => a.isCorrect).length / mcqRecords.length * 100)
+    : 0;
+
+  // Compute per-module scores server-side
+  const moduleScores = exam.modules.map((mod, modIdx) => {
+    const modMcq = answerRecords.filter(a => a.moduleIndex === modIdx && correctMap.get(a.questionId)?.type === 'mcq');
+    const correct = modMcq.filter(a => a.isCorrect).length;
+    return {
+      moduleIndex:  modIdx,
+      moduleName:   mod.name,
+      correct,
+      total:        modMcq.length,
+      scorePercent: modMcq.length > 0 ? Math.round((correct / modMcq.length) * 100) : 0,
+    };
+  });
 
   const result = await ExamResult.create({
     userId,
@@ -62,7 +96,7 @@ export async function saveExamResult(data: {
     durationSeconds,
     totalQuestions:  exam.totalQuestions,
     score,
-    answers,
+    answers:         answerRecords,
     moduleScores,
   });
 
