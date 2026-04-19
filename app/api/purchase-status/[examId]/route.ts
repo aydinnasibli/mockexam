@@ -1,23 +1,24 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+
+const paramsSchema = z.object({
+  examId: z.string().min(1),
+});
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ examId: string }> },
 ) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ confirmed: false });
 
-  const ip = getClientIp(req.headers);
-  if (!checkRateLimit(`purchase-status:${userId}:${ip}`, 40, 60_000)) {
-    return NextResponse.json({ confirmed: false }, { status: 429 });
-  }
+  const parsed = paramsSchema.safeParse(await params);
+  if (!parsed.success) return NextResponse.json({ confirmed: false }, { status: 400 });
 
-  const { examId } = await params;
   await dbConnect();
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
+  const purchase = await Purchase.findOne({ userId, examId: parsed.data.examId, status: 'COMPLETED' }).lean();
   return NextResponse.json({ confirmed: !!purchase });
 }
