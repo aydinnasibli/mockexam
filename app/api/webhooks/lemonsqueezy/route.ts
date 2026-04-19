@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * Verifies that the incoming webhook request is genuinely from LemonSqueezy
@@ -26,6 +27,11 @@ function verifyWebhookSignature(rawBody: string, signature: string, secret: stri
  * On a successful paid order, records the purchase in MongoDB.
  */
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req.headers);
+  if (!checkRateLimit(`webhook:${ip}`, 60, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
   const signature = req.headers.get('x-signature') ?? '';
   const rawBody = await req.text();

@@ -215,27 +215,31 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
   redirect('/admin/exams');
 }
 
-export async function toggleExamActive(examId: string, newActive: boolean): Promise<void> {
+export async function toggleExamActive(examId: string, newActive: boolean): Promise<ActionResult> {
   try {
     await requireAdmin();
     await dbConnect();
     await ExamModel.findOneAndUpdate({ examId }, { $set: { isActive: newActive } });
     revalidatePath('/admin/exams');
     revalidatePath('/exams');
+    return {};
   } catch (err) {
     console.error('[toggleExamActive]', err);
+    return { error: 'Server xətası baş verdi.' };
   }
 }
 
-export async function deleteExam(examId: string): Promise<void> {
+export async function deleteExam(examId: string): Promise<ActionResult> {
   try {
     await requireAdmin();
     await dbConnect();
     await ExamModel.findOneAndDelete({ examId });
     revalidatePath('/admin/exams');
     revalidatePath('/exams');
+    return {};
   } catch (err) {
     console.error('[deleteExam]', err);
+    return { error: 'Server xətası baş verdi.' };
   }
 }
 

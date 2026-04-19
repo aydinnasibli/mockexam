@@ -3,6 +3,7 @@
 import 'katex/dist/katex.min.css';
 import { useState, useTransition, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { renderMath } from '@/lib/render-math';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2,
@@ -202,15 +203,15 @@ function QuestionForm({
       : emptyForm(moduleIndex)
   );
   const [pending, start] = useTransition();
-  const [error, setError] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) { setForm(f => ({ ...f, [key]: value })); }
   function setOption(i: number, value: string) { setForm(f => { const options = [...f.options]; options[i] = value; return { ...f, options }; }); }
 
   function handleSubmit() {
-    if (!form.stem.trim()) { setError('Sual mətni tələb olunur'); return; }
-    if (form.type === 'mcq' && form.options.some(o => !o.trim())) { setError('Bütün variantlar doldurulmalıdır'); return; }
-    setError('');
+    if (!form.stem.trim()) { setValidationError('Sual mətni tələb olunur'); return; }
+    if (form.type === 'mcq' && form.options.some(o => !o.trim())) { setValidationError('Bütün variantlar doldurulmalıdır'); return; }
+    setValidationError('');
     start(async () => {
       let result;
       if (isEdit && initial) {
@@ -218,7 +219,8 @@ function QuestionForm({
       } else {
         result = await addQuestion({ examId, moduleIndex: form.moduleIndex, type: form.type, passage: form.passage, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
       }
-      if ('error' in result) { setError(result.error); return; }
+      if ('error' in result) { toast.error(result.error); return; }
+      toast.success(isEdit ? 'Sual yeniləndi' : 'Sual əlavə edildi');
       onDone();
       router.refresh();
     });
@@ -284,7 +286,7 @@ function QuestionForm({
         <MathTextarea value={form.explanation} onChange={v => set('explanation', v)} placeholder="Düzgün cavabın izahatı... $formula$ dəstəklənir" rows={2} showToolbar />
       </div>
 
-      {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+      {validationError && <p className="text-xs text-red-600 font-medium">{validationError}</p>}
 
       <div className="flex items-center gap-2 pt-1">
         <button type="button" onClick={handleSubmit} disabled={pending}
@@ -346,7 +348,7 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
         <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-secondary/10 text-secondary transition-colors" title="Düzəliş et">
           <Pencil size={14} />
         </button>
-        <button onClick={() => { if (!confirm('Bu sualı silmək istəyirsiniz?')) return; startDelete(() => { deleteQuestion(q.id).then(() => router.refresh()).catch(() => {}); }); }}
+        <button onClick={() => { if (!confirm('Bu sualı silmək istəyirsiniz?')) return; startDelete(async () => { const r = await deleteQuestion(q.id); if ('error' in r) { toast.error(r.error); } else { toast.success('Sual silindi'); router.refresh(); } }); }}
           disabled={deleting} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50" title="Sil">
           <Trash2 size={14} />
         </button>

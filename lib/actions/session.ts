@@ -22,30 +22,35 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
 
-  await dbConnect();
+  try {
+    await dbConnect();
 
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-  if (!purchase) return { error: 'Not purchased' };
+    const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
+    if (!purchase) return { error: 'Not purchased' };
 
-  const exam = await getExamByIdAdmin(examId);
-  if (!exam) return { error: 'Exam not found' };
+    const exam = await getExamByIdAdmin(examId);
+    if (!exam) return { error: 'Exam not found' };
 
-  const totalSeconds = exam.durationMinutes * 60;
-  const now = new Date();
+    const totalSeconds = exam.durationMinutes * 60;
+    const now = new Date();
 
-  // Atomically create session if it doesn't exist, or return existing one.
-  // $setOnInsert ensures startedAt is never overwritten on subsequent calls.
-  const session = await ExamSessionModel.findOneAndUpdate(
-    { userId, examId },
-    { $setOnInsert: { startedAt: now, totalSeconds } },
-    { upsert: true, new: true },
-  );
+    // Atomically create session if it doesn't exist, or return existing one.
+    // $setOnInsert ensures startedAt is never overwritten on subsequent calls.
+    const session = await ExamSessionModel.findOneAndUpdate(
+      { userId, examId },
+      { $setOnInsert: { startedAt: now, totalSeconds } },
+      { upsert: true, new: true },
+    );
 
-  const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
+    const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
 
-  return {
-    startedAt:    session.startedAt.toISOString(),
-    elapsed:      Math.max(0, elapsed),
-    totalSeconds,
-  };
+    return {
+      startedAt:    session.startedAt.toISOString(),
+      elapsed:      Math.max(0, elapsed),
+      totalSeconds,
+    };
+  } catch (err) {
+    console.error('[beginExamSession]', err);
+    return { error: 'Server xətası baş verdi.' };
+  }
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
+import { Toaster } from 'sonner';
 import "./globals.css";
 
 const inter = Inter({
@@ -31,6 +32,7 @@ export default function RootLayout({
           className={`${inter.variable} ${manrope.variable} antialiased bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed`}
         >
           {children}
+          <Toaster richColors position="top-right" />
         </body>
       </html>
     </ClerkProvider>
