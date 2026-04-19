@@ -65,7 +65,7 @@ export default function Home() {
                     "https://lh3.googleusercontent.com/aida-public/AB6AXuC0Z4tA4XFLVCXPFf-0Ir52ui16-tpd6T4VcDL2V8okiJ42xYfAGs8VfGz0zI4pi1Wnege6GnXENgpn3QUtdaM9gcRbwOvXRaLnH5Y3clPh_29MqYrrEHEXbb2x6EuPbS4cdCtzxax7y8pu8QWeajqLL-0Ds5KXWOiCKZqASK8yh6xeXbbhvT6KWqSUYtzjWPzVfEGZ_Lw4YaLCVhH2H16co0d7BXeauygJMRFCA3jPKKFCUyZ8AWCqIaiRk9Y3FhF8xLMB4rwbnls4",
                   ].map((src, i) => (
                     <div key={i} className="w-12 h-12 rounded-full border-4 border-surface overflow-hidden bg-surface-container">
-                      <Image src={src} alt="Tələbə" width={48} height={48} className="w-full h-full object-cover" />
+                      <Image src={src} alt="Tələbə" width={48} height={48} className="w-full h-full object-cover" {...(i === 0 ? { priority: true } : {})} />
                     </div>
                   ))}
                 </div>
@@ -291,6 +291,8 @@ export default function Home() {
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4bXqXD-p4ExpfzUX2XYdDjBWpMs0WBASK_RwCAvgl4qAP5xR0wgkvSVsei6PYKpaoSpG7lB4I1n6ESjg29QydEtmtq7g8uqxv3IQIw791XuI_P_AS5tWzpxlsmG5fkSHbFn9TPnqbRfu7LuU4j-1yRR3x4UYes36tXD3AJlgVuYOAILvtAWlP-_phz7Z6UGl31aoAyTr5enYXIiB_hOGJ2dNL_tPMeBDimAnttDj1h35HSKJFfuXQtn90Ow3PlkNaNnbHkdYZCVVZ"
                     alt="Tələbələr birgə oxuyur"
                     sizes="(max-width: 1024px) 100vw, 50vw"
+                    placeholder="blur"
+                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAP0lEQVQI12P4z8BQz8DQAAIMAAJJAQYGJQYGJQYGJQYGJQYGJQYGJQYGJS4GBgYGBgYGBgYGBgYGBgYGBn8A2x4F9a4AAAAASUVORK5CYII="
                   />
                 </div>
                 <div className="absolute -right-8 top-1/2 -translate-y-1/2">
