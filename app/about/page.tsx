@@ -1,4 +1,19 @@
+import type { Metadata } from 'next';
 import Navbar from "@/components/layout/Navbar";
+
+export const metadata: Metadata = {
+  title: 'Haqqımızda',
+  description: 'Azərbaycanın ən qabaqcıl imtahan hazırlığı platforması. 2022-ci ildən SAT, IELTS, TOEFL və DİM hazırlığında 50,000+ tələbəyə xidmət göstəririk.',
+  openGraph: {
+    title: 'Haqqımızda — Məşqçi',
+    description: 'Azərbaycanın ən qabaqcıl imtahan hazırlığı platforması. 2022-ci ildən SAT, IELTS, TOEFL və DİM hazırlığında 50,000+ tələbəyə xidmət göstəririk.',
+    url: '/about',
+  },
+  twitter: {
+    title: 'Haqqımızda — Məşqçi',
+    description: 'Azərbaycanın ən qabaqcıl imtahan hazırlığı platforması. 2022-ci ildən SAT, IELTS, TOEFL və DİM hazırlığında 50,000+ tələbəyə xidmət göstəririk.',
+  },
+};
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import { BadgeCheck, Eye, Rocket, Users, BookOpen, Star, TrendingUp } from "lucide-react";

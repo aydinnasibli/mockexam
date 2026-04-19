@@ -2,8 +2,17 @@ import { getActiveExams } from '@/lib/db/exams';
 import ExamsCatalog from './ExamsCatalog';
 
 export const metadata = {
-  title: 'İmtahanlar — Məşqçi',
-  description: 'SAT, IELTS və TOEFL imtahanlarına professional hazırlıq üçün test paketləri',
+  title: 'İmtahanlar',
+  description: 'SAT, IELTS, TOEFL və DİM imtahanlarına professional hazırlıq üçün test paketləri. Ekspertlər tərəfindən hazırlanmış sınaqları kəşf edin.',
+  openGraph: {
+    title: 'İmtahanlar — Məşqçi',
+    description: 'SAT, IELTS, TOEFL və DİM imtahanlarına professional hazırlıq üçün test paketləri.',
+    url: '/exams',
+  },
+  twitter: {
+    title: 'İmtahanlar — Məşqçi',
+    description: 'SAT, IELTS, TOEFL və DİM imtahanlarına professional hazırlıq üçün test paketləri.',
+  },
 };
 
 interface Props {
