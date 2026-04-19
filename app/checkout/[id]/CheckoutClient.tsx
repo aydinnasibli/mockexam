@@ -5,14 +5,15 @@ import { useAuth, SignInButton } from '@clerk/nextjs';
 import Script from 'next/script';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   CheckCircle2, ShoppingBag, Settings, UserLock,
-  Timer, HelpCircle, Infinity, AlertCircle, Lock, Shield, CreditCard, ShieldCheck,
+  Timer, HelpCircle, Infinity, Lock, Shield, CreditCard, ShieldCheck,
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 import { createCheckoutSession } from '@/lib/actions/checkout';
 
-type CheckoutStatus = 'idle' | 'processing' | 'ready' | 'success' | 'error' | 'unconfigured';
+type CheckoutStatus = 'idle' | 'processing' | 'ready' | 'success' | 'unconfigured';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 15; // 30 s total before giving up and redirecting anyway
@@ -43,17 +44,15 @@ export default function CheckoutClient({ exam }: Props) {
   const router = useRouter();
 
   const [status, setStatus] = useState<CheckoutStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
 
   const handlePay = useCallback(async () => {
     if (status === 'processing' || status === 'success') return;
     setStatus('processing');
-    setErrorMessage('');
     try {
       const result = await createCheckoutSession(exam.id);
 
       if ('alreadyPurchased' in result) { router.push('/dashboard'); return; }
-      if ('unconfigured' in result) { setStatus('unconfigured'); setErrorMessage(result.error); return; }
+      if ('unconfigured' in result) { setStatus('unconfigured'); return; }
       if ('error' in result) throw new Error(result.error);
 
       const LemonSqueezy = (window as Window & {
@@ -65,7 +64,10 @@ export default function CheckoutClient({ exam }: Props) {
           eventHandler: (event) => {
             if (event.event === 'Checkout.Success') {
               setStatus('success');
-              pollPurchaseConfirmed(exam.id, () => router.push('/dashboard'));
+              pollPurchaseConfirmed(exam.id, () => {
+                toast.success('Ödəniş tamamlandı! İmtahana giriş əldə etdiniz.');
+                router.push('/dashboard');
+              });
             }
           },
         });
@@ -75,8 +77,9 @@ export default function CheckoutClient({ exam }: Props) {
         window.location.href = result.checkoutUrl;
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Bilinməyən xəta baş verdi');
-      setStatus('error');
+      const msg = err instanceof Error ? err.message : 'Bilinməyən xəta baş verdi';
+      toast.error(msg);
+      setStatus('idle');
     }
   }, [exam.id, router, status]);
 
@@ -112,12 +115,12 @@ export default function CheckoutClient({ exam }: Props) {
                 <Settings className="text-amber-500 shrink-0" size={20} />
                 <h3 className="font-bold text-amber-900">LemonSqueezy konfiqurasiya tələb olunur</h3>
               </div>
-              <p className="text-sm text-amber-800 mb-4 leading-relaxed">{errorMessage}</p>
-              <button onClick={() => { setStatus('idle'); setErrorMessage(''); }} className="mt-2 text-sm text-amber-700 underline">Geri</button>
+              <p className="text-sm text-amber-800 mb-4 leading-relaxed">LemonSqueezy mühit dəyişənləri konfiqurasiya edilməyib.</p>
+              <button onClick={() => setStatus('idle')} className="mt-2 text-sm text-amber-700 underline">Geri</button>
             </div>
           )}
 
-          {(status === 'idle' || status === 'processing' || status === 'ready' || status === 'error') && (
+          {(status === 'idle' || status === 'processing' || status === 'ready') && (
             <>
               <div className="tc-card p-6 mb-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Sifariş məlumatları</p>
@@ -142,12 +145,6 @@ export default function CheckoutClient({ exam }: Props) {
                           <CheckCircle2 className="text-secondary shrink-0" size={16} />{f}
                         </div>
                       ))}
-                    </div>
-                  )}
-                  {status === 'error' && errorMessage && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
-                      <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
-                      <p className="text-xs text-red-700">{errorMessage}</p>
                     </div>
                   )}
                   <button

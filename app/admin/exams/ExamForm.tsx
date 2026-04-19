@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Plus, X, Save, Loader2, ArrowUp, ArrowDown,
   Clock, HelpCircle, Coffee, ChevronDown, ChevronRight, RefreshCw,
@@ -220,6 +221,10 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
   const [state, formAction, pending] = useActionState(action, initialState);
 
+  useEffect(() => {
+    if (state.error) toast.error(state.error);
+  }, [state]);
+
   const [examType, setExamType] = useState(defaultValues?.type ?? 'sat');
   const [tag, setTag] = useState(defaultValues?.tag ?? TYPE_DEFAULTS['sat'].tag);
   const [description, setDescription] = useState(defaultValues?.description ?? '');
@@ -297,12 +302,6 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
   return (
     <form action={formAction} className="max-w-4xl space-y-6">
       <input type="hidden" name="modulesJson" value={modulesJson} />
-
-      {state.error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
-          {state.error}
-        </div>
-      )}
 
       {/* ── Basic info ─────────────────────────────────────────────────────── */}
       <Section title="Əsas Məlumatlar">

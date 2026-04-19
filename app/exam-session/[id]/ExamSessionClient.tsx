@@ -4,11 +4,12 @@ import 'katex/dist/katex.min.css';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { saveExamResult } from '@/lib/actions/results';
 import { beginExamSession } from '@/lib/actions/session';
 import {
   Timer, Flag, ChevronLeft, ChevronRight,
-  CheckCircle2, AlertCircle, Grid3X3, BookOpen, Pencil, FileText, X,
+  CheckCircle2, Grid3X3, BookOpen, Pencil, FileText, X,
 } from 'lucide-react';
 import { renderMath } from '@/lib/render-math';
 import type { PublicExam } from '@/lib/db/exams';
@@ -93,10 +94,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const [flagged, setFlagged]           = useState<Set<string>>(new Set());
   const [showGrid, setShowGrid]         = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
-  const [submitting, setSubmitting]     = useState(false);
-  const [submitted, setSubmitted]       = useState(false);
-  const [submitError, setSubmitError]   = useState('');
-  const [showPassage, setShowPassage]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted]   = useState(false);
+  const [showPassage, setShowPassage] = useState(false);
 
   const totalSeconds = exam.durationMinutes * 60;
   const remaining    = Math.max(0, totalSeconds - elapsed);
@@ -169,7 +169,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     recordCurrentQuestionTime();
     setSubmitting(true);
     setShowConfirm(false);
-    setSubmitError('');
     try {
       const answerInputs = questions.map(q => ({
         questionId:  q.id,
@@ -187,9 +186,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       if ('error' in result) throw new Error(result.error);
       clearPersistedSession(exam.id);
       setSubmitted(true);
+      toast.success('İmtahan tamamlandı! Nəticələr hazırlanır...');
       router.push(`/dashboard/analytics/${exam.id}/${result.attemptNumber}/review`);
     } catch {
-      setSubmitError('Nəticə göndərilmədi. Yenidən cəhd edin.');
+      toast.error('Nəticə göndərilmədi. Yenidən cəhd edin.');
       setSubmitting(false);
     }
   }, [exam, router, answers, questions, recordCurrentQuestionTime]);
@@ -404,12 +404,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             <p className="text-xs text-on-surface-variant text-center mb-6">
               Bu əməliyyat geri qaytarıla bilməz.
             </p>
-            {submitError && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mb-4">
-                <AlertCircle size={16} className="text-red-500 shrink-0" />
-                <p className="text-xs text-red-700">{submitError}</p>
-              </div>
-            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}

@@ -3,6 +3,7 @@
 import { useClerk, useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
 import { useState, useEffect, useTransition } from 'react';
+import { toast } from 'sonner';
 import {
   User, Mail, Shield, ChevronRight, Pencil, CalendarDays,
   LogOut, Save, Loader2,
@@ -27,10 +28,9 @@ export default function SettingsClient() {
     ? new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
 
-  const [targetDate, setTargetDate]     = useState('');
-  const [targetType, setTargetType]     = useState('');
-  const [saveStatus, setSaveStatus]     = useState<'idle' | 'saved' | 'error'>('idle');
-  const [isPending, startTransition]    = useTransition();
+  const [targetDate, setTargetDate]  = useState('');
+  const [targetType, setTargetType]  = useState('');
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     getUserSettings().then(s => {
@@ -46,8 +46,11 @@ export default function SettingsClient() {
         targetExamDate: targetDate || null,
         targetExamType: targetType || null,
       });
-      setSaveStatus('error' in res ? 'error' : 'saved');
-      setTimeout(() => setSaveStatus('idle'), 2500);
+      if ('error' in res) {
+        toast.error(res.error ?? 'Xəta baş verdi');
+      } else {
+        toast.success('Saxlanıldı');
+      }
     });
   }
 
@@ -159,8 +162,6 @@ export default function SettingsClient() {
                   {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                   Yadda saxla
                 </button>
-                {saveStatus === 'saved' && <span className="text-xs text-green-600 font-semibold">✓ Saxlanıldı</span>}
-                {saveStatus === 'error' && <span className="text-xs text-red-500 font-semibold">Xəta baş verdi</span>}
                 {(targetDate || targetType) && (
                   <button
                     onClick={() => { setTargetDate(''); setTargetType(''); }}

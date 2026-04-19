@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { seedExams, type SeedResult } from '@/lib/actions/admin';
 import { Clock } from 'lucide-react';
 
@@ -8,6 +9,14 @@ const initialState: SeedResult = { created: 0, skipped: 0 };
 
 export default function SeedButton() {
   const [state, action, pending] = useActionState(seedExams, initialState);
+
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    } else if (state.created > 0 || state.skipped > 0) {
+      toast.success(`${state.created} əlavə edildi, ${state.skipped} keçildi.`);
+    }
+  }, [state]);
 
   return (
     <form action={action}>
@@ -28,14 +37,6 @@ export default function SeedButton() {
           </>
         )}
       </button>
-      {state.error && (
-        <p className="text-xs text-red-600 font-semibold mt-2 text-center">{state.error}</p>
-      )}
-      {!state.error && (state.created > 0 || state.skipped > 0) && (
-        <p className="text-xs text-emerald-700 font-semibold mt-2 text-center">
-          {state.created} əlavə edildi, {state.skipped} keçildi.
-        </p>
-      )}
     </form>
   );
 }

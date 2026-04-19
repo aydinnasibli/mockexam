@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Pencil, Trash2, ToggleLeft, ToggleRight, BookOpen } from 'lucide-react';
 import { deleteExam, toggleExamActive } from '@/lib/actions/admin';
 
@@ -15,12 +16,20 @@ export default function ExamRowActions({ examId, isActive }: Props) {
   const [deleting, startDelete] = useTransition();
 
   const handleToggle = () => {
-    startToggle(() => toggleExamActive(examId, !isActive));
+    startToggle(async () => {
+      const result = await toggleExamActive(examId, !isActive);
+      if (result.error) toast.error(result.error);
+      else toast.success(isActive ? 'Deaktiv edildi' : 'Aktiv edildi');
+    });
   };
 
   const handleDelete = () => {
     if (!confirm(`"${examId}" imtahanını silmək istəyirsiniz?`)) return;
-    startDelete(() => deleteExam(examId));
+    startDelete(async () => {
+      const result = await deleteExam(examId);
+      if (result.error) toast.error(result.error);
+      else toast.success('İmtahan silindi');
+    });
   };
 
   return (
