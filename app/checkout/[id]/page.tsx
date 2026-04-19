@@ -13,7 +13,10 @@ export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const exam = await getExamById(id);
   if (!exam) return {};
-  return { title: `${exam.title} — Ödəniş` };
+  return {
+    title: `${exam.title} — Ödəniş`,
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function CheckoutPage({ params }: Props) {

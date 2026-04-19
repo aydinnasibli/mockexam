@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /checkout/
+Disallow: /exam-session/
+Disallow: /api/
+
+Sitemap: https://www.testcentre.az/sitemap.xml

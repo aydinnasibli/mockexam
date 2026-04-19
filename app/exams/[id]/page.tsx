@@ -16,7 +16,24 @@ export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const exam = await getExamById(id);
   if (!exam) return {};
-  return { title: `${exam.title} — Məşqçi` };
+
+  const description = exam.description || `${exam.title} sınaq imtahanı. ${exam.totalQuestions} sual, ${exam.durationMinutes} dəqiqə. Məşqçidə hazırlaşın.`;
+
+  return {
+    title: exam.title,
+    description,
+    alternates: { canonical: `/exams/${id}` },
+    openGraph: {
+      title: `${exam.title} — Məşqçi`,
+      description,
+      url: `/exams/${id}`,
+      type: 'website',
+    },
+    twitter: {
+      title: `${exam.title} — Məşqçi`,
+      description,
+    },
+  };
 }
 
 export default async function ExamDetails({ params }: Props) {
