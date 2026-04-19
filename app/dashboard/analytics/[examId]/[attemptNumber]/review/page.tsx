@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getResultDetail } from '@/lib/db/results';
 import { getExamByIdAdmin } from '@/lib/db/exams';
-import { getExamQuestions } from '@/lib/actions/questions';
+import { getExamQuestionsForReview } from '@/lib/actions/questions';
 import ReviewClient from './ReviewClient';
 
 interface Props {
@@ -33,7 +33,7 @@ export default async function ReviewPage({ params }: Props) {
   const [exam, result, questions] = await Promise.all([
     getExamByIdAdmin(examId),
     getResultDetail(userId, examId, attemptNumber),
-    getExamQuestions(examId),
+    getExamQuestionsForReview(examId),
   ]);
 
   if (!exam || !result) notFound();

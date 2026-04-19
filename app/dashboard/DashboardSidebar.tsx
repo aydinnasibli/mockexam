@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useUser, SignOutButton } from '@clerk/nextjs';
 import {
@@ -37,8 +38,7 @@ export default function DashboardSidebar() {
       <div className="px-4 py-3 border-b border-outline-variant/20">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f0f2f5]">
           {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-primary/10" />
+            <Image src={imageUrl} alt="Avatar" width={32} height={32} className="rounded-full object-cover shrink-0 ring-2 ring-primary/10" />
           ) : (
             <div className="w-8 h-8 rounded-full editorial-gradient flex items-center justify-center shrink-0 shadow-sm">
               <span className="text-white text-xs font-black">{firstName[0]}</span>

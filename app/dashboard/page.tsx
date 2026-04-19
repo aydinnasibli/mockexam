@@ -8,10 +8,14 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import {
   BarChart2, Settings,
-  GraduationCap, ShoppingBag, PlusCircle, Play,
+  GraduationCap, ShoppingBag, Play,
   Timer, HelpCircle, ArrowRight,
-  Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock, CalendarDays,
+  Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock,
 } from 'lucide-react';
+
+function weekAgoMs(): number {
+  return Date.now() - 7 * 24 * 60 * 60 * 1000;
+}
 
 function todayString() {
   return new Date().toLocaleDateString('az-AZ', {
@@ -93,8 +97,7 @@ export default async function DashboardPage() {
     };
   }).filter((x): x is NonNullable<typeof x> => x !== null);
 
-  const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const weeklyAttempts = results.filter(r => new Date(r.completedAt).getTime() >= weekAgoMs).length;
+  const weeklyAttempts = results.filter(r => new Date(r.completedAt).getTime() >= weekAgoMs()).length;
 
   // Score trend: use only the most-attempted exam type to keep it meaningful
   const dominantTag = typeAvgs.length > 0

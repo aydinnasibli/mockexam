@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
 
@@ -63,10 +64,12 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3">
                             {u.imageUrl ? (
-                              <img
+                              <Image
                                 src={u.imageUrl}
                                 alt={fullName}
-                                className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-outline-variant/30"
+                                width={32}
+                                height={32}
+                                className="rounded-full object-cover flex-shrink-0 ring-1 ring-outline-variant/30"
                               />
                             ) : (
                               <div className="w-8 h-8 rounded-full editorial-gradient flex items-center justify-center flex-shrink-0">

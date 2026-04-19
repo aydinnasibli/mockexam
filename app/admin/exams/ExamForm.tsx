@@ -42,9 +42,7 @@ const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
 
 // ─── Type-specific module presets ─────────────────────────────────────────────
 
-type PresetModule = Omit<ParsedModule, never>;
-
-const EXAM_PRESETS: Record<string, PresetModule[]> = {
+const EXAM_PRESETS: Record<string, ParsedModule[]> = {
   // Digital SAT (College Board, 2024 format)
   // Section 1 – Reading & Writing: 2 adaptive modules × 27 questions × 32 min
   // 10-min break between sections
@@ -156,8 +154,20 @@ const EXAM_PRESETS: Record<string, PresetModule[]> = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ModuleRow extends ParsedModule {
-  _key: string;
-  _expanded: boolean;
+  id: string;
+  expanded: boolean;
+}
+
+function toServerModule(m: ModuleRow): ParsedModule {
+  return {
+    name: m.name,
+    type: m.type,
+    durationMinutes: m.durationMinutes,
+    questions: m.questions,
+    breakAfterMinutes: m.breakAfterMinutes,
+    isAdaptive: m.isAdaptive,
+    instructions: m.instructions,
+  };
 }
 
 function makeKey() {
@@ -167,12 +177,12 @@ function makeKey() {
 function makePreset(type: string): ModuleRow[] {
   const preset = EXAM_PRESETS[type];
   if (!preset?.length) return [emptyModule()];
-  return preset.map(m => ({ ...m, _key: makeKey(), _expanded: false }));
+  return preset.map(m => ({ ...m, id: makeKey(), expanded: false }));
 }
 
 function emptyModule(): ModuleRow {
   return {
-    _key: makeKey(), _expanded: true,
+    id: makeKey(), expanded: true,
     name: '', type: 'general',
     durationMinutes: 30, questions: 0,
     breakAfterMinutes: 0, isAdaptive: false, instructions: '',
@@ -220,7 +230,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
   const [modules, setModules] = useState<ModuleRow[]>(() => {
     if (defaultValues?.modules?.length) {
-      return defaultValues.modules.map(m => ({ ...m, _key: makeKey(), _expanded: false }));
+      return defaultValues.modules.map(m => ({ ...m, id: makeKey(), expanded: false }));
     }
     return makePreset(defaultValues?.type ?? 'sat');
   });
@@ -230,11 +240,11 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
   const addModule = () => setModules(prev => [...prev, emptyModule()]);
 
   const removeModule = (key: string) =>
-    setModules(prev => prev.filter(m => m._key !== key));
+    setModules(prev => prev.filter(m => m.id !== key));
 
   const moveModule = (key: string, dir: -1 | 1) =>
     setModules(prev => {
-      const i = prev.findIndex(m => m._key === key);
+      const i = prev.findIndex(m => m.id === key);
       if (i < 0) return prev;
       const next = i + dir;
       if (next < 0 || next >= prev.length) return prev;
@@ -244,10 +254,10 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
     });
 
   const updateModule = (key: string, patch: Partial<ModuleRow>) =>
-    setModules(prev => prev.map(m => m._key === key ? { ...m, ...patch } : m));
+    setModules(prev => prev.map(m => m.id === key ? { ...m, ...patch } : m));
 
   const toggleExpanded = (key: string) =>
-    setModules(prev => prev.map(m => m._key === key ? { ...m, _expanded: !m._expanded } : m));
+    setModules(prev => prev.map(m => m.id === key ? { ...m, expanded: !m.expanded } : m));
 
   const handleTypeChange = (newType: string) => {
     setExamType(newType);
@@ -275,9 +285,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
   const totalDuration  = modules.reduce((s, m) => s + m.durationMinutes + (m.breakAfterMinutes || 0), 0);
   const examMinutes    = totalDuration - totalBreak;
 
-  const modulesJson = JSON.stringify(
-    modules.map(({ _key, _expanded, ...rest }) => rest)
-  );
+  const modulesJson = JSON.stringify(modules.map(toServerModule));
 
   // ── Feature helpers ─────────────────────────────────────────────────────────
 
@@ -370,16 +378,16 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
         <div className="divide-y divide-outline-variant/10">
           {modules.map((mod, idx) => (
             <ModuleCard
-              key={mod._key}
+              key={mod.id}
               mod={mod}
               index={idx}
               total={modules.length}
               examType={examType}
-              onUpdate={patch => updateModule(mod._key, patch)}
-              onRemove={() => removeModule(mod._key)}
-              onMoveUp={() => moveModule(mod._key, -1)}
-              onMoveDown={() => moveModule(mod._key, 1)}
-              onToggle={() => toggleExpanded(mod._key)}
+              onUpdate={patch => updateModule(mod.id, patch)}
+              onRemove={() => removeModule(mod.id)}
+              onMoveUp={() => moveModule(mod.id, -1)}
+              onMoveDown={() => moveModule(mod.id, 1)}
+              onToggle={() => toggleExpanded(mod.id)}
             />
           ))}
         </div>
@@ -493,7 +501,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
         </span>
 
         <button type="button" onClick={onToggle} className="p-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant transition-colors shrink-0">
-          {mod._expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {mod.expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
 
         {total > 1 && (
@@ -504,7 +512,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
       </div>
 
       {/* Expanded details */}
-      {mod._expanded && (
+      {mod.expanded && (
         <div className="mt-4 ml-[52px] space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>

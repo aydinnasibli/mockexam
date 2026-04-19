@@ -5,7 +5,7 @@ import { SignOutButton } from '@clerk/nextjs';
 import { useState, useEffect, useTransition } from 'react';
 import {
   User, Mail, Shield, ChevronRight, Pencil, CalendarDays,
-  LogOut, Target, Save, Loader2,
+  LogOut, Save, Loader2,
 } from 'lucide-react';
 import { getUserSettings, saveUserSettings } from '@/lib/actions/settings';
 
