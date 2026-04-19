@@ -35,7 +35,7 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   const exam = await getExamById(examId);
   if (!exam) return { error: 'Exam not found' };
 
-  const existing = await Purchase.findOne({ userId, examId });
+  const existing = await Purchase.findOne({ userId, examId, status: 'COMPLETED' });
   if (existing) return { alreadyPurchased: true };
 
   lemonSqueezySetup({ apiKey });

@@ -6,6 +6,7 @@ import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
 import QuestionModel from '@/lib/models/Question';
 import { getExamByIdAdmin } from '@/lib/db/exams';
+import ExamSessionModel from '@/lib/models/ExamSession';
 
 export type ClientAnswerInput = {
   questionId: string;
@@ -43,6 +44,18 @@ export async function saveExamResult(data: {
 
   const exam = await getExamByIdAdmin(examId);
   if (!exam) return { error: 'Exam not found' };
+
+  // Validate against server-side session. Log overtime but still accept the submission
+  // (this is a practice platform — we never discard a student's work).
+  const session = await ExamSessionModel.findOne({ userId, examId }).lean();
+  if (session) {
+    const serverElapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
+    if (serverElapsed > session.totalSeconds + 300) {
+      console.warn(`[saveExamResult] Overtime: userId=${userId} examId=${examId} elapsed=${serverElapsed}s allowed=${session.totalSeconds}s`);
+    }
+    // Use server-tracked startedAt so the stored record is always authoritative
+    startDate.setTime(new Date(session.startedAt).getTime());
+  }
 
   // Fetch authoritative correct answers from the database
   const questionDocs = await QuestionModel.find({ examId })
@@ -100,6 +113,9 @@ export async function saveExamResult(data: {
     answers:         answerRecords,
     moduleScores,
   });
+
+  // Clean up the session record now that the exam is submitted
+  await ExamSessionModel.deleteOne({ userId, examId });
 
   return { resultId: result._id.toString(), attemptNumber };
 }
