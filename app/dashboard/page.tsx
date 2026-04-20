@@ -12,6 +12,8 @@ import {
   Timer, HelpCircle, ArrowRight,
   Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock,
 } from 'lucide-react';
+import FadeUp from '@/components/ui/FadeUp';
+import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 
 function weekAgoMs(): number {
   return Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -187,7 +189,7 @@ export default async function DashboardPage() {
     <>
 
         {/* Welcome banner */}
-        <div className="editorial-gradient px-8 py-8 relative overflow-hidden shrink-0">
+        <FadeUp y={10} className="editorial-gradient px-8 py-8 relative overflow-hidden shrink-0">
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="absolute -top-16 -right-16 w-64 h-64 bg-white/8 rounded-full blur-3xl" />
             <div className="absolute -bottom-8 left-1/3 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
@@ -215,7 +217,7 @@ export default async function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
+        </FadeUp>
 
         <div className="p-6 flex-1">
 
@@ -229,7 +231,7 @@ export default async function DashboardPage() {
               {(() => {
                 const { iconClass, Icon, label, desc, href, cta, btnClass } = nextStepCard;
                 return (
-                  <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-4 flex items-center gap-4">
+                  <FadeUp delay={0.05} className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-4 flex items-center gap-4">
                     <div className={`w-11 h-11 rounded-xl ${iconClass} flex items-center justify-center shrink-0`}>
                       <Icon size={20} />
                     </div>
@@ -246,8 +248,8 @@ export default async function DashboardPage() {
               })()}
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
+              <StaggerContainer className="grid grid-cols-3 gap-3" delay={0.08}>
+                <StaggerItem className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
                     <GraduationCap size={16} className="text-blue-600" />
                   </div>
@@ -257,8 +259,8 @@ export default async function DashboardPage() {
                     ? <p className="text-[10px] text-secondary font-semibold mt-1">+{exploreExams.length} kataloqda</p>
                     : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">hamısı əldə edilib</p>
                   }
-                </div>
-                <div className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
+                </StaggerItem>
+                <StaggerItem className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
                     <TrendingUp size={16} className="text-purple-600" />
                   </div>
@@ -268,8 +270,8 @@ export default async function DashboardPage() {
                     ? <p className="text-[10px] text-green-600 font-semibold mt-1">+{weeklyAttempts} bu həftə</p>
                     : <p className="text-[10px] text-on-surface-variant/40 font-medium mt-1">bu həftə yoxdur</p>
                   }
-                </div>
-                <div className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
+                </StaggerItem>
+                <StaggerItem className="bg-white rounded-2xl border border-outline-variant/30 p-4 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
                     <BarChart2 size={16} className="text-amber-600" />
                   </div>
@@ -304,22 +306,22 @@ export default async function DashboardPage() {
                       </div>
                     </>
                   )}
-                </div>
-              </div>
+                </StaggerItem>
+              </StaggerContainer>
 
               {/* My exams */}
               <section>
-                <div className="flex items-center justify-between mb-3">
+                <FadeUp delay={0.1} className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Mənim Sınaqlarım</h2>
                   {results.length > 0 && (
                     <Link href="/dashboard/analytics" className="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
                       Nəticələr <ArrowRight size={13} />
                     </Link>
                   )}
-                </div>
+                </FadeUp>
 
                 {purchasedExams.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-8 text-center">
+                  <FadeUp delay={0.15} className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-8 text-center">
                     <div className="w-12 h-12 rounded-2xl editorial-gradient mx-auto mb-4 flex items-center justify-center shadow-md">
                       <GraduationCap size={22} className="text-white" />
                     </div>
@@ -348,9 +350,9 @@ export default async function DashboardPage() {
                     <Link href="/exams" className="inline-flex items-center gap-2 editorial-gradient text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity shadow-md">
                       <ShoppingBag size={14} /> Kataloqa bax
                     </Link>
-                  </div>
+                  </FadeUp>
                 ) : (
-                  <div className="space-y-3">
+                  <StaggerContainer className="space-y-3" delay={0.12}>
                     {purchasedExams.map(exam => {
                       const examMinutes  = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
                       const lastResult   = lastResultByExam.get(exam.id);
@@ -360,7 +362,7 @@ export default async function DashboardPage() {
                       const TypeIcon     = cfg.icon;
 
                       return (
-                        <div key={exam.id} className={`bg-white rounded-2xl border border-outline-variant/30 border-l-4 ${cfg.border} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}>
+                        <StaggerItem key={exam.id} className={`bg-white rounded-2xl border border-outline-variant/30 border-l-4 ${cfg.border} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}>
                           {/* Card header */}
                           <div className="p-4 flex items-start gap-3">
                             <div className={`w-10 h-10 rounded-xl ${cfg.accent} flex items-center justify-center shrink-0 shadow-sm`}>
@@ -417,30 +419,31 @@ export default async function DashboardPage() {
                               </>
                             )}
                           </div>
-                        </div>
+                        </StaggerItem>
                       );
                     })}
-                  </div>
+                  </StaggerContainer>
                 )}
               </section>
 
               {/* Explore */}
               {exploreExams.length > 0 && (
                 <section>
-                  <div className="flex items-center justify-between mb-3">
+                  <FadeUp delay={0.05} className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Kəşf et</h2>
                     <Link href="/exams" className="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
                       Hamısı <ArrowRight size={13} />
                     </Link>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  </FadeUp>
+                  <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-3" delay={0.08}>
                     {exploreExams.map(exam => {
                       const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
                       const type        = exam.type as keyof typeof examTypeConfig;
                       const cfg         = examTypeConfig[type] ?? examTypeConfig.sat;
                       const TypeIcon    = cfg.icon;
                       return (
-                        <Link key={exam.id} href={`/exams/${exam.id}`}
+                        <StaggerItem key={exam.id}>
+                        <Link href={`/exams/${exam.id}`}
                           className="bg-white rounded-2xl border border-outline-variant/30 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group shadow-sm">
                           <div className="flex items-start justify-between mb-3">
                             <div className={`w-9 h-9 rounded-xl ${cfg.accent} flex items-center justify-center shadow-sm`}>
@@ -456,15 +459,16 @@ export default async function DashboardPage() {
                             <span className="ml-auto text-secondary font-bold">Bax →</span>
                           </div>
                         </Link>
+                        </StaggerItem>
                       );
                     })}
-                  </div>
+                  </StaggerContainer>
                 </section>
               )}
             </div>
 
             {/* ── Right column — Recent activity ── */}
-            <div className="space-y-4">
+            <StaggerContainer className="space-y-4" delay={0.15}>
 
               {/* Countdown card */}
               {countdown && (() => {
@@ -474,7 +478,7 @@ export default async function DashboardPage() {
                 const bgCls    = urgency === 'red' ? 'bg-red-50' : urgency === 'amber' ? 'bg-amber-50' : 'bg-green-50';
                 const textCls  = urgency === 'red' ? 'text-red-600' : urgency === 'amber' ? 'text-amber-600' : 'text-green-600';
                 return (
-                  <div className={`rounded-2xl border ${borderCls} ${bgCls} p-4 shadow-sm`}>
+                  <StaggerItem className={`rounded-2xl border ${borderCls} ${bgCls} p-4 shadow-sm`}>
                     <div className="flex items-center gap-3 mb-3">
                       <div className={`w-9 h-9 rounded-xl ${cfg.accent} flex items-center justify-center shrink-0`}>
                         <TypeIcon size={16} className="text-white" />
@@ -499,13 +503,13 @@ export default async function DashboardPage() {
                         {countdown.type.toUpperCase()} sınaqlarına bax <ArrowRight size={11} />
                       </Link>
                     )}
-                  </div>
+                  </StaggerItem>
                 );
               })()}
 
               {/* Recent activity */}
               {recentResults.length > 0 ? (
-                <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
+                <StaggerItem className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
                   <div className="px-5 py-4 border-b border-outline-variant/15 flex items-center justify-between">
                     <h2 className="text-sm font-bold text-primary font-headline">Son Fəaliyyət</h2>
                     <Link href="/dashboard/analytics" className="text-xs font-bold text-secondary hover:underline">Hamısı</Link>
@@ -536,10 +540,10 @@ export default async function DashboardPage() {
                       );
                     })}
                   </div>
-                </div>
+                </StaggerItem>
               ) : (
                 /* No activity yet — show quick links */
-                <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-5 text-center">
+                <StaggerItem className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-5 text-center">
                   <div className="w-10 h-10 rounded-xl bg-surface-container mx-auto mb-3 flex items-center justify-center">
                     <BarChart2 size={18} className="text-on-surface-variant" />
                   </div>
@@ -548,11 +552,11 @@ export default async function DashboardPage() {
                   <Link href="/exams" className="inline-flex items-center gap-1.5 text-xs font-bold text-secondary hover:underline">
                     Sınaqlara bax <ArrowRight size={12} />
                   </Link>
-                </div>
+                </StaggerItem>
               )}
 
               {/* Quick links */}
-              <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
+              <StaggerItem className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-outline-variant/15">
                   <h2 className="text-sm font-bold text-primary font-headline">Sürətli Keçidlər</h2>
                 </div>
@@ -575,9 +579,9 @@ export default async function DashboardPage() {
                     </Link>
                   ))}
                 </div>
-              </div>
+              </StaggerItem>
 
-            </div>
+            </StaggerContainer>
           </div>
         </div>
     </>
