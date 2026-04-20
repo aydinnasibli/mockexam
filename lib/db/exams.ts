@@ -12,6 +12,7 @@ export interface PublicExam {
   durationMinutes: number;
   totalQuestions: number;
   features: string[];
+  updatedAt: Date;
   modules: Array<{
     name: string;
     type: string;
@@ -49,6 +50,7 @@ export async function getActiveExams(): Promise<PublicExam[]> {
     durationMinutes:e.durationMinutes,
     totalQuestions: e.totalQuestions,
     features:       e.features,
+    updatedAt:      e.updatedAt,
     modules:        e.modules.map(serialize),
   }));
 }
