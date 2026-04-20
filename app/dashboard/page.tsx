@@ -243,7 +243,7 @@ export default async function DashboardPage() {
                       className={`shrink-0 flex items-center gap-1.5 px-3 py-2 ${btnClass} rounded-xl text-xs font-bold hover:opacity-90 transition-opacity whitespace-nowrap`}>
                       {cta} <ArrowRight size={12} />
                     </Link>
-                  </div>
+                  </FadeUp>
                 );
               })()}
 
