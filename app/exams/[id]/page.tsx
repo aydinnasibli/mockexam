@@ -8,6 +8,8 @@ import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -54,8 +56,22 @@ export default async function ExamDetails({ params }: Props) {
   const totalBreak   = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
   const examTime     = exam.durationMinutes - totalBreak;
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana səhifə', item: BASE_URL },
+      { '@type': 'ListItem', position: 2, name: 'İmtahanlar', item: `${BASE_URL}/exams` },
+      { '@type': 'ListItem', position: 3, name: exam.title, item: `${BASE_URL}/exams/${id}` },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <Navbar />
       <main className="pt-16 min-h-screen bg-surface-subtle">
         <section className="px-6 py-14 bg-surface border-b border-outline-variant">
