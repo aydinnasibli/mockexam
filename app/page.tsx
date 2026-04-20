@@ -11,24 +11,25 @@ import {
   Monitor, Globe, BookOpen, TrendingUp, CheckCircle2, List
 } from "lucide-react";
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 
-const heroContainer = {
+const heroContainer: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
 };
-const heroItem = {
+const heroItem: Variants = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
 };
-const fadeUp = (delay = 0) => ({
+const fadeUp = (delay = 0): Variants => ({
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut', delay } },
 });
-const staggerGrid = {
+const staggerGrid: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.09 } },
 };
-const staggerItem = {
+const staggerItem: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } },
 };
