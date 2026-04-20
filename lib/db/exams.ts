@@ -70,6 +70,7 @@ export async function getExamById(examId: string): Promise<PublicExam | null> {
     durationMinutes:e.durationMinutes,
     totalQuestions: e.totalQuestions,
     features:       e.features,
+    updatedAt:      e.updatedAt,
     modules:        e.modules.map(serialize),
   };
 }
@@ -89,6 +90,7 @@ export async function getExamByIdAdmin(examId: string): Promise<PublicExam | nul
     durationMinutes:e.durationMinutes,
     totalQuestions: e.totalQuestions,
     features:       e.features,
+    updatedAt:      e.updatedAt,
     modules:        e.modules.map(serialize),
   };
 }
