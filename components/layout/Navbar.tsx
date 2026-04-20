@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { LayoutDashboard } from "lucide-react";
+import { motion } from "framer-motion";
 
 const navLinks = [
   { href: "/exams",   label: "Sınaqlar" },
@@ -18,7 +19,12 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_1px_12px_0_rgba(0,30,64,0.06)]">
+    <motion.header
+      initial={{ y: -68, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
+      className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_1px_12px_0_rgba(0,30,64,0.06)]"
+    >
       <nav className="flex items-center justify-between w-full px-6 h-[68px] max-w-7xl mx-auto gap-8">
 
         {/* ── Logo ── */}
@@ -100,6 +106,6 @@ export default function Navbar() {
           )}
         </div>
       </nav>
-    </header>
+    </motion.header>
   );
 }
