@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Manrope } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'sonner';
@@ -13,6 +13,11 @@ const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-headline",
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
 

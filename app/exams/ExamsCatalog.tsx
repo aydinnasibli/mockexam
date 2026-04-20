@@ -62,9 +62,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
     });
 
   return (
-    <>
-      <Navbar />
-      <main className="pt-24 pb-16 min-h-screen bg-surface">
+    <main className="pt-24 pb-16 min-h-screen bg-surface">
         <div className="max-w-7xl mx-auto px-6 mb-8">
           <div className="flex items-end gap-4 mb-2">
             <h1 className="text-3xl font-black text-primary font-headline">Bütün İmtahanlar</h1>
@@ -200,12 +198,6 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             )}
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }
-
-// Inline to avoid extra import in the client bundle — same as the existing Navbar
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
