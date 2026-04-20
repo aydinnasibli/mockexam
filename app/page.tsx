@@ -313,7 +313,7 @@ export default function Home() {
                     Sınaqlara bax
                   </Link>
                 </div>
-              </div>
+              </motion.div>
 
               {/* TOEFL */}
               <motion.div variants={staggerItem} className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
