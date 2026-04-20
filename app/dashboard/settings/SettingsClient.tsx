@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
+import Image from 'next/image';
 import { useState, useEffect, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
@@ -74,8 +75,7 @@ export default function SettingsClient() {
             <div className="p-6">
               <div className="flex items-center gap-5 mb-6 pb-6 border-b border-outline-variant/10">
                 {imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={imageUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover ring-4 ring-primary/10 shrink-0" />
+                  <Image src={imageUrl} alt="Avatar" width={64} height={64} className="rounded-full object-cover ring-4 ring-primary/10 shrink-0" />
                 ) : (
                   <div className="w-16 h-16 rounded-full editorial-gradient flex items-center justify-center ring-4 ring-primary/10 shrink-0">
                     <span className="text-white text-xl font-black">{firstName[0]}</span>

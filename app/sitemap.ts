@@ -8,7 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const examUrls: MetadataRoute.Sitemap = exams.map((exam) => ({
     url: `${BASE_URL}/exams/${exam.id}`,
-    lastModified: new Date(),
+    lastModified: exam.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.8,
   }));
