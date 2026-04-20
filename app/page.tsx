@@ -10,6 +10,28 @@ import {
   ArrowRight, Sparkles, Timer, BarChart2, Database, Brain,
   Monitor, Globe, BookOpen, TrendingUp, CheckCircle2, List
 } from "lucide-react";
+import { motion } from "framer-motion";
+
+const heroContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
+};
+const heroItem = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
+};
+const fadeUp = (delay = 0) => ({
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut', delay } },
+});
+const staggerGrid = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09 } },
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } },
+};
 
 export default function Home() {
   const { isSignedIn } = useAuth();
@@ -23,18 +45,23 @@ export default function Home() {
         <section className="relative overflow-hidden bg-surface py-24 px-8">
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left */}
-            <div className="z-10">
-              <span className="inline-block px-4 py-1.5 mb-6 rounded-full bg-secondary-fixed text-on-secondary-fixed text-sm font-bold tracking-wide uppercase">
+            <motion.div
+              className="z-10"
+              variants={heroContainer}
+              initial="hidden"
+              animate="show"
+            >
+              <motion.span variants={heroItem} className="inline-block px-4 py-1.5 mb-6 rounded-full bg-secondary-fixed text-on-secondary-fixed text-sm font-bold tracking-wide uppercase">
                 Gələcəyin İmtahan Platforması
-              </span>
-              <h1 className="text-5xl md:text-7xl font-headline font-extrabold text-primary leading-[1.1] tracking-tight mb-8">
+              </motion.span>
+              <motion.h1 variants={heroItem} className="text-5xl md:text-7xl font-headline font-extrabold text-primary leading-[1.1] tracking-tight mb-8">
                 Gələcəyinizi bizimlə{" "}
                 <span className="text-secondary">sınağa çəkin</span>
-              </h1>
-              <p className="text-lg md:text-xl text-on-surface-variant leading-relaxed mb-10 max-w-xl">
+              </motion.h1>
+              <motion.p variants={heroItem} className="text-lg md:text-xl text-on-surface-variant leading-relaxed mb-10 max-w-xl">
                 Müasir texnologiyalar və süni intellekt dəstəyi ilə imtahanlara daha peşəkar hazırlaşın. Bizimlə hər bir sual uğura atılan bir addımdır.
-              </p>
-              <div className="flex flex-wrap gap-4">
+              </motion.p>
+              <motion.div variants={heroItem} className="flex flex-wrap gap-4">
                 {!isSignedIn ? (
                   <SignUpButton mode="modal">
                     <button className="px-8 py-4 editorial-gradient text-white rounded-full font-bold text-lg shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all duration-200">
@@ -55,9 +82,9 @@ export default function Home() {
                 >
                   Daha çox öyrən
                 </Link>
-              </div>
+              </motion.div>
 
-              <div className="mt-12 flex items-center gap-6">
+              <motion.div variants={heroItem} className="mt-12 flex items-center gap-6">
                 <div className="flex -space-x-4">
                   {[
                     "https://lh3.googleusercontent.com/aida-public/AB6AXuBf7ZzRxevJaAHLz6mtQ7mxwmw3Ih2l3qtbY6XTbsG1uoPwEvdBbLY0f3vR9KGPH_hxf-8pcWddKsNz4fGu7ByDxhLIYkMvwP7aqca1UG26dbyLF0LNV9aM9qxHK15dNSRtoJVT_kDnr6QH59VKXjPUacZ4eupuo-TGnqsM-QUqAoSZ-jI1ExxdgWmcsFOwJH1BX_t5s4pEhXleDpCE0YMxKu_A3rLtJzEsBUj3aY2mypNDWJjnwGecOJlOqKr-eEMCXfxOhBjYh2y_",
@@ -72,11 +99,16 @@ export default function Home() {
                 <p className="text-sm font-medium text-on-surface-variant">
                   <span className="text-primary font-bold">10,000+</span> tələbə tərəfindən etibar edilir
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* Right */}
-            <div className="relative hidden lg:block">
+            <motion.div
+              className="relative hidden lg:block"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
+            >
               <div className="absolute -top-12 -right-12 w-64 h-64 bg-secondary-container/30 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -121,27 +153,44 @@ export default function Home() {
               </div>
 
               {/* Floating Stat Card */}
-              <div className="absolute bottom-8 -left-8 bg-surface-container-lowest p-5 rounded-2xl shadow-xl max-w-[190px] border border-outline-variant/30">
+              <motion.div
+                className="absolute bottom-8 -left-8 bg-surface-container-lowest p-5 rounded-2xl shadow-xl max-w-[190px] border border-outline-variant/30"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut', delay: 0.7 }}
+              >
                 <Sparkles className="text-secondary mb-2" size={28} />
                 <p className="text-2xl font-black text-primary">98%</p>
                 <p className="text-xs text-on-surface-variant font-medium">İstifadəçi müvəffəqiyyəti</p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
         {/* Features Bento Grid */}
         <section className="py-24 bg-surface-container-low px-8" id="haqqimizda">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
+            <motion.div
+              className="text-center mb-16"
+              variants={fadeUp()}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-60px' }}
+            >
               <h2 className="text-4xl font-headline font-extrabold text-primary mb-4">Üstünlüklərimiz</h2>
               <p className="text-on-surface-variant max-w-2xl mx-auto">
                 Təhsil texnologiyalarındakı ən son yenilikləri sizin üçün bir araya gətirdik.
               </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            </motion.div>
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              variants={staggerGrid}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-60px' }}
+            >
               {/* Feature 1 — wide, always blue */}
-              <div className="md:col-span-2 bg-primary p-10 rounded-3xl border border-primary/30">
+              <motion.div variants={staggerItem} className="md:col-span-2 bg-primary p-10 rounded-3xl border border-primary/30">
                 <div className="flex flex-col h-full justify-between">
                   <div>
                     <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center mb-8">
@@ -156,10 +205,10 @@ export default function Home() {
                     Ətraflı məlumat <ArrowRight size={18} />
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Feature 2 */}
-              <div className="bg-surface-container-lowest p-10 rounded-3xl border border-outline-variant/30">
+              <motion.div variants={staggerItem} className="bg-surface-container-lowest p-10 rounded-3xl border border-outline-variant/30">
                 <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mb-8">
                   <BarChart2 className="text-primary" size={28} />
                 </div>
@@ -167,10 +216,10 @@ export default function Home() {
                 <p className="text-on-surface-variant leading-relaxed">
                   Zəif və güclü tərəflərinizi süni intellekt analizi ilə müəyyən edin. Tərəqqinizi real zamanlı izləyin.
                 </p>
-              </div>
+              </motion.div>
 
               {/* Feature 3 */}
-              <div className="bg-surface-container-lowest p-10 rounded-3xl border border-outline-variant/30">
+              <motion.div variants={staggerItem} className="bg-surface-container-lowest p-10 rounded-3xl border border-outline-variant/30">
                 <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mb-8">
                   <Database className="text-primary" size={28} />
                 </div>
@@ -178,10 +227,10 @@ export default function Home() {
                 <p className="text-on-surface-variant leading-relaxed">
                   Ekspertlər tərəfindən hazırlanmış 50,000-dən çox unikal sual və video izahlar.
                 </p>
-              </div>
+              </motion.div>
 
               {/* Feature 4 — wide, gradient bg */}
-              <div className="md:col-span-2 editorial-gradient p-10 rounded-3xl relative overflow-hidden">
+              <motion.div variants={staggerItem} className="md:col-span-2 editorial-gradient p-10 rounded-3xl relative overflow-hidden">
                 <div className="relative z-10">
                   <h3 className="text-3xl font-headline font-bold text-white mb-4">Fərdi Öyrənmə Planı</h3>
                   <p className="text-primary-fixed opacity-90 leading-relaxed text-lg max-w-md">
@@ -191,15 +240,21 @@ export default function Home() {
                 <div className="absolute right-0 bottom-0 w-1/2 h-full opacity-10 select-none pointer-events-none flex items-end justify-end">
                   <Brain size={200} className="text-white" />
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
         {/* Test Categories */}
         <section className="py-24 bg-surface px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <motion.div
+              className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6"
+              variants={fadeUp()}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-60px' }}
+            >
               <div className="max-w-2xl">
                 <h2 className="text-4xl font-headline font-extrabold text-primary mb-4">Populyar Kateqoriyalar</h2>
                 <p className="text-on-surface-variant">
@@ -209,11 +264,17 @@ export default function Home() {
               <Link href="/exams" className="flex items-center gap-2 text-secondary font-bold hover:underline">
                 Bütün kateqoriyalar <List size={20} />
               </Link>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              variants={staggerGrid}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-60px' }}
+            >
               {/* SAT */}
-              <div className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
+              <motion.div variants={staggerItem} className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
                 <div className="h-1 w-full bg-blue-500" />
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">
@@ -231,10 +292,10 @@ export default function Home() {
                     Sınaqlara bax
                   </Link>
                 </div>
-              </div>
+              </motion.div>
 
               {/* IELTS */}
-              <div className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
+              <motion.div variants={staggerItem} className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
                 <div className="h-1 w-full bg-purple-500" />
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">
@@ -255,7 +316,7 @@ export default function Home() {
               </div>
 
               {/* TOEFL */}
-              <div className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
+              <motion.div variants={staggerItem} className="group relative bg-surface-container-lowest rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-outline-variant/30 overflow-hidden">
                 <div className="h-1 w-full bg-cyan-500" />
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">
@@ -273,8 +334,8 @@ export default function Home() {
                     Sınaqlara bax
                   </Link>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
@@ -283,7 +344,13 @@ export default function Home() {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
               {/* Left: image */}
-              <div className="order-2 lg:order-1 relative">
+              <motion.div
+                className="order-2 lg:order-1 relative"
+                initial={{ opacity: 0, x: -40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              >
                 <div className="relative rounded-3xl overflow-hidden aspect-square shadow-2xl">
                   <Image
                     fill
@@ -306,12 +373,24 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Right: steps */}
-              <div className="order-1 lg:order-2">
+              <motion.div
+                className="order-1 lg:order-2"
+                initial={{ opacity: 0, x: 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              >
                 <h2 className="text-4xl font-headline font-extrabold text-primary mb-12">Necə işləyirik?</h2>
-                <div className="space-y-10">
+                <motion.div
+                  className="space-y-10"
+                  variants={staggerGrid}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, margin: '-60px' }}
+                >
                   {[
                     {
                       step: "1",
@@ -329,7 +408,7 @@ export default function Home() {
                       desc: "İmtahan bitdikdən dərhal sonra ətraflı hesabatı alın və səhvləriniz üzərində işləyin.",
                     },
                   ].map(({ step, title, desc }) => (
-                    <div key={step} className="flex gap-6 group">
+                    <motion.div key={step} variants={staggerItem} className="flex gap-6 group">
                       <div className="flex-shrink-0 w-12 h-12 rounded-full editorial-gradient text-white flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform">
                         {step}
                       </div>
@@ -337,9 +416,9 @@ export default function Home() {
                         <h4 className="text-xl font-headline font-bold text-primary mb-2">{title}</h4>
                         <p className="text-on-surface-variant">{desc}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
                 {!isSignedIn ? (
                   <SignUpButton mode="modal">
                     <button className="mt-12 px-8 py-4 editorial-gradient text-white rounded-full font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all">
@@ -354,14 +433,20 @@ export default function Home() {
                     İndi sınağa başla
                   </Link>
                 )}
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
         <section className="py-24 bg-surface px-8" id="elaqe">
-          <div className="max-w-5xl mx-auto editorial-gradient rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden">
+          <motion.div
+            className="max-w-5xl mx-auto editorial-gradient rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          >
             <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
               <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
               <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary-container rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
@@ -393,7 +478,7 @@ export default function Home() {
                 </Link>
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
       </main>

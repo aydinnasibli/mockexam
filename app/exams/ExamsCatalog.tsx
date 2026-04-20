@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   Search, SearchX, Timer, HelpCircle,
@@ -140,23 +141,41 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               </div>
             </div>
 
+            <AnimatePresence mode="wait">
             {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-outline-variant/50">
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-outline-variant/50"
+              >
                 <SearchX className="text-outline mb-4" size={48} />
                 <h3 className="text-xl font-bold text-primary mb-2 font-headline">Nəticə tapılmadı</h3>
                 <p className="text-on-surface-variant text-sm mb-6">Filtrləri dəyişdirməyi cəhd edin</p>
                 <button onClick={clearFilters} className="px-5 py-2.5 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
                   Filtrləri sıfırla
                 </button>
-              </div>
+              </motion.div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <motion.div
+                key={selectedTypes.join(',') + searchQuery + sortOrder}
+                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+                initial="hidden"
+                animate="show"
+                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+              >
                 {filtered.map(exam => {
                   const type = exam.type as ExamType;
                   const Icon = examTypeIcons[type] ?? BookOpen;
                   const colors = examTypeColors[type] ?? examTypeColors.sat;
                   return (
-                    <div key={exam.id} className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col overflow-hidden group">
+                    <motion.div
+                      key={exam.id}
+                      variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } } }}
+                      className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col overflow-hidden group"
+                    >
                       <div className={`h-1 w-full ${colors.accent} transition-all`} />
                       <div className="p-5 pb-4">
                         <div className="flex items-start justify-between mb-4">
@@ -191,11 +210,12 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                           Sınağa bax <ArrowRight size={16} />
                         </Link>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
         </div>
     </main>

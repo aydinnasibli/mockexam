@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Navbar from "@/components/layout/Navbar";
+import FadeUp from "@/components/ui/FadeUp";
+import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 
 export const metadata: Metadata = {
   title: 'Haqqımızda',
@@ -60,7 +62,7 @@ export default function AboutPage() {
       <main>
         {/* Hero */}
         <section className="pt-32 pb-16 bg-surface-container-low">
-          <div className="max-w-5xl mx-auto px-6 text-center">
+          <FadeUp className="max-w-5xl mx-auto px-6 text-center">
             <span className="inline-flex items-center gap-2 bg-secondary/10 text-secondary font-bold text-xs px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
               Haqqımızda
             </span>
@@ -72,33 +74,32 @@ export default function AboutPage() {
               Biz Azərbaycanda imtahan hazırlığını yenidən müəyyənləşdiririk. SAT-dan DİM-ə qədər hər imtahan üçün
               professional, adaptiv və əlçatan hazırlıq mühiti yaradırıq.
             </p>
-          </div>
+          </FadeUp>
         </section>
 
         {/* Stats */}
         <section className="py-16 bg-surface">
           <div className="max-w-5xl mx-auto px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {stats.map(({ value, label, icon: Icon }) => (
-                <div
-                  key={label}
-                  className="text-center p-6 bg-white rounded-2xl border border-outline-variant/40 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="w-12 h-12 editorial-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Icon className="text-white" size={22} />
+                <StaggerItem key={label}>
+                  <div className="text-center p-6 bg-white rounded-2xl border border-outline-variant/40 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 editorial-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Icon className="text-white" size={22} />
+                    </div>
+                    <p className="text-3xl font-black text-primary font-headline">{value}</p>
+                    <p className="text-sm text-on-surface-variant mt-1 font-medium">{label}</p>
                   </div>
-                  <p className="text-3xl font-black text-primary font-headline">{value}</p>
-                  <p className="text-sm text-on-surface-variant mt-1 font-medium">{label}</p>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
         {/* Story */}
         <section className="py-20 bg-surface-container-low">
           <div className="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-            <div>
+            <FadeUp>
               <span className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 block">Hekayəmiz</span>
               <h2 className="text-3xl font-black text-primary font-headline mb-5">Niyə Test Centre-i yaratdıq?</h2>
               <div className="space-y-4 text-on-surface-variant leading-relaxed text-sm">
@@ -116,9 +117,9 @@ export default function AboutPage() {
                   ballarına çatmağa müvəffəq olur.
                 </p>
               </div>
-            </div>
+            </FadeUp>
 
-            <div className="relative">
+            <FadeUp delay={0.1} className="relative">
               <div className="aspect-square rounded-3xl editorial-gradient overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 opacity-10 grid grid-cols-6 gap-4 p-8">
                   {Array.from({ length: 36 }).map((_, i) => (
@@ -135,61 +136,62 @@ export default function AboutPage() {
                 <p className="text-2xl font-black text-primary font-headline">50K+</p>
                 <p className="text-xs text-on-surface-variant font-medium">Aktiv tələbə</p>
               </div>
-            </div>
+            </FadeUp>
           </div>
         </section>
 
         {/* Values */}
         <section className="py-20 bg-surface">
           <div className="max-w-5xl mx-auto px-6">
-            <div className="text-center mb-12">
+            <FadeUp className="text-center mb-12">
               <span className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 block">Dəyərlərimiz</span>
               <h2 className="text-3xl font-black text-primary font-headline">Bizi fərqləndirən nədir?</h2>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6">
+            </FadeUp>
+            <StaggerContainer className="grid md:grid-cols-3 gap-6">
               {values.map(({ icon: Icon, title, description }) => (
-                <div
-                  key={title}
-                  className="p-7 bg-white rounded-2xl border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group"
-                >
-                  <div className="w-12 h-12 editorial-gradient rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                    <Icon className="text-white" size={22} />
+                <StaggerItem key={title}>
+                  <div className="p-7 bg-white rounded-2xl border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
+                    <div className="w-12 h-12 editorial-gradient rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                      <Icon className="text-white" size={22} />
+                    </div>
+                    <h3 className="text-lg font-bold text-primary font-headline mb-3">{title}</h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{description}</p>
                   </div>
-                  <h3 className="text-lg font-bold text-primary font-headline mb-3">{title}</h3>
-                  <p className="text-on-surface-variant text-sm leading-relaxed">{description}</p>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
         {/* Team */}
         <section className="py-20 bg-surface-container-low">
           <div className="max-w-5xl mx-auto px-6">
-            <div className="text-center mb-12">
+            <FadeUp className="text-center mb-12">
               <span className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 block">Komandamız</span>
               <h2 className="text-3xl font-black text-primary font-headline">Arxanızdakı insanlar</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            </FadeUp>
+            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {team.map(({ name, role, initials, color }) => (
-                <div key={name} className="text-center group">
-                  <div
-                    className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mx-auto mb-4 group-hover:-translate-y-1 transition-transform shadow-lg`}
-                  >
-                    <span className="text-white text-2xl font-black font-headline">{initials}</span>
+                <StaggerItem key={name}>
+                  <div className="text-center group">
+                    <div
+                      className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mx-auto mb-4 group-hover:-translate-y-1 transition-transform shadow-lg`}
+                    >
+                      <span className="text-white text-2xl font-black font-headline">{initials}</span>
+                    </div>
+                    <h3 className="font-bold text-primary text-sm font-headline">{name}</h3>
+                    <p className="text-xs text-on-surface-variant mt-0.5">{role}</p>
                   </div>
-                  <h3 className="font-bold text-primary text-sm font-headline">{name}</h3>
-                  <p className="text-xs text-on-surface-variant mt-0.5">{role}</p>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
         {/* CTA */}
         <section className="py-20 bg-surface">
           <div className="max-w-3xl mx-auto px-6">
-            <div className="editorial-gradient rounded-3xl p-12 text-center relative overflow-hidden">
+            <FadeUp className="editorial-gradient rounded-3xl p-12 text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
               <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3 pointer-events-none" />
               <div className="relative z-10">
@@ -212,7 +214,7 @@ export default function AboutPage() {
                   </Link>
                 </div>
               </div>
-            </div>
+            </FadeUp>
           </div>
         </section>
       </main>
