@@ -4,9 +4,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useUser, SignOutButton } from '@clerk/nextjs';
-import {
-  LayoutDashboard, BarChart2, Settings, PlusCircle, LogOut,
-} from 'lucide-react';
+import { LayoutDashboard, BarChart2, Settings, PlusCircle, LogOut } from 'lucide-react';
+import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+
+const navContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.2 } },
+};
+const navItem: Variants = {
+  hidden: { opacity: 0, x: -12 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+};
 
 export default function DashboardSidebar() {
   const { user } = useUser();
@@ -18,24 +27,38 @@ export default function DashboardSidebar() {
   const imageUrl  = user?.imageUrl;
 
   const navItems = [
-    { href: '/dashboard',          icon: LayoutDashboard, label: 'Panel',       active: pathname === '/dashboard' },
-    { href: '/dashboard/analytics',          icon: BarChart2,       label: 'Nəticələr',   active: pathname === '/dashboard/analytics' || pathname.startsWith('/dashboard/analytics/') },
-    { href: '/dashboard/settings', icon: Settings,        label: 'Parametrlər', active: pathname === '/dashboard/settings' },
+    { href: '/dashboard',            icon: LayoutDashboard, label: 'Panel',       active: pathname === '/dashboard' },
+    { href: '/dashboard/analytics',  icon: BarChart2,       label: 'Nəticələr',   active: pathname === '/dashboard/analytics' || pathname.startsWith('/dashboard/analytics/') },
+    { href: '/dashboard/settings',   icon: Settings,        label: 'Parametrlər', active: pathname === '/dashboard/settings' },
   ];
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 flex flex-col bg-white border-r border-outline-variant/40 z-40">
-
-      <div className="px-5 py-5 border-b border-outline-variant/20">
+    <motion.aside
+      initial={{ x: -260, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
+      className="h-screen w-64 fixed left-0 top-0 flex flex-col bg-white border-r border-outline-variant/40 z-40"
+    >
+      <motion.div
+        className="px-5 py-5 border-b border-outline-variant/20"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
         <Link href="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl editorial-gradient flex items-center justify-center shadow-sm shrink-0">
             <span className="text-white text-[11px] font-black">TC</span>
           </div>
           <span className="text-base font-extrabold text-primary tracking-tight font-headline">Test Centre</span>
         </Link>
-      </div>
+      </motion.div>
 
-      <div className="px-4 py-3 border-b border-outline-variant/20">
+      <motion.div
+        className="px-4 py-3 border-b border-outline-variant/20"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.25 }}
+      >
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f0f2f5]">
           {imageUrl ? (
             <Image src={imageUrl} alt="Avatar" width={32} height={32} className="rounded-full object-cover shrink-0 ring-2 ring-primary/10" />
@@ -49,14 +72,18 @@ export default function DashboardSidebar() {
             <p className="text-[10px] text-on-surface-variant truncate">{email}</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <nav className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto">
+      <motion.nav
+        className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto"
+        variants={navContainer}
+        initial="hidden"
+        animate="show"
+      >
         <p className="px-3 mb-2 text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40">Menyu</p>
-        {navItems.map(({ href, icon: Icon, label, active: isActive }) => {
-          return (
+        {navItems.map(({ href, icon: Icon, label, active: isActive }) => (
+          <motion.div key={href} variants={navItem}>
             <Link
-              key={href}
               href={href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                 isActive
@@ -66,11 +93,16 @@ export default function DashboardSidebar() {
             >
               <Icon size={16} className={isActive ? '' : 'opacity-60'} /> {label}
             </Link>
-          );
-        })}
-      </nav>
+          </motion.div>
+        ))}
+      </motion.nav>
 
-      <div className="px-4 py-4 border-t border-outline-variant/20 space-y-1.5">
+      <motion.div
+        className="px-4 py-4 border-t border-outline-variant/20 space-y-1.5"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.45 }}
+      >
         <Link href="/exams" className="w-full editorial-gradient text-white py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm shadow-sm">
           <PlusCircle size={15} /> Sınaq Əldə Et
         </Link>
@@ -79,7 +111,7 @@ export default function DashboardSidebar() {
             <LogOut size={15} /> Çıxış
           </button>
         </SignOutButton>
-      </div>
-    </aside>
+      </motion.div>
+    </motion.aside>
   );
 }
