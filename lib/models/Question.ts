@@ -10,6 +10,7 @@ export interface IQuestion extends Document {
   passage: string;
   stem: string;
   options: string[];       // 4 items for mcq, empty for open
+  openAnswers?: string[];  // Valid string answers for open questions
   correctIndex: number;    // 0–3 for mcq, -1 for open
   explanation: string;
   createdAt: Date;
@@ -25,6 +26,7 @@ const QuestionSchema = new Schema<IQuestion>(
     passage:      { type: String, default: '' },
     stem:         { type: String, required: true, trim: true },
     options:      [{ type: String }],
+    openAnswers:  [{ type: String, default: [] }],
     correctIndex: { type: Number, default: -1 },
     explanation:  { type: String, default: '' },
   },

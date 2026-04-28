@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const csp = [
   "default-src 'self'",
   // 'unsafe-inline' required: Clerk injects inline scripts; Next.js hydration uses inline scripts
-  "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://challenges.cloudflare.com",
+  `script-src 'self' ${isDev ? "'unsafe-eval' " : ""}'unsafe-inline' https://*.clerk.accounts.dev https://challenges.cloudflare.com`,
   // 'unsafe-inline' required: KaTeX renders inline styles; Clerk UI uses inline styles
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://img.clerk.com https://images.clerk.dev https://lh3.googleusercontent.com https://avatars.githubusercontent.com",

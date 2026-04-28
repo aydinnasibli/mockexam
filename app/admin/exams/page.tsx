@@ -52,12 +52,20 @@ export default async function AdminExamsPage({ searchParams }: Props) {
             {exams.length} imtahan · {activeCount} aktiv
           </p>
         </div>
-        <Link
-          href="/admin/exams/new"
-          className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm"
-        >
-          <Plus size={16} /> Yeni İmtahan
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            href="/admin/exams/import"
+            className="px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm border border-outline-variant/40 hover:bg-surface-container-low transition-colors text-sm text-primary"
+          >
+            JSON Yüklə
+          </Link>
+          <Link
+            href="/admin/exams/new"
+            className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm"
+          >
+            <Plus size={16} /> Yeni İmtahan
+          </Link>
+        </div>
       </header>
 
       {/* Search (client component — updates URL) */}

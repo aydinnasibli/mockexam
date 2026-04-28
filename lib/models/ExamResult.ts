@@ -4,6 +4,7 @@ export interface IAnswerRecord {
   questionId: string;
   moduleIndex: number;
   userAnswer: number;    // -1 = unanswered, 0-3 = selected option
+  userAnswerText?: string; // Text answer user provided for open questions
   correctIndex: number;
   isCorrect: boolean;
   timeSeconds: number;
@@ -37,6 +38,7 @@ const AnswerRecordSchema = new Schema<IAnswerRecord>({
   questionId:   { type: String, required: true },
   moduleIndex:  { type: Number, required: true },
   userAnswer:   { type: Number, required: true },
+  userAnswerText: { type: String, default: '' },
   correctIndex: { type: Number, required: true },
   isCorrect:    { type: Boolean, required: true },
   timeSeconds:  { type: Number, required: true, default: 0 },

@@ -174,6 +174,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         questionId:  q.id,
         moduleIndex: q.moduleIndex,
         userAnswer:  answers.get(q.id) ?? -1,
+        userAnswerText: openAnswers.get(q.id) || '',
         timeSeconds: Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
       }));
       const sessionStart = startedAtRef.current ?? new Date();
@@ -631,18 +632,18 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
                 {current?.type === 'open' && (
                   <div className="space-y-3">
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                      <p className="text-xs text-amber-800 font-medium flex items-center gap-2">
-                        <Pencil size={13} />
-                        Bu açıq tapşırıqdır. Cavabınız aşağıda qeyd kimi saxlanılır; avtomatik qiymətləndirilmir.
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                      <p className="text-xs text-blue-800 font-medium flex items-center gap-2">
+                        <Pencil size={13} shrink-0 />
+                        <span className="leading-relaxed">Bu açıq tapşırıqdır. Rəqəmsal və ya kəsr cavabınızı daxil edin (məs. 0.5 və ya 1/2). Cavab avtomatik qiymətləndiriləcək.</span>
                       </p>
                     </div>
                     <textarea
-                      rows={6}
+                      rows={2}
                       value={openAnswers.get(current.id) ?? ''}
                       onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
-                      placeholder="Cavabınızı burada yazın (qeyd üçün)..."
-                      className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+                      placeholder="Cavabınızı burada yazın..."
+                      className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm font-bold text-on-surface bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                     />
                   </div>
                 )}

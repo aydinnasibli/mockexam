@@ -12,6 +12,7 @@ export type ClientAnswerInput = {
   questionId: string;
   moduleIndex: number;
   userAnswer: number;   // -1 = unanswered, 0-3 = selected option
+  userAnswerText?: string;
   timeSeconds: number;
 };
 
@@ -60,43 +61,56 @@ export async function saveExamResult(data: {
 
     // Fetch authoritative correct answers from the database
     const questionDocs = await QuestionModel.find({ examId })
-      .select('_id correctIndex moduleIndex type')
+      .select('_id correctIndex moduleIndex type openAnswers')
       .lean();
     const correctMap = new Map(
-      questionDocs.map(q => [String(q._id), { correctIndex: q.correctIndex, moduleIndex: q.moduleIndex, type: q.type }])
+      questionDocs.map(q => [String(q._id), { correctIndex: q.correctIndex, moduleIndex: q.moduleIndex, type: q.type, openAnswers: q.openAnswers || [] }])
     );
 
     // Build verified answer records — correctIndex and isCorrect come from DB, not client
     const answerRecords = answers.map(a => {
       const authoritative = correctMap.get(a.questionId);
       const correctIndex = authoritative?.correctIndex ?? -1;
-      const isCorrect = authoritative?.type === 'mcq' && a.userAnswer !== -1 && a.userAnswer === correctIndex;
+      let isCorrect = false;
+
+      if (authoritative?.type === 'mcq') {
+        isCorrect = a.userAnswer !== -1 && a.userAnswer === correctIndex;
+      } else if (authoritative?.type === 'open') {
+        if (a.userAnswerText && authoritative.openAnswers && authoritative.openAnswers.length > 0) {
+          const normalizedInput = a.userAnswerText.replace(/\s+/g, '').toLowerCase().replace(/,/g, '.');
+          isCorrect = authoritative.openAnswers.some(ans => {
+            const normalizedAns = String(ans).replace(/\s+/g, '').toLowerCase().replace(/,/g, '.');
+            return normalizedAns === normalizedInput;
+          });
+        }
+      }
+
       return {
         questionId:  a.questionId,
         moduleIndex: a.moduleIndex,
         userAnswer:  a.userAnswer,
+        userAnswerText: a.userAnswerText || '',
         correctIndex,
         isCorrect,
         timeSeconds: Math.max(0, Math.round(a.timeSeconds)),
       };
     });
 
-    // Compute overall score from MCQ questions only
-    const mcqRecords = answerRecords.filter(a => correctMap.get(a.questionId)?.type === 'mcq');
-    const score = mcqRecords.length > 0
-      ? Math.round(mcqRecords.filter(a => a.isCorrect).length / mcqRecords.length * 100)
+    // Compute overall score from all questions
+    const score = answerRecords.length > 0
+      ? Math.round(answerRecords.filter(a => a.isCorrect).length / answerRecords.length * 100)
       : 0;
 
     // Compute per-module scores server-side
     const moduleScores = exam.modules.map((mod, modIdx) => {
-      const modMcq = answerRecords.filter(a => a.moduleIndex === modIdx && correctMap.get(a.questionId)?.type === 'mcq');
-      const correct = modMcq.filter(a => a.isCorrect).length;
+      const modAnswers = answerRecords.filter(a => a.moduleIndex === modIdx);
+      const correct = modAnswers.filter(a => a.isCorrect).length;
       return {
         moduleIndex:  modIdx,
         moduleName:   mod.name,
         correct,
-        total:        modMcq.length,
-        scorePercent: modMcq.length > 0 ? Math.round((correct / modMcq.length) * 100) : 0,
+        total:        modAnswers.length,
+        scorePercent: modAnswers.length > 0 ? Math.round((correct / modAnswers.length) * 100) : 0,
       };
     });
 
