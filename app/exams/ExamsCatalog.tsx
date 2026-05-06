@@ -10,23 +10,24 @@ import {
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 
-type ExamType = 'sat' | 'ielts' | 'toefl';
+type ExamType = 'sat' | 'ielts' | 'toefl' | 'general_english';
 
 const examTypeLabels: Record<ExamType, string> = {
-  sat: 'SAT', ielts: 'IELTS', toefl: 'TOEFL',
+  sat: 'SAT', ielts: 'IELTS', toefl: 'TOEFL', general_english: 'Gen. English',
 };
 
 const examTypeIcons: Record<ExamType, React.ElementType> = {
-  sat: Monitor, ielts: Globe, toefl: BookOpen,
+  sat: Monitor, ielts: Globe, toefl: BookOpen, general_english: Globe,
 };
 
 const examTypeColors: Record<ExamType, { bg: string; text: string; ring: string; accent: string }> = {
   sat:   { bg: 'bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-200',   accent: 'bg-blue-500' },
   ielts: { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-200', accent: 'bg-purple-500' },
   toefl: { bg: 'bg-cyan-100',   text: 'text-cyan-700',   ring: 'ring-cyan-200',   accent: 'bg-cyan-500' },
+  general_english: { bg: 'bg-green-100', text: 'text-green-700', ring: 'ring-green-200', accent: 'bg-green-500' },
 };
 
-const allTypes: ExamType[] = ['sat', 'ielts', 'toefl'];
+const allTypes: ExamType[] = ['sat', 'ielts', 'toefl', 'general_english'];
 
 interface Props {
   exams: PublicExam[];

@@ -15,6 +15,7 @@ export interface QuestionData {
   order: number;
   type: QuestionType;
   passage: string;
+  audioUrl?: string;
   stem: string;
   options: string[];
   correctIndex: number;
@@ -29,6 +30,7 @@ export interface SessionQuestion {
   order: number;
   type: QuestionType;
   passage: string;
+  audioUrl?: string;
   stem: string;
   options: string[];
 }
@@ -59,6 +61,7 @@ export async function getExamQuestionsForSession(examId: string): Promise<Sessio
     order:       d.order,
     type:        d.type,
     passage:     d.passage ?? '',
+    audioUrl:    d.audioUrl ?? '',
     stem:        d.stem,
     options:     d.options ?? [],
   }));
@@ -81,6 +84,7 @@ export async function getExamQuestionsForReview(examId: string): Promise<Questio
     order:        d.order,
     type:         d.type,
     passage:      d.passage ?? '',
+    audioUrl:     d.audioUrl ?? '',
     stem:         d.stem,
     options:      d.options ?? [],
     correctIndex: d.correctIndex ?? -1,
@@ -99,6 +103,7 @@ export async function getExamQuestions(examId: string): Promise<QuestionData[]> 
     order:        d.order,
     type:         d.type,
     passage:      d.passage ?? '',
+    audioUrl:     d.audioUrl ?? '',
     stem:         d.stem,
     options:      d.options ?? [],
     correctIndex: d.correctIndex ?? -1,
@@ -111,6 +116,7 @@ export async function addQuestion(data: {
   moduleIndex: number;
   type: QuestionType;
   passage: string;
+  audioUrl?: string;
   stem: string;
   options: string[];
   correctIndex: number;
@@ -135,6 +141,7 @@ export async function updateQuestion(
   data: Partial<{
     type: QuestionType;
     passage: string;
+    audioUrl?: string;
     stem: string;
     options: string[];
     correctIndex: number;

@@ -31,7 +31,7 @@ async function requireAdmin() {
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const EXAM_ID_RE    = /^[a-z0-9-]{1,64}$/;
-const VALID_TYPES   = new Set(['sat', 'ielts', 'toefl']);
+const VALID_TYPES   = new Set(['sat', 'ielts', 'toefl', 'general_english']);
 const VALID_MOD_TYPES: Set<string> = new Set(MODULE_TYPES.map(t => t.value));
 
 function validateExamId(raw: string): string | { error: string } {

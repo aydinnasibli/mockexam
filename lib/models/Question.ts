@@ -8,6 +8,7 @@ export interface IQuestion extends Document {
   order: number;
   type: QuestionType;
   passage: string;
+  audioUrl?: string;
   stem: string;
   options: string[];       // 4 items for mcq, empty for open
   openAnswers?: string[];  // Valid string answers for open questions
@@ -24,6 +25,7 @@ const QuestionSchema = new Schema<IQuestion>(
     order:        { type: Number, required: true, default: 0 },
     type:         { type: String, required: true, enum: ['mcq', 'open'], default: 'mcq' },
     passage:      { type: String, default: '' },
+    audioUrl:     { type: String, default: '' },
     stem:         { type: String, required: true, trim: true },
     options:      [{ type: String }],
     openAnswers:  [{ type: String, default: [] }],

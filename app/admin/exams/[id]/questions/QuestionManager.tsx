@@ -183,7 +183,7 @@ function MathTextarea({
 // ─── Form state ───────────────────────────────────────────────────────────────
 
 function emptyForm(moduleIndex: number, type: QuestionType = 'mcq') {
-  return { moduleIndex, type, passage: '', stem: '', options: ['', '', '', ''], correctIndex: 0, explanation: '' };
+  return { moduleIndex, type, passage: '', audioUrl: '', stem: '', options: ['', '', '', ''], correctIndex: 0, explanation: '' };
 }
 type FormState = ReturnType<typeof emptyForm>;
 
@@ -199,7 +199,7 @@ function QuestionForm({
   const router = useRouter();
   const [form, setForm] = useState<FormState>(
     initial
-      ? { moduleIndex: initial.moduleIndex, type: initial.type, passage: initial.passage, stem: initial.stem, options: initial.options.length === 4 ? [...initial.options] : ['', '', '', ''], correctIndex: initial.correctIndex, explanation: initial.explanation }
+      ? { moduleIndex: initial.moduleIndex, type: initial.type, passage: initial.passage, audioUrl: initial.audioUrl ?? '', stem: initial.stem, options: initial.options.length === 4 ? [...initial.options] : ['', '', '', ''], correctIndex: initial.correctIndex, explanation: initial.explanation }
       : emptyForm(moduleIndex)
   );
   const [pending, start] = useTransition();
@@ -215,9 +215,9 @@ function QuestionForm({
     start(async () => {
       let result;
       if (isEdit && initial) {
-        result = await updateQuestion(initial.id, { type: form.type, passage: form.passage, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
+        result = await updateQuestion(initial.id, { type: form.type, passage: form.passage, audioUrl: form.audioUrl, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
       } else {
-        result = await addQuestion({ examId, moduleIndex: form.moduleIndex, type: form.type, passage: form.passage, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
+        result = await addQuestion({ examId, moduleIndex: form.moduleIndex, type: form.type, passage: form.passage, audioUrl: form.audioUrl, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
       }
       if ('error' in result) { toast.error(result.error); return; }
       toast.success(isEdit ? 'Sual yeniləndi' : 'Sual əlavə edildi');
@@ -245,6 +245,20 @@ function QuestionForm({
           Mətn / Passage <span className="font-normal normal-case">(ixtiyari)</span>
         </label>
         <MathTextarea value={form.passage} onChange={v => set('passage', v)} placeholder="Sual üçün oxuma mətni..." rows={4} showToolbar={false} />
+      </div>
+
+      {/* Audio URL */}
+      <div>
+        <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
+          Audio URL <span className="font-normal normal-case">(ixtiyari, Listening üçün)</span>
+        </label>
+        <input
+          type="text"
+          value={form.audioUrl}
+          onChange={e => set('audioUrl', e.target.value)}
+          placeholder="https://example.com/audio.mp3"
+          className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
       </div>
 
       {/* Stem */}
@@ -321,6 +335,11 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
           <div className="text-xs text-on-surface-variant bg-surface-container rounded-lg px-3 py-2 mb-2 line-clamp-2 italic">
             <FileText size={11} className="inline mr-1" />
             <MathPreview text={q.passage} className="inline" />
+          </div>
+        )}
+        {q.audioUrl && (
+          <div className="text-xs text-secondary bg-secondary/10 rounded-lg px-3 py-2 mb-2 line-clamp-1">
+            🎧 Audio əlavə edilib: {q.audioUrl}
           </div>
         )}
         <div className="text-sm font-semibold text-on-surface leading-relaxed mb-3">

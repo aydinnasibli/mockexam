@@ -6,6 +6,7 @@ export const MODULE_TYPES = [
   { value: 'writing',      label: 'Writing' },
   { value: 'listening',    label: 'Listening' },
   { value: 'speaking',     label: 'Speaking' },
+  { value: 'grammar',      label: 'Grammar / Qrammatika' },
   { value: 'math',         label: 'Math / Riyaziyyat' },
   { value: 'verbal',       label: 'Verbal Reasoning' },
   { value: 'quantitative', label: 'Quantitative Reasoning' },

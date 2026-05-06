@@ -16,6 +16,7 @@ const EXAM_TYPES = [
   { value: 'sat',   label: 'SAT' },
   { value: 'ielts', label: 'IELTS' },
   { value: 'toefl', label: 'TOEFL' },
+  { value: 'general_english', label: 'General English (CEFR)' },
 ];
 
 // Module types allowed per exam type
@@ -23,6 +24,7 @@ const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
   sat:   ['rw', 'math'],
   ielts: ['listening', 'reading', 'writing', 'speaking'],
   toefl: ['reading', 'listening', 'speaking', 'writing'],
+  general_english: ['grammar', 'reading', 'listening'],
 };
 
 // Auto-fill defaults per exam type
@@ -38,6 +40,10 @@ const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
   toefl: {
     tag: 'TOEFL',
     description: 'TOEFL iBT tam mock imtahanı (ETS, 2026 format — yanvar 21, 2026-dan etibarən). Reading + Listening (adaptiv, çoxmərhələli) + Speaking (~8 dəq, 11 tapşırıq) + Writing (~17 dəq, 3 tapşırıq). Cəmi ~67–85 dəq. Bal: 1.0–6.0 band (+ 0–120 keçid dövrü).',
+  },
+  general_english: {
+    tag: 'General English',
+    description: 'Ümumi İngilis dili imtahanı (CEFR standartı: A1-C2). Grammar, Reading və Listening bölmələri. 45 dəqiqə, 45 sual.',
   },
 };
 
@@ -148,6 +154,26 @@ const EXAM_PRESETS: Record<string, ParsedModule[]> = {
       type: 'writing', durationMinutes: 17, questions: 3,
       breakAfterMinutes: 0, isAdaptive: false,
       instructions: 'TOEFL Writing 2026 — YENİ FORMAT, ~17 dəqiqə, 3 tapşırıq. Task 1 — E-mail (7 dəq): verilmiş situasiyaya uyğun e-mail yazın. Task 2 — Sentence Building/Unscrambling: cümlə qurun. Task 3 — Academic Discussion (10 dəq): onlayn dərs müzakirəsinə 100+ söz cavab yazın (köhnə formatla eyni). AI + insan ekspert qiymətləndirir.',
+    },
+  ],
+  general_english: [
+    {
+      name: 'Grammar',
+      type: 'grammar', durationMinutes: 15, questions: 15,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Grammar bölməsi. 15 sual, 15 dəqiqə. Boşluqları doldurma və düzgün qrammatik formanı seçmə tipli suallardan ibarətdir.',
+    },
+    {
+      name: 'Reading',
+      type: 'reading', durationMinutes: 15, questions: 15,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Reading bölməsi. 15 sual, 15 dəqiqə. Qısa mətnləri oxuyub çoxseçimli və ya doğru/yanlış suallarına cavab verin.',
+    },
+    {
+      name: 'Listening',
+      type: 'listening', durationMinutes: 15, questions: 15,
+      breakAfterMinutes: 0, isAdaptive: false,
+      instructions: 'Listening bölməsi. 15 sual, 15 dəqiqə. Qısa səs yazılarına qulaq asıb suallara cavab verin.',
     },
   ],
 };

@@ -10,6 +10,7 @@ import { beginExamSession } from '@/lib/actions/session';
 import {
   Timer, Flag, ChevronLeft, ChevronRight,
   CheckCircle2, Grid3X3, BookOpen, Pencil, FileText, X,
+  Play, Volume2
 } from 'lucide-react';
 import { renderMath } from '@/lib/render-math';
 import type { PublicExam } from '@/lib/db/exams';
@@ -464,11 +465,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </span>
             </div>
             <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
-              {current?.passage ? (
+              {current?.passage || current?.audioUrl ? (
                 <article className="max-w-2xl">
-                  <div className="text-on-surface/90 leading-loose text-[15px] prose prose-sm max-w-none">
-                    <MathText text={current.passage} block />
-                  </div>
+                  {current?.audioUrl && (
+                    <div className="mb-6 p-4 bg-surface-container-low border border-outline-variant/40 rounded-2xl shadow-sm">
+                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">🎧 Audio / Dinləmə</p>
+                      <StrictAudioPlayer src={current.audioUrl} examId={exam.id} />
+                    </div>
+                  )}
+                  {current?.passage && (
+                    <div className="text-on-surface/90 leading-loose text-[15px] prose prose-sm max-w-none">
+                      <MathText text={current.passage} block />
+                    </div>
+                  )}
                 </article>
               ) : (
                 <div>
@@ -518,6 +527,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
           {/* ── Right panel — question ── */}
           <section className="flex-1 bg-white flex flex-col overflow-hidden">
+
+            {/* Mobile Audio Player (Fixed so it doesn't unmount on tab switch) */}
+            {current?.audioUrl && (
+              <div className="md:hidden p-4 bg-surface-container-low border-b border-outline-variant/20 shrink-0 shadow-sm z-10">
+                <StrictAudioPlayer src={current.audioUrl} examId={exam.id} />
+              </div>
+            )}
 
             {/* Mobile: tab switcher between passage and question */}
             {current?.passage && (
@@ -675,6 +691,66 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             </footer>
           </section>
         </main>
+      )}
+    </div>
+  );
+}
+
+function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
+  const [status, setStatus] = useState<'ready' | 'playing' | 'finished'>('ready');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const key = `tc-audio-${examId}-${src}`;
+    if (localStorage.getItem(key)) {
+      setStatus('finished');
+    } else {
+      setStatus('ready');
+    }
+  }, [src, examId]);
+
+  const handlePlay = () => {
+    if (status !== 'ready' || !audioRef.current) return;
+    
+    audioRef.current.play().then(() => {
+      setStatus('playing');
+      const key = `tc-audio-${examId}-${src}`;
+      localStorage.setItem(key, 'true');
+    }).catch(err => {
+      console.error('Audio play failed:', err);
+      toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa təkrar sınayın.');
+    });
+  };
+
+  const handleEnded = () => {
+    setStatus('finished');
+  };
+
+  return (
+    <div className="w-full">
+      <audio ref={audioRef} src={src} onEnded={handleEnded} className="hidden" />
+      {status === 'ready' && (
+        <button 
+          onClick={handlePlay}
+          className="w-full py-3 rounded-xl editorial-gradient text-white font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity"
+        >
+          <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
+        </button>
+      )}
+      {status === 'playing' && (
+        <div className="w-full py-3 rounded-xl bg-blue-50 text-blue-700 font-bold flex items-center justify-center gap-2 border border-blue-200">
+          <Volume2 size={18} className="animate-pulse" /> Səs oxunur...
+        </div>
+      )}
+      {status === 'finished' && (
+        <div className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface-variant font-bold flex items-center justify-center gap-2 border border-outline-variant/50 opacity-70">
+          <CheckCircle2 size={18} /> Audio bitdi
+        </div>
+      )}
+      {status === 'ready' && (
+        <p className="text-[10px] text-center text-amber-600 font-semibold mt-2 px-2 leading-tight">
+          Diqqət: Audionu yalnız 1 dəfə dinləmək mümkündür. Səhifəni yeniləsəniz və ya imtahandan çıxsanız audio dayanacaq.
+        </p>
       )}
     </div>
   );

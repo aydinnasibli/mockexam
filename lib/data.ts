@@ -1,4 +1,4 @@
-export type ExamType = 'sat' | 'ielts' | 'toefl' | 'dim' | 'gre';
+export type ExamType = 'sat' | 'ielts' | 'toefl' | 'dim' | 'gre' | 'general_english';
 
 export interface Exam {
   id: string;
@@ -142,4 +142,5 @@ export const examTypeLabels: Record<ExamType, string> = {
   toefl: "TOEFL",
   dim: "DİM",
   gre: "GRE",
+  general_english: "General English",
 };
