@@ -12,9 +12,10 @@ import {
 import { getUserSettings, saveUserSettings } from '@/lib/actions/settings';
 
 const examTypeOptions = [
-  { value: 'sat',   label: 'SAT' },
-  { value: 'ielts', label: 'IELTS' },
-  { value: 'toefl', label: 'TOEFL' },
+  { value: 'sat',             label: 'SAT' },
+  { value: 'ielts',           label: 'IELTS' },
+  { value: 'toefl',           label: 'TOEFL' },
+  { value: 'general_english', label: 'General English' },
 ];
 
 export default function SettingsClient() {

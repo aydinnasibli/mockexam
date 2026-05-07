@@ -10,7 +10,7 @@ import {
   BarChart2, Settings,
   GraduationCap, ShoppingBag, Play,
   Timer, HelpCircle, ArrowRight,
-  Monitor, Globe, BookOpen, TrendingUp, TrendingDown, Sparkles, Clock,
+  Monitor, Globe, BookOpen, Languages, TrendingUp, TrendingDown, Sparkles, Clock,
 } from 'lucide-react';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
@@ -38,14 +38,11 @@ function formatDuration(seconds: number) {
 }
 
 const examTypeConfig = {
-  sat:   { icon: Monitor,  accent: 'bg-blue-500',   badge: 'bg-blue-50 text-blue-700',    border: 'border-l-blue-400',   accentText: 'text-blue-600' },
-  ielts: { icon: Globe,    accent: 'bg-purple-500', badge: 'bg-purple-50 text-purple-700', border: 'border-l-purple-400', accentText: 'text-purple-600' },
-  toefl: { icon: BookOpen, accent: 'bg-cyan-500',   badge: 'bg-cyan-50 text-cyan-700',    border: 'border-l-cyan-400',   accentText: 'text-cyan-600' },
+  sat:             { icon: Monitor,   label: 'SAT',            accent: 'bg-blue-500',   badge: 'bg-blue-50 text-blue-700',    border: 'border-l-blue-400',   accentText: 'text-blue-600' },
+  ielts:           { icon: Globe,     label: 'IELTS',          accent: 'bg-purple-500', badge: 'bg-purple-50 text-purple-700', border: 'border-l-purple-400', accentText: 'text-purple-600' },
+  toefl:           { icon: BookOpen,  label: 'TOEFL',          accent: 'bg-cyan-500',   badge: 'bg-cyan-50 text-cyan-700',    border: 'border-l-cyan-400',   accentText: 'text-cyan-600' },
+  general_english: { icon: Languages, label: 'General English', accent: 'bg-green-500',  badge: 'bg-green-50 text-green-700',  border: 'border-l-green-400',  accentText: 'text-green-600' },
 } as const;
-
-const tagToType: Record<string, keyof typeof examTypeConfig> = {
-  SAT: 'sat', IELTS: 'ielts', TOEFL: 'toefl',
-};
 
 function scoreColor(score: number) {
   if (score >= 80) return 'text-green-600';
@@ -88,24 +85,31 @@ export default async function DashboardPage() {
 
   const recentResults = results.slice(0, 6);
 
-  // Per-type averages (SAT/IELTS/TOEFL are incomparable — never mix them)
-  const typeAvgs = (['SAT', 'IELTS', 'TOEFL'] as const).map(tag => {
-    const typeResults = results.filter(r => r.examTag === tag);
-    if (typeResults.length === 0) return null;
-    return {
-      tag,
-      avg: Math.round(typeResults.reduce((s, r) => s + r.score, 0) / typeResults.length),
-      count: typeResults.length,
-    };
-  }).filter((x): x is NonNullable<typeof x> => x !== null);
+  // Map examId → exam type so we don't rely on tag strings for logic
+  const examTypeByIdMap = new Map(allExams.map(e => [e.id, e.type as keyof typeof examTypeConfig]));
+
+  // Per-type averages — dynamic, works for any exam type
+  const resultsByType = new Map<keyof typeof examTypeConfig, typeof results>();
+  for (const r of results) {
+    const type = examTypeByIdMap.get(r.examId);
+    if (!type || !(type in examTypeConfig)) continue;
+    if (!resultsByType.has(type)) resultsByType.set(type, []);
+    resultsByType.get(type)!.push(r);
+  }
+  const typeAvgs = Array.from(resultsByType.entries()).map(([type, typeResults]) => ({
+    type,
+    label: examTypeConfig[type].label,
+    avg: Math.round(typeResults.reduce((s, r) => s + r.score, 0) / typeResults.length),
+    count: typeResults.length,
+  })).sort((a, b) => b.count - a.count);
 
   const weeklyAttempts = results.filter(r => new Date(r.completedAt).getTime() >= weekAgoMs()).length;
 
   // Score trend: use only the most-attempted exam type to keep it meaningful
-  const dominantTag = typeAvgs.length > 0
-    ? typeAvgs.reduce((a, b) => a.count >= b.count ? a : b).tag
+  const dominantType = typeAvgs.length > 0
+    ? typeAvgs.reduce((a, b) => a.count >= b.count ? a : b).type
     : null;
-  const dominantResults = dominantTag ? results.filter(r => r.examTag === dominantTag) : [];
+  const dominantResults = dominantType ? results.filter(r => examTypeByIdMap.get(r.examId) === dominantType) : [];
   const last3Avg = dominantResults.length >= 3
     ? Math.round(dominantResults.slice(0, 3).reduce((s, r) => s + r.score, 0) / 3)
     : null;
@@ -140,7 +144,7 @@ export default async function DashboardPage() {
     if (purchasedExams.length === 0) return {
       iconClass: 'bg-primary/10 text-primary', Icon: ShoppingBag,
       label: 'İlk sınağınızı əldə edin',
-      desc: 'SAT, IELTS və ya TOEFL sınaqlarını kəşf edin və hazırlığa başlayın.',
+      desc: 'Mövcud sınaqları kəşf edin və hazırlığa başlayın.',
       href: '/exams', cta: 'Kataloqa bax', btnClass: 'editorial-gradient text-white',
     };
     const untouched = purchasedExams.find(e => !lastResultByExam.has(e.id));
@@ -284,7 +288,7 @@ export default async function DashboardPage() {
                   ) : typeAvgs.length === 1 ? (
                     <>
                       <div className={`text-2xl font-black ${scoreColor(typeAvgs[0].avg)}`}>{typeAvgs[0].avg}%</div>
-                      <p className="text-[11px] text-on-surface-variant mt-0.5">{typeAvgs[0].tag} ortalama</p>
+                      <p className="text-[11px] text-on-surface-variant mt-0.5">{typeAvgs[0].label} ortalama</p>
                       {scoreTrend != null
                         ? <p className={`text-[10px] font-semibold mt-1 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-green-600' : scoreTrend < 0 ? 'text-red-500' : 'text-on-surface-variant/40'}`}>
                             {scoreTrend > 0 ? <TrendingUp size={10} /> : scoreTrend < 0 ? <TrendingDown size={10} /> : null}
@@ -298,8 +302,8 @@ export default async function DashboardPage() {
                       <p className="text-[11px] text-on-surface-variant mb-2">Növ üzrə ortalama</p>
                       <div className="space-y-1">
                         {typeAvgs.map(t => (
-                          <div key={t.tag} className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-on-surface-variant">{t.tag}</span>
+                          <div key={t.type} className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-on-surface-variant">{t.label}</span>
                             <span className={`text-[11px] font-black ${scoreColor(t.avg)}`}>{t.avg}%</span>
                           </div>
                         ))}
@@ -327,26 +331,34 @@ export default async function DashboardPage() {
                     </div>
                     <h3 className="text-base font-bold text-primary mb-1.5 font-headline">Hələ sınaq yoxdur</h3>
                     <p className="text-sm text-on-surface-variant mb-6 max-w-xs mx-auto">
-                      SAT, IELTS və ya TOEFL üçün professional sınaq paketlərini kəşf edin.
+                      Mövcud sınaq paketlərini kəşf edin və hazırlığa başlayın.
                     </p>
-                    <div className="grid grid-cols-3 gap-2 mb-6 max-w-xs mx-auto">
-                      {(
-                        [
-                          { type: 'sat',   label: 'SAT',   Icon: Monitor,  accent: 'bg-blue-500',   from: 12 },
-                          { type: 'ielts', label: 'IELTS', Icon: Globe,    accent: 'bg-purple-500', from: 15 },
-                          { type: 'toefl', label: 'TOEFL', Icon: BookOpen, accent: 'bg-cyan-500',   from: 18 },
-                        ] as const
-                      ).map(({ type, label, Icon, accent, from }) => (
-                        <Link key={type} href={`/exams?type=${type}`}
-                          className="bg-[#f0f2f5] hover:bg-surface-container rounded-xl p-3 text-center transition-colors group">
-                          <div className={`w-8 h-8 ${accent} rounded-lg mx-auto mb-2 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
-                            <Icon size={15} className="text-white" />
-                          </div>
-                          <p className="text-[11px] font-black text-primary">{label}</p>
-                          <p className="text-[10px] text-secondary font-semibold">{from} ₼+</p>
-                        </Link>
-                      ))}
-                    </div>
+                    {(() => {
+                      const catalogTypes = Array.from(new Set(allExams.map(e => e.type)))
+                        .filter((t): t is keyof typeof examTypeConfig => t in examTypeConfig)
+                        .map(type => {
+                          const cfg = examTypeConfig[type];
+                          const minPrice = Math.min(...allExams.filter(e => e.type === type).map(e => e.price));
+                          return { type, cfg, minPrice };
+                        });
+                      return catalogTypes.length > 0 ? (
+                        <div className={`grid gap-2 mb-6 max-w-xs mx-auto ${catalogTypes.length <= 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                          {catalogTypes.map(({ type, cfg, minPrice }) => {
+                            const Icon = cfg.icon;
+                            return (
+                              <Link key={type} href={`/exams?type=${type}`}
+                                className="bg-[#f0f2f5] hover:bg-surface-container rounded-xl p-3 text-center transition-colors group">
+                                <div className={`w-8 h-8 ${cfg.accent} rounded-lg mx-auto mb-2 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
+                                  <Icon size={15} className="text-white" />
+                                </div>
+                                <p className="text-[11px] font-black text-primary">{cfg.label}</p>
+                                <p className="text-[10px] text-secondary font-semibold">{minPrice} ₼+</p>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ) : null;
+                    })()}
                     <Link href="/exams" className="inline-flex items-center gap-2 editorial-gradient text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity shadow-md">
                       <ShoppingBag size={14} /> Kataloqa bax
                     </Link>
@@ -516,7 +528,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="divide-y divide-outline-variant/10">
                     {recentResults.map(r => {
-                      const type = tagToType[r.examTag] ?? 'sat';
+                      const type = (examTypeByIdMap.get(r.examId) ?? 'sat') as keyof typeof examTypeConfig;
                       const cfg  = examTypeConfig[type];
                       const Icon = cfg.icon;
                       return (
