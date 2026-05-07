@@ -222,6 +222,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const currentModule  = current ? exam.modules[current.moduleIndex] : null;
   const hasNoQuestions = questions.length === 0;
 
+  // One audio URL per module — stable across question navigation within the same module
+  const moduleAudioUrl = current
+    ? (questions.find(q => q.moduleIndex === current.moduleIndex && q.audioUrl)?.audioUrl ?? null)
+    : null;
+
   // Count answered questions across all types
   const answeredCount = questions.filter(q => {
     if (q.type === 'mcq') return answers.has(q.id);
@@ -483,15 +488,18 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 {currentIdx + 1} / {questions.length}
               </span>
             </div>
+
+            {/* Audio player anchored at module level — persists across question navigation */}
+            {moduleAudioUrl && (
+              <div className="px-6 py-3 border-b border-slate-100 bg-surface-container-low shrink-0">
+                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">🎧 Audio / Dinləmə</p>
+                <StrictAudioPlayer src={moduleAudioUrl} examId={exam.id} />
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
-              {current?.passage || current?.audioUrl || current?.imageUrl ? (
+              {current?.passage || current?.imageUrl ? (
                 <article className="max-w-2xl">
-                  {current?.audioUrl && (
-                    <div className="mb-6 p-4 bg-surface-container-low border border-outline-variant/40 rounded-2xl shadow-sm">
-                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">🎧 Audio / Dinləmə</p>
-                      <StrictAudioPlayer src={current.audioUrl} examId={exam.id} />
-                    </div>
-                  )}
                   {current?.imageUrl && (
                     <div className="mb-6">
                       <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">📊 Diaqram / Şəkil</p>
@@ -561,10 +569,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           {/* ── Right panel — question ── */}
           <section className="flex-1 bg-white flex flex-col overflow-hidden">
 
-            {/* Mobile Audio Player (Fixed so it doesn't unmount on tab switch) */}
-            {current?.audioUrl && (
+            {/* Mobile audio player — module-level so it persists across question navigation */}
+            {moduleAudioUrl && (
               <div className="md:hidden p-4 bg-surface-container-low border-b border-outline-variant/20 shrink-0 shadow-sm z-10">
-                <StrictAudioPlayer src={current.audioUrl} examId={exam.id} />
+                <StrictAudioPlayer src={moduleAudioUrl} examId={exam.id} />
               </div>
             )}
 
