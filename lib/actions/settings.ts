@@ -33,7 +33,7 @@ export async function saveUserSettings(
     const d = new Date(targetExamDate);
     if (isNaN(d.getTime())) return { error: 'Invalid date' };
   }
-  if (targetExamType && !['sat', 'ielts', 'toefl'].includes(targetExamType)) {
+  if (targetExamType && !['sat', 'ielts', 'toefl', 'general_english'].includes(targetExamType)) {
     return { error: 'Invalid exam type' };
   }
 
