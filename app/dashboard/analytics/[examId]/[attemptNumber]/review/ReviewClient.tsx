@@ -18,7 +18,7 @@ interface Props {
   result: ResultDetail;
 }
 
-const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 
 function MathText({ text }: { text: string }) {
@@ -171,6 +171,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                         <span className="text-xs font-bold text-on-surface-variant">
                           Sual {globalIdx + 1}
                           {q.type === 'open' && ' (Açıq)'}
+                          {q.type === 'matching' && ' (Uyğunlaşdırma)'}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -226,6 +227,52 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+
+                      {/* Matching review */}
+                      {q.type === 'matching' && q.matchItems && q.matchItems.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                          {(() => {
+                            let userMatches: number[] = [];
+                            try {
+                              if (answer?.userAnswerText) userMatches = JSON.parse(answer.userAnswerText);
+                            } catch { /* ignore */ }
+                            return q.matchItems!.map((item, idx) => {
+                              const userPick = userMatches[idx] ?? -1;
+                              const correctPick = q.correctMatching?.[idx] ?? -1;
+                              const itemCorrect = userPick === correctPick;
+                              const cls = userPick === -1
+                                ? 'border-outline-variant/30 bg-surface-container-low'
+                                : itemCorrect
+                                  ? 'border-green-400 bg-green-50'
+                                  : 'border-red-400 bg-red-50';
+                              return (
+                                <div key={idx} className={`flex items-start gap-3 px-4 py-3 rounded-xl border-2 ${cls}`}>
+                                  <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                                    itemCorrect ? 'bg-green-500 text-white' : userPick === -1 ? 'bg-white border-2 border-outline-variant text-on-surface-variant' : 'bg-red-500 text-white'
+                                  }`}>
+                                    {idx + 1}
+                                  </span>
+                                  <div className="flex-1 text-sm">
+                                    <p className="font-medium text-on-surface mb-1"><MathText text={item} /></p>
+                                    {userPick >= 0 && !itemCorrect && (
+                                      <p className="text-red-600 text-xs">Sizin: {OPTION_LABELS[userPick]}. {q.options[userPick]}</p>
+                                    )}
+                                    <p className="text-green-700 text-xs font-bold">Doğru: {OPTION_LABELS[correctPick]}. {q.options[correctPick]}</p>
+                                  </div>
+                                  {itemCorrect ? <CheckCircle2 size={15} className="text-green-600 shrink-0 mt-0.5" /> : <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Image display */}
+                      {q.imageUrl && (
+                        <div className="mb-4">
+                          <img src={q.imageUrl} alt="Sual diaqramı" className="w-full max-w-md rounded-xl border border-outline-variant/30" loading="lazy" />
                         </div>
                       )}
 

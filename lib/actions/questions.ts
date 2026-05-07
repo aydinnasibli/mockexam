@@ -16,13 +16,17 @@ export interface QuestionData {
   type: QuestionType;
   passage: string;
   audioUrl?: string;
+  imageUrl?: string;
   stem: string;
   options: string[];
+  openAnswers?: string[];
   correctIndex: number;
+  matchItems?: string[];
+  correctMatching?: number[];
   explanation: string;
 }
 
-/** Safe subset served to exam-takers — correctIndex and explanation are omitted. */
+/** Safe subset served to exam-takers — correctIndex, correctMatching, and explanation are omitted. */
 export interface SessionQuestion {
   id: string;
   examId: string;
@@ -31,8 +35,10 @@ export interface SessionQuestion {
   type: QuestionType;
   passage: string;
   audioUrl?: string;
+  imageUrl?: string;
   stem: string;
   options: string[];
+  matchItems?: string[];
 }
 
 async function requireAdmin() {
@@ -62,8 +68,10 @@ export async function getExamQuestionsForSession(examId: string): Promise<Sessio
     type:        d.type,
     passage:     d.passage ?? '',
     audioUrl:    d.audioUrl ?? '',
+    imageUrl:    d.imageUrl ?? '',
     stem:        d.stem,
     options:     d.options ?? [],
+    matchItems:  d.matchItems ?? [],
   }));
 }
 
@@ -78,17 +86,21 @@ export async function getExamQuestionsForReview(examId: string): Promise<Questio
 
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({
-    id:           String(d._id),
-    examId:       d.examId,
-    moduleIndex:  d.moduleIndex,
-    order:        d.order,
-    type:         d.type,
-    passage:      d.passage ?? '',
-    audioUrl:     d.audioUrl ?? '',
-    stem:         d.stem,
-    options:      d.options ?? [],
-    correctIndex: d.correctIndex ?? -1,
-    explanation:  d.explanation ?? '',
+    id:              String(d._id),
+    examId:          d.examId,
+    moduleIndex:     d.moduleIndex,
+    order:           d.order,
+    type:            d.type,
+    passage:         d.passage ?? '',
+    audioUrl:        d.audioUrl ?? '',
+    imageUrl:        d.imageUrl ?? '',
+    stem:            d.stem,
+    options:         d.options ?? [],
+    openAnswers:     d.openAnswers ?? [],
+    correctIndex:    d.correctIndex ?? -1,
+    matchItems:      d.matchItems ?? [],
+    correctMatching: d.correctMatching ?? [],
+    explanation:     d.explanation ?? '',
   }));
 }
 
@@ -97,17 +109,21 @@ export async function getExamQuestions(examId: string): Promise<QuestionData[]> 
   await dbConnect();
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({
-    id:           String(d._id),
-    examId:       d.examId,
-    moduleIndex:  d.moduleIndex,
-    order:        d.order,
-    type:         d.type,
-    passage:      d.passage ?? '',
-    audioUrl:     d.audioUrl ?? '',
-    stem:         d.stem,
-    options:      d.options ?? [],
-    correctIndex: d.correctIndex ?? -1,
-    explanation:  d.explanation ?? '',
+    id:              String(d._id),
+    examId:          d.examId,
+    moduleIndex:     d.moduleIndex,
+    order:           d.order,
+    type:            d.type,
+    passage:         d.passage ?? '',
+    audioUrl:        d.audioUrl ?? '',
+    imageUrl:        d.imageUrl ?? '',
+    stem:            d.stem,
+    options:         d.options ?? [],
+    openAnswers:     d.openAnswers ?? [],
+    correctIndex:    d.correctIndex ?? -1,
+    matchItems:      d.matchItems ?? [],
+    correctMatching: d.correctMatching ?? [],
+    explanation:     d.explanation ?? '',
   }));
 }
 
@@ -117,9 +133,13 @@ export async function addQuestion(data: {
   type: QuestionType;
   passage: string;
   audioUrl?: string;
+  imageUrl?: string;
   stem: string;
   options: string[];
+  openAnswers?: string[];
   correctIndex: number;
+  matchItems?: string[];
+  correctMatching?: number[];
   explanation: string;
 }): Promise<{ id: string } | { error: string }> {
   try {
@@ -142,9 +162,13 @@ export async function updateQuestion(
     type: QuestionType;
     passage: string;
     audioUrl?: string;
+    imageUrl?: string;
     stem: string;
     options: string[];
+    openAnswers?: string[];
     correctIndex: number;
+    matchItems?: string[];
+    correctMatching?: number[];
     explanation: string;
   }>
 ): Promise<{ ok: true } | { error: string }> {

@@ -67,10 +67,16 @@ export async function saveExamResult(data: {
 
     // Fetch authoritative correct answers from the database
     const questionDocs = await QuestionModel.find({ examId })
-      .select('_id correctIndex moduleIndex type openAnswers')
+      .select('_id correctIndex moduleIndex type openAnswers correctMatching')
       .lean();
     const correctMap = new Map(
-      questionDocs.map(q => [String(q._id), { correctIndex: q.correctIndex, moduleIndex: q.moduleIndex, type: q.type, openAnswers: q.openAnswers || [] }])
+      questionDocs.map(q => [String(q._id), {
+        correctIndex: q.correctIndex,
+        moduleIndex: q.moduleIndex,
+        type: q.type,
+        openAnswers: q.openAnswers || [],
+        correctMatching: q.correctMatching || [],
+      }])
     );
 
     // Build verified answer records — correctIndex and isCorrect come from DB, not client
@@ -88,6 +94,17 @@ export async function saveExamResult(data: {
             const normalizedAns = String(ans).replace(/\s+/g, '').toLowerCase().replace(/,/g, '.');
             return normalizedAns === normalizedInput;
           });
+        }
+      } else if (authoritative?.type === 'matching') {
+        // userAnswerText is a JSON array string e.g. "[1,0,2,0,1]"
+        if (a.userAnswerText && authoritative.correctMatching && authoritative.correctMatching.length > 0) {
+          try {
+            const userMatches: number[] = JSON.parse(a.userAnswerText);
+            isCorrect = authoritative.correctMatching.length === userMatches.length &&
+              authoritative.correctMatching.every((correct, idx) => correct === userMatches[idx]);
+          } catch {
+            isCorrect = false;
+          }
         }
       }
 

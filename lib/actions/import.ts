@@ -50,15 +50,19 @@ export async function importExamFromJson(parsedJson: any) {
 
     // 5. Transform and Insert Questions
     const questionsToInsert = parsedJson.questions.map((q: any, i: number) => ({
-      examId: parsedJson.examId, // strict binding to the imported exam
+      examId: parsedJson.examId,
       moduleIndex: q.moduleIndex ?? 0,
       order: q.order ?? i,
       type: q.type || 'mcq',
       passage: q.passage || '',
+      audioUrl: q.audioUrl || '',
+      imageUrl: q.imageUrl || '',
       stem: q.stem || '',
       options: q.options || [],
       openAnswers: q.openAnswers || [],
       correctIndex: q.correctIndex ?? -1,
+      matchItems: q.matchItems || [],
+      correctMatching: q.correctMatching || [],
       explanation: q.explanation || '',
     }));
 

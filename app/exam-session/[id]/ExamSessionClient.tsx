@@ -22,7 +22,7 @@ interface Props {
   questions: SessionQuestion[];
 }
 
-const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 function formatTime(seconds: number) {
   const h = Math.floor(seconds / 3600);
@@ -46,6 +46,7 @@ function MathText({ text, block = false }: { text: string; block?: boolean }) {
 interface SavedSession {
   answers: [string, number][];
   openAnswers: [string, string][];
+  matchingAnswers?: [string, string][];
   flagged: string[];
   currentIdx: number;
 }
@@ -93,6 +94,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const [currentIdx, setCurrentIdx]     = useState(0);
   const [answers, setAnswers]           = useState<Map<string, number>>(new Map());
   const [openAnswers, setOpenAnswers]   = useState<Map<string, string>>(new Map());
+  const [matchingAnswers, setMatchingAnswers] = useState<Map<string, number[]>>(new Map());
   const [flagged, setFlagged]           = useState<Set<string>>(new Set());
   const [showGrid, setShowGrid]         = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
@@ -119,6 +121,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       if (saved) {
         if (saved.answers?.length)     setAnswers(new Map(saved.answers));
         if (saved.openAnswers?.length) setOpenAnswers(new Map(saved.openAnswers));
+        if (saved.matchingAnswers?.length) setMatchingAnswers(new Map(saved.matchingAnswers.map(([k, v]) => [k, JSON.parse(v)])));
         if (saved.flagged?.length)     setFlagged(new Set(saved.flagged));
         if (
           typeof saved.currentIdx === 'number' &&
@@ -145,12 +148,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   useEffect(() => {
     if (!sessionReady) return;
     persistSession(exam.id, {
-      answers:     [...answers.entries()],
-      openAnswers: [...openAnswers.entries()],
-      flagged:     [...flagged],
+      answers:         [...answers.entries()],
+      openAnswers:     [...openAnswers.entries()],
+      matchingAnswers: [...matchingAnswers.entries()].map(([k, v]) => [k, JSON.stringify(v)]),
+      flagged:         [...flagged],
       currentIdx,
     });
-  }, [answers, openAnswers, flagged, currentIdx, sessionReady, exam.id]);
+  }, [answers, openAnswers, matchingAnswers, flagged, currentIdx, sessionReady, exam.id]);
 
   // ── Reset passage panel when moving between questions ────────────────────
   useEffect(() => {
@@ -172,13 +176,20 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     setSubmitting(true);
     setShowConfirm(false);
     try {
-      const answerInputs = questions.map(q => ({
-        questionId:  q.id,
-        moduleIndex: q.moduleIndex,
-        userAnswer:  answers.get(q.id) ?? -1,
-        userAnswerText: openAnswers.get(q.id) || '',
-        timeSeconds: Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
-      }));
+      const answerInputs = questions.map(q => {
+        let userAnswerText = openAnswers.get(q.id) || '';
+        // For matching questions, encode the answers as JSON in userAnswerText
+        if (q.type === 'matching' && matchingAnswers.has(q.id)) {
+          userAnswerText = JSON.stringify(matchingAnswers.get(q.id));
+        }
+        return {
+          questionId:  q.id,
+          moduleIndex: q.moduleIndex,
+          userAnswer:  answers.get(q.id) ?? -1,
+          userAnswerText,
+          timeSeconds: Math.round(qTimeSecsRef.current.get(q.id) ?? 0),
+        };
+      });
       const sessionStart = startedAtRef.current ?? new Date();
       const result = await saveExamResult({
         examId:          exam.id,
@@ -195,7 +206,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       toast.error('Nəticə göndərilmədi. Yenidən cəhd edin.');
       setSubmitting(false);
     }
-  }, [exam, router, answers, questions, recordCurrentQuestionTime]);
+  }, [exam, router, answers, openAnswers, matchingAnswers, questions, recordCurrentQuestionTime]);
 
   // ── Auto-submit when time runs out ────────────────────────────────────────
   useEffect(() => {
@@ -209,8 +220,15 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
   const current        = questions[currentIdx] ?? null;
   const currentModule  = current ? exam.modules[current.moduleIndex] : null;
-  const answeredCount  = answers.size;
   const hasNoQuestions = questions.length === 0;
+
+  // Count answered questions across all types
+  const answeredCount = questions.filter(q => {
+    if (q.type === 'mcq') return answers.has(q.id);
+    if (q.type === 'open') return !!(openAnswers.get(q.id)?.trim());
+    if (q.type === 'matching') return matchingAnswers.has(q.id);
+    return false;
+  }).length;
 
   const questionsByModule = exam.modules.map((mod, modIdx) => ({
     mod, modIdx,
@@ -466,12 +484,23 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </span>
             </div>
             <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
-              {current?.passage || current?.audioUrl ? (
+              {current?.passage || current?.audioUrl || current?.imageUrl ? (
                 <article className="max-w-2xl">
                   {current?.audioUrl && (
                     <div className="mb-6 p-4 bg-surface-container-low border border-outline-variant/40 rounded-2xl shadow-sm">
                       <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">🎧 Audio / Dinləmə</p>
                       <StrictAudioPlayer src={current.audioUrl} examId={exam.id} />
+                    </div>
+                  )}
+                  {current?.imageUrl && (
+                    <div className="mb-6">
+                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">📊 Diaqram / Şəkil</p>
+                      <img
+                        src={current.imageUrl}
+                        alt="Sual diaqramı"
+                        className="w-full rounded-xl border border-outline-variant/30 shadow-sm"
+                        loading="lazy"
+                      />
                     </div>
                   )}
                   {current?.passage && (
@@ -502,7 +531,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         .filter(q => q.moduleIndex === current?.moduleIndex)
                         .map(q => {
                           const idx        = questions.indexOf(q);
-                          const isAnswered = answers.has(q.id);
+                          const isAnswered = q.type === 'mcq' ? answers.has(q.id)
+                            : q.type === 'open' ? !!(openAnswers.get(q.id)?.trim())
+                            : q.type === 'matching' ? matchingAnswers.has(q.id)
+                            : false;
                           const isFlagged  = flagged.has(q.id);
                           const isCurrent  = idx === currentIdx;
                           return (
@@ -593,7 +625,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       {currentIdx + 1}
                     </span>
                     <span className="text-on-surface-variant text-xs md:text-sm font-medium">
-                      {current?.type === 'open' ? 'Açıq tapşırıq' : 'Çoxseçimli'}
+                      {current?.type === 'open' ? 'Açıq tapşırıq' : current?.type === 'matching' ? 'Uyğunlaşdırma' : 'Çoxseçimli'}
                     </span>
                   </div>
                   {current && (
@@ -651,8 +683,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   <div className="space-y-3">
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
                       <p className="text-xs text-blue-800 font-medium flex items-center gap-2">
-                        <Pencil size={13} shrink-0 />
-                        <span className="leading-relaxed">Bu açıq tapşırıqdır. Rəqəmsal və ya kəsr cavabınızı daxil edin (məs. 0.5 və ya 1/2). Cavab avtomatik qiymətləndiriləcək.</span>
+                        <Pencil size={13} className="shrink-0" />
+                        <span className="leading-relaxed">Bu açıq tapşırıqdır. Cavabınızı daxil edin. Cavab avtomatik qiymətləndiriləcək.</span>
                       </p>
                     </div>
                     <textarea
@@ -661,6 +693,71 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
                       placeholder="Cavabınızı burada yazın..."
                       className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm font-bold text-on-surface bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    />
+                  </div>
+                )}
+
+                {/* ── Matching question ── */}
+                {current?.type === 'matching' && current.matchItems && current.matchItems.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                      <p className="text-xs text-indigo-800 font-medium flex items-center gap-2">
+                        <Grid3X3 size={13} className="shrink-0" />
+                        <span className="leading-relaxed">Hər element üçün uyğun cavabı seçin.</span>
+                      </p>
+                    </div>
+                    <div className="space-y-2.5">
+                      {current.matchItems.map((item, itemIdx) => {
+                        const currentMatchAnswers = matchingAnswers.get(current.id) ?? [];
+                        const selectedValue = currentMatchAnswers[itemIdx] ?? -1;
+                        return (
+                          <div key={itemIdx} className="flex items-start gap-3 p-3 rounded-xl border-2 border-outline-variant/30 bg-surface-container-low">
+                            <span className="shrink-0 w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black mt-0.5">
+                              {itemIdx + 1}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-on-surface mb-2 leading-relaxed">
+                                <MathText text={item} />
+                              </p>
+                              <select
+                                value={selectedValue}
+                                onChange={e => {
+                                  const val = parseInt(e.target.value);
+                                  setMatchingAnswers(prev => {
+                                    const next = new Map(prev);
+                                    const arr = [...(next.get(current.id) ?? new Array(current.matchItems!.length).fill(-1))];
+                                    arr[itemIdx] = val;
+                                    next.set(current.id, arr);
+                                    return next;
+                                  });
+                                }}
+                                className={`w-full rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${
+                                  selectedValue >= 0
+                                    ? 'border-secondary bg-secondary/5 text-on-surface'
+                                    : 'border-outline-variant bg-white text-on-surface-variant'
+                                }`}
+                              >
+                                <option value={-1}>— Seçin —</option>
+                                {current.options.map((opt, optIdx) => (
+                                  <option key={optIdx} value={optIdx}>{OPTION_LABELS[optIdx]}. {opt}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Image for current question (mobile) ── */}
+                {current?.imageUrl && (
+                  <div className="mt-4 md:hidden">
+                    <img
+                      src={current.imageUrl}
+                      alt="Sual diaqramı"
+                      className="w-full rounded-xl border border-outline-variant/30 shadow-sm"
+                      loading="lazy"
                     />
                   </div>
                 )}

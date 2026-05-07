@@ -26,6 +26,7 @@ export interface AnswerDetail {
   questionId: string;
   moduleIndex: number;
   userAnswer: number;
+  userAnswerText: string;
   correctIndex: number;
   isCorrect: boolean;
   timeSeconds: number;
@@ -79,12 +80,13 @@ export async function getResultDetail(
   return {
     ...mapSummary(doc),
     answers: (doc.answers ?? []).map((a) => ({
-      questionId:   a.questionId,
-      moduleIndex:  a.moduleIndex,
-      userAnswer:   a.userAnswer,
-      correctIndex: a.correctIndex,
-      isCorrect:    a.isCorrect,
-      timeSeconds:  a.timeSeconds,
+      questionId:     a.questionId,
+      moduleIndex:    a.moduleIndex,
+      userAnswer:     a.userAnswer,
+      userAnswerText: a.userAnswerText ?? '',
+      correctIndex:   a.correctIndex,
+      isCorrect:      a.isCorrect,
+      timeSeconds:    a.timeSeconds,
     })),
   };
 }
