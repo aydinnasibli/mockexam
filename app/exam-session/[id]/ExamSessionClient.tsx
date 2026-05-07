@@ -819,9 +819,9 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
     try {
       await audioRef.current.play();
       setStatus('playing');
-    } catch (err) {
-      console.error('Audio play failed:', err);
-      toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa təkrar sınayın.');
+    } catch (err: any) {
+      console.error('Audio play failed:', err?.name, err?.message, err);
+      toast.error(`Audionu başlatmaq mümkün olmadı: ${err?.message ?? err}. Zəhmət olmasa təkrar sınayın.`);
       return;
     }
 
@@ -864,6 +864,8 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
       <audio
         ref={audioRef}
         src={src}
+        crossOrigin="anonymous"
+        preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}

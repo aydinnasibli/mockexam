@@ -45,7 +45,7 @@ export async function saveExamResult(data: {
     const updatedPurchase = await Purchase.findOneAndUpdate(
       { userId, examId, status: 'COMPLETED' },
       { $inc: { attemptCount: 1 } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!updatedPurchase) return { error: 'Exam not purchased' };
     const attemptNumber = updatedPurchase.attemptCount;

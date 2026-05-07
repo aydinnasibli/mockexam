@@ -202,7 +202,7 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
           modules, totalQuestions, durationMinutes, isActive: fields.isActive,
         },
       },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!exam) return { error: 'İmtahan tapılmadı.' };
   } catch (err) {

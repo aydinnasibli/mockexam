@@ -45,7 +45,7 @@ export async function saveUserSettings(
   await UserSettings.findOneAndUpdate(
     { userId },
     { $set: update },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   );
 
   return { ok: true };

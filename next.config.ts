@@ -8,7 +8,8 @@ const csp = [
   `script-src 'self' ${isDev ? "'unsafe-eval' " : ""}'unsafe-inline' https://*.clerk.accounts.dev https://challenges.cloudflare.com`,
   // 'unsafe-inline' required: KaTeX renders inline styles; Clerk UI uses inline styles
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://img.clerk.com https://images.clerk.dev https://lh3.googleusercontent.com https://avatars.githubusercontent.com",
+  "img-src 'self' data: blob: https://img.clerk.com https://images.clerk.dev https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.public.blob.vercel-storage.com",
+  "media-src 'self' https://*.public.blob.vercel-storage.com",
   // next/font/google self-hosts fonts; data: covers KaTeX font fallbacks
   "font-src 'self' data:",
   "connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com wss://*.clerk.accounts.dev",

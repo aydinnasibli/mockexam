@@ -45,7 +45,7 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
     const session = await ExamSessionModel.findOneAndUpdate(
       { userId, examId },
       { $setOnInsert: { startedAt: now, totalSeconds } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     );
 
     const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
