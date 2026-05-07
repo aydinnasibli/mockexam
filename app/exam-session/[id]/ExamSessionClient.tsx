@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { saveExamResult } from '@/lib/actions/results';
 import { beginExamSession } from '@/lib/actions/session';
-import { markAudioPlayed } from '@/lib/actions/audio';
+import { markAudioPlayed, checkAudioPlayed } from '@/lib/actions/audio';
 import {
   Timer, Flag, ChevronLeft, ChevronRight,
   CheckCircle2, Grid3X3, BookOpen, Pencil, FileText, X,
@@ -800,9 +800,9 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // On mount: ask the server whether this audio has already been played
+  // On mount: check (read-only) whether this audio has already been played
   useEffect(() => {
-    markAudioPlayed(examId, src).then(result => {
+    checkAudioPlayed(examId, src).then(result => {
       if ('error' in result) {
         setStatus('ready'); // fail open so the exam is not blocked
         return;
@@ -814,23 +814,25 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
   const handlePlay = async () => {
     if (status !== 'ready' || !audioRef.current) return;
 
-    // Double-check with the server before allowing play
-    const result = await markAudioPlayed(examId, src);
-    if ('error' in result) {
-      toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa səhifəni yeniləyin.');
-      return;
-    }
-    if (result.alreadyPlayed) {
-      setStatus('finished');
+    // Must call play() synchronously inside the click handler — browsers block it
+    // if called after an await (loses the user-gesture context).
+    try {
+      await audioRef.current.play();
+      setStatus('playing');
+    } catch (err) {
+      console.error('Audio play failed:', err);
+      toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa təkrar sınayın.');
       return;
     }
 
-    audioRef.current.play().then(() => {
-      setStatus('playing');
-    }).catch(err => {
-      console.error('Audio play failed:', err);
-      toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa təkrar sınayın.');
-    });
+    // Mark as played server-side after playback has started
+    const result = await markAudioPlayed(examId, src);
+    if ('error' in result) return; // fail open — audio is already playing
+    if (result.alreadyPlayed) {
+      // Race condition: was already played in another tab — stop it
+      audioRef.current?.pause();
+      setStatus('finished');
+    }
   };
 
   const handleTimeUpdate = () => {

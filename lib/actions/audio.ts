@@ -5,6 +5,27 @@ import dbConnect from '@/lib/mongodb';
 import ExamSessionModel from '@/lib/models/ExamSession';
 import { isRateLimited } from '@/lib/rate-limit';
 
+/** Read-only check — does NOT mark the audio as played. Used on component mount. */
+export async function checkAudioPlayed(
+  examId: string,
+  audioUrl: string,
+): Promise<{ alreadyPlayed: boolean } | { error: string }> {
+  const { userId } = await auth();
+  if (!userId) return { error: 'Unauthorized' };
+  if (!examId || !audioUrl) return { error: 'Invalid params' };
+
+  try {
+    await dbConnect();
+    const session = await ExamSessionModel.findOne({ userId, examId }).lean();
+    if (!session) return { error: 'Session tapılmadı.' };
+    const played: string[] = (session as unknown as { playedAudioUrls: string[] }).playedAudioUrls ?? [];
+    return { alreadyPlayed: played.includes(audioUrl) };
+  } catch (err) {
+    console.error('[checkAudioPlayed]', err);
+    return { error: 'Server xətası.' };
+  }
+}
+
 /**
  * Marks an audio URL as played for this user's session.
  * Returns { alreadyPlayed: true } if the audio was already consumed.
@@ -30,7 +51,6 @@ export async function markAudioPlayed(
     const session = await ExamSessionModel.findOne({ userId, examId }).lean();
     if (!session) return { error: 'Session tapılmadı.' };
 
-    // Cast to access playedAudioUrls (added via schema update)
     const played: string[] = (session as unknown as { playedAudioUrls: string[] }).playedAudioUrls ?? [];
 
     if (played.includes(audioUrl)) {
