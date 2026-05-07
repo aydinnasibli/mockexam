@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamSessionModel from '@/lib/models/ExamSession';
 import { getExamByIdAdmin } from '@/lib/db/exams';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export interface SessionInfo {
   startedAt: string;
@@ -21,6 +22,11 @@ export interface SessionInfo {
 export async function beginExamSession(examId: string): Promise<SessionInfo | { error: string }> {
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
+
+  // 10 session-start calls per user per minute — prevents timer reset abuse
+  if (isRateLimited(`begin:${userId}`, 10, 60_000)) {
+    return { error: 'Çox tez-tez sorğu göndərdiniz. Bir az gözləyin.' };
+  }
 
   try {
     await dbConnect();

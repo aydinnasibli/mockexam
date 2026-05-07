@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { saveExamResult } from '@/lib/actions/results';
 import { beginExamSession } from '@/lib/actions/session';
+import { markAudioPlayed } from '@/lib/actions/audio';
 import {
   Timer, Flag, ChevronLeft, ChevronRight,
   CheckCircle2, Grid3X3, BookOpen, Pencil, FileText, X,
@@ -697,60 +698,146 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 }
 
 function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
-  const [status, setStatus] = useState<'ready' | 'playing' | 'finished'>('ready');
+  const [status, setStatus] = useState<'checking' | 'ready' | 'playing' | 'finished'>('checking');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // On mount: ask the server whether this audio has already been played
   useEffect(() => {
-    const key = `tc-audio-${examId}-${src}`;
-    if (localStorage.getItem(key)) {
-      setStatus('finished');
-    } else {
-      setStatus('ready');
-    }
+    markAudioPlayed(examId, src).then(result => {
+      if ('error' in result) {
+        setStatus('ready'); // fail open so the exam is not blocked
+        return;
+      }
+      setStatus(result.alreadyPlayed ? 'finished' : 'ready');
+    });
   }, [src, examId]);
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (status !== 'ready' || !audioRef.current) return;
-    
+
+    // Double-check with the server before allowing play
+    const result = await markAudioPlayed(examId, src);
+    if ('error' in result) {
+      toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa səhifəni yeniləyin.');
+      return;
+    }
+    if (result.alreadyPlayed) {
+      setStatus('finished');
+      return;
+    }
+
     audioRef.current.play().then(() => {
       setStatus('playing');
-      const key = `tc-audio-${examId}-${src}`;
-      localStorage.setItem(key, 'true');
     }).catch(err => {
       console.error('Audio play failed:', err);
       toast.error('Audionu başlatmaq mümkün olmadı. Zəhmət olmasa təkrar sınayın.');
     });
   };
 
-  const handleEnded = () => {
-    setStatus('finished');
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
   };
 
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setDuration(audioRef.current.duration);
+  };
+
+  const handleEnded = () => {
+    setStatus('finished');
+    setCurrentTime(duration);
+  };
+
+  const remaining = Math.max(0, duration - currentTime);
+  const progress  = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  function fmtTime(secs: number) {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
   return (
-    <div className="w-full">
-      <audio ref={audioRef} src={src} onEnded={handleEnded} className="hidden" />
-      {status === 'ready' && (
-        <button 
-          onClick={handlePlay}
-          className="w-full py-3 rounded-xl editorial-gradient text-white font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity"
-        >
-          <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
-        </button>
+    <div className="w-full space-y-2">
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        className="hidden"
+      />
+
+      {/* Checking state */}
+      {status === 'checking' && (
+        <div className="w-full py-3 rounded-xl bg-surface-container border border-outline-variant/30 flex items-center justify-center gap-2 text-on-surface-variant text-sm font-semibold">
+          <span className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          Yüklənir...
+        </div>
       )}
+
+      {/* Ready state */}
+      {status === 'ready' && (
+        <>
+          <button
+            onClick={handlePlay}
+            className="w-full py-3 rounded-xl editorial-gradient text-white font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 active:scale-[0.98] transition-all"
+          >
+            <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
+          </button>
+          <p className="text-[10px] text-center text-amber-600 font-semibold px-2 leading-tight">
+            ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.
+          </p>
+        </>
+      )}
+
+      {/* Playing state */}
       {status === 'playing' && (
-        <div className="w-full py-3 rounded-xl bg-blue-50 text-blue-700 font-bold flex items-center justify-center gap-2 border border-blue-200">
-          <Volume2 size={18} className="animate-pulse" /> Səs oxunur...
+        <div className="w-full rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+              <Volume2 size={16} className="animate-pulse shrink-0" />
+              <span>Səs oxunur...</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-blue-800">
+              <span className="font-mono font-black text-base tabular-nums">{fmtTime(remaining)}</span>
+              <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">qaldı</span>
+            </div>
+          </div>
+          <div className="relative w-full h-2.5 bg-blue-200 rounded-full overflow-hidden">
+            <div
+              className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all duration-300 ease-linear"
+              style={{ width: `${progress}%` }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-blue-500 rounded-full shadow-sm transition-all duration-300 ease-linear"
+              style={{ left: `calc(${progress}% - 6px)` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] font-semibold text-blue-400 tabular-nums">
+            <span>{fmtTime(currentTime)}</span>
+            <span>{fmtTime(duration)}</span>
+          </div>
         </div>
       )}
+
+      {/* Finished state */}
       {status === 'finished' && (
-        <div className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface-variant font-bold flex items-center justify-center gap-2 border border-outline-variant/50 opacity-70">
-          <CheckCircle2 size={18} /> Audio bitdi
+        <div className="w-full rounded-2xl bg-surface-container border border-outline-variant/40 px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between text-on-surface-variant">
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <CheckCircle2 size={16} className="text-secondary shrink-0" />
+              <span>Audio bitdi</span>
+            </div>
+            {duration > 0 && <span className="font-mono font-black text-sm">{fmtTime(duration)}</span>}
+          </div>
+          <div className="w-full h-2 bg-secondary/20 rounded-full overflow-hidden">
+            <div className="h-full w-full bg-secondary/50 rounded-full" />
+          </div>
         </div>
-      )}
-      {status === 'ready' && (
-        <p className="text-[10px] text-center text-amber-600 font-semibold mt-2 px-2 leading-tight">
-          Diqqət: Audionu yalnız 1 dəfə dinləmək mümkündür. Səhifəni yeniləsəniz və ya imtahandan çıxsanız audio dayanacaq.
-        </p>
       )}
     </div>
   );

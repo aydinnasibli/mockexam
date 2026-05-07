@@ -1,10 +1,12 @@
 import mongoose, { Schema } from 'mongoose';
 
 const ExamSessionSchema = new Schema({
-  userId:       { type: String, required: true },
-  examId:       { type: String, required: true },
-  startedAt:    { type: Date,   required: true },
-  totalSeconds: { type: Number, required: true },
+  userId:           { type: String, required: true },
+  examId:           { type: String, required: true },
+  startedAt:        { type: Date,   required: true },
+  totalSeconds:     { type: Number, required: true },
+  // Tracks which audio URLs have been played — enforced server-side
+  playedAudioUrls:  { type: [String], default: [] },
 });
 
 ExamSessionSchema.index({ userId: 1, examId: 1 }, { unique: true });

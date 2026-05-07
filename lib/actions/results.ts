@@ -7,6 +7,7 @@ import ExamResult from '@/lib/models/ExamResult';
 import QuestionModel from '@/lib/models/Question';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import ExamSessionModel from '@/lib/models/ExamSession';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export type ClientAnswerInput = {
   questionId: string;
@@ -24,6 +25,11 @@ export async function saveExamResult(data: {
 }): Promise<{ resultId: string; attemptNumber: number } | { error: string }> {
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
+
+  // 5 submissions per user per 5 minutes — prevents spam
+  if (isRateLimited(`submit:${userId}`, 5, 5 * 60_000)) {
+    return { error: 'Çox tez-tez imtahan göndərdiniz. Bir az gözləyin.' };
+  }
 
   const { examId, startedAt, durationSeconds, answers } = data;
 
