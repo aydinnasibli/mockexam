@@ -161,6 +161,10 @@ export async function addQuestion(data: {
   matchItems?: string[];
   correctMatching?: number[];
   explanation: string;
+  writingTaskType?: WritingTaskType;
+  minWords?: number;
+  maxWords?: number;
+  rubric?: string;
 }): Promise<{ id: string } | { error: string }> {
   try {
     await requireAdmin();
@@ -190,6 +194,10 @@ export async function updateQuestion(
     matchItems?: string[];
     correctMatching?: number[];
     explanation: string;
+    writingTaskType?: WritingTaskType;
+    minWords?: number;
+    maxWords?: number;
+    rubric?: string;
   }>
 ): Promise<{ ok: true } | { error: string }> {
   if (!validId(id)) return { error: 'Invalid question ID' };
