@@ -232,6 +232,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     if (q.type === 'mcq') return answers.has(q.id);
     if (q.type === 'open') return !!(openAnswers.get(q.id)?.trim());
     if (q.type === 'matching') return matchingAnswers.has(q.id);
+    if (q.type === 'writing') return !!(openAnswers.get(q.id)?.trim());
     return false;
   }).length;
 
@@ -369,7 +370,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   <div className="flex flex-wrap gap-1.5">
                     {qs.map(q => {
                       const globalIdx  = questions.indexOf(q);
-                      const isAnswered = answers.has(q.id);
+                      const isAnswered = q.type === 'mcq' ? answers.has(q.id)
+                        : (q.type === 'open' || q.type === 'writing') ? !!(openAnswers.get(q.id)?.trim())
+                        : q.type === 'matching' ? matchingAnswers.has(q.id)
+                        : false;
                       const isFlagged  = flagged.has(q.id);
                       const isCurrent  = globalIdx === currentIdx;
                       return (
@@ -540,7 +544,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         .map(q => {
                           const idx        = questions.indexOf(q);
                           const isAnswered = q.type === 'mcq' ? answers.has(q.id)
-                            : q.type === 'open' ? !!(openAnswers.get(q.id)?.trim())
+                            : (q.type === 'open' || q.type === 'writing') ? !!(openAnswers.get(q.id)?.trim())
                             : q.type === 'matching' ? matchingAnswers.has(q.id)
                             : false;
                           const isFlagged  = flagged.has(q.id);
@@ -633,7 +637,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       {currentIdx + 1}
                     </span>
                     <span className="text-on-surface-variant text-xs md:text-sm font-medium">
-                      {current?.type === 'open' ? 'Açıq tapşırıq' : current?.type === 'matching' ? 'Uyğunlaşdırma' : 'Çoxseçimli'}
+                      {current?.type === 'open' ? 'Açıq tapşırıq'
+                        : current?.type === 'matching' ? 'Uyğunlaşdırma'
+                        : current?.type === 'writing' ? 'Yazı tapşırığı'
+                        : 'Çoxseçimli'}
                     </span>
                   </div>
                   {current && (
@@ -757,6 +764,50 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     </div>
                   </div>
                 )}
+
+                {/* ── Writing question ── */}
+                {current?.type === 'writing' && (() => {
+                  const essay = openAnswers.get(current.id) ?? '';
+                  const words = essay.trim() ? essay.trim().split(/\s+/).length : 0;
+                  const minW = current.minWords ?? 0;
+                  const maxW = current.maxWords ?? 0;
+                  const belowMin = minW > 0 && words < minW;
+                  const aboveMax = maxW > 0 && words > maxW;
+                  return (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                        <p className="text-xs text-purple-800 font-medium flex items-start gap-2">
+                          <Pencil size={13} className="shrink-0 mt-0.5" />
+                          <span className="leading-relaxed">
+                            Bu yazı tapşırığıdır. Cavabınız tamamlandıqdan sonra AI tərəfindən qiymətləndiriləcəkdir.
+                            {minW > 0 && ` Minimum: ${minW} söz.`}
+                            {maxW > 0 && ` Maksimum: ${maxW} söz.`}
+                          </span>
+                        </p>
+                      </div>
+                      {current.rubric && (
+                        <div className="p-3 bg-surface-container rounded-xl border border-outline-variant/30">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-1">Qiymətləndirmə meyarları</p>
+                          <p className="text-xs text-on-surface/80 leading-relaxed">{current.rubric}</p>
+                        </div>
+                      )}
+                      <textarea
+                        rows={10}
+                        value={essay}
+                        onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
+                        placeholder="Cavabınızı burada yazın..."
+                        className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y leading-relaxed"
+                      />
+                      <div className={`flex items-center justify-between text-xs font-semibold px-1 ${
+                        belowMin ? 'text-amber-600' : aboveMax ? 'text-red-500' : 'text-on-surface-variant'
+                      }`}>
+                        <span>{words} söz</span>
+                        {minW > 0 && maxW > 0 && <span>{minW}–{maxW} söz tövsiyə olunur</span>}
+                        {minW > 0 && maxW === 0 && <span>Minimum {minW} söz</span>}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* ── Image for current question (mobile) ── */}
                 {current?.imageUrl && (

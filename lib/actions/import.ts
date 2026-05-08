@@ -64,6 +64,13 @@ export async function importExamFromJson(parsedJson: any) {
       matchItems: q.matchItems || [],
       correctMatching: q.correctMatching || [],
       explanation: q.explanation || '',
+      // Writing-specific fields
+      ...(q.type === 'writing' && {
+        writingTaskType: q.writingTaskType,
+        minWords: q.minWords,
+        maxWords: q.maxWords,
+        rubric: q.rubric || '',
+      }),
     }));
 
     if (questionsToInsert.length > 0) {

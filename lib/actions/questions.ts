@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
-import QuestionModel, { type QuestionType } from '@/lib/models/Question';
+import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/models/Question';
 import Purchase from '@/lib/models/Purchase';
 import { isAdmin } from '@/lib/admin';
 
@@ -24,6 +24,10 @@ export interface QuestionData {
   matchItems?: string[];
   correctMatching?: number[];
   explanation: string;
+  writingTaskType?: WritingTaskType;
+  minWords?: number;
+  maxWords?: number;
+  rubric?: string;
 }
 
 /** Safe subset served to exam-takers — correctIndex, correctMatching, and explanation are omitted. */
@@ -39,6 +43,10 @@ export interface SessionQuestion {
   stem: string;
   options: string[];
   matchItems?: string[];
+  writingTaskType?: WritingTaskType;
+  minWords?: number;
+  maxWords?: number;
+  rubric?: string;
 }
 
 async function requireAdmin() {
@@ -61,17 +69,21 @@ export async function getExamQuestionsForSession(examId: string): Promise<Sessio
 
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({
-    id:          String(d._id),
-    examId:      d.examId,
-    moduleIndex: d.moduleIndex,
-    order:       d.order,
-    type:        d.type,
-    passage:     d.passage ?? '',
-    audioUrl:    d.audioUrl ?? '',
-    imageUrl:    d.imageUrl ?? '',
-    stem:        d.stem,
-    options:     d.options ?? [],
-    matchItems:  d.matchItems ?? [],
+    id:              String(d._id),
+    examId:          d.examId,
+    moduleIndex:     d.moduleIndex,
+    order:           d.order,
+    type:            d.type,
+    passage:         d.passage ?? '',
+    audioUrl:        d.audioUrl ?? '',
+    imageUrl:        d.imageUrl ?? '',
+    stem:            d.stem,
+    options:         d.options ?? [],
+    matchItems:      d.matchItems ?? [],
+    writingTaskType: d.writingTaskType,
+    minWords:        d.minWords,
+    maxWords:        d.maxWords,
+    rubric:          d.rubric ?? '',
   }));
 }
 
@@ -101,6 +113,10 @@ export async function getExamQuestionsForReview(examId: string): Promise<Questio
     matchItems:      d.matchItems ?? [],
     correctMatching: d.correctMatching ?? [],
     explanation:     d.explanation ?? '',
+    writingTaskType: d.writingTaskType,
+    minWords:        d.minWords,
+    maxWords:        d.maxWords,
+    rubric:          d.rubric ?? '',
   }));
 }
 
@@ -124,6 +140,10 @@ export async function getExamQuestions(examId: string): Promise<QuestionData[]> 
     matchItems:      d.matchItems ?? [],
     correctMatching: d.correctMatching ?? [],
     explanation:     d.explanation ?? '',
+    writingTaskType: d.writingTaskType,
+    minWords:        d.minWords,
+    maxWords:        d.maxWords,
+    rubric:          d.rubric ?? '',
   }));
 }
 

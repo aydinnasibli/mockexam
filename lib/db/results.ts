@@ -22,6 +22,12 @@ export interface ResultSummary {
   moduleScores: ModuleScoreSummary[];
 }
 
+export interface WritingCriterionDetail {
+  criterion: string;
+  score: number;
+  comment: string;
+}
+
 export interface AnswerDetail {
   questionId: string;
   moduleIndex: number;
@@ -30,6 +36,10 @@ export interface AnswerDetail {
   correctIndex: number;
   isCorrect: boolean;
   timeSeconds: number;
+  writingScore?: number;
+  writingWordCount?: number;
+  writingCriteria?: WritingCriterionDetail[];
+  aiFeedback?: string;
 }
 
 export interface ResultDetail extends ResultSummary {
@@ -80,13 +90,17 @@ export async function getResultDetail(
   return {
     ...mapSummary(doc),
     answers: (doc.answers ?? []).map((a) => ({
-      questionId:     a.questionId,
-      moduleIndex:    a.moduleIndex,
-      userAnswer:     a.userAnswer,
-      userAnswerText: a.userAnswerText ?? '',
-      correctIndex:   a.correctIndex,
-      isCorrect:      a.isCorrect,
-      timeSeconds:    a.timeSeconds,
+      questionId:      a.questionId,
+      moduleIndex:     a.moduleIndex,
+      userAnswer:      a.userAnswer,
+      userAnswerText:  a.userAnswerText ?? '',
+      correctIndex:    a.correctIndex,
+      isCorrect:       a.isCorrect,
+      timeSeconds:     a.timeSeconds,
+      writingScore:    (a as any).writingScore,
+      writingWordCount:(a as any).writingWordCount,
+      writingCriteria: (a as any).writingCriteria,
+      aiFeedback:      (a as any).aiFeedback,
     })),
   };
 }

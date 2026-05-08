@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { renderMath } from '@/lib/render-math';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
-  ArrowLeft, RotateCcw, BarChart2,
+  ArrowLeft, RotateCcw, BarChart2, FileText,
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 import type { QuestionData } from '@/lib/actions/questions';
@@ -147,7 +147,8 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                 const answer = answerMap.get(q.id);
                 const globalIdx = questions.indexOf(q);
                 const userChoice = answer?.userAnswer ?? -1;
-                const isUnanswered = userChoice === -1;
+                const isWriting = q.type === 'writing';
+                const isUnanswered = !isWriting && userChoice === -1 && !answer?.userAnswerText;
                 const isCorrect = answer?.isCorrect ?? false;
                 const timeSecs = answer?.timeSeconds ?? 0;
                 const hasPassage = !!q.passage;
@@ -155,16 +156,22 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
                 return (
                   <div key={q.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
-                    isUnanswered ? 'border-outline-variant/40' : isCorrect ? 'border-green-200' : 'border-red-200'
+                    isWriting ? 'border-purple-200'
+                    : isUnanswered ? 'border-outline-variant/40'
+                    : isCorrect ? 'border-green-200'
+                    : 'border-red-200'
                   }`}>
                     {/* Question header */}
                     <div className={`px-5 py-3 flex items-center justify-between border-b ${
-                      isUnanswered ? 'bg-surface-container/50 border-outline-variant/20'
+                      isWriting ? 'bg-purple-50 border-purple-100'
+                      : isUnanswered ? 'bg-surface-container/50 border-outline-variant/20'
                       : isCorrect  ? 'bg-green-50 border-green-100'
                       : 'bg-red-50 border-red-100'
                     }`}>
                       <div className="flex items-center gap-3">
-                        {isUnanswered ? <MinusCircle size={16} className="text-on-surface-variant" />
+                        {isWriting
+                          ? <FileText size={16} className="text-purple-600" />
+                          : isUnanswered ? <MinusCircle size={16} className="text-on-surface-variant" />
                           : isCorrect ? <CheckCircle2 size={16} className="text-green-600" />
                           : <XCircle size={16} className="text-red-500" />
                         }
@@ -172,6 +179,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           Sual {globalIdx + 1}
                           {q.type === 'open' && ' (Açıq)'}
                           {q.type === 'matching' && ' (Uyğunlaşdırma)'}
+                          {q.type === 'writing' && ' (Yazı)'}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -268,6 +276,70 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           })()}
                         </div>
                       )}
+
+                      {/* Writing: student essay + AI feedback */}
+                      {q.type === 'writing' && (() => {
+                        const writingAnswer = answer;
+                        const essay = writingAnswer?.userAnswerText ?? '';
+                        const bandScore = writingAnswer?.writingScore;
+                        const wordCount = writingAnswer?.writingWordCount;
+                        const criteria = writingAnswer?.writingCriteria ?? [];
+                        const aiFeedback = writingAnswer?.aiFeedback;
+                        const bandColor = bandScore !== undefined
+                          ? bandScore >= 7 ? 'text-green-600' : bandScore >= 5 ? 'text-amber-600' : 'text-red-500'
+                          : 'text-on-surface-variant';
+                        return (
+                          <div className="space-y-3 mb-4">
+                            {/* Essay */}
+                            {essay ? (
+                              <div className="p-4 bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-2 flex items-center gap-1.5">
+                                  <FileText size={11} /> Sizin cavabınız {wordCount ? `· ${wordCount} söz` : ''}
+                                </p>
+                                <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{essay}</p>
+                              </div>
+                            ) : (
+                              <div className="p-4 bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                                <p className="text-sm text-on-surface-variant italic">Cavab verilməyib.</p>
+                              </div>
+                            )}
+
+                            {/* AI band score */}
+                            {bandScore !== undefined && (
+                              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">AI Qiymətləndirməsi</p>
+                                  <span className={`text-2xl font-black ${bandColor}`}>
+                                    {bandScore.toFixed(1)} <span className="text-sm font-semibold text-on-surface-variant">/ 9</span>
+                                  </span>
+                                </div>
+
+                                {criteria.length > 0 && (
+                                  <div className="space-y-2 mb-3">
+                                    {criteria.map((c, ci) => (
+                                      <div key={ci} className="flex items-start gap-2">
+                                        <span className={`shrink-0 text-xs font-black px-2 py-0.5 rounded-full ${
+                                          c.score >= 7 ? 'bg-green-100 text-green-700' : c.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'
+                                        }`}>
+                                          {c.score}
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="text-xs font-bold text-on-surface">{c.criterion}</p>
+                                          <p className="text-xs text-on-surface-variant leading-relaxed">{c.comment}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {aiFeedback && (
+                                  <p className="text-xs text-purple-900 leading-relaxed border-t border-purple-200 pt-3">{aiFeedback}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Image display */}
                       {q.imageUrl && (

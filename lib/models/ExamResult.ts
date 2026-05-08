@@ -1,13 +1,24 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
+export interface IWritingCriterion {
+  criterion: string;
+  score: number;
+  comment: string;
+}
+
 export interface IAnswerRecord {
   questionId: string;
   moduleIndex: number;
   userAnswer: number;    // -1 = unanswered, 0-3 = selected option
-  userAnswerText?: string; // Text answer user provided for open questions
+  userAnswerText?: string; // Text answer user provided for open/writing questions
   correctIndex: number;
   isCorrect: boolean;
   timeSeconds: number;
+  // Writing-specific fields
+  writingScore?: number;       // 0-9 band score for writing
+  writingWordCount?: number;
+  writingCriteria?: IWritingCriterion[];
+  aiFeedback?: string;         // Overall AI feedback paragraph
 }
 
 export interface IModuleScore {
@@ -34,14 +45,24 @@ export interface IExamResult extends Document {
   createdAt: Date;
 }
 
+const WritingCriterionSchema = new Schema<IWritingCriterion>({
+  criterion: { type: String, required: true },
+  score:     { type: Number, required: true },
+  comment:   { type: String, required: true },
+}, { _id: false });
+
 const AnswerRecordSchema = new Schema<IAnswerRecord>({
-  questionId:   { type: String, required: true },
-  moduleIndex:  { type: Number, required: true },
-  userAnswer:   { type: Number, required: true },
-  userAnswerText: { type: String, default: '' },
-  correctIndex: { type: Number, required: true },
-  isCorrect:    { type: Boolean, required: true },
-  timeSeconds:  { type: Number, required: true, default: 0 },
+  questionId:      { type: String, required: true },
+  moduleIndex:     { type: Number, required: true },
+  userAnswer:      { type: Number, required: true },
+  userAnswerText:  { type: String, default: '' },
+  correctIndex:    { type: Number, required: true },
+  isCorrect:       { type: Boolean, required: true },
+  timeSeconds:     { type: Number, required: true, default: 0 },
+  writingScore:    { type: Number },
+  writingWordCount:{ type: Number },
+  writingCriteria: { type: [WritingCriterionSchema], default: undefined },
+  aiFeedback:      { type: String },
 }, { _id: false });
 
 const ModuleScoreSchema = new Schema<IModuleScore>({

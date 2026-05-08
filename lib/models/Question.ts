@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export type QuestionType = 'mcq' | 'open' | 'matching';
+export type QuestionType = 'mcq' | 'open' | 'matching' | 'writing';
+export type WritingTaskType = 'task1' | 'task2' | 'integrated' | 'independent' | 'general';
 
 export interface IQuestion extends Document {
   examId: string;
@@ -17,6 +18,11 @@ export interface IQuestion extends Document {
   matchItems?: string[];       // Left column items for matching
   correctMatching?: number[];  // Index into options for each matchItem
   explanation: string;
+  // Writing-specific fields
+  writingTaskType?: WritingTaskType;
+  minWords?: number;
+  maxWords?: number;
+  rubric?: string;             // Evaluation criteria shown to student and used by AI
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,7 +32,7 @@ const QuestionSchema = new Schema<IQuestion>(
     examId:          { type: String, required: true, index: true },
     moduleIndex:     { type: Number, required: true, min: 0 },
     order:           { type: Number, required: true, default: 0 },
-    type:            { type: String, required: true, enum: ['mcq', 'open', 'matching'], default: 'mcq' },
+    type:            { type: String, required: true, enum: ['mcq', 'open', 'matching', 'writing'], default: 'mcq' },
     passage:         { type: String, default: '' },
     audioUrl:        { type: String, default: '' },
     imageUrl:        { type: String, default: '' },
@@ -37,6 +43,10 @@ const QuestionSchema = new Schema<IQuestion>(
     matchItems:      [{ type: String }],
     correctMatching: [{ type: Number }],
     explanation:     { type: String, default: '' },
+    writingTaskType: { type: String, enum: ['task1', 'task2', 'integrated', 'independent', 'general'] },
+    minWords:        { type: Number, min: 0 },
+    maxWords:        { type: Number, min: 0 },
+    rubric:          { type: String, default: '' },
   },
   { timestamps: true }
 );
