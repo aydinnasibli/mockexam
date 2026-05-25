@@ -32,13 +32,15 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      {
-        // Immutable static assets — fingerprinted by Next.js, safe to cache forever
+      ...(!isDev ? [{
+        // Immutable static assets — fingerprinted by Next.js, safe to cache forever.
+        // Production only: dev chunks are rebuilt frequently and must not be cached immutably,
+        // otherwise Turbopack chunk-reference mismatches cause "module factory not available" errors.
         source: '/_next/static/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
-      },
+      }] : []),
       {
         // Public folder assets (images, fonts, og.png, etc.)
         source: '/:file((?!api/).*\\.(?:ico|png|jpg|jpeg|svg|webp|gif|woff2?))',

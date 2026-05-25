@@ -3,31 +3,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import {
-  Search, SearchX, Timer, HelpCircle,
-  Monitor, Globe, BookOpen,
-  X, ArrowRight,
-} from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 
-type ExamType = 'sat' | 'ielts' | 'toefl' | 'general_english';
-
-const examTypeLabels: Record<ExamType, string> = {
-  sat: 'SAT', ielts: 'IELTS', toefl: 'TOEFL', general_english: 'Gen. English',
+const examTypeLabels: Record<string, string> = {
+  sat:             'SAT',
+  ielts:           'IELTS',
+  toefl:           'TOEFL',
+  dim:             'DİM',
+  gre:             'GRE',
+  general_english: 'General English',
 };
-
-const examTypeIcons: Record<ExamType, React.ElementType> = {
-  sat: Monitor, ielts: Globe, toefl: BookOpen, general_english: Globe,
-};
-
-const examTypeColors: Record<ExamType, { bg: string; text: string; ring: string; accent: string }> = {
-  sat:   { bg: 'bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-200',   accent: 'bg-blue-500' },
-  ielts: { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-200', accent: 'bg-purple-500' },
-  toefl: { bg: 'bg-cyan-100',   text: 'text-cyan-700',   ring: 'ring-cyan-200',   accent: 'bg-cyan-500' },
-  general_english: { bg: 'bg-green-100', text: 'text-green-700', ring: 'ring-green-200', accent: 'bg-green-500' },
-};
-
-const allTypes: ExamType[] = ['sat', 'ielts', 'toefl', 'general_english'];
 
 interface Props {
   exams: PublicExam[];
@@ -35,190 +21,275 @@ interface Props {
 }
 
 export default function ExamsCatalog({ exams, initialType }: Props) {
-  const [selectedTypes, setSelectedTypes] = useState<ExamType[]>(() => {
-    if (initialType && (allTypes as string[]).includes(initialType)) return [initialType as ExamType];
-    return [];
-  });
-  const [searchQuery, setSearchQuery]     = useState('');
-  const [sortOrder, setSortOrder]         = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
+  const [activeType, setActiveType] = useState<string>(initialType ?? 'all');
+  const [onlyFree, setOnlyFree] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const toggleType = (type: ExamType) =>
-    setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
-
-  const clearFilters = () => { setSelectedTypes([]); setSearchQuery(''); setSortOrder('newest'); };
-  const hasActiveFilters = selectedTypes.length > 0 || !!searchQuery;
+  const types = Array.from(new Set(exams.map(e => e.type)));
 
   const filtered = exams
     .filter(exam => {
-      if (selectedTypes.length > 0 && !selectedTypes.includes(exam.type as ExamType)) return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        if (!exam.title.toLowerCase().includes(q) && !exam.description.toLowerCase().includes(q)) return false;
-      }
+      if (activeType !== 'all' && exam.type !== activeType) return false;
+      if (onlyFree && exam.price > 0) return false;
       return true;
     })
     .sort((a, b) => {
-      if (sortOrder === 'price-asc')  return a.price - b.price;
+      if (sortOrder === 'price-asc') return a.price - b.price;
       if (sortOrder === 'price-desc') return b.price - a.price;
-      return 0;
+      // popular: free exams first, then by question count descending
+      if (a.price === 0 && b.price > 0) return -1;
+      if (b.price === 0 && a.price > 0) return 1;
+      return b.totalQuestions - a.totalQuestions;
     });
 
+  const hasActiveFilters = activeType !== 'all' || onlyFree;
+
+  function clearAllFilters() {
+    setActiveType('all');
+    setOnlyFree(false);
+  }
+
+  const FilterPanel = () => (
+    <>
+      <div className="eyebrow mb-4">İmtahan növü</div>
+      <div className="mb-8 flex flex-col gap-0.5">
+        {['all', ...types].map(type => {
+          const count = type === 'all'
+            ? exams.length
+            : exams.filter(e => e.type === type).length;
+          const isActive = activeType === type;
+          return (
+            <button
+              key={type}
+              onClick={() => { setActiveType(type); setFiltersOpen(false); }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-colors text-left"
+              style={{
+                background: isActive ? 'var(--color-surface-2)' : 'transparent',
+                color: isActive ? 'var(--color-ink)' : 'var(--color-ink-soft)',
+              }}
+            >
+              {isActive && (
+                <span className="shrink-0 rounded-full bg-ink" style={{ width: 5, height: 5, display: 'inline-block' }} />
+              )}
+              <span className="flex-1">
+                {type === 'all' ? 'Hamısı' : (examTypeLabels[type] ?? type.toUpperCase())}
+              </span>
+              <span className="text-[12px]" style={{ color: 'var(--color-ink-mute)' }}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="pt-6 border-t border-rule">
+        <div className="eyebrow mb-4">Filtr</div>
+        <label className="flex items-center gap-3 py-1.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={onlyFree}
+            onChange={e => setOnlyFree(e.target.checked)}
+            className="w-4 h-4 rounded"
+          />
+          <span className="text-[14px] font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+            Yalnız pulsuz
+          </span>
+        </label>
+      </div>
+
+      {hasActiveFilters && (
+        <button
+          onClick={clearAllFilters}
+          className="mt-6 text-[13px] font-medium transition-colors"
+          style={{ color: 'var(--color-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+        >
+          Filtri təmizlə ({[activeType !== 'all', onlyFree].filter(Boolean).length})
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <main className="pt-24 pb-16 min-h-screen bg-surface">
-        <div className="max-w-7xl mx-auto px-6 mb-8">
-          <div className="flex items-end gap-4 mb-2">
-            <h1 className="text-3xl font-black text-primary font-headline">Bütün İmtahanlar</h1>
-            <span className="mb-1 text-sm font-bold text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">
-              {filtered.length} sınaq
-            </span>
+    <main className="pt-17 bg-bg min-h-screen">
+      <div className="max-w-340 mx-auto px-4 sm:px-8 py-16">
+
+        {/* Hero */}
+        <div className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="dot" />
+            <span className="eyebrow" style={{ color: 'var(--color-ink)' }}>Kataloq</span>
           </div>
-          <p className="text-on-surface-variant">SAT, IELTS və TOEFL imtahanlarına professional hazırlıq üçün test paketləri</p>
+          <h1 className="t-display-2 m-0 mb-6">
+            Bütün <em className="italic">sınaqlar.</em>
+          </h1>
+          <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
+            SAT, IELTS, TOEFL imtahanlarına peşəkar hazırlıq paketləri.
+          </p>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="w-full md:w-72 flex-shrink-0 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" size={18} />
-              <input
-                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-sm placeholder:text-outline"
-                placeholder="Sınaq axtar..." type="text"
-              />
-            </div>
+        {/* Mobile filter toggle */}
+        <div className="lg:hidden mb-6 flex items-center justify-between gap-3">
+          <button
+            onClick={() => setFiltersOpen(o => !o)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rule text-[14px] font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+          >
+            <SlidersHorizontal size={15} />
+            Filtrlər
+            {(activeType !== 'all' || onlyFree) && (
+              <span className="w-2 h-2 rounded-full bg-ink" />
+            )}
+          </button>
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+            className="input-new"
+            style={{ width: 'auto', paddingTop: 10, paddingBottom: 10, fontSize: 13 }}
+          >
+            <option value="popular">Popularlığa görə</option>
+            <option value="price-asc">Qiymətə görə ↑</option>
+            <option value="price-desc">Qiymətə görə ↓</option>
+          </select>
+        </div>
 
-            <div className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xs font-black text-on-surface-variant uppercase tracking-widest">İmtahan növü</h2>
-                {hasActiveFilters && (
-                  <button onClick={clearFilters} className="text-xs font-bold text-secondary hover:text-primary transition-colors">Sıfırla</button>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                {allTypes.map(type => {
-                  const Icon = examTypeIcons[type];
-                  const colors = examTypeColors[type];
-                  const isSelected = selectedTypes.includes(type);
-                  const count = exams.filter(e => e.type === type).length;
-                  return (
-                    <label key={type} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${isSelected ? 'bg-primary/5' : 'hover:bg-surface-container'}`}>
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleType(type)} className="w-4 h-4 rounded accent-primary" />
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${colors.bg}`}>
-                        <Icon size={14} className={colors.text} />
-                      </div>
-                      <span className={`text-sm font-semibold flex-1 ${isSelected ? 'text-primary' : 'text-on-surface-variant'}`}>{examTypeLabels[type]}</span>
-                      <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">{count}</span>
-                    </label>
-                  );
-                })}
-              </div>
-
-              {selectedTypes.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-outline-variant/30">
-                  {selectedTypes.map(type => (
-                    <button key={type} onClick={() => toggleType(type)} className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors">
-                      {examTypeLabels[type]} <X size={10} />
-                    </button>
-                  ))}
+        {/* Mobile filter panel */}
+        <AnimatePresence>
+          {filtersOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="lg:hidden overflow-hidden mb-6"
+            >
+              <div className="card-new">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="eyebrow">Filtrlər</span>
+                  <button onClick={() => setFiltersOpen(false)} className="p-1 text-ink-mute hover:text-ink">
+                    <X size={16} />
+                  </button>
                 </div>
-              )}
-            </div>
+                <FilterPanel />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Body: sidebar + grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 lg:gap-12">
+
+          {/* Desktop sidebar */}
+          <aside className="hidden lg:block shrink-0 sticky top-24 self-start">
+            <FilterPanel />
           </aside>
 
-          {/* Grid */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-5">
-              <p className="text-sm text-on-surface-variant font-medium">
-                <span className="font-bold text-primary">{filtered.length}</span> nəticə
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-on-surface-variant">Sıralama:</span>
-                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as typeof sortOrder)} className="bg-white border border-outline-variant rounded-lg text-sm font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none px-3 py-2">
-                  <option value="newest">Ən yeni</option>
-                  <option value="price-asc">Qiymət: Aşağıdan yuxarı</option>
-                  <option value="price-desc">Qiymət: Yuxarıdan aşağı</option>
-                </select>
-              </div>
+          {/* Main */}
+          <div>
+            {/* Results row (desktop only sort) */}
+            <div className="hidden lg:flex items-center justify-between mb-6">
+              <span className="text-[14px]" style={{ color: 'var(--color-ink-mute)' }}>
+                <span className="font-medium" style={{ color: 'var(--color-ink)' }}>{filtered.length}</span> nəticə
+              </span>
+              <select
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+                className="input-new"
+                style={{ width: 'auto', paddingTop: 8, paddingBottom: 8, fontSize: 13 }}
+              >
+                <option value="newest">Ən yeni</option>
+                <option value="price-asc">Qiymət ↑</option>
+                <option value="price-desc">Qiymət ↓</option>
+              </select>
             </div>
 
+            {/* Mobile result count */}
+            <p className="lg:hidden text-[13px] text-ink-mute mb-4">
+              <span className="font-medium text-ink">{filtered.length}</span> nəticə
+            </p>
+
             <AnimatePresence mode="wait">
-            {filtered.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-outline-variant/50"
-              >
-                <SearchX className="text-outline mb-4" size={48} />
-                <h3 className="text-xl font-bold text-primary mb-2 font-headline">Nəticə tapılmadı</h3>
-                <p className="text-on-surface-variant text-sm mb-6">Filtrləri dəyişdirməyi cəhd edin</p>
-                <button onClick={clearFilters} className="px-5 py-2.5 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
-                  Filtrləri sıfırla
-                </button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key={selectedTypes.join(',') + searchQuery + sortOrder}
-                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
-                initial="hidden"
-                animate="show"
-                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-              >
-                {filtered.map(exam => {
-                  const type = exam.type as ExamType;
-                  const Icon = examTypeIcons[type] ?? BookOpen;
-                  const colors = examTypeColors[type] ?? examTypeColors.sat;
-                  return (
-                    <motion.div
-                      key={exam.id}
-                      variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } } }}
-                      className="bg-white rounded-2xl border border-outline-variant/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col overflow-hidden group"
-                    >
-                      <div className={`h-1 w-full ${colors.accent} transition-all`} />
-                      <div className="p-5 pb-4">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ring-2 ${colors.bg} ${colors.ring}`}>
-                            <Icon size={20} className={colors.text} />
+              {filtered.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="card-new text-center py-20"
+                >
+                  <p className="t-title m-0 mb-3">Nəticə tapılmadı</p>
+                  <p className="text-[14px] m-0 mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+                    Filtrləri dəyişdirməyi cəhd edin
+                  </p>
+                  <button
+                    onClick={() => { setActiveType('all'); setOnlyFree(false); }}
+                    className="btn-ghost"
+                  >
+                    Sıfırla
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={activeType + String(onlyFree) + sortOrder}
+                  className="grid gap-4"
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+                >
+                  {filtered.map(exam => {
+                    const examMinutes = exam.durationMinutes -
+                      exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
+                    const isAdaptive = exam.modules.some(m => m.isAdaptive);
+                    return (
+                      <motion.div
+                        key={exam.id}
+                        variants={{
+                          hidden: { opacity: 0, y: 14 },
+                          show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+                        }}
+                      >
+                        <Link href={`/exams/${exam.id}`} className="flex flex-col card-new card-new-hover h-full">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="tag tag-accent">{exam.tag}</span>
+                              {exam.price === 0 && <span className="tag">Pulsuz</span>}
+                            </div>
+                            <span
+                              className="font-display font-medium shrink-0 ml-2"
+                              style={{ fontSize: 20, color: 'var(--color-ink)' }}
+                            >
+                              {exam.price === 0 ? 'Pulsuz' : `${exam.price} ₼`}
+                            </span>
                           </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="editorial-gradient text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest">{exam.tag}</span>
-                            <span className="text-base font-black text-primary">{exam.price} ₼</span>
+
+                          <h3 className="t-title m-0 mb-3" style={{ fontSize: 18, lineHeight: 1.3 }}>
+                            {exam.title}
+                          </h3>
+
+                          <p
+                            className="text-[14px] leading-[1.55] m-0 flex-1"
+                            style={{ color: 'var(--color-ink-soft)' }}
+                          >
+                            {exam.description}
+                          </p>
+
+                          <div
+                            className="flex items-center gap-4 mt-5 pt-4 border-t border-rule text-[12px]"
+                            style={{ color: 'var(--color-ink-mute)' }}
+                          >
+                            <span>{examMinutes} dəq</span>
+                            <span className="w-px h-3 bg-rule" />
+                            <span>{exam.totalQuestions} sual</span>
+                            <span className="w-px h-3 bg-rule" />
+                            <span>{isAdaptive ? 'Adaptive' : 'Standart'}</span>
                           </div>
-                        </div>
-                        <h3 className="text-base font-extrabold text-primary font-headline leading-snug mb-2 group-hover:text-secondary transition-colors">{exam.title}</h3>
-                        <p className="text-on-surface-variant text-xs leading-relaxed line-clamp-2">{exam.description}</p>
-                      </div>
-
-                      <div className="mx-5 pb-4 flex items-center gap-3 border-t border-outline-variant/20 pt-3">
-                        <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
-                          <Timer size={12} />{exam.durationMinutes} dəq
-                        </div>
-                        <div className="w-px h-3 bg-outline-variant" />
-                        <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
-                          <HelpCircle size={12} />{exam.totalQuestions} sual
-                        </div>
-                        <div className="w-px h-3 bg-outline-variant" />
-                        <div className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant ml-auto">
-                          {exam.modules.length} modul
-                        </div>
-                      </div>
-
-                      <div className="px-5 pb-5">
-                        <Link href={`/exams/${exam.id}`} className="flex items-center justify-center gap-2 w-full editorial-gradient text-white py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
-                          Sınağa bax <ArrowRight size={16} />
                         </Link>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            )}
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
         </div>
+      </div>
     </main>
   );
 }

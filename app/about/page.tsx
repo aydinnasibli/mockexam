@@ -1,222 +1,173 @@
 import type { Metadata } from 'next';
 import Navbar from "@/components/layout/Navbar";
-import FadeUp from "@/components/ui/FadeUp";
-import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
+import Footer from "@/components/layout/Footer";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: 'Haqqımızda',
-  description: 'Azərbaycanın ən qabaqcıl imtahan hazırlığı platforması. 2022-ci ildən SAT, IELTS, TOEFL və DİM hazırlığında 50,000+ tələbəyə xidmət göstəririk.',
-  openGraph: {
-    title: 'Haqqımızda — Məşqçi',
-    description: 'Azərbaycanın ən qabaqcıl imtahan hazırlığı platforması. 2022-ci ildən SAT, IELTS, TOEFL və DİM hazırlığında 50,000+ tələbəyə xidmət göstəririk.',
-    url: '/about',
-  },
-  twitter: {
-    title: 'Haqqımızda — Məşqçi',
-    description: 'Azərbaycanın ən qabaqcıl imtahan hazırlığı platforması. 2022-ci ildən SAT, IELTS, TOEFL və DİM hazırlığında 50,000+ tələbəyə xidmət göstəririk.',
-  },
+  description: 'Testcentre tələbənin imtahan günündə özünü heç bir sürprizlə qarşılaşmasın deyə qurulmuşdur.',
 };
-import Footer from "@/components/layout/Footer";
-import Link from "next/link";
-import { BadgeCheck, Eye, Rocket, Users, BookOpen, Star, TrendingUp } from "lucide-react";
 
 const stats = [
-  { value: "50K+",  label: "Aktiv istifadəçi",  icon: Users },
-  { value: "100+",  label: "İmtahan paketi",     icon: BookOpen },
-  { value: "1M+",   label: "Test iştirakı",      icon: TrendingUp },
-  { value: "98%",   label: "Razılıq dərəcəsi",   icon: Star },
+  { l: "Mövcud sınaq", v: "248" },
+  { l: "Sual bankı",   v: "21K+" },
+  { l: "Aktiv tələbə", v: "12,800" },
+  { l: "Sertifikat",   v: "ISO 9001" },
+];
+
+const features = [
+  {
+    n: "01",
+    t: "Rəsmi format",
+    d: "Hər sınaq College Board, ETS, Cambridge və DİM rəsmi formatları ilə tam üst-üstə düşür. Adaptive sual seçimi və modul strukturu real imtahanla eynidir.",
+  },
+  {
+    n: "02",
+    t: "Süni intellekt analitikası",
+    d: "Hər cəhd 11 müxtəlif ölçü üzrə təhlil edilir. Sistem zəif istiqamətləri görür, gündəlik 30 dəqiqəlik hədəfli məşq planı qurur.",
+  },
+  {
+    n: "03",
+    t: "Tam izahat",
+    d: "Səhv etdiyiniz hər sual üçün addım-addım həll yolu, müvafiq formul vərəqi və qısa video izah. Səhv — yeni bilik mənbəyidir.",
+  },
 ];
 
 const values = [
-  {
-    icon: BadgeCheck,
-    title: "Keyfiyyət",
-    description:
-      "Hər test paketi ekspert komandamız tərəfindən hazırlanır və rəsmi imtahan formatlarına tam uyğunlaşdırılır.",
-  },
-  {
-    icon: Eye,
-    title: "Şəffaflıq",
-    description:
-      "Nəticələriniz, analitikanız və inkişaf yolunuz haqqında tam açıq məlumat alırsınız.",
-  },
-  {
-    icon: Rocket,
-    title: "İnnovasiya",
-    description:
-      "Ən müasir texnologiyalardan istifadə edərək sizə həqiqi imtahan mühiti yaradırıq.",
-  },
-];
-
-const team = [
-  { name: "Anar Məmmədov",   role: "Qurucu & CEO",                   initials: "AM", color: "from-blue-500 to-blue-700" },
-  { name: "Gülnar Hüseynova", role: "Baş Məzmun Direktoru",           initials: "GH", color: "from-purple-500 to-purple-700" },
-  { name: "Tural Əliyev",    role: "Texnologiya Direktoru",           initials: "TƏ", color: "from-emerald-500 to-emerald-700" },
-  { name: "Nigar Quliyeva",  role: "Müştəri Uğuru Direktoru",        initials: "NQ", color: "from-amber-500 to-amber-700" },
+  { t: "Akademik nəzarət", d: "Hər sual əvvəlcə mövzu üzrə mütəxəssis, sonra isə dil və UX redaktoru tərəfindən yoxlanılır. Heç bir sual təsadüfən bazaya daxil olmur." },
+  { t: "Şəxsi məxfilik",   d: "Tələbə məlumatları üçüncü tərəflərlə paylaşılmır. Reklam izləməsi yoxdur. Hesab silindikdə bütün məlumat 30 gün ərzində məhv edilir." },
+  { t: "İnsan dəstəyi",    d: "İstifadəçinin hər sualı 24 saat ərzində insan tərəfindən cavablanır. Bot yoxdur, avtomatik cavab yoxdur." },
+  { t: "Pulsuz başlanğıc", d: "Hər sınaq növündə ən azı bir tam pulsuz diaqnostik nümunə var. Ödəniş yalnız sistemi və nəticəni gördükdən sonra." },
+  { t: "Şəffaf qiymət",    d: "Gizli ödəniş, avtomatik yeniləmə, abunəlik tələsi yoxdur. Ödədiyiniz tam olaraq aldığınızdır." },
+  { t: "Daimi yenilənmə",  d: "Sual bankı hər həftə yenilənir. Rəsmi imtahan formatı dəyişdikdə platforma 30 gün ərzində uyğunlaşır." },
 ];
 
 export default function AboutPage() {
   return (
     <>
       <Navbar />
-      <main>
+      <main className="pt-17">
+
         {/* Hero */}
-        <section className="pt-32 pb-16 bg-surface-container-low">
-          <FadeUp className="max-w-5xl mx-auto px-6 text-center">
-            <span className="inline-flex items-center gap-2 bg-secondary/10 text-secondary font-bold text-xs px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-              Haqqımızda
-            </span>
-            <h1 className="text-4xl md:text-5xl font-black text-primary font-headline leading-tight mb-6">
-              Azərbaycanın ən qabaqcıl<br />
-              <span className="text-secondary">imtahan hazırlığı platforması</span>
+        <section className="max-w-310 mx-auto px-8 py-24">
+          <div className="max-w-220">
+            <div className="flex items-center gap-3 mb-8 rise">
+              <span className="dot" />
+              <span className="eyebrow">Haqqımızda</span>
+            </div>
+            <h1 className="t-display rise rise-1">
+              Hazırlıq, <em className="italic" style={{ color: "var(--color-accent)" }}>ciddiyyətlə.</em>
             </h1>
-            <p className="text-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-              Biz Azərbaycanda imtahan hazırlığını yenidən müəyyənləşdiririk. SAT-dan DİM-ə qədər hər imtahan üçün
-              professional, adaptiv və əlçatan hazırlıq mühiti yaradırıq.
+            <p className="t-lede mt-8 max-w-180 rise rise-2" style={{ color: "var(--color-ink-soft)" }}>
+              Testcentre tələbənin imtahan günündə özünü heç bir sürprizlə qarşılaşmasın deyə qurulmuşdur.
+              Burada oyunlaşdırma və boş vədlər yoxdur — yalnız rəsmi format, ölçülə bilən tərəqqi və
+              hər sualın arxasındakı izahat.
             </p>
-          </FadeUp>
-        </section>
-
-        {/* Stats */}
-        <section className="py-16 bg-surface">
-          <div className="max-w-5xl mx-auto px-6">
-            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {stats.map(({ value, label, icon: Icon }) => (
-                <StaggerItem key={label}>
-                  <div className="text-center p-6 bg-white rounded-2xl border border-outline-variant/40 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 editorial-gradient rounded-xl flex items-center justify-center mx-auto mb-4">
-                      <Icon className="text-white" size={22} />
-                    </div>
-                    <p className="text-3xl font-black text-primary font-headline">{value}</p>
-                    <p className="text-sm text-on-surface-variant mt-1 font-medium">{label}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
+            <div className="flex gap-3 mt-10 rise rise-3">
+              <Link href="/exams" className="btn-primary">
+                Sınaqlara bax <span className="arrow">→</span>
+              </Link>
+              <Link href="/contact" className="btn-ghost">
+                Bizimlə əlaqə
+              </Link>
+            </div>
           </div>
         </section>
 
-        {/* Story */}
-        <section className="py-20 bg-surface-container-low">
-          <div className="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-            <FadeUp>
-              <span className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 block">Hekayəmiz</span>
-              <h2 className="text-3xl font-black text-primary font-headline mb-5">Niyə Test Centre-i yaratdıq?</h2>
-              <div className="space-y-4 text-on-surface-variant leading-relaxed text-sm">
-                <p>
-                  2022-ci ildə bir qrup tələbə ilə söhbət edərək başa düşdük ki, Azərbaycanda keyfiyyətli imtahan
-                  sınağı platforması olduqca az sayda mövcuddur. Mövcud həllər ya köhnəlmiş, ya da əlçatan deyildi.
-                </p>
-                <p>
-                  Biz bunu dəyişmək qərarına gəldik. Test Centre, tələbələrə real imtahan mühitini simulyasiya
-                  edən, ətraflı analitika təqdim edən və peşəkar hazırlığı hamı üçün əlçatan edən platform olaraq
-                  yaradıldı.
-                </p>
-                <p>
-                  Bu gün 50,000-dən çox tələbə platformamızdan istifadə edir və onların böyük əksəriyyəti hədəf
-                  ballarına çatmağa müvəffəq olur.
-                </p>
-              </div>
-            </FadeUp>
-
-            <FadeUp delay={0.1} className="relative">
-              <div className="aspect-square rounded-3xl editorial-gradient overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 opacity-10 grid grid-cols-6 gap-4 p-8">
-                  {Array.from({ length: 36 }).map((_, i) => (
-                    <div key={i} className="aspect-square bg-white rounded-lg" />
-                  ))}
+        {/* Stats strip */}
+        <section className="border-t border-b border-rule bg-surface">
+          <div className="max-w-310 mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 py-12">
+              {stats.map((s, i) => (
+                <div
+                  key={i}
+                  className={`px-8 ${i < 3 ? 'border-r border-rule' : ''} ${i >= 2 ? 'mt-8 md:mt-0' : ''}`}
+                >
+                  <div className="eyebrow mb-3">{s.l}</div>
+                  <div className="t-num leading-none" style={{ fontSize: 48, letterSpacing: "-0.025em" }}>{s.v}</div>
                 </div>
-                <div className="relative z-10 text-center text-white p-8">
-                  <p className="text-7xl font-black font-headline mb-2">2022</p>
-                  <p className="text-lg font-bold opacity-80">Azərbaycanda ilk</p>
-                  <p className="text-sm opacity-60 mt-1">Digital Sınaq Platforması</p>
-                </div>
-              </div>
-              <div className="absolute -bottom-4 -right-4 bg-white rounded-2xl shadow-xl border border-outline-variant/40 p-4">
-                <p className="text-2xl font-black text-primary font-headline">50K+</p>
-                <p className="text-xs text-on-surface-variant font-medium">Aktiv tələbə</p>
-              </div>
-            </FadeUp>
-          </div>
-        </section>
-
-        {/* Values */}
-        <section className="py-20 bg-surface">
-          <div className="max-w-5xl mx-auto px-6">
-            <FadeUp className="text-center mb-12">
-              <span className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 block">Dəyərlərimiz</span>
-              <h2 className="text-3xl font-black text-primary font-headline">Bizi fərqləndirən nədir?</h2>
-            </FadeUp>
-            <StaggerContainer className="grid md:grid-cols-3 gap-6">
-              {values.map(({ icon: Icon, title, description }) => (
-                <StaggerItem key={title}>
-                  <div className="p-7 bg-white rounded-2xl border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
-                    <div className="w-12 h-12 editorial-gradient rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                      <Icon className="text-white" size={22} />
-                    </div>
-                    <h3 className="text-lg font-bold text-primary font-headline mb-3">{title}</h3>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">{description}</p>
-                  </div>
-                </StaggerItem>
               ))}
-            </StaggerContainer>
+            </div>
           </div>
         </section>
 
-        {/* Team */}
-        <section className="py-20 bg-surface-container-low">
-          <div className="max-w-5xl mx-auto px-6">
-            <FadeUp className="text-center mb-12">
-              <span className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 block">Komandamız</span>
-              <h2 className="text-3xl font-black text-primary font-headline">Arxanızdakı insanlar</h2>
-            </FadeUp>
-            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {team.map(({ name, role, initials, color }) => (
-                <StaggerItem key={name}>
-                  <div className="text-center group">
-                    <div
-                      className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mx-auto mb-4 group-hover:-translate-y-1 transition-transform shadow-lg`}
-                    >
-                      <span className="text-white text-2xl font-black font-headline">{initials}</span>
-                    </div>
-                    <h3 className="font-bold text-primary text-sm font-headline">{name}</h3>
-                    <p className="text-xs text-on-surface-variant mt-0.5">{role}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
+        {/* What we do */}
+        <section className="max-w-310 mx-auto px-8 py-24">
+          <div className="section-head">
+            <div className="eyebrow mb-4">Nə edirik</div>
+            <h2 className="t-headline">Üç prinsipdə qurulan bir platforma.</h2>
+            <p className="t-body-lg mt-4">Mürəkkəblik gizlənmiş, mühüm olan üzdə.</p>
           </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-20 bg-surface">
-          <div className="max-w-3xl mx-auto px-6">
-            <FadeUp className="editorial-gradient rounded-3xl p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-              <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3 pointer-events-none" />
-              <div className="relative z-10">
-                <h2 className="text-3xl font-black text-white font-headline mb-4">Bizimlə böyüyün</h2>
-                <p className="text-white/70 mb-8 leading-relaxed max-w-md mx-auto">
-                  Azərbaycanın ən böyük imtahan hazırlığı cəmiyyətinə qoşulun. Pulsuz başlayın, fərqi hiss edin.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/exams"
-                    className="bg-white text-primary font-bold px-8 py-3 rounded-xl hover:bg-surface-container-low transition-colors"
-                  >
-                    Sınaqları kəşf et
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="border-2 border-white/30 text-white font-bold px-8 py-3 rounded-xl hover:bg-white/10 transition-colors"
-                  >
-                    Bizimlə əlaqə
-                  </Link>
-                </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {features.map((v, i) => (
+              <div key={i} className="pt-8 border-t border-rule">
+                <div className="t-num mb-6" style={{ fontSize: 18, color: "var(--color-ink)" }}>{v.n}</div>
+                <h3 className="t-headline mb-4" style={{ fontSize: 26 }}>{v.t}</h3>
+                <p className="text-[15px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{v.d}</p>
               </div>
-            </FadeUp>
+            ))}
           </div>
         </section>
+
+        {/* Principles quote */}
+        <section className="max-w-310 mx-auto px-8 pb-24">
+          <div className="bg-surface border border-rule rounded-2xl px-16 py-18 text-center">
+            <div className="eyebrow mb-6" style={{ color: "var(--color-ink)" }}>Bizim prinsiplərimiz</div>
+            <blockquote
+              className="font-display font-normal text-ink leading-[1.3] tracking-[-0.015em] max-w-220 mx-auto"
+              style={{ fontSize: "clamp(28px, 3.4vw, 44px)" }}
+            >
+              Akademik hazırlıq{" "}
+              <em className="italic" style={{ color: "var(--color-accent)" }}>oyun mexaniki</em>{" "}
+              deyil. Burada gizli abunəlik, qondarma sertifikat və{" "}
+              <em className="italic">"qarantili 100 bal"</em>{" "}
+              vədi yoxdur — yalnız ciddi iş və ölçülə bilən nəticə.
+            </blockquote>
+          </div>
+        </section>
+
+        {/* Values grid */}
+        <section className="max-w-310 mx-auto px-8 pb-24">
+          <div className="section-head">
+            <div className="eyebrow mb-4">Necə işləyirik</div>
+            <h2 className="t-headline">Vacib detallar.</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {values.map((v, i) => (
+              <div key={i} className="card-new">
+                <h3 className="t-title mb-3" style={{ fontSize: 18 }}>{v.t}</h3>
+                <p className="text-[14px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{v.d}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA card */}
+        <section className="max-w-310 mx-auto px-8 pb-24">
+          <div className="card-ink text-center rounded-2xl py-16 px-14">
+            <div className="eyebrow mb-5" style={{ color: "var(--color-accent-soft)" }}>Başlayın</div>
+            <h2
+              className="font-display font-normal leading-[1.1] tracking-[-0.02em] mb-6"
+              style={{ fontSize: "clamp(32px, 4vw, 56px)", color: "var(--color-bg)" }}
+            >
+              İlk sınaq <em className="italic">pulsuzdur.</em>
+            </h2>
+            <p
+              className="text-[17px] leading-[1.55] max-w-135 mx-auto mb-8"
+              style={{ color: "rgba(250,250,246,0.7)" }}
+            >
+              Heç bir kart, heç bir abunəlik. Qeydiyyat 30 saniyə çəkir, nəticə dərhal görünür.
+            </p>
+            <Link
+              href="/exams"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full text-sm font-medium transition-colors"
+              style={{ background: "var(--color-bg)", color: "var(--color-ink)", border: "1px solid var(--color-bg)" }}
+            >
+              Sınaqları kəşf et →
+            </Link>
+          </div>
+        </section>
+
       </main>
       <Footer />
     </>

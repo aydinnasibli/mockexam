@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowLeft, CheckCircle2, ShoppingCart, Clock, HelpCircle, Coffee, Shield, Zap, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { getExamById } from '@/lib/db/exams';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
@@ -19,20 +18,20 @@ export async function generateMetadata({ params }: Props) {
   const exam = await getExamById(id);
   if (!exam) return {};
 
-  const description = exam.description || `${exam.title} sınaq imtahanı. ${exam.totalQuestions} sual, ${exam.durationMinutes} dəqiqə. Məşqçidə hazırlaşın.`;
+  const description = exam.description || `${exam.title} sınaq imtahanı. ${exam.totalQuestions} sual, ${exam.durationMinutes} dəqiqə.`;
 
   return {
     title: exam.title,
     description,
     alternates: { canonical: `/exams/${id}` },
     openGraph: {
-      title: `${exam.title} — Məşqçi`,
+      title: `${exam.title} — Testcentre`,
       description,
       url: `/exams/${id}`,
       type: 'website',
     },
     twitter: {
-      title: `${exam.title} — Məşqçi`,
+      title: `${exam.title} — Testcentre`,
       description,
     },
   };
@@ -53,8 +52,9 @@ export default async function ExamDetails({ params }: Props) {
   if (!exam) notFound();
 
   const hasPurchased = !!purchase;
-  const totalBreak   = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
-  const examTime     = exam.durationMinutes - totalBreak;
+  const totalBreak = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
+  const examTime = exam.durationMinutes - totalBreak;
+  const isAdaptive = exam.modules.some(m => m.isAdaptive);
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -73,200 +73,211 @@ export default async function ExamDetails({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <Navbar />
-      <main className="pt-16 min-h-screen bg-surface-subtle">
-        <section className="px-6 py-14 bg-surface border-b border-outline-variant">
-          <div className="max-w-5xl mx-auto">
-            <Link href="/exams" className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-secondary mb-8 transition-colors">
-              <ArrowLeft size={18} /> Bütün sınaqlara qayıt
-            </Link>
+      <main className="pt-17 min-h-screen bg-bg">
 
-            <div className="flex flex-col md:flex-row gap-12 items-start">
-              {/* Left: Info */}
-              <div className="flex-1">
-                <span className="inline-flex items-center py-1 px-3 bg-secondary-fixed text-on-secondary-fixed text-xs font-bold rounded-full mb-4">
-                  {exam.tag}
-                </span>
-                <h1 className="text-4xl lg:text-5xl font-extrabold font-headline text-primary mb-6 leading-tight">{exam.title}</h1>
-                <p className="text-lg text-on-surface-variant leading-relaxed mb-8">{exam.description}</p>
+        {/* Breadcrumb */}
+        <div style={{ borderBottom: '1px solid var(--color-rule)' }}>
+          <div className="max-w-340 mx-auto px-8 py-4">
+            <div className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--color-ink-mute)' }}>
+              <Link href="/" className="hover:text-ink transition-colors">Ana</Link>
+              <span>›</span>
+              <Link href="/exams" className="hover:text-ink transition-colors">Sınaqlar</Link>
+              <span>›</span>
+              <span style={{ color: 'var(--color-ink)' }}>{exam.tag}</span>
+            </div>
+          </div>
+        </div>
 
-                {/* Features */}
-                {exam.features.length > 0 && (
-                  <>
-                    <h3 className="text-base font-bold text-primary mb-4 font-headline">Nələr daxildir:</h3>
-                    <ul className="space-y-3 mb-8">
-                      {exam.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3 text-on-surface-variant text-sm">
-                          <CheckCircle2 className="text-secondary shrink-0 mt-0.5" size={20} />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+        <div className="max-w-340 mx-auto px-8 py-16">
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 48, alignItems: 'start' }}>
 
-                {/* Stats */}
-                <div className="tc-card p-6 mb-6">
-                  <h3 className="font-bold text-primary mb-5 font-headline text-sm uppercase tracking-wider">Sınaq haqqında</h3>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-3xl font-black text-primary">{exam.totalQuestions}</p>
-                      <p className="text-xs text-on-surface-variant font-medium mt-1">Sual</p>
+            {/* LEFT: Info */}
+            <div>
+              {/* Tag + title + desc */}
+              <span className="tag tag-accent inline-block mb-6">{exam.tag}</span>
+              <h1
+                className="font-display font-normal m-0 mb-6 text-ink"
+                style={{ fontSize: 'clamp(36px, 4.5vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.02em' }}
+              >
+                {exam.title}
+              </h1>
+              <p className="t-lede m-0 mb-10" style={{ color: 'var(--color-ink-soft)' }}>
+                {exam.description}
+              </p>
+
+              {/* 4-stat card */}
+              <div className="mb-10" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-rule)', borderRadius: 16, overflow: 'hidden' }}>
+                <div className="grid grid-cols-4">
+                  {[
+                    { label: 'Müddət', value: `${examTime} dəq` },
+                    { label: 'Suallar', value: String(exam.totalQuestions) },
+                    { label: 'Modullar', value: String(exam.modules.length) },
+                    { label: 'Format', value: isAdaptive ? 'Adaptive' : 'Standart' },
+                  ].map((stat, i) => (
+                    <div
+                      key={stat.label}
+                      className="p-6"
+                      style={{ borderRight: i < 3 ? '1px solid var(--color-rule)' : 'none' }}
+                    >
+                      <div className="eyebrow mb-2">{stat.label}</div>
+                      <div className="t-num text-ink" style={{ fontSize: 22 }}>{stat.value}</div>
                     </div>
-                    <div className="border-x border-outline-variant">
-                      <p className="text-3xl font-black text-secondary">{examTime}</p>
-                      <p className="text-xs text-on-surface-variant font-medium mt-1">Dəqiqə</p>
-                    </div>
-                    <div>
-                      <p className="text-3xl font-black text-primary">∞</p>
-                      <p className="text-xs text-on-surface-variant font-medium mt-1">Yenidən cəhd</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
-                {/* Module breakdown */}
-                {exam.modules.length > 0 && (
-                  <div className="tc-card p-6">
-                    <h3 className="font-bold text-primary mb-4 font-headline text-sm uppercase tracking-wider">İmtahan strukturu</h3>
-                    <div className="space-y-3">
-                      {exam.modules.map((mod, i) => (
-                        <div key={i}>
-                          <div className="flex items-center justify-between py-3 px-4 bg-surface-container-low rounded-xl">
-                            <div className="flex items-center gap-3">
-                              <span className="w-6 h-6 rounded-md editorial-gradient text-white text-[10px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
+              {/* Module structure */}
+              {exam.modules.length > 0 && (
+                <div className="mb-10">
+                  <h2
+                    className="font-display font-normal m-0 mb-8 text-ink"
+                    style={{ fontSize: 26, letterSpacing: '-0.01em' }}
+                  >
+                    Sınaq strukturu
+                  </h2>
+                  <div className="space-y-0">
+                    {exam.modules.map((mod, i) => (
+                      <div key={i}>
+                        <div className="flex items-start gap-5 pt-4 border-t border-rule">
+                          <span
+                            className="t-num shrink-0"
+                            style={{ fontSize: 13, color: 'var(--color-ink)', minWidth: 28, paddingTop: 2 }}
+                          >
+                            {String(i + 1).padStart(2, '0')}
+                          </span>
+                          <div className="flex-1 pb-4">
+                            <div className="flex items-start justify-between gap-4">
                               <div>
-                                <p className="text-sm font-bold text-primary">{mod.name}</p>
+                                <p className="font-medium text-[15px] text-ink mb-0.5">{mod.name}</p>
                                 {mod.isAdaptive && (
-                                  <span className="text-[10px] font-bold text-secondary">Adaptiv</span>
+                                  <span className="text-[12px]" style={{ color: 'var(--color-ink-mute)' }}>
+                                    Adaptive
+                                  </span>
                                 )}
                               </div>
+                              <div
+                                className="flex items-center gap-4 text-[13px] shrink-0"
+                                style={{ color: 'var(--color-ink-mute)' }}
+                              >
+                                {mod.questions > 0 && <span>{mod.questions} sual</span>}
+                                <span className="font-medium text-ink">{mod.durationMinutes} dəq</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-on-surface-variant">
-                              {mod.questions > 0 && (
-                                <span className="flex items-center gap-1"><HelpCircle size={12} />{mod.questions} sual</span>
-                              )}
-                              <span className="flex items-center gap-1 font-semibold text-primary"><Clock size={12} />{mod.durationMinutes} dəq</span>
-                            </div>
+                            {mod.breakAfterMinutes > 0 && (
+                              <p className="text-[12px] mt-2 mb-0" style={{ color: 'var(--color-ink-mute)' }}>
+                                {mod.breakAfterMinutes} dəqiqəlik fasilə
+                              </p>
+                            )}
                           </div>
-                          {mod.breakAfterMinutes > 0 && (
-                            <div className="flex items-center gap-2 py-2 px-4 text-xs text-on-surface-variant">
-                              <Coffee size={11} className="text-secondary" />
-                              <span>{mod.breakAfterMinutes} dəqiqəlik fasilə</span>
-                            </div>
-                          )}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                     {totalBreak > 0 && (
-                      <p className="text-xs text-on-surface-variant mt-3 pt-3 border-t border-outline-variant/20">
+                      <p className="text-[12px] pt-4 border-t border-rule" style={{ color: 'var(--color-ink-mute)' }}>
                         Fasilə daxil ümumi müddət: {exam.durationMinutes} dəq
                       </p>
                     )}
                   </div>
-                )}
-              </div>
-
-              {/* Right: Purchase card */}
-              <div className="w-full md:w-80 sticky top-24 flex-shrink-0 space-y-4">
-                <div className="tc-card overflow-hidden shadow-xl">
-                  <div className="h-1 w-full editorial-gradient" />
-                  <div className="p-8">
-                    {hasPurchased ? (
-                      /* Already purchased state */
-                      <>
-                        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-outline-variant">
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                            <CheckCircle2 size={20} className="text-green-600" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-primary text-sm">Artıq alınmışdır</p>
-                            <p className="text-xs text-on-surface-variant mt-0.5">Bu sınağa girişiniz var</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3 mb-8 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><Clock size={14} /> Müddət</span>
-                            <span className="font-bold text-primary">{examTime} dəq</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><HelpCircle size={14} /> Suallar</span>
-                            <span className="font-bold text-primary">{exam.totalQuestions}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><RefreshCw size={14} /> Yenidən cəhd</span>
-                            <span className="font-bold text-secondary">Limitsiz</span>
-                          </div>
-                        </div>
-
-                        <Link
-                          href="/dashboard"
-                          className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-base transition-colors shadow-lg"
-                        >
-                          <LayoutDashboard size={20} /> Paneldən başla
-                        </Link>
-                        <p className="text-xs text-center text-on-surface-variant mt-3">Paneldən sınağa başlaya bilərsiniz</p>
-                      </>
-                    ) : (
-                      /* Not purchased state */
-                      <>
-                        <div className="mb-6 pb-6 border-b border-outline-variant">
-                          <span className="block text-on-surface-variant font-medium text-xs uppercase tracking-wider mb-3">Giriş haqqı</span>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black text-primary">{exam.price}</span>
-                            <span className="text-xl font-bold text-on-surface-variant">AZN</span>
-                          </div>
-                          <p className="text-xs text-on-surface-variant mt-2">Birdəfəlik ödəniş · Ömürlük giriş</p>
-                        </div>
-
-                        <div className="space-y-3 mb-8 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><Clock size={14} /> Müddət</span>
-                            <span className="font-bold text-primary">{examTime} dəq</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><HelpCircle size={14} /> Suallar</span>
-                            <span className="font-bold text-primary">{exam.totalQuestions}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><Zap size={14} /> Modullar</span>
-                            <span className="font-bold text-primary">{exam.modules.length}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-on-surface-variant"><RefreshCw size={14} /> Yenidən cəhd</span>
-                            <span className="font-bold text-secondary">Limitsiz</span>
-                          </div>
-                        </div>
-
-                        <Link
-                          href={`/checkout/${exam.id}`}
-                          className="w-full flex items-center justify-center gap-2 py-4 editorial-gradient text-white rounded-xl font-bold text-base hover:opacity-90 transition-opacity shadow-lg"
-                        >
-                          <ShoppingCart size={20} /> Giriş əldə et
-                        </Link>
-
-                        <div className="flex items-center justify-center gap-1.5 mt-4 text-[11px] text-on-surface-variant">
-                          <Shield size={12} className="text-green-600" />
-                          <span>Güvənli ödəniş · Dərhal giriş</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
                 </div>
+              )}
 
-                {/* Feature pills */}
-                {exam.features.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {exam.features.slice(0, 4).map((f, i) => (
-                      <span key={i} className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-white border border-outline-variant/50 px-3 py-1.5 rounded-full shadow-sm">
-                        <CheckCircle2 size={11} className="text-secondary shrink-0" />{f}
-                      </span>
+              {/* Features / Benefits */}
+              {exam.features.length > 0 && (
+                <div>
+                  <h2
+                    className="font-display font-normal m-0 mb-8 text-ink"
+                    style={{ fontSize: 26, letterSpacing: '-0.01em' }}
+                  >
+                    Daxildir
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {exam.features.map((feature, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 p-4 rounded-xl"
+                        style={{ background: 'var(--color-surface-2)' }}
+                      >
+                        <span className="shrink-0 font-medium text-[14px] text-ink mt-0.5">✓</span>
+                        <span className="text-[14px] leading-normal text-ink">{feature}</span>
+                      </div>
                     ))}
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT: Order card */}
+            <div className="sticky" style={{ top: 96 }}>
+              <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-rule)', borderRadius: 16, overflow: 'hidden' }}>
+
+                {/* Dark header */}
+                <div className="px-7 py-6" style={{ background: 'var(--color-ink)' }}>
+                  <div className="eyebrow mb-2" style={{ color: 'rgba(250,250,246,0.45)' }}>Sifariş</div>
+                  <p
+                    className="text-[12px] mb-6"
+                    style={{ color: 'rgba(250,250,246,0.35)', margin: '4px 0 20px' }}
+                  >
+                    {exam.tag} · {exam.id}
+                  </p>
+
+                  {hasPurchased ? (
+                    <div>
+                      <p className="text-[15px] font-medium m-0" style={{ color: 'var(--color-bg)' }}>
+                        Artıq alınmışdır
+                      </p>
+                      <p className="text-[13px] mt-1 m-0" style={{ color: 'rgba(250,250,246,0.45)' }}>
+                        Bu sınağa girişiniz var
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[13px]" style={{ color: 'rgba(250,250,246,0.5)' }}>Qiymət</span>
+                        <span className="text-[13px] font-medium" style={{ color: 'var(--color-bg)' }}>
+                          {exam.price} ₼
+                        </span>
+                      </div>
+                      <div
+                        className="flex items-center justify-between"
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 16 }}
+                      >
+                        <span className="text-[13px]" style={{ color: 'rgba(250,250,246,0.5)' }}>ƏDV daxil</span>
+                        <span className="text-[13px]" style={{ color: 'rgba(250,250,246,0.3)' }}>—</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="font-display font-normal"
+                          style={{ fontSize: 40, lineHeight: 1, color: 'var(--color-bg)', letterSpacing: '-0.025em' }}
+                        >
+                          {exam.price}
+                        </span>
+                        <span className="text-[16px]" style={{ color: 'rgba(250,250,246,0.45)' }}>AZN</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* CTA body */}
+                <div className="px-7 py-6">
+                  {hasPurchased ? (
+                    <Link href="/dashboard" className="btn-primary w-full justify-center">
+                      Paneldən başla <span className="arrow">→</span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href={`/checkout/${exam.id}`} className="btn-primary w-full justify-center mb-4">
+                        Giriş əldə et <span className="arrow">→</span>
+                      </Link>
+                      <p className="text-center text-[12px] m-0" style={{ color: 'var(--color-ink-mute)' }}>
+                        Güvənli ödəniş · Dərhal giriş
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
       </main>
       <Footer />
     </>

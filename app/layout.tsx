@@ -1,17 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Manrope } from "next/font/google";
+import { Newsreader, Geist, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'sonner';
 import "./globals.css";
 
-const inter = Inter({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-body",
+  variable: "--font-newsreader",
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
-const manrope = Manrope({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-headline",
+  variable: "--font-geist",
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -24,55 +36,43 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    template: '%s — Məşqçi',
-    default: 'Məşqçi - Azərbaycanın ilk peşəkar sınaq imtahanı platforması',
+    template: '%s — Testcentre',
+    default: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
   },
   description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
   openGraph: {
     type: 'website',
     locale: 'az_AZ',
     url: BASE_URL,
-    siteName: 'Məşqçi',
-    title: 'Məşqçi - Azərbaycanın ilk peşəkar sınaq imtahanı platforması',
+    siteName: 'Testcentre',
+    title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
     description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
-    images: [
-      {
-        url: '/og.png',
-        width: 1200,
-        height: 630,
-        alt: 'Məşqçi - Sınaq imtahanı platforması',
-      },
-    ],
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Testcentre — Sınaq imtahanı platforması' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Məşqçi - Azərbaycanın ilk peşəkar sınaq imtahanı platforması',
+    title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
     description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
     images: ['/og.png'],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
 };
 
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Məşqçi',
+  name: 'Testcentre',
   url: BASE_URL,
   logo: `${BASE_URL}/og.png`,
   contactPoint: {
     '@type': 'ContactPoint',
-    telephone: '+994-12-XXX-XX-XX',
+    telephone: '+994-12-555-14-88',
     contactType: 'customer service',
-    email: 'info@testcentre.az',
+    email: 'help@testcentre.online',
     availableLanguage: 'Azerbaijani',
   },
   sameAs: [],
@@ -80,21 +80,17 @@ const organizationSchema = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="az">
+      <html lang="az" className={`${newsreader.variable} ${geist.variable} ${mono.variable}`}>
         <head>
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
           />
         </head>
-        <body
-          className={`${inter.variable} ${manrope.variable} antialiased bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed`}
-        >
+        <body className="antialiased">
           {children}
           <Toaster richColors position="top-right" />
         </body>

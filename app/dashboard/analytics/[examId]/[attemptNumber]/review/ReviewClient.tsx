@@ -20,7 +20,6 @@ interface Props {
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-
 function MathText({ text }: { text: string }) {
   return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
 }
@@ -45,8 +44,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   }));
 
   const score = result.score;
-  const scoreColor = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-amber-600' : 'text-red-500';
-  const scoreBg    = score >= 80 ? 'bg-green-50 border-green-200' : score >= 60 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+  const scoreColor = score >= 80 ? 'text-ok' : score >= 60 ? 'text-warn' : 'text-error';
 
   function togglePassage(qId: string) {
     setExpandedPassages(prev => {
@@ -57,39 +55,47 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5]">
+    <div className="min-h-screen bg-surface-2">
 
       {/* Header */}
-      <div className="editorial-gradient px-6 py-6 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/8 rounded-full blur-3xl" />
-        </div>
+      <div className="bg-ink px-6 py-8 relative overflow-hidden">
         <div className="relative max-w-4xl mx-auto">
-          <Link href={`/dashboard/analytics/${exam.id}`} className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-semibold mb-4 transition-colors">
+          <Link
+            href={`/dashboard/analytics/${exam.id}`}
+            className="inline-flex items-center gap-1.5 text-bg/50 hover:text-bg text-xs font-semibold mb-5 transition-colors"
+          >
             <ArrowLeft size={14} /> Analitikaya qayıt
           </Link>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1">{exam.tag} · Cəhd #{result.attemptNumber}</p>
-              <h1 className="text-xl font-extrabold text-white font-headline">{exam.title}</h1>
-              <p className="text-white/50 text-sm mt-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="tag-ink text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-bg/10 text-bg/70 border-0">
+                  {exam.tag}
+                </span>
+                <span className="text-bg/40 text-xs">·</span>
+                <span className="text-bg/50 text-xs font-semibold">Cəhd #{result.attemptNumber}</span>
+              </div>
+              <h1 className="font-display text-xl font-bold text-bg">{exam.title}</h1>
+              <p className="text-bg/40 text-sm mt-1.5">
                 {new Date(result.completedAt).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' })}
                 {' · '}{Math.floor(result.durationSeconds / 60)}:{String(result.durationSeconds % 60).padStart(2, '0')} dəq
               </p>
             </div>
-            <div className={`rounded-2xl border px-6 py-3 text-center ${scoreBg} bg-white/90`}>
-              <p className={`text-3xl font-black ${scoreColor}`}>{score}%</p>
-              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-0.5">Ümumi bal</p>
+            <div className="bg-bg/10 border border-bg/20 rounded-2xl px-6 py-4 text-center">
+              <p className={`font-display text-3xl font-bold ${scoreColor}`}>{score}%</p>
+              <p className="eyebrow text-bg/50 mt-1">Ümumi bal</p>
             </div>
           </div>
 
           {/* Module score pills */}
           {result.moduleScores.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-5">
               {result.moduleScores.map(ms => {
-                const c = ms.scorePercent >= 80 ? 'bg-green-500/20 text-green-100 border-green-400/30'
-                        : ms.scorePercent >= 60 ? 'bg-amber-500/20 text-amber-100 border-amber-400/30'
-                        : 'bg-red-500/20 text-red-100 border-red-400/30';
+                const c = ms.scorePercent >= 80
+                  ? 'bg-ok/20 text-ok/80 border-ok/30'
+                  : ms.scorePercent >= 60
+                  ? 'bg-warn/20 text-warn/80 border-warn/30'
+                  : 'bg-error/20 text-error/80 border-error/30';
                 return (
                   <span key={ms.moduleIndex} className={`text-xs font-bold px-3 py-1 rounded-full border ${c}`}>
                     {ms.moduleName}: {ms.correct}/{ms.total} ({ms.scorePercent}%)
@@ -105,20 +111,24 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
         {/* Action buttons */}
         <div className="flex gap-3 mb-6">
-          <Link href={`/dashboard/analytics/${exam.id}`}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant/40 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors shadow-sm">
+          <Link
+            href={`/dashboard/analytics/${exam.id}`}
+            className="flex items-center gap-2 px-4 py-2 bg-surface border border-rule rounded-xl text-sm font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+          >
             <BarChart2 size={14} /> Analitika
           </Link>
-          <Link href={`/exam-session/${exam.id}`}
-            className="flex items-center gap-2 px-4 py-2 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity shadow-sm">
+          <Link
+            href={`/exam-session/${exam.id}`}
+            className="flex items-center gap-2 px-4 py-2 bg-ink text-bg rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors"
+          >
             <RotateCcw size={14} /> Yenidən cəhd et
           </Link>
         </div>
 
         {!hasAnswers ? (
-          <div className="bg-white rounded-2xl border border-outline-variant/40 p-10 text-center shadow-sm">
-            <p className="text-base font-bold text-primary mb-2">Ətraflı cavab məlumatı yoxdur</p>
-            <p className="text-sm text-on-surface-variant">Bu cəhd üçün sual-cavab məlumatı saxlanılmayıb (köhnə nəticə).</p>
+          <div className="bg-surface rounded-2xl border border-rule p-10 text-center">
+            <p className="font-display text-base font-bold text-ink mb-2">Ətraflı cavab məlumatı yoxdur</p>
+            <p className="text-sm text-ink-soft">Bu cəhd üçün sual-cavab məlumatı saxlanılmayıb (köhnə nəticə).</p>
           </div>
         ) : (
           <>
@@ -126,13 +136,20 @@ export default function ReviewClient({ exam, questions, result }: Props) {
             {exam.modules.length > 1 && (
               <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
                 {moduleGroups.map(({ mod, modIdx, moduleScore }) => (
-                  <button key={modIdx} onClick={() => setActiveModule(modIdx)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
-                      activeModule === modIdx ? 'bg-primary text-white shadow-sm' : 'bg-white border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container'
-                    }`}>
+                  <button
+                    key={modIdx}
+                    onClick={() => setActiveModule(modIdx)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                      activeModule === modIdx
+                        ? 'bg-ink text-bg'
+                        : 'bg-surface border border-rule text-ink-soft hover:bg-surface-2'
+                    }`}
+                  >
                     {mod.name}
                     {moduleScore && (
-                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${activeModule === modIdx ? 'bg-white/20 text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        activeModule === modIdx ? 'bg-bg/20 text-bg' : 'bg-surface-2 text-ink-mute'
+                      }`}>
                         {moduleScore.scorePercent}%
                       </span>
                     )}
@@ -154,28 +171,36 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                 const hasPassage = !!q.passage;
                 const passageExpanded = expandedPassages.has(q.id);
 
+                const cardBorder = isWriting
+                  ? 'border-purple-200'
+                  : isUnanswered
+                  ? 'border-rule'
+                  : isCorrect
+                  ? 'border-green-200'
+                  : 'border-red-200';
+
+                const headerBg = isWriting
+                  ? 'bg-purple-50 border-purple-100'
+                  : isUnanswered
+                  ? 'bg-surface-2 border-rule'
+                  : isCorrect
+                  ? 'bg-green-50 border-green-100'
+                  : 'bg-red-50 border-red-100';
+
                 return (
-                  <div key={q.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
-                    isWriting ? 'border-purple-200'
-                    : isUnanswered ? 'border-outline-variant/40'
-                    : isCorrect ? 'border-green-200'
-                    : 'border-red-200'
-                  }`}>
+                  <div key={q.id} className={`bg-surface rounded-2xl border overflow-hidden ${cardBorder}`}>
                     {/* Question header */}
-                    <div className={`px-5 py-3 flex items-center justify-between border-b ${
-                      isWriting ? 'bg-purple-50 border-purple-100'
-                      : isUnanswered ? 'bg-surface-container/50 border-outline-variant/20'
-                      : isCorrect  ? 'bg-green-50 border-green-100'
-                      : 'bg-red-50 border-red-100'
-                    }`}>
+                    <div className={`px-5 py-3 flex items-center justify-between border-b ${headerBg}`}>
                       <div className="flex items-center gap-3">
                         {isWriting
                           ? <FileText size={16} className="text-purple-600" />
-                          : isUnanswered ? <MinusCircle size={16} className="text-on-surface-variant" />
-                          : isCorrect ? <CheckCircle2 size={16} className="text-green-600" />
-                          : <XCircle size={16} className="text-red-500" />
+                          : isUnanswered
+                          ? <MinusCircle size={16} className="text-ink-mute" />
+                          : isCorrect
+                          ? <CheckCircle2 size={16} className="text-ok" />
+                          : <XCircle size={16} className="text-error" />
                         }
-                        <span className="text-xs font-bold text-on-surface-variant">
+                        <span className="text-xs font-medium text-ink-soft">
                           Sual {globalIdx + 1}
                           {q.type === 'open' && ' (Açıq)'}
                           {q.type === 'matching' && ' (Uyğunlaşdırma)'}
@@ -184,14 +209,16 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       </div>
                       <div className="flex items-center gap-3">
                         {timeSecs > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] text-on-surface-variant font-medium">
+                          <span className="flex items-center gap-1 text-[10px] text-ink-mute font-medium">
                             <Clock size={11} /> {formatTime(timeSecs)}
                           </span>
                         )}
                         {hasPassage && (
-                          <button onClick={() => togglePassage(q.id)}
-                            className="flex items-center gap-1 text-[10px] font-bold text-secondary hover:underline">
-                            Mətn {passageExpanded ? '↑' : '↓'}
+                          <button
+                            onClick={() => togglePassage(q.id)}
+                            className="flex items-center gap-1 text-[10px] font-medium text-ink-soft hover:text-ink transition-colors"
+                          >
+                            Mətn
                             <ChevronDown size={11} className={`transition-transform ${passageExpanded ? 'rotate-180' : ''}`} />
                           </button>
                         )}
@@ -201,13 +228,13 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                     <div className="p-5">
                       {/* Passage (collapsible) */}
                       {hasPassage && passageExpanded && (
-                        <div className="mb-4 p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 text-sm text-on-surface/80 leading-relaxed max-h-48 overflow-y-auto">
+                        <div className="mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-sm text-ink-soft leading-relaxed max-h-48 overflow-y-auto">
                           <MathText text={q.passage} />
                         </div>
                       )}
 
                       {/* Stem */}
-                      <div className="text-sm font-medium text-on-surface leading-relaxed mb-4">
+                      <div className="text-sm font-medium text-ink leading-relaxed mb-4">
                         <MathText text={q.stem} />
                       </div>
 
@@ -217,21 +244,25 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           {q.options.map((opt, i) => {
                             const isUserChoice = userChoice === i;
                             const isCorrectOption = q.correctIndex === i;
-                            let cls = 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant';
+                            let cls = 'border-rule bg-surface-2 text-ink-soft';
                             if (isCorrectOption) cls = 'border-green-400 bg-green-50 text-green-800';
                             else if (isUserChoice && !isCorrectOption) cls = 'border-red-400 bg-red-50 text-red-800';
                             return (
                               <div key={i} className={`flex items-start gap-3 px-4 py-3 rounded-xl border-2 ${cls}`}>
-                                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                                  isCorrectOption ? 'bg-green-500 text-white' : isUserChoice ? 'bg-red-500 text-white' : 'bg-white border-2 border-outline-variant text-on-surface-variant'
+                                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  isCorrectOption
+                                    ? 'bg-green-500 text-white'
+                                    : isUserChoice
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-surface border border-rule text-ink-mute'
                                 }`}>
                                   {OPTION_LABELS[i]}
                                 </span>
                                 <div className="text-sm flex-1 pt-0.5">
                                   <MathText text={opt} />
                                 </div>
-                                {isCorrectOption && <CheckCircle2 size={15} className="text-green-600 shrink-0 mt-0.5" />}
-                                {isUserChoice && !isCorrectOption && <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />}
+                                {isCorrectOption && <CheckCircle2 size={15} className="text-ok shrink-0 mt-0.5" />}
+                                {isUserChoice && !isCorrectOption && <XCircle size={15} className="text-error shrink-0 mt-0.5" />}
                               </div>
                             );
                           })}
@@ -251,25 +282,32 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                               const correctPick = q.correctMatching?.[idx] ?? -1;
                               const itemCorrect = userPick === correctPick;
                               const cls = userPick === -1
-                                ? 'border-outline-variant/30 bg-surface-container-low'
+                                ? 'border-rule bg-surface-2'
                                 : itemCorrect
-                                  ? 'border-green-400 bg-green-50'
-                                  : 'border-red-400 bg-red-50';
+                                ? 'border-green-400 bg-green-50'
+                                : 'border-red-400 bg-red-50';
                               return (
                                 <div key={idx} className={`flex items-start gap-3 px-4 py-3 rounded-xl border-2 ${cls}`}>
-                                  <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                                    itemCorrect ? 'bg-green-500 text-white' : userPick === -1 ? 'bg-white border-2 border-outline-variant text-on-surface-variant' : 'bg-red-500 text-white'
+                                  <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                    itemCorrect
+                                      ? 'bg-green-500 text-white'
+                                      : userPick === -1
+                                      ? 'bg-surface border border-rule text-ink-mute'
+                                      : 'bg-red-500 text-white'
                                   }`}>
                                     {idx + 1}
                                   </span>
                                   <div className="flex-1 text-sm">
-                                    <p className="font-medium text-on-surface mb-1"><MathText text={item} /></p>
+                                    <p className="font-medium text-ink mb-1"><MathText text={item} /></p>
                                     {userPick >= 0 && !itemCorrect && (
-                                      <p className="text-red-600 text-xs">Sizin: {OPTION_LABELS[userPick]}. {q.options[userPick]}</p>
+                                      <p className="text-error text-xs">Sizin: {OPTION_LABELS[userPick]}. {q.options[userPick]}</p>
                                     )}
-                                    <p className="text-green-700 text-xs font-bold">Doğru: {OPTION_LABELS[correctPick]}. {q.options[correctPick]}</p>
+                                    <p className="text-ok text-xs font-medium">Doğru: {OPTION_LABELS[correctPick]}. {q.options[correctPick]}</p>
                                   </div>
-                                  {itemCorrect ? <CheckCircle2 size={15} className="text-green-600 shrink-0 mt-0.5" /> : <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />}
+                                  {itemCorrect
+                                    ? <CheckCircle2 size={15} className="text-ok shrink-0 mt-0.5" />
+                                    : <XCircle size={15} className="text-error shrink-0 mt-0.5" />
+                                  }
                                 </div>
                               );
                             });
@@ -286,21 +324,20 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                         const criteria = writingAnswer?.writingCriteria ?? [];
                         const aiFeedback = writingAnswer?.aiFeedback;
                         const bandColor = bandScore !== undefined
-                          ? bandScore >= 7 ? 'text-green-600' : bandScore >= 5 ? 'text-amber-600' : 'text-red-500'
-                          : 'text-on-surface-variant';
+                          ? bandScore >= 7 ? 'text-ok' : bandScore >= 5 ? 'text-warn' : 'text-error'
+                          : 'text-ink-mute';
                         return (
                           <div className="space-y-3 mb-4">
-                            {/* Essay */}
                             {essay ? (
-                              <div className="p-4 bg-surface-container-low border border-outline-variant/30 rounded-xl">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-2 flex items-center gap-1.5">
+                              <div className="p-4 bg-surface-2 border border-rule rounded-xl">
+                                <p className="eyebrow text-ink-mute mb-2 flex items-center gap-1.5">
                                   <FileText size={11} /> Sizin cavabınız {wordCount ? `· ${wordCount} söz` : ''}
                                 </p>
-                                <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{essay}</p>
+                                <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{essay}</p>
                               </div>
                             ) : (
-                              <div className="p-4 bg-surface-container-low border border-outline-variant/30 rounded-xl">
-                                <p className="text-sm text-on-surface-variant italic">Cavab verilməyib.</p>
+                              <div className="p-4 bg-surface-2 border border-rule rounded-xl">
+                                <p className="text-sm text-ink-mute italic">Cavab verilməyib.</p>
                               </div>
                             )}
 
@@ -308,9 +345,9 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                             {bandScore !== undefined && (
                               <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">AI Qiymətləndirməsi</p>
-                                  <span className={`text-2xl font-black ${bandColor}`}>
-                                    {bandScore.toFixed(1)} <span className="text-sm font-semibold text-on-surface-variant">/ 9</span>
+                                  <p className="eyebrow text-purple-700">AI Qiymətləndirməsi</p>
+                                  <span className={`font-display text-2xl font-bold ${bandColor}`}>
+                                    {bandScore.toFixed(1)} <span className="text-sm font-medium text-ink-mute">/ 9</span>
                                   </span>
                                 </div>
 
@@ -318,14 +355,14 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                   <div className="space-y-2 mb-3">
                                     {criteria.map((c, ci) => (
                                       <div key={ci} className="flex items-start gap-2">
-                                        <span className={`shrink-0 text-xs font-black px-2 py-0.5 rounded-full ${
+                                        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
                                           c.score >= 7 ? 'bg-green-100 text-green-700' : c.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'
                                         }`}>
                                           {c.score}
                                         </span>
                                         <div className="min-w-0">
-                                          <p className="text-xs font-bold text-on-surface">{c.criterion}</p>
-                                          <p className="text-xs text-on-surface-variant leading-relaxed">{c.comment}</p>
+                                          <p className="text-xs font-medium text-ink">{c.criterion}</p>
+                                          <p className="text-xs text-ink-soft leading-relaxed">{c.comment}</p>
                                         </div>
                                       </div>
                                     ))}
@@ -344,14 +381,14 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Image display */}
                       {q.imageUrl && (
                         <div className="mb-4">
-                          <img src={q.imageUrl} alt="Sual diaqramı" className="w-full max-w-md rounded-xl border border-outline-variant/30" loading="lazy" />
+                          <img src={q.imageUrl} alt="Sual diaqramı" className="w-full max-w-md rounded-xl border border-rule" loading="lazy" />
                         </div>
                       )}
 
                       {/* Explanation */}
                       {q.explanation && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">İzahat</p>
+                          <p className="eyebrow text-blue-600 mb-1">İzahat</p>
                           <div className="text-xs text-blue-900 leading-relaxed">
                             <MathText text={q.explanation} />
                           </div>

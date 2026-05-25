@@ -59,82 +59,88 @@ export default function SettingsClient() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="min-h-screen bg-[#f0f2f5]">
-      <div className="max-w-2xl mx-auto px-8 py-10">
+    <main className="min-h-screen bg-surface-2">
+      <div className="max-w-2xl mx-auto px-6 py-10">
         <header className="mb-8">
-          <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">Parametrlər</h1>
-          <p className="text-on-surface-variant text-sm font-medium">Hesab məlumatlarınızı idarə edin.</p>
+          <h1 className="font-display text-3xl font-bold text-ink mb-1">Parametrlər</h1>
+          <p className="text-ink-soft text-sm">Hesab məlumatlarınızı idarə edin.</p>
         </header>
 
         <div className="space-y-4">
 
           {/* Profile */}
-          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-outline-variant/20">
-              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Profil</h2>
+          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
+            <div className="px-6 py-4 border-b border-rule">
+              <h2 className="eyebrow text-ink-mute">Profil</h2>
             </div>
             <div className="p-6">
-              <div className="flex items-center gap-5 mb-6 pb-6 border-b border-outline-variant/10">
+              <div className="flex items-center gap-5 mb-6 pb-6 border-b border-rule">
                 {imageUrl ? (
-                  <Image src={imageUrl} alt="Avatar" width={64} height={64} className="rounded-full object-cover ring-4 ring-primary/10 shrink-0" />
+                  <Image
+                    src={imageUrl}
+                    alt="Avatar"
+                    width={64}
+                    height={64}
+                    className="rounded-full object-cover ring-4 ring-ink/10 shrink-0"
+                  />
                 ) : (
-                  <div className="w-16 h-16 rounded-full editorial-gradient flex items-center justify-center ring-4 ring-primary/10 shrink-0">
-                    <span className="text-white text-xl font-black">{firstName[0]}</span>
+                  <div className="w-16 h-16 rounded-full bg-ink flex items-center justify-center ring-4 ring-ink/10 shrink-0">
+                    <span className="text-bg text-xl font-bold">{firstName[0]}</span>
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-bold text-primary text-lg leading-tight">{fullName}</p>
-                  <p className="text-sm text-on-surface-variant mt-0.5">{email}</p>
+                  <p className="font-display font-bold text-ink text-lg leading-tight">{fullName}</p>
+                  <p className="text-sm text-ink-soft mt-0.5">{email}</p>
                   {memberSince && (
-                    <p className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-1.5">
+                    <p className="flex items-center gap-1.5 text-xs text-ink-mute mt-1.5">
                       <CalendarDays size={12} /> Üzv olduğu tarix: {memberSince}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-0 divide-y divide-outline-variant/10 mb-5">
+              <div className="space-y-0 divide-y divide-rule mb-5">
                 <div className="flex items-center justify-between py-3">
-                  <span className="flex items-center gap-2.5 text-sm text-on-surface-variant">
+                  <span className="flex items-center gap-2.5 text-sm text-ink-soft">
                     <User size={15} /> Ad Soyad
                   </span>
-                  <span className="font-semibold text-primary text-sm">{fullName}</span>
+                  <span className="font-medium text-ink text-sm">{fullName}</span>
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <span className="flex items-center gap-2.5 text-sm text-on-surface-variant">
+                  <span className="flex items-center gap-2.5 text-sm text-ink-soft">
                     <Mail size={15} /> E-poçt
                   </span>
-                  <span className="font-semibold text-primary text-sm truncate max-w-[220px]">{email}</span>
+                  <span className="font-medium text-ink text-sm truncate max-w-55">{email}</span>
                 </div>
               </div>
 
               <button
                 onClick={() => openUserProfile()}
-                className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-low hover:bg-surface-container rounded-xl transition-colors group"
+                className="w-full flex items-center justify-between px-4 py-3 bg-surface-2 hover:bg-surface-3 rounded-xl transition-colors group"
               >
-                <span className="flex items-center gap-2.5 text-sm font-semibold text-on-surface-variant group-hover:text-primary">
+                <span className="flex items-center gap-2.5 text-sm font-medium text-ink-soft group-hover:text-ink">
                   <Pencil size={15} /> Profili düzənlə — ad, şəkil, e-poçt
                 </span>
-                <ChevronRight size={15} className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight size={15} className="text-ink-mute group-hover:text-ink group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
           </div>
 
           {/* Target exam goal */}
-          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-outline-variant/20">
-              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">İmtahan Hədəfi</h2>
+          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
+            <div className="px-6 py-4 border-b border-rule">
+              <h2 className="eyebrow text-ink-mute">İmtahan Hədəfi</h2>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-xs text-on-surface-variant">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
+              <p className="text-xs text-ink-soft">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-on-surface-variant block mb-1.5">İmtahan növü</label>
+                  <label className="text-xs font-medium text-ink-soft block mb-1.5">İmtahan növü</label>
                   <select
                     value={targetType}
                     onChange={e => setTargetType(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-outline-variant rounded-xl text-sm font-semibold text-primary bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="input-new w-full"
                   >
                     <option value="">Seçin...</option>
                     {examTypeOptions.map(o => (
@@ -143,13 +149,13 @@ export default function SettingsClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-on-surface-variant block mb-1.5">İmtahan tarixi</label>
+                  <label className="text-xs font-medium text-ink-soft block mb-1.5">İmtahan tarixi</label>
                   <input
                     type="date"
                     value={targetDate}
                     min={today}
                     onChange={e => setTargetDate(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-outline-variant rounded-xl text-sm font-semibold text-primary bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="input-new w-full"
                   />
                 </div>
               </div>
@@ -158,7 +164,7 @@ export default function SettingsClient() {
                 <button
                   onClick={handleSaveGoal}
                   disabled={isPending}
-                  className="flex items-center gap-2 px-4 py-2.5 editorial-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60 shadow-sm"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-ink text-bg rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-60"
                 >
                   {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                   Yadda saxla
@@ -166,7 +172,7 @@ export default function SettingsClient() {
                 {(targetDate || targetType) && (
                   <button
                     onClick={() => { setTargetDate(''); setTargetType(''); }}
-                    className="text-xs text-on-surface-variant hover:text-primary font-medium ml-auto"
+                    className="text-xs text-ink-mute hover:text-ink font-medium ml-auto transition-colors"
                   >
                     Sıfırla
                   </button>
@@ -176,32 +182,32 @@ export default function SettingsClient() {
           </div>
 
           {/* Security */}
-          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-outline-variant/20">
-              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Təhlükəsizlik</h2>
+          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
+            <div className="px-6 py-4 border-b border-rule">
+              <h2 className="eyebrow text-ink-mute">Təhlükəsizlik</h2>
             </div>
             <div className="p-6">
               <button
                 onClick={() => openUserProfile()}
-                className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-low hover:bg-surface-container rounded-xl transition-colors group"
+                className="w-full flex items-center justify-between px-4 py-3 bg-surface-2 hover:bg-surface-3 rounded-xl transition-colors group"
               >
-                <span className="flex items-center gap-2.5 text-sm font-semibold text-on-surface-variant group-hover:text-primary">
+                <span className="flex items-center gap-2.5 text-sm font-medium text-ink-soft group-hover:text-ink">
                   <Shield size={15} /> Şifrəni dəyiş
                 </span>
-                <ChevronRight size={15} className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight size={15} className="text-ink-mute group-hover:text-ink group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
           </div>
 
           {/* Account */}
-          <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-outline-variant/20">
-              <h2 className="text-sm font-bold text-primary font-headline uppercase tracking-wider">Hesab</h2>
+          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
+            <div className="px-6 py-4 border-b border-rule">
+              <h2 className="eyebrow text-ink-mute">Hesab</h2>
             </div>
             <div className="p-6">
               <SignOutButton>
                 <button className="w-full flex items-center justify-between px-4 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-xl transition-colors group">
-                  <span className="flex items-center gap-2.5 text-sm font-semibold">
+                  <span className="flex items-center gap-2.5 text-sm font-medium">
                     <LogOut size={15} /> Hesabdan çıx
                   </span>
                   <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />

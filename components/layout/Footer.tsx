@@ -1,71 +1,70 @@
 import Link from "next/link";
-import { Share2, Mail } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="w-full border-t border-outline-variant/20 bg-surface-container-low">
-      <div className="w-full py-12 px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <footer className="w-full border-t border-rule bg-surface-2">
+      <div className="max-w-310 mx-auto px-8 pt-20 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-16">
+          {/* Brand */}
           <div>
-            <div className="text-lg font-bold text-primary font-headline mb-4">Test Centre</div>
-            <p className="text-sm text-on-surface-variant max-w-sm mb-6 leading-relaxed">
-              Azərbaycanın ən qabaqcıl onlayn imtahan platforması. Peşəkar hazırlıq üçün doğru ünvan.
+            <div className="flex items-center gap-2 mb-4">
+              <span className="dot" />
+              <span className="font-display text-[22px] font-medium text-ink tracking-tight">
+                Test<em className="italic font-normal">centre</em>
+              </span>
+            </div>
+            <p className="text-[15px] text-ink-soft leading-[1.6] max-w-85">
+              Akademik imtahan hazırlığı — sadə, ölçülə bilən, ciddi.
             </p>
-            <div className="flex gap-3">
-              <a
-                href="#"
-                className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-secondary hover:text-white transition-all"
-              >
-                <Share2 size={18} />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-secondary hover:text-white transition-all"
-              >
-                <Mail size={18} />
-              </a>
+          </div>
+
+          {/* Platforma */}
+          <div>
+            <div className="eyebrow mb-4">Platforma</div>
+            <div className="flex flex-col gap-3">
+              <Link href="/exams" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Sınaqlar
+              </Link>
+              <Link href="/dashboard" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Kabinet
+              </Link>
+              <Link href="/dashboard/analytics" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Analitika
+              </Link>
+              <span className="text-[15px] text-ink-mute">Qiymətlər</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <h5 className="font-bold text-primary text-sm uppercase tracking-wide">Platforma</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="#" className="text-sm text-on-surface-variant hover:text-secondary transition-colors">
-                    İstifadəçi şərtləri
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="text-sm text-on-surface-variant hover:text-secondary transition-colors">
-                    Məxfilik siyasəti
-                  </Link>
-                </li>
-              </ul>
+          {/* Şirkət */}
+          <div>
+            <div className="eyebrow mb-4">Şirkət</div>
+            <div className="flex flex-col gap-3">
+              <Link href="/about" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Haqqımızda
+              </Link>
+              <Link href="/contact" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Əlaqə
+              </Link>
+              <span className="text-[15px] text-ink-mute">Karyera</span>
+              <span className="text-[15px] text-ink-mute">Blog</span>
             </div>
-            <div className="space-y-3">
-              <h5 className="font-bold text-primary text-sm uppercase tracking-wide">Dəstək</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="#" className="text-sm text-on-surface-variant hover:text-secondary transition-colors">
-                    Yardım mərkəzi
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="text-sm text-on-surface-variant hover:text-secondary transition-colors">
-                    Vakansiyalar
-                  </Link>
-                </li>
-              </ul>
+          </div>
+
+          {/* Hüquqi */}
+          <div>
+            <div className="eyebrow mb-4">Hüquqi</div>
+            <div className="flex flex-col gap-3">
+              <span className="text-[15px] text-ink-mute">İstifadə şərtləri</span>
+              <span className="text-[15px] text-ink-mute">Məxfilik</span>
+              <span className="text-[15px] text-ink-mute">Cookie</span>
+              <span className="text-[15px] text-ink-mute">Geri qaytarma</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-outline-variant/20 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="text-xs text-on-surface-variant">
-            © 2024 Test Centre. Bütün hüquqlar qorunur.
-          </p>
-          <span className="text-xs text-on-surface-variant font-medium">Bakı, Azərbaycan</span>
+        <div className="pt-6 border-t border-rule flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="eyebrow">© 2026 Testcentre · Bakı, Azərbaycan</p>
+          <span className="eyebrow">tr · az · en</span>
         </div>
       </div>
     </footer>
