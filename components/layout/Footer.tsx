@@ -54,10 +54,18 @@ export default function Footer() {
           <div>
             <div className="eyebrow mb-4">Hüquqi</div>
             <div className="flex flex-col gap-3">
-              <span className="text-[15px] text-ink-mute">İstifadə şərtləri</span>
-              <span className="text-[15px] text-ink-mute">Məxfilik</span>
-              <span className="text-[15px] text-ink-mute">Cookie</span>
-              <span className="text-[15px] text-ink-mute">Geri qaytarma</span>
+              <Link href="/legal/terms" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                İstifadə şərtləri
+              </Link>
+              <Link href="/legal/privacy" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Məxfilik
+              </Link>
+              <Link href="/legal/cookies" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Cookie
+              </Link>
+              <Link href="/legal/refund" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+                Geri qaytarma
+              </Link>
             </div>
           </div>
         </div>

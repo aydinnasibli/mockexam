@@ -77,7 +77,7 @@ export default async function AnalyticsPage() {
           className="font-display font-normal text-ink m-0 mb-3"
           style={{ fontSize: 'clamp(28px, 2.8vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.02em' }}
         >
-          Sınaq <em className="italic">analitikası.</em>
+          Sınaq <span>analitikası.</span>
         </h1>
         <p className="text-[16px] leading-[1.55] text-ink-soft m-0">Bütün imtahan cəhdlərinin tarixi və statistikası.</p>
       </div>

@@ -8,6 +8,7 @@ import dbConnect from '@/lib/mongodb';
 import ExamModel, { computeExamTotals } from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
 import { isAdmin } from '@/lib/admin';
+import { validateModules } from '@/lib/actions/admin';
 
 export async function importExamFromJson(parsedJson: any) {
   try {
@@ -25,16 +26,20 @@ export async function importExamFromJson(parsedJson: any) {
       return { error: 'JSON faylında "questions" array kimi təqdim olunmalıdır.' };
     }
 
-    // 2. Compute totals
-    const { totalQuestions, durationMinutes } = computeExamTotals(parsedJson.modules);
+    // 2. Validate modules through the same validator used by createExam
+    const modulesResult = validateModules(parsedJson.modules);
+    if ('error' in modulesResult) return modulesResult;
 
-    // 3. Ensure Exam ID is unique before inserting
+    // 3. Compute totals
+    const { totalQuestions, durationMinutes } = computeExamTotals(modulesResult);
+
+    // 4. Ensure Exam ID is unique before inserting
     const exists = await ExamModel.exists({ examId: parsedJson.examId });
     if (exists) {
       return { error: `Bu ID (${parsedJson.examId}) ilə imtahan artıq mövcuddur. Zəhmət olmasa mövcud imtahanı silin və ya fərqli ID istifadə edin.` };
     }
 
-    // 4. Insert Exam
+    // 5. Insert Exam
     await ExamModel.create({
       examId: parsedJson.examId,
       title: parsedJson.title,
@@ -43,13 +48,13 @@ export async function importExamFromJson(parsedJson: any) {
       tag: parsedJson.tag || parsedJson.type.toUpperCase(),
       price: parsedJson.price || 0,
       features: parsedJson.features || [],
-      modules: parsedJson.modules,
+      modules: modulesResult,
       totalQuestions,
       durationMinutes,
       isActive: parsedJson.isActive ?? false, // Defaults to inactive so admin can review it first
     });
 
-    // 5. Transform and Insert Questions
+    // 6. Transform and Insert Questions
     const questionsToInsert = parsedJson.questions.map((q: any, i: number) => ({
       examId: parsedJson.examId,
       moduleIndex: q.moduleIndex ?? 0,

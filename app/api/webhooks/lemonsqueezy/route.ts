@@ -97,6 +97,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     Sentry.captureException(err, { tags: { route: 'webhook/lemonsqueezy' }, extra: { detail } });
-    return NextResponse.json({ error: 'Database error', detail }, { status: 500 });
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 }

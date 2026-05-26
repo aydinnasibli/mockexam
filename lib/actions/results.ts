@@ -9,7 +9,21 @@ import QuestionModel from '@/lib/models/Question';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import ExamSessionModel from '@/lib/models/ExamSession';
 import { isRateLimited } from '@/lib/rate-limit';
-import { evaluateWriting } from '@/lib/actions/writing-eval';
+import { evaluateWriting, type WritingCriterionResult } from '@/lib/actions/writing-eval';
+
+type AnswerRecord = {
+  questionId: string;
+  moduleIndex: number;
+  userAnswer: number;
+  userAnswerText: string;
+  correctIndex: number;
+  isCorrect: boolean;
+  timeSeconds: number;
+  writingScore?: number;
+  writingWordCount?: number;
+  writingCriteria?: WritingCriterionResult[];
+  aiFeedback?: string;
+};
 
 export type ClientAnswerInput = {
   questionId: string;
@@ -29,7 +43,7 @@ export async function saveExamResult(data: {
   if (!userId) return { error: 'Unauthorized' };
 
   // 5 submissions per user per 5 minutes — prevents spam
-  if (isRateLimited(`submit:${userId}`, 5, 5 * 60_000)) {
+  if (await isRateLimited(`submit:${userId}`, 5, 5 * 60_000)) {
     return { error: 'Çox tez-tez imtahan göndərdiniz. Bir az gözləyin.' };
   }
 
@@ -90,7 +104,7 @@ export async function saveExamResult(data: {
 
     // Build verified answer records — correctIndex and isCorrect come from DB, not client
     // Writing questions are evaluated separately via AI after this map
-    const answerRecords = answers.map(a => {
+    const answerRecords: AnswerRecord[] = answers.map(a => {
       const authoritative = correctMap.get(a.questionId);
       const correctIndex = authoritative?.correctIndex ?? -1;
       let isCorrect = false;
@@ -152,7 +166,7 @@ export async function saveExamResult(data: {
     for (const result of writingEvals) {
       if (!result) continue;
       const { idx, evalResult } = result;
-      const rec = answerRecords[idx] as any;
+      const rec = answerRecords[idx];
       rec.writingScore = evalResult.bandScore;
       rec.writingWordCount = evalResult.wordCount;
       rec.writingCriteria = evalResult.criteriaFeedback;
@@ -175,7 +189,7 @@ export async function saveExamResult(data: {
       ? (nonWritingAnswers.filter(a => a.isCorrect).length / nonWritingAnswers.length) * 100
       : null;
     const writingScore = writingAnswers.length > 0
-      ? (writingAnswers.reduce((sum, a) => sum + (((a as any).writingScore ?? 0) / 9) * 100, 0) / writingAnswers.length)
+      ? (writingAnswers.reduce((sum, a) => sum + ((a.writingScore ?? 0) / 9) * 100, 0) / writingAnswers.length)
       : null;
 
     const allParts = [nonWritingScore, writingScore].filter(v => v !== null) as number[];
@@ -194,7 +208,7 @@ export async function saveExamResult(data: {
       let scorePercent = 0;
       if (modWritingAnswers.length > 0 && modNonWritingAnswers.length === 0) {
         // Pure writing module: average band score normalised to 100
-        const avgBand = modWritingAnswers.reduce((s, a) => s + (((a as any).writingScore ?? 0) / 9) * 100, 0) / modWritingAnswers.length;
+        const avgBand = modWritingAnswers.reduce((s, a) => s + ((a.writingScore ?? 0) / 9) * 100, 0) / modWritingAnswers.length;
         scorePercent = Math.round(avgBand);
       } else if (modNonWritingAnswers.length > 0) {
         const correct = modNonWritingAnswers.filter(a => a.isCorrect).length;

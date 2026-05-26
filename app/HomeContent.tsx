@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -18,24 +19,63 @@ const categories = [
 ];
 
 const steps = [
-  { n: "01", t: "Diaqnostika",             d: "İlk pulsuz sınaq mövcud səviyyənizi 11 ölçü üzrə müəyyən edir. Vaxt itkisi yoxdur, yalnız real nəticə." },
-  { n: "02", t: "Adaptive hazırlıq",       d: "Süni intellekt zəif istiqamətləri seçir və hər gün üçün 30 dəqiqəlik məşq planı qurur." },
+  { n: "01", t: "Diaqnostika",               d: "İlk sınaq mövcud səviyyənizi 11 ölçü üzrə müəyyən edir. Vaxt itkisi yoxdur, yalnız real nəticə." },
+  { n: "02", t: "Adaptive hazırlıq",         d: "Süni intellekt zəif istiqamətləri seçir və hər gün üçün 30 dəqiqəlik məşq planı qurur." },
   { n: "03", t: "Real format simulyasiyası", d: "İmtahandan əvvəl tam vaxtlı sınaqlar — eyni interfeys, eyni təzyiq, heç bir sürpriz qalmır." },
 ];
 
 const checklist = [
-  "1 tam pulsuz diaqnostik sınaq",
+  "1 tam diaqnostik sınaq",
   "Süni intellekt analitikası",
   "Şəxsi tərəqqi hesabatı",
   "Bütün sual izahları videoda",
   "Mobil və desktop dəstək",
 ];
 
+const reviews = [
+  {
+    initials: "AM",
+    quote: "On səkkiz dəfə cəhd etdim. Sayı eyni qalır, lakin hər səhvim üçün yeni izahat verən başqa platforma tapmadım. Bal 200 vahid artdı.",
+    name: "Aysel Məmmədova",
+    detail: "SAT 1480 · Boğaziçi Universiteti",
+    accent: "hər səhvim üçün yeni izahat",
+  },
+  {
+    initials: "KH",
+    quote: "IELTS üçün altı ay hazırlandım amma nəticə yaxşı deyildi. Buraya keçdikdən sonra iki ayda 6.0-dan 7.5-ə çıxdım. Band analizi hər şeyi dəyişdi.",
+    name: "Kərim Hüseynov",
+    detail: "IELTS 7.5 · Edinburq Universiteti",
+    accent: "iki ayda 6.0-dan 7.5-ə çıxdım",
+  },
+  {
+    initials: "NQ",
+    quote: "Adaptive suallar mənim nəyə görə yanıldığımı dəqiq göstərdi. TOEFL Reading bölməsini tam yenidən öyrəndim — nəticə 105 oldu.",
+    name: "Nigar Quliyeva",
+    detail: "TOEFL 105 · Amsterdam",
+    accent: "nəyə görə yanıldığımı dəqiq göstərdi",
+  },
+  {
+    initials: "TA",
+    quote: "SAT Math modullarını dörd dəfə keçdim. Hər dəfə fərqli zəif nöqtə çıxdı. Platforma olmadan 1540 balı görmək mümkün olmazdı.",
+    name: "Tural Əliyev",
+    detail: "SAT 1540 · MIT",
+    accent: "Hər dəfə fərqli zəif nöqtə çıxdı",
+  },
+];
+
 export default function HomeContent({ countsByType }: Props) {
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const current = reviews[reviewIndex];
+
+  useEffect(() => {
+    const t = setInterval(() => setReviewIndex(i => (i + 1) % reviews.length), 4000);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <>
       <Navbar />
-      <main>
+      <main className="pt-17">
 
         {/* ── HERO ── */}
         <section className="max-w-340 mx-auto px-8" style={{ padding: "96px 32px 64px" }}>
@@ -49,46 +89,20 @@ export default function HomeContent({ countsByType }: Props) {
               </div>
               <h1 className="t-display mb-8">
                 Gələcəyinizi{" "}
-                <em className="italic" style={{ color: "var(--color-accent)" }}>sınağa</em>{" "}
+                <span style={{ color: "var(--color-accent)" }}>sınağa</span>{" "}
                 çəkin.
               </h1>
               <p className="t-lede mb-10 max-w-135" style={{ color: "var(--color-ink-soft)" }}>
                 On minlərlə tələbə real imtahan formatında hazırlaşır. Süni intellekt yön verir,
                 statistika doğrulayır — heç bir şey təxmin deyil.
               </p>
-              <div className="flex gap-3 mb-16">
+              <div className="flex gap-3">
                 <Link href="/exams" className="btn-primary">
-                  Pulsuz başla <span className="arrow">→</span>
+                  Başla <span className="arrow">→</span>
                 </Link>
                 <Link href="/about" className="btn-ghost">
                   Necə işləyir
                 </Link>
-              </div>
-
-              {/* Social proof */}
-              <div className="flex items-center gap-6">
-                <div className="flex">
-                  {[0, 1, 2, 3].map(i => (
-                    <div
-                      key={i}
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-[9px] font-medium"
-                      style={{
-                        marginLeft: i > 0 ? -10 : 0,
-                        border: "2px solid var(--color-bg)",
-                        background: "linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%)",
-                        color: "var(--color-ink-mute)",
-                      }}
-                    >
-                      {["AY", "TR", "NQ", "EH"][i]}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="t-num font-display" style={{ fontSize: 20, lineHeight: 1 }}>12,847</div>
-                  <div className="text-[13px] mt-0.5" style={{ color: "var(--color-ink-soft)" }}>
-                    aktiv tələbə bizimlə hazırlaşır
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -98,7 +112,6 @@ export default function HomeContent({ countsByType }: Props) {
                 className="card-new"
                 style={{ padding: 0, overflow: "hidden", boxShadow: "var(--shadow-lg)" }}
               >
-                {/* Card header */}
                 <div
                   className="flex items-center justify-between px-6 py-4"
                   style={{ borderBottom: "1px solid var(--color-rule)" }}
@@ -113,7 +126,6 @@ export default function HomeContent({ countsByType }: Props) {
                   </div>
                 </div>
 
-                {/* Card body */}
                 <div className="px-6 py-8">
                   <div className="eyebrow mb-4">Sual 14 / 22</div>
                   <p className="font-display font-normal text-ink leading-[1.4]" style={{ fontSize: 22 }}>
@@ -146,13 +158,9 @@ export default function HomeContent({ countsByType }: Props) {
                   </div>
                 </div>
 
-                {/* Card footer */}
                 <div
                   className="flex items-center justify-between px-6 py-4"
-                  style={{
-                    borderTop: "1px solid var(--color-rule)",
-                    background: "var(--color-surface-2)",
-                  }}
+                  style={{ borderTop: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}
                 >
                   <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>Tərəqqi 52%</span>
                   <div className="w-35 h-1 rounded-full overflow-hidden" style={{ background: "var(--color-rule-soft)" }}>
@@ -182,31 +190,8 @@ export default function HomeContent({ countsByType }: Props) {
           </div>
         </section>
 
-        {/* ── STATS STRIP ── */}
-        <section style={{ borderTop: "1px solid var(--color-rule)", borderBottom: "1px solid var(--color-rule)", background: "var(--color-surface)" }}>
-          <div className="max-w-340 mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4" style={{ padding: "40px 0" }}>
-              {[
-                { v: "1,247", l: "Universitet qəbulu" },
-                { v: "+184",  l: "Orta SAT bal artımı" },
-                { v: "248",   l: "Mövcud sınaq" },
-                { v: "98%",   l: "Tələbə məmnuniyyəti" },
-              ].map((s, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 justify-center px-8 py-4 md:py-0"
-                  style={{ borderRight: i < 3 ? "1px solid var(--color-rule)" : "none" }}
-                >
-                  <span className="t-num font-display text-ink" style={{ fontSize: 40, lineHeight: 1 }}>{s.v}</span>
-                  <span className="text-[13px] leading-[1.3]" style={{ color: "var(--color-ink-soft)" }}>{s.l}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── CATEGORIES ── */}
-        <section className="max-w-340 mx-auto px-8 py-30">
+        <section className="max-w-340 mx-auto px-8 py-24">
           <div className="section-head">
             <div className="eyebrow mb-4">Kateqoriyalar</div>
             <h2 className="t-headline">Beynəlxalq və yerli imtahanlar üçün tam hazırlıq.</h2>
@@ -218,8 +203,8 @@ export default function HomeContent({ countsByType }: Props) {
             {categories.map((c) => (
               <Link
                 key={c.code}
-                href="/exams"
-                className="card-new card-new-hover block"
+                href={`/exams?type=${c.code.toLowerCase()}`}
+                className="card-new card-new-hover flex flex-col"
               >
                 <div className="flex items-center justify-between mb-8">
                   <span className={`tag ${c.featured ? "tag-accent" : ""}`}>{c.code}</span>
@@ -227,8 +212,8 @@ export default function HomeContent({ countsByType }: Props) {
                     {countsByType[c.code.toLowerCase()] ?? 0} sınaq
                   </span>
                 </div>
-                <h3 className="t-headline mb-3" style={{ fontSize: 28 }}>{c.name}</h3>
-                <p className="text-[15px] leading-[1.6] mb-8" style={{ color: "var(--color-ink-soft)", minHeight: 48 }}>{c.desc}</p>
+                <h3 className="t-headline mb-3" style={{ fontSize: 24 }}>{c.name}</h3>
+                <p className="text-[15px] leading-[1.6] flex-1 mb-8" style={{ color: "var(--color-ink-soft)" }}>{c.desc}</p>
                 <div className="flex items-center gap-2 text-[14px] font-medium text-ink">
                   Sınaqlara bax <span>→</span>
                 </div>
@@ -237,31 +222,80 @@ export default function HomeContent({ countsByType }: Props) {
           </div>
         </section>
 
-        {/* ── PULL QUOTE ── */}
+        {/* ── REVIEWS ── */}
         <section style={{ background: "var(--color-surface)", borderTop: "1px solid var(--color-rule)", borderBottom: "1px solid var(--color-rule)" }}>
-          <div className="max-w-340 mx-auto px-8 py-30 text-center">
-            <span className="dot mx-auto mb-8" style={{ display: "block" }} />
+          <div className="max-w-340 mx-auto px-8 py-24">
+            <div className="flex items-center justify-between mb-14">
+              <div>
+                <div className="eyebrow mb-3">Tələbə rəyləri</div>
+                <div className="flex items-center gap-1.5 mt-2">
+                  {reviews.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setReviewIndex(i)}
+                      aria-label={`Rəy ${i + 1}`}
+                      style={{
+                        width: i === reviewIndex ? 20 : 6,
+                        height: 6,
+                        borderRadius: 3,
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        background: i === reviewIndex ? "var(--color-ink)" : "var(--color-rule)",
+                        transition: "width 0.2s ease, background 0.2s ease",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setReviewIndex(i => (i - 1 + reviews.length) % reviews.length)}
+                  className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ border: "1px solid var(--color-rule)", color: "var(--color-ink-soft)", background: "transparent" }}
+                >
+                  ←
+                </button>
+                <button
+                  onClick={() => setReviewIndex(i => (i + 1) % reviews.length)}
+                  className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ border: "1px solid var(--color-rule)", color: "var(--color-ink-soft)", background: "transparent" }}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+
             <blockquote
-              className="font-display font-normal text-ink leading-tight tracking-[-0.02em] max-w-230 mx-auto"
-              style={{ fontSize: "clamp(28px, 3.6vw, 48px)" }}
+              className="font-display font-normal text-ink leading-[1.35] tracking-[-0.015em] mb-10"
+              style={{ fontSize: "clamp(20px, 2.2vw, 32px)", maxWidth: 820 }}
             >
-              On səkkiz dəfə cəhd etdim. Sayı eyni qalır, lakin{" "}
-              <em className="italic" style={{ color: "var(--color-accent)" }}>hər səhvim üçün yeni izahat</em>{" "}
-              verən başqa platforma tapmadım. Bal 200 vahid artdı.
+              {(() => {
+                const parts = current.quote.split(current.accent);
+                return parts.map((part, i) => (
+                  <span key={i}>
+                    {part}
+                    {i < parts.length - 1 && (
+                      <span style={{ color: "var(--color-accent)" }}>{current.accent}</span>
+                    )}
+                  </span>
+                ));
+              })()}
             </blockquote>
-            <div className="flex items-center gap-3 justify-center mt-10">
+
+            <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[9px] font-medium"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0"
                 style={{
                   background: "linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%)",
                   color: "var(--color-ink-mute)",
                 }}
               >
-                AM
+                {current.initials}
               </div>
-              <div className="text-left">
-                <div className="text-[14px] font-medium text-ink">Aysel Məmmədova</div>
-                <div className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>SAT 1480 · Boğaziçi Universiteti</div>
+              <div>
+                <div className="text-[14px] font-medium text-ink">{current.name}</div>
+                <div className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>{current.detail}</div>
               </div>
             </div>
           </div>
@@ -280,7 +314,7 @@ export default function HomeContent({ countsByType }: Props) {
             {steps.map((s, i) => (
               <div key={i} className="pt-8 border-t border-rule">
                 <div className="t-num mb-8 text-ink" style={{ fontSize: 18 }}>{s.n}</div>
-                <h3 className="t-headline mb-4" style={{ fontSize: 28 }}>{s.t}</h3>
+                <h3 className="t-headline mb-4" style={{ fontSize: 24 }}>{s.t}</h3>
                 <p className="text-[15px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{s.d}</p>
               </div>
             ))}
@@ -291,22 +325,22 @@ export default function HomeContent({ countsByType }: Props) {
         <section className="max-w-340 mx-auto px-8 pb-24">
           <div
             className="card-ink rounded-2xl grid md:grid-cols-[1.4fr_1fr] gap-16 items-center"
-            style={{ padding: "80px 64px" }}
+            style={{ padding: "72px 56px" }}
           >
             <div>
               <h2
                 className="font-display font-normal leading-[1.02] tracking-[-0.02em] mb-6"
-                style={{ fontSize: "clamp(40px, 5vw, 76px)", color: "var(--color-bg)" }}
+                style={{ fontSize: "clamp(30px, 3.6vw, 54px)", color: "var(--color-bg)" }}
               >
                 Hazırlığa başlamaq üçün heç bir{" "}
-                <em className="italic" style={{ color: "var(--color-accent-soft)" }}>bəhanə</em>{" "}
+                <span style={{ color: "var(--color-accent-soft)" }}>bəhanə</span>{" "}
                 qalmır.
               </h2>
               <p
-                className="text-[18px] leading-[1.55] mb-8 max-w-135"
+                className="text-[16px] leading-[1.55] mb-8 max-w-135"
                 style={{ color: "rgba(250,250,246,0.7)" }}
               >
-                İlk sınaq tamamilə pulsuzdur. Qeydiyyat 30 saniyə çəkir.
+                Qeydiyyat 30 saniyə çəkir.
               </p>
               <div className="flex gap-3">
                 <Link
@@ -314,7 +348,7 @@ export default function HomeContent({ countsByType }: Props) {
                   className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full text-sm font-medium transition-colors"
                   style={{ background: "var(--color-bg)", color: "var(--color-ink)", border: "1px solid var(--color-bg)" }}
                 >
-                  Pulsuz başla →
+                  Başla →
                 </Link>
                 <Link
                   href="/contact"

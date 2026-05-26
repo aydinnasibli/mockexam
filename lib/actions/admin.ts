@@ -51,7 +51,7 @@ export interface ParsedModule {
   instructions: string;
 }
 
-function validateModules(raw: unknown): ParsedModule[] | { error: string } {
+export function validateModules(raw: unknown): ParsedModule[] | { error: string } {
   if (!Array.isArray(raw) || raw.length === 0)
     return { error: 'Ən azı bir modul əlavə edin.' };
 

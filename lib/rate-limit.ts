@@ -1,36 +1,23 @@
-/**
- * Simple in-memory rate limiter for server actions.
- *
- * NOTE: This resets on every cold start. For multi-instance deployments,
- * swap the Map for a Redis/Upstash store. For a single Node.js process
- * (Vercel serverless per-region, Railway, Render) this is sufficient.
- */
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
-interface Bucket {
-  count: number;
-  resetAt: number;
+const limiters = new Map<string, Ratelimit>();
+
+function getLimiter(limit: number, windowMs: number): Ratelimit {
+  const cacheKey = `${limit}:${windowMs}`;
+  if (!limiters.has(cacheKey)) {
+    const windowSecs = Math.floor(windowMs / 1000);
+    limiters.set(cacheKey, new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(limit, `${windowSecs} s`),
+      prefix: '@testcentre/ratelimit',
+    }));
+  }
+  return limiters.get(cacheKey)!;
 }
 
-const store = new Map<string, Bucket>();
-
-/**
- * Returns true if the caller has exceeded the rate limit.
- *
- * @param key      Unique identifier (e.g. userId + action name)
- * @param limit    Max requests allowed in the window
- * @param windowMs Time window in milliseconds
- */
-export function isRateLimited(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const bucket = store.get(key);
-
-  if (!bucket || now > bucket.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs });
-    return false;
-  }
-
-  if (bucket.count >= limit) return true;
-
-  bucket.count += 1;
-  return false;
+export async function isRateLimited(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const limiter = getLimiter(limit, windowMs);
+  const { success } = await limiter.limit(key);
+  return !success;
 }

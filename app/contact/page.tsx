@@ -29,7 +29,7 @@ export default function ContactPage() {
               </div>
               <h1 className="t-display mb-8 rise rise-1">
                 Birbaşa bizə{" "}
-                <em className="italic" style={{ color: "var(--color-accent)" }}>yazın.</em>
+                <span style={{ color: "var(--color-accent)" }}>yazın.</span>
               </h1>
               <p className="t-lede max-w-120 mb-12 rise rise-2" style={{ color: "var(--color-ink-soft)" }}>
                 Hər mesajı insan oxuyur. Bot yoxdur, avtomatik cavab yoxdur. 24 saat ərzində geri qayıdırıq.

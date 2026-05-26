@@ -3,7 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
-import ExamSessionModel from '@/lib/models/ExamSession';
+import ExamSessionModel, { type IExamSession } from '@/lib/models/ExamSession';
 import { isRateLimited } from '@/lib/rate-limit';
 
 /** Read-only check — does NOT mark the audio as played. Used on component mount. */
@@ -19,7 +19,7 @@ export async function checkAudioPlayed(
     await dbConnect();
     const session = await ExamSessionModel.findOne({ userId, examId }).lean();
     if (!session) return { error: 'Session tapılmadı.' };
-    const played: string[] = (session as unknown as { playedAudioUrls: string[] }).playedAudioUrls ?? [];
+    const played = (session as IExamSession).playedAudioUrls ?? [];
     return { alreadyPlayed: played.includes(audioUrl) };
   } catch (err) {
     Sentry.captureException(err, { tags: { action: 'checkAudioPlayed' } });
@@ -42,7 +42,7 @@ export async function markAudioPlayed(
   if (!examId || !audioUrl) return { error: 'Invalid params' };
 
   // 20 calls per user per minute — generous enough for legitimate use
-  if (isRateLimited(`audio:${userId}`, 20, 60_000)) {
+  if (await isRateLimited(`audio:${userId}`, 20, 60_000)) {
     return { error: 'Çox tez-tez sorğu göndərdiniz.' };
   }
 
@@ -52,7 +52,7 @@ export async function markAudioPlayed(
     const session = await ExamSessionModel.findOne({ userId, examId }).lean();
     if (!session) return { error: 'Session tapılmadı.' };
 
-    const played: string[] = (session as unknown as { playedAudioUrls: string[] }).playedAudioUrls ?? [];
+    const played = (session as IExamSession).playedAudioUrls ?? [];
 
     if (played.includes(audioUrl)) {
       return { alreadyPlayed: true };

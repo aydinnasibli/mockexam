@@ -21,39 +21,30 @@ interface Props {
 }
 
 export default function ExamsCatalog({ exams, initialType }: Props) {
-  const [activeType, setActiveType] = useState<string>(initialType ?? 'all');
-  const [onlyFree, setOnlyFree] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
+  const [activeType, setActiveType]   = useState<string>(initialType ?? 'all');
+  const [sortOrder, setSortOrder]     = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const types = Array.from(new Set(exams.map(e => e.type)));
 
   const filtered = exams
-    .filter(exam => {
-      if (activeType !== 'all' && exam.type !== activeType) return false;
-      if (onlyFree && exam.price > 0) return false;
-      return true;
-    })
+    .filter(exam => activeType === 'all' || exam.type === activeType)
     .sort((a, b) => {
-      if (sortOrder === 'price-asc') return a.price - b.price;
+      if (sortOrder === 'price-asc')  return a.price - b.price;
       if (sortOrder === 'price-desc') return b.price - a.price;
-      // popular: free exams first, then by question count descending
-      if (a.price === 0 && b.price > 0) return -1;
-      if (b.price === 0 && a.price > 0) return 1;
       return b.totalQuestions - a.totalQuestions;
     });
 
-  const hasActiveFilters = activeType !== 'all' || onlyFree;
+  const hasActiveFilters = activeType !== 'all';
 
   function clearAllFilters() {
     setActiveType('all');
-    setOnlyFree(false);
   }
 
   const FilterPanel = () => (
     <>
       <div className="eyebrow mb-4">İmtahan növü</div>
-      <div className="mb-8 flex flex-col gap-0.5">
+      <div className="flex flex-col gap-0.5">
         {['all', ...types].map(type => {
           const count = type === 'all'
             ? exams.length
@@ -81,28 +72,13 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
         })}
       </div>
 
-      <div className="pt-6 border-t border-rule">
-        <div className="eyebrow mb-4">Filtr</div>
-        <label className="flex items-center gap-3 py-1.5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={onlyFree}
-            onChange={e => setOnlyFree(e.target.checked)}
-            className="w-4 h-4 rounded"
-          />
-          <span className="text-[14px] font-medium" style={{ color: 'var(--color-ink-soft)' }}>
-            Yalnız pulsuz
-          </span>
-        </label>
-      </div>
-
       {hasActiveFilters && (
         <button
           onClick={clearAllFilters}
           className="mt-6 text-[13px] font-medium transition-colors"
           style={{ color: 'var(--color-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
         >
-          Filtri təmizlə ({[activeType !== 'all', onlyFree].filter(Boolean).length})
+          Filtri təmizlə
         </button>
       )}
     </>
@@ -134,7 +110,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           >
             <SlidersHorizontal size={15} />
             Filtrlər
-            {(activeType !== 'all' || onlyFree) && (
+            {activeType !== 'all' && (
               <span className="w-2 h-2 rounded-full bg-ink" />
             )}
           </button>
@@ -182,7 +158,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
 
           {/* Main */}
           <div>
-            {/* Results row (desktop only sort) */}
+            {/* Results row */}
             <div className="hidden lg:flex items-center justify-between mb-6">
               <span className="text-[14px]" style={{ color: 'var(--color-ink-mute)' }}>
                 <span className="font-medium" style={{ color: 'var(--color-ink)' }}>{filtered.length}</span> nəticə
@@ -193,13 +169,12 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                 className="input-new"
                 style={{ width: 'auto', paddingTop: 8, paddingBottom: 8, fontSize: 13 }}
               >
-                <option value="newest">Ən yeni</option>
+                <option value="popular">Popularlığa görə</option>
                 <option value="price-asc">Qiymət ↑</option>
                 <option value="price-desc">Qiymət ↓</option>
               </select>
             </div>
 
-            {/* Mobile result count */}
             <p className="lg:hidden text-[13px] text-ink-mute mb-4">
               <span className="font-medium text-ink">{filtered.length}</span> nəticə
             </p>
@@ -217,16 +192,13 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   <p className="text-[14px] m-0 mb-6" style={{ color: 'var(--color-ink-soft)' }}>
                     Filtrləri dəyişdirməyi cəhd edin
                   </p>
-                  <button
-                    onClick={() => { setActiveType('all'); setOnlyFree(false); }}
-                    className="btn-ghost"
-                  >
+                  <button onClick={clearAllFilters} className="btn-ghost">
                     Sıfırla
                   </button>
                 </motion.div>
               ) : (
                 <motion.div
-                  key={activeType + String(onlyFree) + sortOrder}
+                  key={activeType + sortOrder}
                   className="grid gap-4"
                   style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
                   initial="hidden"
@@ -247,16 +219,15 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                       >
                         <Link href={`/exams/${exam.id}`} className="flex flex-col card-new card-new-hover h-full">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="tag tag-accent">{exam.tag}</span>
-                              {exam.price === 0 && <span className="tag">Pulsuz</span>}
-                            </div>
-                            <span
-                              className="font-display font-medium shrink-0 ml-2"
-                              style={{ fontSize: 20, color: 'var(--color-ink)' }}
-                            >
-                              {exam.price === 0 ? 'Pulsuz' : `${exam.price} ₼`}
-                            </span>
+                            <span className="tag tag-accent">{exam.tag}</span>
+                            {exam.price > 0 && (
+                              <span
+                                className="font-display font-medium shrink-0 ml-2"
+                                style={{ fontSize: 20, color: 'var(--color-ink)' }}
+                              >
+                                {exam.price} ₼
+                              </span>
+                            )}
                           </div>
 
                           <h3 className="t-title m-0 mb-3" style={{ fontSize: 18, lineHeight: 1.3 }}>

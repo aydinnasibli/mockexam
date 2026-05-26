@@ -25,7 +25,7 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
   if (!userId) return { error: 'Unauthorized' };
 
   // 10 session-start calls per user per minute — prevents timer reset abuse
-  if (isRateLimited(`begin:${userId}`, 10, 60_000)) {
+  if (await isRateLimited(`begin:${userId}`, 10, 60_000)) {
     return { error: 'Çox tez-tez sorğu göndərdiniz. Bir az gözləyin.' };
   }
 
