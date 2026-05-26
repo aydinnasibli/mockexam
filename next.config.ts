@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -12,7 +13,8 @@ const csp = [
   "media-src 'self' https://*.public.blob.vercel-storage.com",
   // next/font/google self-hosts fonts; data: covers KaTeX font fallbacks
   "font-src 'self' data:",
-  "connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com wss://*.clerk.accounts.dev",
+  // /monitoring is the Sentry tunnel route — events go through our own domain, no sentry.io needed in CSP
+  "connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com wss://*.clerk.accounts.dev /monitoring",
   // Clerk Turnstile (bot protection) renders in an iframe from Cloudflare
   "frame-src https://challenges.cloudflare.com",
   "worker-src blob:",
@@ -66,4 +68,37 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const hasSourceMapCreds = !!(
+  process.env.SENTRY_AUTH_TOKEN &&
+  process.env.SENTRY_ORG &&
+  process.env.SENTRY_PROJECT
+);
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Route Sentry events through /monitoring so they bypass ad-blockers
+  // and sentry.io never appears in the connect-src CSP header.
+  // withSentryConfig auto-injects tunnel: '/monitoring' into the client bundle.
+  tunnelRoute: '/monitoring',
+
+  // Upload dependency source maps too — fixes [native code] frames in stack traces
+  widenClientFileUpload: true,
+
+  // Skip source map upload entirely when credentials are absent (e.g. local dev)
+  sourcemaps: {
+    disable: !hasSourceMapCreds,
+    filesToDeleteAfterUpload: ['.next/static/**/*.map'],
+  },
+
+  // Tree-shake Sentry debug logging from production bundles (webpack only, not Turbopack)
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+
+  silent: !process.env.CI,
+});

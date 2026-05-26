@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
 import { headers } from 'next/headers';
@@ -72,7 +73,7 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   });
 
   if (error || !data?.data?.attributes?.url) {
-    console.error('[createCheckoutSession] LemonSqueezy error:', error);
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), { tags: { action: 'createCheckoutSession' } });
     return { error: error?.message ?? 'Failed to create checkout session' };
   }
 

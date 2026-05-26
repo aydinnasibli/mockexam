@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Test Centre — Academic Exam Preparation Platform
 
-## Getting Started
+A full-stack exam preparation platform for SAT, IELTS, TOEFL, DİM, GMAT, and GRE. Students take timed mock exams in the real test format, get AI-powered feedback, and track their progress over time.
 
-First, run the development server:
+Live at [testcentre.az](https://www.testcentre.az).
+
+## Features
+
+- **Exam catalog** — browse and purchase exam packages by type (SAT, IELTS, TOEFL, DİM, GMAT, GRE)
+- **Timed exam sessions** — module-by-module structure with breaks, adaptive modules, and countdown timers
+- **AI writing evaluation** — OpenAI grades open-ended writing and speaking responses
+- **Math rendering** — KaTeX renders LaTeX in questions and explanations
+- **Audio questions** — server actions stream audio for listening modules
+- **User dashboard** — analytics, result history, and account settings
+- **Admin panel** — manage exams, view purchases, seed question banks, import question data
+- **Payments** — LemonSqueezy handles checkout and purchase webhooks
+- **Auth** — Clerk for sign-up, sign-in, and session management
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Database | MongoDB via Mongoose |
+| Auth | Clerk |
+| Payments | LemonSqueezy |
+| AI | OpenAI API |
+| Animation | Framer Motion |
+| Deployment | Vercel |
+
+## Project Structure
+
+```
+app/
+  page.tsx              # Landing page
+  exams/                # Exam catalog & detail pages
+  exam-session/[id]/    # Active exam session UI
+  dashboard/            # User dashboard (results, analytics, settings)
+  admin/                # Admin panel (exams, purchases, users)
+  checkout/[id]/        # Purchase flow
+  api/                  # Route handlers (webhooks, purchase status)
+lib/
+  models/               # Mongoose schemas (Exam, Question, ExamSession, ExamResult, Purchase, UserSettings)
+  actions/              # Server actions (session, questions, results, checkout, AI eval, audio, import)
+  db/                   # DB query helpers
+  mongodb.ts            # Mongoose connection singleton
+components/
+  layout/               # Navbar, Footer, Sidebar
+  ui/                   # Animation wrappers (FadeUp, StaggerChildren, PageTransition)
+```
+
+## Local Setup
+
+**1. Clone and install**
+
+```bash
+git clone <repo-url>
+cd mockexam
+npm install
+```
+
+**2. Configure environment variables**
+
+Create `.env.local` in the project root:
+
+```env
+# Clerk — https://dashboard.clerk.com
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+
+# MongoDB Atlas connection string
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/mockexam
+
+# LemonSqueezy — https://app.lemonsqueezy.com
+LEMONSQUEEZY_API_KEY=...
+LEMONSQUEEZY_STORE_ID=...
+LEMONSQUEEZY_VARIANT_ID=...
+LEMONSQUEEZY_WEBHOOK_SECRET=...
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Comma-separated Clerk user IDs that get admin access
+ADMIN_USER_IDS=user_...
+
+# Public app URL (used for OG tags and sitemaps)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**3. Run the dev server**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
 
-## Learn More
+## Exam Module Types
 
-To learn more about Next.js, take a look at the following resources:
+Exams are composed of one or more modules. Supported module types:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`rw` · `reading` · `writing` · `listening` · `speaking` · `grammar` · `math` · `verbal` · `quantitative` · `analytical` · `general`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Each module has a duration, question count, optional break, and an `isAdaptive` flag (used for SAT-style adaptive routing).

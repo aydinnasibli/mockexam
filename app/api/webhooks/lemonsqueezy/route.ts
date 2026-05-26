@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { z } from 'zod';
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text();
 
   if (!secret) {
-    console.error('[webhook] LEMONSQUEEZY_WEBHOOK_SECRET is not configured');
+    Sentry.captureMessage('LEMONSQUEEZY_WEBHOOK_SECRET is not configured', { level: 'error' });
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
@@ -57,7 +58,10 @@ export async function POST(req: NextRequest) {
 
   const parsed = webhookSchema.safeParse(raw);
   if (!parsed.success) {
-    console.error('[webhook] Unexpected payload shape:', parsed.error.flatten());
+    Sentry.captureMessage('Webhook unexpected payload shape', {
+      level: 'error',
+      extra: { validationErrors: parsed.error.flatten() },
+    });
     return NextResponse.json({ error: 'Unexpected payload shape' }, { status: 400 });
   }
 
@@ -89,11 +93,10 @@ export async function POST(req: NextRequest) {
       { upsert: true, new: true }
     );
 
-    console.log(`[webhook] Purchase recorded: userId=${userId}, examId=${examId}, orderId=${lsOrderId}`);
     return NextResponse.json({ received: true });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    console.error('[webhook] DB error:', detail);
+    Sentry.captureException(err, { tags: { route: 'webhook/lemonsqueezy' }, extra: { detail } });
     return NextResponse.json({ error: 'Database error', detail }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
+import * as Sentry from '@sentry/nextjs';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -877,7 +878,7 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
       await audioRef.current.play();
       setStatus('playing');
     } catch (err: any) {
-      console.error('Audio play failed:', err?.name, err?.message, err);
+      Sentry.captureException(err, { tags: { context: 'audioPlay' }, extra: { name: err?.name, message: err?.message } });
       toast.error(`Audionu başlatmaq mümkün olmadı: ${err?.message ?? err}. Zəhmət olmasa təkrar sınayın.`);
       return;
     }

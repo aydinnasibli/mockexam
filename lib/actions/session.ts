@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
@@ -56,7 +57,7 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
       totalSeconds,
     };
   } catch (err) {
-    console.error('[beginExamSession]', err);
+    Sentry.captureException(err, { tags: { action: 'beginExamSession' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }

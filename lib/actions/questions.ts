@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
@@ -175,7 +176,7 @@ export async function addQuestion(data: {
     revalidatePath(`/admin/exams/${data.examId}/questions`);
     return { id: String(doc._id) };
   } catch (err) {
-    console.error('[addQuestion]', err);
+    Sentry.captureException(err, { tags: { action: 'addQuestion' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -209,7 +210,7 @@ export async function updateQuestion(
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
-    console.error('[updateQuestion]', err);
+    Sentry.captureException(err, { tags: { action: 'updateQuestion' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -226,7 +227,7 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
-    console.error('[deleteQuestion]', err);
+    Sentry.captureException(err, { tags: { action: 'deleteQuestion' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -244,7 +245,7 @@ export async function reorderQuestions(
     revalidatePath(`/admin/exams/${examId}/questions`);
     return { ok: true };
   } catch (err) {
-    console.error('[reorderQuestions]', err);
+    Sentry.captureException(err, { tags: { action: 'reorderQuestions' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }

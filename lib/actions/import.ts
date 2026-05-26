@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -80,7 +81,7 @@ export async function importExamFromJson(parsedJson: any) {
     }
 
   } catch (err: any) {
-    console.error('[importExamFromJson]', err);
+    Sentry.captureException(err, { tags: { action: 'importExamFromJson' } });
     return { error: err.message || 'Fayl yüklənərkən daxili server xətası baş verdi.' };
   }
 

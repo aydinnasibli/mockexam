@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import ExamSessionModel from '@/lib/models/ExamSession';
@@ -21,7 +22,7 @@ export async function checkAudioPlayed(
     const played: string[] = (session as unknown as { playedAudioUrls: string[] }).playedAudioUrls ?? [];
     return { alreadyPlayed: played.includes(audioUrl) };
   } catch (err) {
-    console.error('[checkAudioPlayed]', err);
+    Sentry.captureException(err, { tags: { action: 'checkAudioPlayed' } });
     return { error: 'Server xətası.' };
   }
 }
@@ -65,7 +66,7 @@ export async function markAudioPlayed(
 
     return { alreadyPlayed: false };
   } catch (err) {
-    console.error('[markAudioPlayed]', err);
+    Sentry.captureException(err, { tags: { action: 'markAudioPlayed' } });
     return { error: 'Server xətası.' };
   }
 }

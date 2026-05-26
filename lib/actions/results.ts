@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
@@ -60,7 +61,10 @@ export async function saveExamResult(data: {
     if (session) {
       const serverElapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
       if (serverElapsed > session.totalSeconds + 300) {
-        console.warn(`[saveExamResult] Overtime: userId=${userId} examId=${examId} elapsed=${serverElapsed}s allowed=${session.totalSeconds}s`);
+        Sentry.captureMessage('Exam submission overtime', {
+          level: 'warning',
+          extra: { userId, examId, serverElapsed, allowed: session.totalSeconds },
+        });
       }
       // Use server-tracked startedAt so the stored record is always authoritative
       startDate.setTime(new Date(session.startedAt).getTime());
@@ -227,7 +231,7 @@ export async function saveExamResult(data: {
 
     return { resultId: result._id.toString(), attemptNumber };
   } catch (err) {
-    console.error('[saveExamResult]', err);
+    Sentry.captureException(err, { tags: { action: 'saveExamResult' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }

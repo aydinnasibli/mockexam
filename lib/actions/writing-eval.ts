@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import OpenAI from 'openai';
 import type { WritingTaskType } from '@/lib/models/Question';
 
@@ -88,7 +89,7 @@ export async function evaluateWriting(params: {
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error('[evaluateWriting] OPENAI_API_KEY not set');
+    Sentry.captureMessage('OPENAI_API_KEY is not configured', { level: 'error' });
     return { ...FALLBACK_RESULT, wordCount };
   }
 
@@ -139,7 +140,7 @@ Evaluate the response and return ONLY valid JSON (no markdown, no explanation ou
       overallComment:   parsed.overallComment ?? '',
     };
   } catch (err) {
-    console.error('[evaluateWriting] OpenAI error:', err);
+    Sentry.captureException(err, { tags: { action: 'evaluateWriting' } });
     return { ...FALLBACK_RESULT, wordCount };
   }
 }
