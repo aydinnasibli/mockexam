@@ -274,7 +274,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
               <span className="dot" />
               <span className="font-display text-[18px] font-normal text-ink hidden sm:block">
-                Test<em className="not-italic">centre</em>
+                Test<span>centre</span>
               </span>
             </Link>
             <div className="h-5 w-px shrink-0 hidden sm:block" style={{ background: "var(--color-rule)" }} />
@@ -396,7 +396,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       );
                     })}
                     {qs.length === 0 && (
-                      <p className="text-xs italic" style={{ color: "var(--color-ink-mute)" }}>Bu modulda sual yoxdur</p>
+                      <p className="text-xs" style={{ color: "var(--color-ink-mute)" }}>Bu modulda sual yoxdur</p>
                     )}
                   </div>
                 </div>

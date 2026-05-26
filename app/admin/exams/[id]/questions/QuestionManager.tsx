@@ -70,7 +70,7 @@ const MATH_TEMPLATES = [
 
 
 function MathPreview({ text, className = '' }: { text: string; className?: string }) {
-  const rendered = renderMath(text) || '<span class="text-on-surface-variant italic text-xs">Önizləmə...</span>';
+  const rendered = renderMath(text) || '<span class="text-on-surface-variant text-xs">Önizləmə...</span>';
   return <div dangerouslySetInnerHTML={{ __html: rendered }} className={`prose prose-sm max-w-none leading-relaxed ${className}`} />;
 }
 
@@ -164,7 +164,7 @@ function MathTextarea({
       {toolbar && showToolbar && <MathToolbar onInsert={insertAtCursor} />}
       {preview ? (
         <div className="min-h-[80px] border border-outline-variant rounded-xl px-4 py-3 bg-white">
-          {value ? <MathPreview text={value} /> : <span className="text-on-surface-variant text-xs italic">Mətn yoxdur...</span>}
+          {value ? <MathPreview text={value} /> : <span className="text-on-surface-variant text-xs">Mətn yoxdur...</span>}
         </div>
       ) : (
         <textarea
@@ -332,7 +332,7 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
       </div>
       <div className="flex-1 min-w-0">
         {q.passage && (
-          <div className="text-xs text-on-surface-variant bg-surface-container rounded-lg px-3 py-2 mb-2 line-clamp-2 italic">
+          <div className="text-xs text-on-surface-variant bg-surface-container rounded-lg px-3 py-2 mb-2 line-clamp-2">
             <FileText size={11} className="inline mr-1" />
             <MathPreview text={q.passage} className="inline" />
           </div>

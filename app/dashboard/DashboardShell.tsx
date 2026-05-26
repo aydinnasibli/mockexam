@@ -36,7 +36,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               <span className="text-bg text-[9px] font-black">TC</span>
             </div>
             <span className="font-display text-[15px] font-black text-ink tracking-tight">
-              Test<em className="font-light italic">centre</em>
+              Test<span className="font-light">centre</span>
             </span>
           </Link>
         </div>

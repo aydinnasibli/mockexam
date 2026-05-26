@@ -10,7 +10,7 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <span className="dot" />
               <span className="font-display text-[22px] font-medium text-ink tracking-tight">
-                Test<em className="italic font-normal">centre</em>
+                Test<span className="font-normal">centre</span>
               </span>
             </div>
             <p className="text-[15px] text-ink-soft leading-[1.6] max-w-85">

@@ -4,7 +4,7 @@ import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Cookie Siyasəti',
-  description: 'Testcentre-nin cookie siyasəti — hansı cookie fayllarını istifadə edirik və niyə.',
+  description: 'Testcentre-nin cookie qaydaları — hansı cookie fayllarından istifadə edilir və nə üçün.',
 };
 
 export default function CookiesPage() {
@@ -23,7 +23,7 @@ export default function CookiesPage() {
             Son yenilənmə: 26 may 2026
           </p>
           <p className="text-[16px] leading-[1.7] mb-16 rise rise-2" style={{ color: 'var(--color-ink-soft)', maxWidth: '640px' }}>
-            Bu siyasət platformamızın cookie fayllarından necə istifadə etdiyini izah edir.
+            Bu siyasət platformanın cookie fayllarından necə istifadə etdiyini izah edir.
           </p>
 
           <div className="flex flex-col gap-12">
@@ -121,11 +121,29 @@ export default function CookiesPage() {
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
                 <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>05</span>
+                <h2 className="t-title">Lokal yaddaş (localStorage / sessionStorage)</h2>
+              </div>
+              <div className="pl-13">
+                <p className="text-[15px] leading-[1.75] mb-4" style={{ color: 'var(--color-ink-soft)' }}>
+                  Cookie-lərlə yanaşı, platforma brauzer lokal yaddaşından da istifadə edir:
+                </p>
+                <p className="text-[15px] leading-[1.75] mb-4" style={{ color: 'var(--color-ink-soft)' }}>
+                  <strong style={{ color: 'var(--color-ink)' }}>sessionStorage</strong> — aktiv imtahan sessiyasının vəziyyəti (cari sual, vaxt qalığı). Brauzer nişanı bağlandıqda avtomatik silinir.
+                </p>
+                <p className="text-[15px] leading-[1.75]" style={{ color: 'var(--color-ink-soft)' }}>
+                  <strong style={{ color: 'var(--color-ink)' }}>localStorage</strong> — Sentry xəta izləyicisi öz daxili növbəsini lokal yaddaşda saxlayır. Bu məlumatlar üçüncü tərəflərlə paylaşılmır.
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-rule pt-10">
+              <div className="flex items-baseline gap-5 mb-4">
+                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>06</span>
                 <h2 className="t-title">Əlaqə</h2>
               </div>
               <div className="pl-13">
                 <p className="text-[15px] leading-[1.75]" style={{ color: 'var(--color-ink-soft)' }}>
-                  Cookie siyasəti ilə bağlı suallarınız üçün: help@testcentre.online
+                  Cookie qaydaları ilə bağlı suallarınız üçün: help@testcentre.online
                 </p>
               </div>
             </div>

@@ -34,7 +34,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <span className="dot shrink-0 relative top-px" />
             <span className="font-display text-[22px] font-medium text-ink tracking-tight leading-none">
-              Test<em className="italic font-normal">centre</em>
+              Test<span className="font-normal">centre</span>
             </span>
           </Link>
 

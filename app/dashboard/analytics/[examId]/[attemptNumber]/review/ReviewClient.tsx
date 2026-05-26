@@ -337,7 +337,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                               </div>
                             ) : (
                               <div className="p-4 bg-surface-2 border border-rule rounded-xl">
-                                <p className="text-sm text-ink-mute italic">Cavab verilməyib.</p>
+                                <p className="text-sm text-ink-mute">Cavab verilməyib.</p>
                               </div>
                             )}
 

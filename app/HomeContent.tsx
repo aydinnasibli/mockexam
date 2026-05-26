@@ -130,9 +130,9 @@ export default function HomeContent({ countsByType }: Props) {
                   <div className="eyebrow mb-4">Sual 14 / 22</div>
                   <p className="font-display font-normal text-ink leading-[1.4]" style={{ fontSize: 22 }}>
                     If{" "}
-                    <em className="italic" style={{ color: "var(--color-accent)" }}>ƒ(x) = 3x² − 5x + 2</em>
+                    <span style={{ color: "var(--color-accent)" }}>ƒ(x) = 3x² − 5x + 2</span>
                     , what is the value of{" "}
-                    <em className="italic" style={{ color: "var(--color-accent)" }}>ƒ(−1)</em>?
+                    <span style={{ color: "var(--color-accent)" }}>ƒ(−1)</span>?
                   </p>
                   <div className="flex flex-col gap-2.5 mt-7">
                     {[

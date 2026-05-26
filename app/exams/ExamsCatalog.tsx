@@ -95,7 +95,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             <span className="eyebrow" style={{ color: 'var(--color-ink)' }}>Kataloq</span>
           </div>
           <h1 className="t-display-2 m-0 mb-6">
-            Bütün <em className="italic">sınaqlar.</em>
+            Bütün <span>sınaqlar.</span>
           </h1>
           <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
             SAT, IELTS, TOEFL imtahanlarına peşəkar hazırlıq paketləri.

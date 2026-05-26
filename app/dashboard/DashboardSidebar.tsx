@@ -58,7 +58,7 @@ export default function DashboardSidebar({ isOpen = false, onClose }: Props) {
             <span className="text-bg text-[10px] font-black">TC</span>
           </div>
           <span className="text-[15px] font-black text-ink tracking-tight font-display">
-            Test<em className="font-light italic">centre</em>
+            Test<span className="font-light">centre</span>
           </span>
         </Link>
       </motion.div>

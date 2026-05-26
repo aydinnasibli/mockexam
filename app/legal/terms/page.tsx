@@ -11,93 +11,136 @@ const sections = [
   {
     id: 'acceptance',
     title: 'Şərtlərin qəbulu',
-    content: `Testcentre platformasına daxil olmaq və ya istifadə etməklə bu İstifadə Şərtlərini tam qəbul etmiş sayılırsınız. Şərtləri qəbul etmirsinizsə, platformadan istifadə etməyin.
+    content: `Testcentre platformasına daxil olmaq və ya ondan istifadə etməklə bu İstifadə Şərtlərini tam həcmdə qəbul etmiş sayılırsınız. Şərtləri qəbul etmirsinizsə, platformadan istifadə etməyin.
 
-Bu şərtlər Aydin Vaqif oğlu Nasibli, fiziki şəxs (VÖEN: 1309635092) ilə siz (istifadəçi) arasında hüquqi müqavilədir. Azərbaycan Respublikasının qanunvericiliyi tətbiq edilir.`,
+Bu şərtlər Azərbaycan Respublikasının Mülki Məcəlləsinə, "İstehlakçıların hüquqlarının müdafiəsi haqqında" Qanuna və "Elektron ticarət haqqında" Qanuna uyğun olaraq hazırlanmışdır. Tərəflər: Aydin Vaqif oğlu Nasibli, fiziki şəxs (VÖEN: 1309635092) — bundan sonra "Testcentre" — və Siz — bundan sonra "İstifadəçi".`,
   },
   {
     id: 'service',
     title: 'Xidmətin təsviri',
-    content: `Testcentre SAT, IELTS, TOEFL, DİM, GMAT, GRE imtahanlarına hazırlıq üçün rəqəmsal sınaq platformasıdır. Xidmətlər arasında:
+    content: `Testcentre SAT, IELTS, TOEFL, DİM, GMAT, GRE imtahanlarına hazırlıq üçün rəqəmsal test platformasıdır. Xidmətlər arasında:
 
-— Adaptiv sınaq sessiyaları
+— Adaptiv test sessiyaları
 — Süni intellekt əsaslı analitika
 — Nəticə hesabatları
 — Sual izahatları
 
-Xidmətlər hər zaman mövcud olacağına zəmanət verilmir; baxım işləri üçün müvəqqəti fasilələr mümkündür.`,
+Xidmətlərin fasiləsiz mövcudluğuna zəmanət verilmir; texniki baxım işləri zamanı müvəqqəti dayanmalar mümkündür.`,
   },
   {
     id: 'eligibility',
-    title: 'Yaş tələbi',
-    content: `Platformadan istifadə etmək üçün ən az 13 yaşınız olmalıdır. 13-18 yaş arasındakı istifadəçilərin valideyn və ya qanuni qəyyumun yazılı razılığı tələb olunur. Qeydiyyatdan keçməklə yaş tələbini qarşıladığınızı təsdiq etmiş sayılırsınız.`,
+    title: 'Əhliyyət tələbi',
+    content: `Platformadan istifadə etmək üçün ən az 13 (on üç) yaşında olmaq tələb olunur. 13–18 yaş arasındakı şəxslər platformadan yalnız valideyn və ya qanuni qəyyumun razılığı əsasında istifadə edə bilər. Qeydiyyatdan keçməklə bu tələblərə cavab verdiyinizi təsdiqləmiş sayılırsınız.`,
   },
   {
     id: 'account',
     title: 'Hesab',
-    content: `Hesab yaratmaq üçün düzgün və tam məlumat verməlisiniz. Hesabınızın təhlükəsizliyinə görə məsuliyyət sizə aiddir.
+    content: `Qeydiyyat zamanı düzgün, tam və aktual məlumat verməlisiniz. Hesabın məxfiliyinin və təhlükəsizliyinin qorunmasına görə məsuliyyət İstifadəçiyə aiddir.
 
-Bir şəxsə bir hesab açıla bilər. Hesab başqasına verilə, satıla və ya icarəyə verilə bilməz.
+Bir şəxs yalnız bir hesab aça bilər. Hesabı başqa şəxsə vermək, satmaq, icarəyə vermək və ya ötürmək qadağandır.
 
-Hesabınızı silmək istədikdə help@testcentre.online ünvanına yazın. Silinmədən əvvəl bütün aktiv imtahan girişləriniz bitmiş olmalıdır.`,
+Hesabınızı silmək istədikdə help@testcentre.online ünvanına müraciət edin. Silinmədən əvvəl aktiv imtahan girişlərindən istifadə etməyi tövsiyə edirik.`,
   },
   {
     id: 'payments',
     title: 'Ödəniş şərtləri',
-    content: `Ödənişli xidmətlər LemonSqueezy vasitəsilə emal edilir. Ödəniş zamanı LemonSqueezy-nin şərtləri də tətbiq edilir.
+    content: `Ödənişli xidmətlər Lemon Squeezy, LLC vasitəsilə emal edilir. LemonSqueezy Merchant of Record (qanuni satıcı) kimi fəaliyyət göstərir — vergi, ƏDV öhdəlikləri və ödəniş emalı onların üzərinə düşür.
 
-Qiymətlər saytda göstərildiyi kimi ödənilir. Gizli ödəniş, abunəlik tələsi və ya avtomatik yenilənmə yoxdur — hər alış ayrıca və könüllüdür.
+Qiymətlər platformada göstərildiyi kimi tətbiq edilir. Gizli ödəniş, avtomatik yenilənən abunəlik və ya tələ xarakterli qiymətləndirmə yoxdur — hər alış ayrıca və könüllüdür.
 
-Ödəniş uğurla başa çatdıqdan sonra müvafiq imtahana giriş dərhal açılır.`,
+Uğurlu ödənişdən dərhal sonra müvafiq imtahana giriş açılır.`,
+  },
+  {
+    id: 'digital-content',
+    title: 'Rəqəmsal xidmətin çatdırılması',
+    content: `Ödəniş tamamlandığı anda rəqəmsal xidmət (imtahana giriş) dərhal başlayır. Satın alma əməliyyatını tamamlamaqla İstifadəçi xidmətin dərhal icrasına açıq razılıq verir.
+
+"İstehlakçıların hüquqlarının müdafiəsi haqqında" Qanunun müvafiq müddəaları çərçivəsində — İstifadəçi xidmətin dərhal icrasına razılıq verdiyi üçün — ümumi qaydada nəzərdə tutulan imtina müddəti tətbiq edilmir.
+
+Satın almadan əvvəl platformanı tanımaq üçün sınaq səhifəsindəki nümunə materiallarından istifadə edə bilərsiniz.`,
   },
   {
     id: 'refund',
     title: 'Geri qaytarma',
-    content: `Geri qaytarma şərtləri üçün ayrıca Geri Qaytarma Siyasətimizə baxın.`,
+    content: `Geri qaytarma şərtləri üçün Geri Qaytarma Siyasətimizə baxın.`,
   },
   {
     id: 'ip',
     title: 'Əqli mülkiyyət',
-    content: `Platformadakı bütün məzmun — sual bankı, izahatlar, video materiallar, dizayn, kod — Testcentre-nin əqli mülkiyyətidir. İcazəsiz surətdə kopyalanması, paylaşılması, satışa çıxarılması qəti qadağandır.
+    content: `Platformadakı bütün məzmun — sual bankı, izahatlar, audio materiallar, dizayn, proqram kodu — "Əqli mülkiyyət haqqında" Azərbaycan Respublikasının Qanunu ilə mühafizə olunan Testcentre-nin əqli mülkiyyətidir.
 
-İstifadəçilər yalnız şəxsi hazırlıq məqsədilə platformadan istifadə edə bilər.`,
+İstifadəçilər yalnız şəxsi hazırlıq məqsədi ilə platformadan istifadə edə bilər. Hər hansı məzmunun icazəsiz surətdə çoxaldılması, paylaşılması və ya satışa çıxarılması qanuna ziddir.`,
   },
   {
     id: 'prohibited',
     title: 'Qadağan olunmuş istifadə',
     content: `Aşağıdakılar qəti qadağandır:
 
-— Sınaq suallarını kopyalamaq, yaymaq, satmaq
-— Başqasının adından sınaq keçmək
-— Avtomatlaşdırılmış alətlər (botlar, skriptlər) ilə platforma ilə qarşılıqlı əlaqə
-— Platformanın təhlükəsizliyini pozmağa cəhd etmək
-— Digər istifadəçilərin hesabına müdaxilə etmək
+— Sınaq suallarını kopyalamaq, yaymaq və ya satmaq.
+— Başqasının adından sınaq keçmək.
+— Avtomatlaşdırılmış alətlər (bot, skript, veb-kraulator) vasitəsilə platforma ilə əlaqə yaratmaq.
+— Platformanın texniki mühafizəsini pozmağa cəhd etmək.
+— Başqa istifadəçilərin hesablarına icazəsiz daxil olmaq.
 
-Qadağan olunmuş istifadə aşkar edildikdə hesab dərhal bağlanır.`,
+Qadağan olunmuş istifadə aşkar edildikdə hesab xəbərdarlıq olmadan bağlanır.`,
+  },
+  {
+    id: 'termination',
+    title: 'Müqavilənin xitamı',
+    content: `Testcentre aşağıdakı hallarda xidməti dayandıra və ya hesabı bağlaya bilər:
+
+— Bu şərtlərin ciddi və ya sistemli şəkildə pozulması.
+— Qadağan olunmuş istifadənin aşkar edilməsi.
+— Fırıldaqçılıq şübhəsinin yaranması.
+
+İstifadəçilər istənilən vaxt help@testcentre.online ünvanına müraciət edərək hesablarını silə bilər. Müqavilənin xitamından sonra fərdi məlumatlar Məxfilik Siyasətinin "Saxlanma müddətləri" bəndinə uyğun emal edilir.
+
+Xidmətin tamamilə dayandırılması halında istifadəçilərə ən azı 30 (otuz) gün əvvəl e-poçt bildirişi göndəriləcək.`,
   },
   {
     id: 'liability',
     title: 'Məsuliyyətin məhdudlaşdırılması',
-    content: `Testcentre platforma xidmətini "olduğu kimi" təqdim edir. Texniki nasazlıqlar, müvəqqəti mövcud olmaması, məlumat itkisi hallarında dolayı zərərlər üçün məsuliyyət daşımırıq.
+    content: `Testcentre platforma xidmətlərini "olduğu kimi" (as-is) təqdim edir. Texniki nasazlıqlar, xidmətin müvəqqəti mövcud olmaması və məlumat itkisi hallarında dolayı zərərlər üçün məsuliyyət daşınmır.
 
-Məsuliyyətimizin ümumi həddi ödəniş etdiyiniz məbləği keçmir.
+Testcentre-nin hər hansı iddia üzrə məsuliyyətinin ümumi həddi İstifadəçinin ödədiyi məbləği keçmir.`,
+  },
+  {
+    id: 'disclaimer',
+    title: 'Zəmanətsizlik',
+    content: `Platforma xidmətləri "olduğu kimi" və "mövcud olduğu kimi" (as-is, as-available) əsasda göstərilir. Xidmətin hər hansı xüsusi məqsədə uyğunluğuna, fasiləsiz və xətasız işləməsinə dair açıq və ya nəzərdə tutulan heç bir zəmanət verilmir.
 
-Xidmətin dayandırılması halında istifadəçilərə ən azı 30 gün əvvəl e-poçt vasitəsilə xəbərdarlıq ediləcək.`,
+Testcentre imtahan nəticəsinin konkret hədəfə çatacağına zəmanət vermir. Platforma hazırlıq alətlərini təqdim edir; real imtahan nəticəsi bir çox müstəqil amillərdən asılıdır.`,
+  },
+  {
+    id: 'force-majeure',
+    title: 'Fors-major',
+    content: `Testcentre-nin ağlabatan nəzarəti xaricindəki hadisələr — internet infrastrukturunun dayanması, elektrik kəsilməsi, təbii fəlakətlər, hökumət aktları, kiber hücumlar, üçüncü tərəf xidmətlərinin (Clerk, Vercel, MongoDB Atlas) nasazlıqları — nəticəsindən yaranan gecikmələr və ya xidmətin mövcud olmaması üçün məsuliyyət daşınmır.`,
+  },
+  {
+    id: 'general',
+    title: 'Ümumi müddəalar',
+    content: `Müddəaların ayrılıqlığı: Bu şərtlərin hər hansı müddəası tətbiq edilən qanunvericiliyə görə qüvvəsiz hesab edildikdə, yalnız həmin müddəa şərtlərdən ayrılır; qalan müddəalar tam qüvvədə qalır.
+
+Tam müqavilə: Bu İstifadə Şərtləri, Məxfilik Siyasəti, Cookie Siyasəti və Geri Qaytarma Siyasəti birlikdə tərəflər arasındakı tam müqaviləni təşkil edir.
+
+Hüquqdan imtinasızlıq: Testcentre-nin hər hansı hüququ bir dəfə tətbiq etməməsi həmin hüquqdan daimi imtina sayılmır.`,
   },
   {
     id: 'changes',
     title: 'Şərtlərin dəyişdirilməsi',
-    content: `Bu şərtlər zərurət yarandıqda dəyişdirilə bilər. Əhəmiyyətli dəyişikliklər barədə e-poçt vasitəsilə məlumat veriləcək. Dəyişiklikdən sonra platformadan istifadə davam etdirilməsi yeni şərtlərin qəbulu sayılır.`,
+    content: `Bu şərtlər zərurət yarandıqda dəyişdirilə bilər. Məzmun baxımından əhəmiyyətli dəyişikliklər barədə qeydiyyatda olan e-poçt ünvanınıza bildiriş göndəriləcək. Dəyişiklikdən sonra platformadan istifadəyə davam etmək yeni şərtlərin qəbulu sayılır.`,
   },
   {
     id: 'law',
-    title: 'Tətbiq edilən qanun',
-    content: `Bu müqavilə Azərbaycan Respublikasının qanunvericiliyinə uyğun tənzimlənir. Mübahisələr Bakı şəhərinin müvafiq məhkəmələrinin yurisdiksiyasına aiddir.`,
+    title: 'Tətbiq edilən hüquq və mübahisələrin həlli',
+    content: `Bu müqavilə Azərbaycan Respublikasının qanunvericiliyi — xüsusilə Mülki Məcəllə, "İstehlakçıların hüquqlarının müdafiəsi haqqında" Qanun və "Elektron ticarət haqqında" Qanun — ilə tənzimlənir.
+
+Mübahisələr ilk növbədə danışıqlar yolu ilə həll edilir. Razılığa gəlinmədikdə iş Bakı şəhəri üzrə aidiyyəti məhkəməyə verilir.`,
   },
   {
     id: 'contact',
     title: 'Əlaqə',
-    content: `Hər hansı sualınız varsa: help@testcentre.online`,
+    content: `Hər hansı sualınız üçün: help@testcentre.online`,
   },
 ];
 
