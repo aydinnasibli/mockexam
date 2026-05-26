@@ -6,7 +6,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { LayoutDashboard, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { href: "/exams",   label: "Sınaqlar" },
@@ -19,22 +19,31 @@ export default function Navbar() {
   const { user } = useUser();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <>
       <motion.header
-        initial={{ y: -68, opacity: 0 }}
+        initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="fixed top-0 w-full z-50 nav-frosted border-b border-rule"
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        className={`fixed top-0 w-full z-50 nav-premium border-b transition-shadow duration-300 ${
+          scrolled ? "border-rule shadow-[0_4px_24px_rgba(26,26,26,0.07),0_1px_4px_rgba(26,26,26,0.05)]" : "border-rule/60"
+        }`}
       >
-        <nav className="flex items-center justify-between w-full px-4 md:px-6 h-17 max-w-7xl mx-auto">
+        <nav className="flex items-center justify-between w-full px-6 md:px-10 h-18 max-w-7xl mx-auto">
 
           {/* ── Logo ── */}
-          <Link href="/" className="flex items-center gap-1.5 shrink-0">
-            <span className="dot shrink-0 relative top-px" />
-            <span className="font-display text-[22px] font-medium text-ink tracking-tight leading-none">
-              Test<span className="font-normal">centre</span>
+          <Link href="/" className="flex items-center gap-2 shrink-0 group">
+            <span className="dot shrink-0 group-hover:scale-125 transition-transform duration-200" />
+            <span className="font-display text-[25px] font-medium text-ink tracking-tight leading-none">
+              Test<span className="font-normal" style={{ color: 'var(--color-ink-soft)' }}>centre</span>
             </span>
           </Link>
 
@@ -46,16 +55,20 @@ export default function Navbar() {
                 <Link
                   key={href}
                   href={href}
-                  className={`relative px-3.5 py-2 text-[14px] font-medium rounded-full transition-all duration-150 ${
+                  className={`relative px-4 py-2 text-[14px] font-medium rounded-xl transition-all duration-150 ${
                     isActive
-                      ? "text-ink bg-surface-2"
-                      : "text-ink-soft hover:text-ink hover:bg-surface-2"
+                      ? "text-ink"
+                      : "text-ink-mute hover:text-ink hover:bg-surface-2"
                   }`}
                 >
-                  {label}
                   {isActive && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full bg-ink" />
+                    <motion.span
+                      layoutId="nav-bg"
+                      className="absolute inset-0 bg-surface-3 rounded-xl -z-10"
+                      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    />
                   )}
+                  {label}
                 </Link>
               );
             })}
@@ -63,17 +76,16 @@ export default function Navbar() {
 
           {/* ── Right: desktop auth + mobile hamburger ── */}
           <div className="flex items-center gap-2">
-            {/* Desktop auth */}
             <div className="hidden md:flex items-center gap-2">
               {!isSignedIn ? (
                 <>
                   <SignInButton mode="modal">
-                    <button className="text-ink-soft font-medium px-4 py-2 hover:text-ink hover:bg-surface-2 rounded-lg transition-colors text-[13px]">
+                    <button className="text-ink-mute hover:text-ink text-[14px] font-medium px-4 py-2 rounded-lg hover:bg-surface-2 transition-all duration-200">
                       Daxil ol
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className="btn-primary py-2! px-5! text-[13px]!">
+                    <button className="text-[13.5px] font-medium px-5 py-2 bg-ink text-bg rounded-full hover:bg-ink/85 transition-colors">
                       Qeydiyyat
                     </button>
                   </SignUpButton>
@@ -82,17 +94,17 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/dashboard"
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                      pathname === "/dashboard"
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 ${
+                      pathname.startsWith("/dashboard")
                         ? "bg-surface-2 text-ink"
-                        : "text-ink-soft hover:bg-surface-2 hover:text-ink"
+                        : "text-ink-mute hover:bg-surface-2 hover:text-ink"
                     }`}
                   >
-                    <LayoutDashboard size={15} className="opacity-70" />
+                    <LayoutDashboard size={15} />
                     Kabinet
                   </Link>
                   <div className="w-px h-5 bg-rule mx-1" />
-                  <div className="w-8 h-8 rounded-full ring-2 ring-rule ring-offset-1 overflow-hidden pointer-events-none select-none shrink-0 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full ring-2 ring-rule ring-offset-1 overflow-hidden shrink-0 flex items-center justify-center">
                     {user?.imageUrl
                       ? <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />
                       : <div className="w-full h-full bg-ink flex items-center justify-center text-bg text-xs font-black">
@@ -106,11 +118,22 @@ export default function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-surface-2 transition-colors text-ink"
+              className="md:hidden p-2 rounded-lg hover:bg-surface-2 transition-colors text-ink-soft"
               onClick={() => setMobileOpen(o => !o)}
               aria-label={mobileOpen ? 'Menyu bağla' : 'Menyu aç'}
             >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={mobileOpen ? 'close' : 'open'}
+                  initial={{ opacity: 0, rotate: -30, scale: 0.8 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: 30, scale: 0.8 }}
+                  transition={{ duration: 0.15 }}
+                  className="block"
+                >
+                  {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </nav>
@@ -120,7 +143,6 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               className="fixed inset-0 bg-black/20 z-40 md:hidden"
               initial={{ opacity: 0 }}
@@ -128,16 +150,14 @@ export default function Navbar() {
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
             />
-
-            {/* Drawer */}
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="fixed top-17 left-0 right-0 z-50 nav-frosted border-b border-rule md:hidden"
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed top-[72px] left-0 right-0 z-50 nav-premium border-b border-rule md:hidden"
             >
-              <div className="px-4 py-3 space-y-0.5">
+              <div className="px-4 py-3 space-y-0.5 max-w-7xl mx-auto">
                 {navLinks.map(({ href, label }) => {
                   const isActive = pathname === href || pathname.startsWith(href + '/');
                   return (

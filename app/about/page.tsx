@@ -39,7 +39,7 @@ export default function AboutPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-17">
+      <main className="pt-18">
 
         {/* Hero */}
         <section className="max-w-310 mx-auto px-8 py-24">

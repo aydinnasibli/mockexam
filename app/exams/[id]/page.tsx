@@ -73,7 +73,7 @@ export default async function ExamDetails({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <Navbar />
-      <main className="pt-17 min-h-screen bg-bg">
+      <main className="pt-18 min-h-screen bg-bg">
 
         {/* Breadcrumb */}
         <div style={{ borderBottom: '1px solid var(--color-rule)' }}>

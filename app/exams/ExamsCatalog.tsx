@@ -85,7 +85,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
   );
 
   return (
-    <main className="pt-17 bg-bg min-h-screen">
+    <main className="pt-18 bg-bg min-h-screen">
       <div className="max-w-340 mx-auto px-4 sm:px-8 py-16">
 
         {/* Hero */}

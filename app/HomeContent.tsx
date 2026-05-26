@@ -75,7 +75,7 @@ export default function HomeContent({ countsByType }: Props) {
   return (
     <>
       <Navbar />
-      <main className="pt-17">
+      <main className="pt-18">
 
         {/* ── HERO ── */}
         <section className="max-w-340 mx-auto px-8" style={{ padding: "96px 32px 64px" }}>

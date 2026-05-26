@@ -11,7 +11,7 @@ export default function CookiesPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-17">
+      <main className="pt-18">
         <div className="max-w-215 mx-auto px-8 py-24">
 
           <div className="flex items-center gap-3 mb-8 rise">

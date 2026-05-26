@@ -17,7 +17,7 @@ export default function ContactPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-17">
+      <main className="pt-18">
         <div className="max-w-310 mx-auto px-8 py-24">
           <div className="grid md:grid-cols-[1.1fr_1fr] gap-24">
 
