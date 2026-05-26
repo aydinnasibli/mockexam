@@ -27,7 +27,7 @@ export async function importExamFromJson(parsedJson: any) {
     }
 
     // 2. Validate modules through the same validator used by createExam
-    const modulesResult = validateModules(parsedJson.modules);
+    const modulesResult = await validateModules(parsedJson.modules);
     if ('error' in modulesResult) return modulesResult;
 
     // 3. Compute totals

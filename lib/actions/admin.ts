@@ -51,7 +51,7 @@ export interface ParsedModule {
   instructions: string;
 }
 
-export function validateModules(raw: unknown): ParsedModule[] | { error: string } {
+export async function validateModules(raw: unknown): Promise<ParsedModule[] | { error: string }> {
   if (!Array.isArray(raw) || raw.length === 0)
     return { error: 'Ən azı bir modul əlavə edin.' };
 
@@ -135,7 +135,7 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
   let modules: ParsedModule[];
   try {
     const parsed = JSON.parse(fields.modulesJson || '[]');
-    const result = validateModules(parsed);
+    const result = await validateModules(parsed);
     if ('error' in result) return result;
     modules = result;
   } catch (err) {
@@ -182,7 +182,7 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
   let modules: ParsedModule[];
   try {
     const parsed = JSON.parse(fields.modulesJson || '[]');
-    const result = validateModules(parsed);
+    const result = await validateModules(parsed);
     if ('error' in result) return result;
     modules = result;
   } catch (err) {
