@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import { isAdmin } from '@/lib/admin';
+import { checkRole } from '@/lib/admin';
 import AdminSidebar from './AdminSidebar';
 
 export const metadata = {
@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { userId } = await auth();
 
   if (!userId) redirect('/sign-in');
-  if (!isAdmin(userId)) redirect('/dashboard');
+  if (!(await checkRole('admin'))) redirect('/dashboard');
 
   return (
     <div className="min-h-screen bg-surface flex">

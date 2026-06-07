@@ -1,19 +1,17 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import ExamModel, { computeExamTotals } from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
-import { isAdmin } from '@/lib/admin';
+import { checkRole } from '@/lib/admin';
 import { validateModules } from '@/lib/actions/admin';
 
 export async function importExamFromJson(parsedJson: any) {
   try {
-    const { userId } = await auth();
-    if (!isAdmin(userId)) return { error: 'Forbidden' };
+    if (!(await checkRole('admin'))) return { error: 'Forbidden' };
 
     await dbConnect();
 

@@ -38,14 +38,15 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isAdminRoute(req)) {
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
     if (!userId) {
-      // Redirect unauthenticated users to sign-in
       const signInUrl = new URL('/sign-in', req.url);
       signInUrl.searchParams.set('redirect_url', req.url);
       return NextResponse.redirect(signInUrl);
     }
-    // Admin check is handled per-route/per-api using isAdmin() utility
+    if (sessionClaims?.metadata?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
     return NextResponse.next();
   }
 

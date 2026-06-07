@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/models/Question';
 import Purchase from '@/lib/models/Purchase';
-import { isAdmin } from '@/lib/admin';
+import { checkRole } from '@/lib/admin';
 
 export interface QuestionData {
   id: string;
@@ -51,8 +51,7 @@ export interface SessionQuestion {
 }
 
 async function requireAdmin() {
-  const { userId } = await auth();
-  if (!isAdmin(userId)) throw new Error('Unauthorized');
+  if (!(await checkRole('admin'))) throw new Error('Unauthorized');
 }
 
 function validId(id: string): boolean {

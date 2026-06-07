@@ -1,12 +1,11 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import ExamModel, { computeExamTotals, MODULE_TYPES, type ModuleType } from '@/lib/models/Exam';
-import { isAdmin } from '@/lib/admin';
+import { checkRole } from '@/lib/admin';
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
@@ -25,8 +24,7 @@ const SEED_EXAMS: SeedExam[] = [
 // ─── Auth guard ───────────────────────────────────────────────────────────────
 
 async function requireAdmin() {
-  const { userId } = await auth();
-  if (!isAdmin(userId)) throw new Error('Forbidden');
+  if (!(await checkRole('admin'))) throw new Error('Forbidden');
 }
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
