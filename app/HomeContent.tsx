@@ -10,17 +10,17 @@ interface Props {
 }
 
 const categories = [
-  { code: "SAT",   name: "Digital SAT",    desc: "College Board Bluebook formatı. Reading/Writing + Math, adaptive.", featured: true  },
-  { code: "IELTS", name: "IELTS Academic", desc: "Listening, Reading, Writing band sınaqları. Cambridge formatı.",   featured: false },
-  { code: "TOEFL", name: "TOEFL iBT",      desc: "ETS strukturu. Dörd bölmə — Reading, Listening, Speaking, Writing.", featured: false },
-  { code: "DİM",   name: "DİM Buraxılış",  desc: "Riyaziyyat, ədəbiyyat, məntiq, dil bilikləri blokları.",           featured: true  },
-  { code: "GMAT",  name: "GMAT Focus",     desc: "Quant, Verbal, Data Insights. MBA hazırlığı.",                     featured: false },
-  { code: "GRE",   name: "GRE General",    desc: "Verbal Reasoning, Quantitative, Analytical Writing.",              featured: false },
+  { code: "SAT", name: "Digital SAT", desc: "College Board Bluebook formatı. Reading/Writing + Math, adaptive.", featured: true },
+  { code: "IELTS", name: "IELTS Academic", desc: "Listening, Reading, Writing band sınaqları. Cambridge formatı.", featured: false },
+  { code: "TOEFL", name: "TOEFL iBT", desc: "ETS strukturu. Dörd bölmə — Reading, Listening, Speaking, Writing.", featured: false },
+  { code: "DİM", name: "DİM Buraxılış", desc: "Riyaziyyat, ədəbiyyat, məntiq, dil bilikləri blokları.", featured: true },
+  { code: "GMAT", name: "GMAT Focus", desc: "Quant, Verbal, Data Insights. MBA hazırlığı.", featured: false },
+  { code: "GRE", name: "GRE General", desc: "Verbal Reasoning, Quantitative, Analytical Writing.", featured: false },
 ];
 
 const steps = [
-  { n: "01", t: "Diaqnostika",               d: "İlk sınaq mövcud səviyyənizi 11 ölçü üzrə müəyyən edir. Vaxt itkisi yoxdur, yalnız real nəticə." },
-  { n: "02", t: "Adaptive hazırlıq",         d: "Süni intellekt zəif istiqamətləri seçir və hər gün üçün 30 dəqiqəlik məşq planı qurur." },
+  { n: "01", t: "Diaqnostika", d: "İlk sınaq mövcud səviyyənizi 11 ölçü üzrə müəyyən edir. Vaxt itkisi yoxdur, yalnız real nəticə." },
+  { n: "02", t: "Adaptive hazırlıq", d: "Süni intellekt zəif istiqamətləri seçir və hər gün üçün 30 dəqiqəlik məşq planı qurur." },
   { n: "03", t: "Real format simulyasiyası", d: "İmtahandan əvvəl tam vaxtlı sınaqlar — eyni interfeys, eyni təzyiq, heç bir sürpriz qalmır." },
 ];
 
@@ -79,6 +79,7 @@ export default function HomeContent({ countsByType }: Props) {
       {/* TEMP: Sentry verification button — remove after confirming setup */}
       <button
         type="button"
+        className="z-50"
         onClick={() => {
           // @ts-expect-error intentional — testing Sentry error capture
           myUndefinedFunction();
@@ -149,10 +150,10 @@ export default function HomeContent({ countsByType }: Props) {
                   </p>
                   <div className="flex flex-col gap-2.5 mt-7">
                     {[
-                      { k: "A", v: "−6",  correct: false },
-                      { k: "B", v: "0",   correct: false },
-                      { k: "C", v: "10",  correct: true  },
-                      { k: "D", v: "14",  correct: false },
+                      { k: "A", v: "−6", correct: false },
+                      { k: "B", v: "0", correct: false },
+                      { k: "C", v: "10", correct: true },
+                      { k: "D", v: "14", correct: false },
                     ].map(opt => (
                       <div
                         key={opt.k}
