@@ -75,20 +75,6 @@ export default function HomeContent({ countsByType }: Props) {
   return (
     <>
       <Navbar />
-
-      {/* TEMP: Sentry verification button — remove after confirming setup */}
-      <button
-        type="button"
-        className="z-50"
-        onClick={() => {
-          // @ts-expect-error intentional — testing Sentry error capture
-          myUndefinedFunction();
-        }}
-        style={{ position: "fixed", bottom: 20, right: 20, zIndex: 9999, padding: "12px 20px", background: "red", color: "white", borderRadius: 8 }}
-      >
-        Trigger Sentry Test Error
-      </button>
-
       <main className="pt-18">
 
         {/* ── HERO ── */}

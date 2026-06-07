@@ -1,9 +1,23 @@
+'use client';
+
 import Link from "next/link";
 
 export default function Footer() {
   return (
     <footer className="w-full border-t border-rule bg-surface-2">
       <div className="max-w-310 mx-auto px-8 pt-20 pb-8">
+        {/* TEMP: Sentry verification button — remove after confirming setup */}
+        <button
+          type="button"
+          onClick={() => {
+            // @ts-expect-error intentional — testing Sentry error capture
+            myUndefinedFunction();
+          }}
+          style={{ marginBottom: 24, padding: "12px 20px", background: "red", color: "white", borderRadius: 8, border: "none", cursor: "pointer" }}
+        >
+          Trigger Sentry Test Error
+        </button>
+
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-16">
           {/* Brand */}
           <div>
