@@ -6,15 +6,15 @@ const isDev = process.env.NODE_ENV === 'development';
 const csp = [
   "default-src 'self'",
   // 'unsafe-inline' required: Clerk injects inline scripts; Next.js hydration uses inline scripts
-  `script-src 'self' ${isDev ? "'unsafe-eval' " : ""}'unsafe-inline' https://*.clerk.accounts.dev https://challenges.cloudflare.com`,
+  `script-src 'self' ${isDev ? "'unsafe-eval' " : ""}'unsafe-inline' https://*.accounts.dev https://challenges.cloudflare.com`,
   // 'unsafe-inline' required: KaTeX renders inline styles; Clerk UI uses inline styles
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://img.clerk.com https://images.clerk.dev https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.public.blob.vercel-storage.com",
   "media-src 'self' https://*.public.blob.vercel-storage.com",
   // next/font/google self-hosts fonts; data: covers KaTeX font fallbacks
   "font-src 'self' data:",
-  // /monitoring is the Sentry tunnel route — events go through our own domain, no sentry.io needed in CSP
-  "connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com wss://*.clerk.accounts.dev /monitoring",
+  // 'self' already covers same-origin paths like the Sentry tunnel at /monitoring — no separate entry needed
+  "connect-src 'self' https://*.accounts.dev https://api.clerk.com wss://*.accounts.dev",
   // Clerk Turnstile (bot protection) renders in an iframe from Cloudflare
   "frame-src https://challenges.cloudflare.com",
   "worker-src blob:",

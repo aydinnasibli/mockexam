@@ -19,3 +19,6 @@ Sentry.init({
 
   // tunnel is auto-injected by withSentryConfig tunnelRoute — do not set manually here
 });
+
+// Required by @sentry/nextjs to instrument App Router navigation spans
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
