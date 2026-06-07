@@ -10,6 +10,7 @@ export default function Footer() {
         <button
           type="button"
           onClick={() => {
+            console.log("[Sentry test] button clicked, throwing now...");
             // @ts-expect-error intentional — testing Sentry error capture
             myUndefinedFunction();
           }}
