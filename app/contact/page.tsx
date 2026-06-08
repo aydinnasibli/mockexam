@@ -5,10 +5,10 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 const contacts = [
-  { l: "Ümumi",    k: "help@testcentre.online",     s: "Sual, geri bildirim, kömək" },
-  { l: "Akademik", k: "akademik@testcentre.online", s: "Sual məzmunu, izahatlar, format" },
-  { l: "Mətbuat",  k: "press@testcentre.online",    s: "Müsahibə və mətbuat dəvətləri" },
-  { l: "Karyera",  k: "career@testcentre.online",   s: "Açıq vəzifələr və CV göndərişi" },
+  { l: "Ümumi",    k: "testcentreaz@proton.me",     s: "Sual, geri bildirim, kömək" },
+  { l: "Akademik", k: "testcentreaz@proton.me", s: "Sual məzmunu, izahatlar, format" },
+  { l: "Mətbuat",  k: "testcentreaz@proton.me",    s: "Müsahibə və mətbuat dəvətləri" },
+  { l: "Karyera",  k: "testcentreaz@proton.me",   s: "Açıq vəzifələr və CV göndərişi" },
 ];
 
 export default function ContactPage() {

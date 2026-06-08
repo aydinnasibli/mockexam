@@ -27,14 +27,14 @@ Satın almadan əvvəl platformanı tanımaq üçün sınaq səhifəsindəki nü
     title: 'İstisna: texniki xəta',
     content: `Ödəniş uğurla başa çatdı, lakin texniki problem səbəbindən imtahana giriş açılmadısa — bu istisnadır.
 
-Belə vəziyyətdə ödənişdən sonrakı 72 (yetmiş iki) saat ərzində help@testcentre.online ünvanına LemonSqueezy sifariş nömrəsini qeyd edərək müraciət edin. Məsələ araşdırılıb həll ediləcək.`,
+Belə vəziyyətdə ödənişdən sonrakı 72 (yetmiş iki) saat ərzində testcentreaz@proton.me ünvanına LemonSqueezy sifariş nömrəsini qeyd edərək müraciət edin. Məsələ araşdırılıb həll ediləcək.`,
   },
   {
     id: 'exception-duplicate',
     title: 'İstisna: eyni imtahanın təkrar alışı',
     content: `Artıq aktiv girişiniz olan imtahanı səhvən ikinci dəfə satın aldıysanız — bu istisnadır.
 
-Belə vəziyyətdə alışdan sonrakı 72 (yetmiş iki) saat ərzində help@testcentre.online ünvanına hər iki LemonSqueezy sifariş nömrəsini qeyd edərək müraciət edin. Təkrar ödəniş geri qaytarılır.`,
+Belə vəziyyətdə alışdan sonrakı 72 (yetmiş iki) saat ərzində testcentreaz@proton.me ünvanına hər iki LemonSqueezy sifariş nömrəsini qeyd edərək müraciət edin. Təkrar ödəniş geri qaytarılır.`,
   },
   {
     id: 'dispute',
@@ -46,7 +46,7 @@ Belə vəziyyətdə alışdan sonrakı 72 (yetmiş iki) saat ərzində help@test
   {
     id: 'contact',
     title: 'Əlaqə',
-    content: `Suallarınız üçün: help@testcentre.online — hər müraciətə 24 saat ərzində cavab verilir.`,
+    content: `Suallarınız üçün: testcentreaz@proton.me — hər müraciətə 24 saat ərzində cavab verilir.`,
   },
 ];
 

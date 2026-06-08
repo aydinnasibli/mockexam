@@ -39,7 +39,7 @@ Xidmətlərin fasiləsiz mövcudluğuna zəmanət verilmir; texniki baxım işl�
 
 Bir şəxs yalnız bir hesab aça bilər. Hesabı başqa şəxsə vermək, satmaq, icarəyə vermək və ya ötürmək qadağandır.
 
-Hesabınızı silmək istədikdə help@testcentre.online ünvanına müraciət edin. Silinmədən əvvəl aktiv imtahan girişlərindən istifadə etməyi tövsiyə edirik.`,
+Hesabınızı silmək istədikdə testcentreaz@proton.me ünvanına müraciət edin. Silinmədən əvvəl aktiv imtahan girişlərindən istifadə etməyi tövsiyə edirik.`,
   },
   {
     id: 'payments',
@@ -93,7 +93,7 @@ Qadağan olunmuş istifadə aşkar edildikdə hesab xəbərdarlıq olmadan bağl
 — Qadağan olunmuş istifadənin aşkar edilməsi.
 — Fırıldaqçılıq şübhəsinin yaranması.
 
-İstifadəçilər istənilən vaxt help@testcentre.online ünvanına müraciət edərək hesablarını silə bilər. Müqavilənin xitamından sonra fərdi məlumatlar Məxfilik Siyasətinin "Saxlanma müddətləri" bəndinə uyğun emal edilir.
+İstifadəçilər istənilən vaxt testcentreaz@proton.me ünvanına müraciət edərək hesablarını silə bilər. Müqavilənin xitamından sonra fərdi məlumatlar Məxfilik Siyasətinin "Saxlanma müddətləri" bəndinə uyğun emal edilir.
 
 Xidmətin tamamilə dayandırılması halında istifadəçilərə ən azı 30 (otuz) gün əvvəl e-poçt bildirişi göndəriləcək.`,
   },
@@ -140,7 +140,7 @@ Mübahisələr ilk növbədə danışıqlar yolu ilə həll edilir. Razılığa 
   {
     id: 'contact',
     title: 'Əlaqə',
-    content: `Hər hansı sualınız üçün: help@testcentre.online`,
+    content: `Hər hansı sualınız üçün: testcentreaz@proton.me`,
   },
 ];
 

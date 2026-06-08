@@ -2,15 +2,15 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Əlaqə',
-  description: 'Məşqçi ilə əlaqə saxlayın. Nizami küçəsi 65, Bakı. info@testcentre.az. Suallarınıza 24 saat ərzində cavab veririk.',
+  description: 'Məşqçi ilə əlaqə saxlayın. Nizami küçəsi 65, Bakı. testcentreaz@proton.me. Suallarınıza 24 saat ərzində cavab veririk.',
   openGraph: {
     title: 'Əlaqə — Məşqçi',
-    description: 'Məşqçi ilə əlaqə saxlayın. Nizami küçəsi 65, Bakı. info@testcentre.az.',
+    description: 'Məşqçi ilə əlaqə saxlayın. Nizami küçəsi 65, Bakı. testcentreaz@proton.me.',
     url: '/contact',
   },
   twitter: {
     title: 'Əlaqə — Məşqçi',
-    description: 'Məşqçi ilə əlaqə saxlayın. Nizami küçəsi 65, Bakı. info@testcentre.az.',
+    description: 'Məşqçi ilə əlaqə saxlayın. Nizami küçəsi 65, Bakı. testcentreaz@proton.me.',
   },
 };
 

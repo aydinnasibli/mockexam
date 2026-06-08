@@ -11,7 +11,7 @@ const sections = [
   {
     id: 'controller',
     title: 'Məlumat nəzarətçisi',
-    content: `Testcentre platformasının sahibi və məlumat nəzarətçisi: Aydin Vaqif oğlu Nasibli, fiziki şəxs (VÖEN: 1309635092). Ünvan: Bakı şəhəri, Azərbaycan Respublikası. Əlaqə: help@testcentre.online
+    content: `Testcentre platformasının sahibi və məlumat nəzarətçisi: Aydin Vaqif oğlu Nasibli, fiziki şəxs (VÖEN: 1309635092). Hüquqi ünvan: AZ, Bakı şəhəri, Yasamal rayonu, Zahid Xəlilov küçəsi, Məhəllə 586, Mənzil 15, Azərbaycan Respublikası. Əlaqə: testcentreaz@proton.me
 
 Bu Məxfilik Siyasəti 11 may 2010-cu il tarixli "Fərdi məlumatlar haqqında" Azərbaycan Respublikasının Qanununa (№ 998-IIIQD) uyğun olaraq hazırlanmışdır.`,
   },
@@ -71,7 +71,7 @@ Hər bir alt-emalçı öz fəaliyyəti çərçivəsində fərdi məlumatların m
 
 Ötürülmə zamanı hər bir alt-emalçının öz məxfilik siyasəti və müştəri məlumatlarının mühafizəsinə dair müqavilə öhdəlikləri tətbiq edilir.
 
-Beynəlxalq ötürülmə ilə bağlı suallarınız üçün: help@testcentre.online`,
+Beynəlxalq ötürülmə ilə bağlı suallarınız üçün: testcentreaz@proton.me`,
   },
   {
     id: 'retention',
@@ -80,7 +80,7 @@ Beynəlxalq ötürülmə ilə bağlı suallarınız üçün: help@testcentre.onl
 Hesab məlumatları: hesab aktiv olduğu müddət; hesab silindikdən sonra 30 (otuz) gün ərzində tamamilə məhv edilir.
 Ödəniş tarixçəsi: vergi və mühasibat qanunvericiliyinə uyğun olaraq 5 (beş) il saxlanılır.
 
-Hesabınızı silmək üçün help@testcentre.online ünvanına müraciət edin.`,
+Hesabınızı silmək üçün testcentreaz@proton.me ünvanına müraciət edin.`,
   },
   {
     id: 'security',
@@ -93,7 +93,7 @@ Hesabınızı silmək üçün help@testcentre.online ünvanına müraciət edin.
 — Sentry vasitəsilə ötürülən xəta məlumatlarından şəxsi məlumatlar süzülür.
 — Daxili sistemlərə giriş hüququ "minimum imtiyaz" prinsipinə uyğun məhdudlaşdırılır.
 
-Heç bir texniki sistem mütləq mühafizəni zəmanət verə bilməz. Hesabınızda şübhəli fəaliyyət aşkar etsəniz, dərhal help@testcentre.online ünvanına məlumat verin.`,
+Heç bir texniki sistem mütləq mühafizəni zəmanət verə bilməz. Hesabınızda şübhəli fəaliyyət aşkar etsəniz, dərhal testcentreaz@proton.me ünvanına məlumat verin.`,
   },
   {
     id: 'rights',
@@ -107,7 +107,7 @@ Heç bir texniki sistem mütləq mühafizəni zəmanət verə bilməz. Hesabın�
 — Məlumat portabilitəsi: məlumatlarınızı oxunaqlı formatda (JSON) almaq — bu imkan Testcentre tərəfindən könüllü olaraq təqdim edilir.
 — Hüquqi müdafiə: hüquqlarınız pozulduqda Azərbaycan Respublikasının müvafiq məhkəməsinə müraciət etmək.
 
-Bu hüquqları həyata keçirmək üçün help@testcentre.online ünvanına müraciət edin. Sorğularınıza 30 (otuz) gün ərzində cavab verilir.`,
+Bu hüquqları həyata keçirmək üçün testcentreaz@proton.me ünvanına müraciət edin. Sorğularınıza 30 (otuz) gün ərzində cavab verilir.`,
   },
   {
     id: 'children',
@@ -127,7 +127,7 @@ Bu hüquqları həyata keçirmək üçün help@testcentre.online ünvanına mür
   {
     id: 'contact',
     title: 'Əlaqə',
-    content: `Məxfilik siyasəti ilə bağlı hər hansı sualınız üçün: help@testcentre.online`,
+    content: `Məxfilik siyasəti ilə bağlı hər hansı sualınız üçün: testcentreaz@proton.me`,
   },
 ];
 

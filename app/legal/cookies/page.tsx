@@ -143,7 +143,7 @@ export default function CookiesPage() {
               </div>
               <div className="pl-13">
                 <p className="text-[15px] leading-[1.75]" style={{ color: 'var(--color-ink-soft)' }}>
-                  Cookie qaydaları ilə bağlı suallarınız üçün: help@testcentre.online
+                  Cookie qaydaları ilə bağlı suallarınız üçün: testcentreaz@proton.me
                 </p>
               </div>
             </div>

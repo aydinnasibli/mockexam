@@ -72,7 +72,7 @@ const organizationSchema = {
     '@type': 'ContactPoint',
     telephone: '+994-12-555-14-88',
     contactType: 'customer service',
-    email: 'help@testcentre.online',
+    email: 'testcentreaz@proton.me',
     availableLanguage: 'Azerbaijani',
   },
   sameAs: [],
