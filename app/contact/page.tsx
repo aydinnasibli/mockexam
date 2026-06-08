@@ -5,10 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 const contacts = [
-  { l: "Ümumi",    k: "testcentreaz@proton.me",     s: "Sual, geri bildirim, kömək" },
-  { l: "Akademik", k: "testcentreaz@proton.me", s: "Sual məzmunu, izahatlar, format" },
-  { l: "Mətbuat",  k: "testcentreaz@proton.me",    s: "Müsahibə və mətbuat dəvətləri" },
-  { l: "Karyera",  k: "testcentreaz@proton.me",   s: "Açıq vəzifələr və CV göndərişi" },
+  { l: "Əlaqə",    k: "testcentreaz@proton.me", s: "Sual, geri bildirim, kömək, tərəfdaşlıq və digər bütün müraciətlər" },
 ];
 
 export default function ContactPage() {
@@ -118,16 +115,6 @@ export default function ContactPage() {
                   <p className="text-[13px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{c.s}</p>
                 </div>
               ))}
-              <div className="card-soft">
-                <div className="eyebrow mb-3">Ofis</div>
-                <p className="font-display text-ink leading-[1.6]" style={{ fontSize: 18 }}>
-                  28 May küç. 14, mərtəbə 4<br />
-                  Yasamal, Bakı AZ1001
-                </p>
-                <p className="text-[13px] mt-3" style={{ color: "var(--color-ink-soft)" }}>
-                  +994 12 555 1488
-                </p>
-              </div>
             </div>
 
           </div>

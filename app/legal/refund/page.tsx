@@ -11,7 +11,7 @@ const sections = [
   {
     id: 'processor',
     title: 'Ödəniş emalçısı',
-    content: `Bütün ödənişlər Lemon Squeezy, LLC tərəfindən emal edilir. LemonSqueezy Merchant of Record (qanuni satıcı) kimi fəaliyyət göstərir — vergi, ƏDV öhdəlikləri və ödəniş emalı onların üzərinə düşür.`,
+    content: `Bütün ödənişlər ABB Bank-ın (Azərbaycan Beynəlxalq Bankı ASC) e-commerce ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir. Kart rekvizitləriniz bizim sistemlərimizdə saxlanılmır.`,
   },
   {
     id: 'no-refund',
@@ -27,21 +27,21 @@ Satın almadan əvvəl platformanı tanımaq üçün sınaq səhifəsindəki nü
     title: 'İstisna: texniki xəta',
     content: `Ödəniş uğurla başa çatdı, lakin texniki problem səbəbindən imtahana giriş açılmadısa — bu istisnadır.
 
-Belə vəziyyətdə ödənişdən sonrakı 72 (yetmiş iki) saat ərzində testcentreaz@proton.me ünvanına LemonSqueezy sifariş nömrəsini qeyd edərək müraciət edin. Məsələ araşdırılıb həll ediləcək.`,
+Belə vəziyyətdə ödənişdən sonrakı 72 (yetmiş iki) saat ərzində testcentreaz@proton.me ünvanına ödəniş əməliyyatının nömrəsini (bank çıxarışındakı əməliyyat ID-si) qeyd edərək müraciət edin. Məsələ araşdırılıb həll ediləcək.`,
   },
   {
     id: 'exception-duplicate',
     title: 'İstisna: eyni imtahanın təkrar alışı',
     content: `Artıq aktiv girişiniz olan imtahanı səhvən ikinci dəfə satın aldıysanız — bu istisnadır.
 
-Belə vəziyyətdə alışdan sonrakı 72 (yetmiş iki) saat ərzində testcentreaz@proton.me ünvanına hər iki LemonSqueezy sifariş nömrəsini qeyd edərək müraciət edin. Təkrar ödəniş geri qaytarılır.`,
+Belə vəziyyətdə alışdan sonrakı 72 (yetmiş iki) saat ərzində testcentreaz@proton.me ünvanına hər iki ödəniş əməliyyatının nömrəsini qeyd edərək müraciət edin. Təkrar ödəniş geri qaytarılır.`,
   },
   {
     id: 'dispute',
     title: 'Ödəniş mübahisəsi',
     content: `Ödənişlə bağlı narahatlığınız yaranarsa, bank vasitəsilə geri çağırma tələbi (chargeback) təqdim etməzdən əvvəl bizimlə birbaşa əlaqə saxlamanızı xahiş edirik. Əksər məsələlər 24 saat ərzində həll edilir.
 
-Əsassız geri çağırma tələbi halında LemonSqueezy-nin mübahisə emal qaydaları tətbiq edilir və müvafiq hesab müvəqqəti dayandırıla bilər.`,
+Əsassız geri çağırma tələbi halında ABB Bank-ın mübahisə emal qaydaları tətbiq edilir və müvafiq hesab müvəqqəti dayandırıla bilər.`,
   },
   {
     id: 'contact',

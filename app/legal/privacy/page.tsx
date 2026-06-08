@@ -22,7 +22,7 @@ Bu Məxfilik Siyasəti 11 may 2010-cu il tarixli "Fərdi məlumatlar haqqında" 
 
 İstifadə məlumatları: hansı sınaqları keçdiyiniz, hər sınağa sərf olunan vaxt, cavablarınız, bölmə üzrə nəticələriniz.
 
-Ödəniş məlumatları: ödəniş tarixçəsi. Kart rekvizitləri bizdə saxlanılmır — onlar Merchant of Record (qanuni satıcı) statusunda fəaliyyət göstərən LemonSqueezy tərəfindən emal edilir.
+Ödəniş məlumatları: ödəniş tarixçəsi. Kart rekvizitləri bizdə saxlanılmır — ödənişlər ABB Bankın (Azərbaycan Beynəlxalq Bankı ASC) e-commerce ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir.
 
 Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri.
 
@@ -57,7 +57,7 @@ Fərdi məlumatlarınız reklam məqsədi ilə üçüncü şəxslərə verilmir.
     content: `Xidmətin göstərilməsi üçün aşağıdakı alt-emalçılardan istifadə edilir:
 
 Clerk, Inc. — istifadəçi autentifikasiyası və hesab idarəsi.
-Lemon Squeezy, LLC — ödəniş emalı; Merchant of Record kimi fəaliyyət göstərir.
+ABB Bank (Azərbaycan Beynəlxalq Bankı ASC) — kart ödənişlərinin qəbulu və emalı (e-commerce xidməti).
 Functional Software, Inc. (Sentry) — texniki xəta izlənməsi.
 MongoDB, Inc. (MongoDB Atlas) — verilənlər bazasının yerləşdirilməsi.
 Vercel, Inc. — tətbiqin yerləşdirilməsi və məzmun çatdırılması şəbəkəsi (CDN).
@@ -67,7 +67,9 @@ Hər bir alt-emalçı öz fəaliyyəti çərçivəsində fərdi məlumatların m
   {
     id: 'transfers',
     title: 'Beynəlxalq məlumat ötürülməsi',
-    content: `Alt-emalçılarımız (Clerk, LemonSqueezy, Sentry, MongoDB Atlas, Vercel) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
+    content: `Alt-emalçılarımızın əksəriyyəti (Clerk, Sentry, MongoDB Atlas, Vercel) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
+
+Ödəniş əməliyyatları isə Azərbaycan Respublikası ərazisində fəaliyyət göstərən ABB Bank (Azərbaycan Beynəlxalq Bankı ASC) vasitəsilə yerli olaraq emal olunur və sərhədaşırı ötürülməyə məruz qalmır.
 
 Ötürülmə zamanı hər bir alt-emalçının öz məxfilik siyasəti və müştəri məlumatlarının mühafizəsinə dair müqavilə öhdəlikləri tətbiq edilir.
 

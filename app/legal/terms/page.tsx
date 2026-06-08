@@ -44,7 +44,7 @@ Hesabınızı silmək istədikdə testcentreaz@proton.me ünvanına müraciət e
   {
     id: 'payments',
     title: 'Ödəniş şərtləri',
-    content: `Ödənişli xidmətlər Lemon Squeezy, LLC vasitəsilə emal edilir. LemonSqueezy Merchant of Record (qanuni satıcı) kimi fəaliyyət göstərir — vergi, ƏDV öhdəlikləri və ödəniş emalı onların üzərinə düşür.
+    content: `Ödənişli xidmətlər ABB Bank-ın (Azərbaycan Beynəlxalq Bankı ASC) e-commerce ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir. Xidmətin satıcısı və qanuni təchizatçısı Məxfilik Siyasətinin "Məlumat nəzarətçisi" bölməsində göstərilən şəxsdir; vergi və ƏDV öhdəlikləri Azərbaycan Respublikasının qanunvericiliyinə uyğun olaraq həyata keçirilir.
 
 Qiymətlər platformada göstərildiyi kimi tətbiq edilir. Gizli ödəniş, avtomatik yenilənən abunəlik və ya tələ xarakterli qiymətləndirmə yoxdur — hər alış ayrıca və könüllüdür.
 
