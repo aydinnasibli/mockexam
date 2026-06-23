@@ -46,7 +46,7 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   const { data, signature } = signRequest(
     {
       public_key: publicKey,
-      amount: exam.price,
+      amount: String(exam.price),
       currency: 'AZN',
       language: 'az',
       order_id: orderId,
