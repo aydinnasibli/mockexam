@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
+import { getExamById } from '@/lib/db/exams';
 import { verifySignature, decodeData, decodeOrderId } from '@/lib/epoint';
 
 interface EpointCallback {
@@ -63,19 +64,61 @@ export async function POST(req: NextRequest) {
 
   const transaction = payload.transaction ?? payload.order_id;
   const amountCents = Math.round((payload.amount ?? 0) * 100);
-  const status = payload.status === 'success' ? 'COMPLETED' : 'FAILED';
+  const isSuccess = payload.status === 'success';
 
   try {
     await dbConnect();
 
-    await Purchase.findOneAndUpdate(
-      { userId, examId },
-      {
-        $set: { transactionId: transaction, amountCents, currency: 'AZN', status },
-        $addToSet: { orderHistory: transaction },
-      },
-      { upsert: true, new: true },
-    );
+    // Idempotency: if this transaction was already processed, return 200 immediately
+    const existing = await Purchase.findOne({ userId, examId }).lean();
+    if (existing?.orderHistory?.includes(transaction)) {
+      return NextResponse.json({ received: true });
+    }
+
+    if (isSuccess) {
+      // Verify the paid amount matches the exam price
+      const exam = await getExamById(examId);
+      if (!exam) {
+        Sentry.captureMessage('Webhook received for unknown exam', {
+          level: 'error',
+          extra: { examId, transaction },
+        });
+        return NextResponse.json({ error: 'Exam not found' }, { status: 400 });
+      }
+
+      const expectedCents = Math.round(exam.price * 100);
+      if (amountCents !== expectedCents) {
+        Sentry.captureMessage('Payment amount mismatch', {
+          level: 'error',
+          extra: { examId, transaction, expected: expectedCents, received: amountCents },
+        });
+        return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
+      }
+
+      await Purchase.findOneAndUpdate(
+        { userId, examId },
+        {
+          $set: { transactionId: transaction, amountCents, currency: 'AZN', status: 'COMPLETED' },
+          $addToSet: { orderHistory: transaction },
+        },
+        { upsert: true, new: true },
+      );
+    } else {
+      // Never downgrade a COMPLETED purchase — only write FAILED if no completed purchase exists.
+      // E11000 on the unique { userId, examId } index means a COMPLETED doc exists — that's expected, not an error.
+      try {
+        await Purchase.findOneAndUpdate(
+          { userId, examId, status: { $ne: 'COMPLETED' } },
+          {
+            $set: { transactionId: transaction, amountCents, currency: 'AZN', status: 'FAILED' },
+            $addToSet: { orderHistory: transaction },
+          },
+          { upsert: true, new: true },
+        );
+      } catch (err: any) {
+        if (err.code !== 11000) throw err;
+      }
+    }
 
     return NextResponse.json({ received: true });
   } catch (err) {

@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/models/Question';
 import Purchase from '@/lib/models/Purchase';
+import ExamResult from '@/lib/models/ExamResult';
 import { checkRole } from '@/lib/admin';
 
 export interface QuestionData {
@@ -95,6 +96,9 @@ export async function getExamQuestionsForReview(examId: string): Promise<Questio
   await dbConnect();
   const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
   if (!purchase) throw new Error('Exam not purchased');
+
+  const hasCompletedAttempt = await ExamResult.exists({ userId, examId });
+  if (!hasCompletedAttempt) throw new Error('No completed attempt');
 
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({

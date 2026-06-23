@@ -16,7 +16,7 @@ const PurchaseSchema = new Schema<IPurchase>(
   {
     userId: { type: String, required: true, index: true },
     examId: { type: String, required: true },
-    transactionId: { type: String, required: true, unique: true },
+    transactionId: { type: String, required: true },
     amountCents: { type: Number, required: true },
     currency: { type: String, required: true, default: 'AZN' },
     status: {

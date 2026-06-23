@@ -17,6 +17,22 @@ if (!cached) {
   cached = global._mongooseCache = { conn: null, promise: null };
 }
 
+let indexesCleaned = false;
+
+async function dropStaleIndexes() {
+  if (indexesCleaned) return;
+  indexesCleaned = true;
+  try {
+    const col = mongoose.connection.collection('purchases');
+    const indexes = await col.indexes();
+    if (indexes.some(i => i.name === 'transactionId_1')) {
+      await col.dropIndex('transactionId_1');
+    }
+  } catch {
+    // Collection may not exist yet — safe to ignore
+  }
+}
+
 async function dbConnect() {
   if (cached.conn) {
     return cached.conn;
@@ -27,11 +43,12 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then(async (mongoose) => {
+      await dropStaleIndexes();
       return mongoose;
     });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (e) {

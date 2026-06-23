@@ -144,78 +144,28 @@ export async function saveExamResult(data: {
       };
     });
 
-    // AI-evaluate writing answers in parallel
-    const writingEvals = await Promise.all(
-      answerRecords.map(async (record, idx) => {
-        const authoritative = correctMap.get(record.questionId);
-        if (authoritative?.type !== 'writing') return null;
-        const essay = record.userAnswerText ?? '';
-        if (!essay.trim()) return null;
-        const evalResult = await evaluateWriting({
-          essay,
-          prompt: [authoritative.passage, authoritative.stem].filter(Boolean).join('\n\n'),
-          rubric: authoritative.rubric,
-          taskType: authoritative.writingTaskType as any,
-          examType: exam.type,
-        });
-        return { idx, evalResult };
-      })
-    );
-
-    // Merge writing eval results back into answer records
-    for (const result of writingEvals) {
-      if (!result) continue;
-      const { idx, evalResult } = result;
-      const rec = answerRecords[idx];
-      rec.writingScore = evalResult.bandScore;
-      rec.writingWordCount = evalResult.wordCount;
-      rec.writingCriteria = evalResult.criteriaFeedback;
-      rec.aiFeedback = evalResult.overallComment;
-    }
-
-    // Compute overall score.
-    // Writing questions are scored on their bandScore (0-9 → normalised to 0-100%).
-    // Non-writing questions use binary isCorrect.
+    // Compute non-writing scores first (instant, no external calls)
     const nonWritingAnswers = answerRecords.filter(a => {
       const auth = correctMap.get(a.questionId);
       return auth?.type !== 'writing';
     });
-    const writingAnswers = answerRecords.filter(a => {
-      const auth = correctMap.get(a.questionId);
-      return auth?.type === 'writing';
-    });
+    const hasWriting = answerRecords.some(a => correctMap.get(a.questionId)?.type === 'writing');
 
     const nonWritingScore = nonWritingAnswers.length > 0
       ? (nonWritingAnswers.filter(a => a.isCorrect).length / nonWritingAnswers.length) * 100
       : null;
-    const writingScore = writingAnswers.length > 0
-      ? (writingAnswers.reduce((sum, a) => sum + ((a.writingScore ?? 0) / 9) * 100, 0) / writingAnswers.length)
-      : null;
 
-    const allParts = [nonWritingScore, writingScore].filter(v => v !== null) as number[];
-    const score = allParts.length > 0
-      ? Math.round(allParts.reduce((a, b) => a + b, 0) / allParts.length)
-      : 0;
+    const initialScore = nonWritingScore !== null ? Math.round(nonWritingScore) : 0;
 
-    // Compute per-module scores server-side
     const moduleScores = exam.modules.map((mod, modIdx) => {
       const modAnswers = answerRecords.filter(a => a.moduleIndex === modIdx);
-
-      // Check if this module contains writing questions
-      const modWritingAnswers = modAnswers.filter(a => correctMap.get(a.questionId)?.type === 'writing');
       const modNonWritingAnswers = modAnswers.filter(a => correctMap.get(a.questionId)?.type !== 'writing');
 
-      let scorePercent = 0;
-      if (modWritingAnswers.length > 0 && modNonWritingAnswers.length === 0) {
-        // Pure writing module: average band score normalised to 100
-        const avgBand = modWritingAnswers.reduce((s, a) => s + ((a.writingScore ?? 0) / 9) * 100, 0) / modWritingAnswers.length;
-        scorePercent = Math.round(avgBand);
-      } else if (modNonWritingAnswers.length > 0) {
-        const correct = modNonWritingAnswers.filter(a => a.isCorrect).length;
-        scorePercent = Math.round((correct / modNonWritingAnswers.length) * 100);
-      }
-
       const correct = modNonWritingAnswers.filter(a => a.isCorrect).length;
+      const scorePercent = modNonWritingAnswers.length > 0
+        ? Math.round((correct / modNonWritingAnswers.length) * 100)
+        : 0;
+
       return {
         moduleIndex:  modIdx,
         moduleName:   mod.name,
@@ -225,6 +175,7 @@ export async function saveExamResult(data: {
       };
     });
 
+    // Persist the result BEFORE AI evaluation — never lose student work
     const result = await ExamResult.create({
       userId,
       examId,
@@ -235,13 +186,82 @@ export async function saveExamResult(data: {
       completedAt:     new Date(),
       durationSeconds,
       totalQuestions:  exam.totalQuestions,
-      score,
+      score:           initialScore,
       answers:         answerRecords,
       moduleScores,
     });
 
-    // Clean up the session record now that the exam is submitted
     await ExamSessionModel.deleteOne({ userId, examId });
+
+    // AI-evaluate writing answers after the result is safely persisted
+    if (hasWriting) {
+      try {
+        const writingEvals = await Promise.all(
+          answerRecords.map(async (record, idx) => {
+            const authoritative = correctMap.get(record.questionId);
+            if (authoritative?.type !== 'writing') return null;
+            const essay = record.userAnswerText ?? '';
+            if (!essay.trim()) return null;
+            const evalResult = await evaluateWriting({
+              essay,
+              prompt: [authoritative.passage, authoritative.stem].filter(Boolean).join('\n\n'),
+              rubric: authoritative.rubric,
+              taskType: authoritative.writingTaskType as any,
+              examType: exam.type,
+            });
+            return { idx, evalResult };
+          })
+        );
+
+        for (const evalRes of writingEvals) {
+          if (!evalRes) continue;
+          const { idx, evalResult } = evalRes;
+          const rec = answerRecords[idx];
+          rec.writingScore = evalResult.bandScore;
+          rec.writingWordCount = evalResult.wordCount;
+          rec.writingCriteria = evalResult.criteriaFeedback;
+          rec.aiFeedback = evalResult.overallComment;
+        }
+
+        const writingAnswers = answerRecords.filter(a => correctMap.get(a.questionId)?.type === 'writing');
+        const writingScore = writingAnswers.length > 0
+          ? (writingAnswers.reduce((sum, a) => sum + ((a.writingScore ?? 0) / 9) * 100, 0) / writingAnswers.length)
+          : null;
+
+        const allParts = [nonWritingScore, writingScore].filter(v => v !== null) as number[];
+        const finalScore = allParts.length > 0
+          ? Math.round(allParts.reduce((a, b) => a + b, 0) / allParts.length)
+          : 0;
+
+        const updatedModuleScores = exam.modules.map((mod, modIdx) => {
+          const modAnswers = answerRecords.filter(a => a.moduleIndex === modIdx);
+          const modWritingAnswers = modAnswers.filter(a => correctMap.get(a.questionId)?.type === 'writing');
+          const modNonWritingAnswers = modAnswers.filter(a => correctMap.get(a.questionId)?.type !== 'writing');
+
+          let scorePercent = 0;
+          if (modWritingAnswers.length > 0 && modNonWritingAnswers.length === 0) {
+            scorePercent = Math.round(modWritingAnswers.reduce((s, a) => s + ((a.writingScore ?? 0) / 9) * 100, 0) / modWritingAnswers.length);
+          } else if (modNonWritingAnswers.length > 0) {
+            scorePercent = Math.round((modNonWritingAnswers.filter(a => a.isCorrect).length / modNonWritingAnswers.length) * 100);
+          }
+
+          return {
+            moduleIndex:  modIdx,
+            moduleName:   mod.name,
+            correct:      modNonWritingAnswers.filter(a => a.isCorrect).length,
+            total:        modAnswers.length,
+            scorePercent,
+          };
+        });
+
+        await ExamResult.updateOne(
+          { _id: result._id },
+          { $set: { score: finalScore, answers: answerRecords, moduleScores: updatedModuleScores } },
+        );
+      } catch (err) {
+        Sentry.captureException(err, { tags: { action: 'writingEvalPostSave' } });
+      }
+    }
 
     return { resultId: result._id.toString(), attemptNumber };
   } catch (err) {

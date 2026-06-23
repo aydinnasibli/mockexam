@@ -7,6 +7,7 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
 import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/epoint';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export type CheckoutResult =
   | { redirectUrl: string }
@@ -17,6 +18,10 @@ export type CheckoutResult =
 export async function createCheckoutSession(examId: string): Promise<CheckoutResult> {
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
+
+  if (await isRateLimited(`checkout:${userId}`, 5, 60_000)) {
+    return { error: 'Çox tez-tez sorğu göndərdiniz. Bir az gözləyin.' };
+  }
 
   const publicKey = process.env.EPOINT_PUBLIC_KEY;
   const privateKey = process.env.EPOINT_PRIVATE_KEY;

@@ -24,6 +24,25 @@ export async function importExamFromJson(parsedJson: any) {
       return { error: 'JSON faylında "questions" array kimi təqdim olunmalıdır.' };
     }
 
+    if (parsedJson.questions.length > 500) {
+      return { error: 'Maksimum 500 sual idxal edilə bilər.' };
+    }
+
+    const validTypes = ['mcq', 'open', 'matching', 'writing'];
+    for (let i = 0; i < parsedJson.questions.length; i++) {
+      const q = parsedJson.questions[i];
+      const qType = q.type || 'mcq';
+      if (!validTypes.includes(qType)) {
+        return { error: `Sual #${i + 1}: keçərsiz tip "${qType}". İcazə verilən: ${validTypes.join(', ')}` };
+      }
+      if (qType === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) {
+        return { error: `Sual #${i + 1}: MCQ sualında ən azı 2 seçim olmalıdır.` };
+      }
+      if (qType === 'mcq' && (q.correctIndex == null || q.correctIndex < 0 || q.correctIndex >= (q.options?.length ?? 0))) {
+        return { error: `Sual #${i + 1}: correctIndex seçimlər aralığında olmalıdır.` };
+      }
+    }
+
     // 2. Validate modules through the same validator used by createExam
     const modulesResult = await validateModules(parsedJson.modules);
     if ('error' in modulesResult) return modulesResult;
