@@ -17,6 +17,10 @@ interface EpointCallback {
   operation_code?: string;
 }
 
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: NextRequest) {
   const privateKey = process.env.EPOINT_PRIVATE_KEY;
   if (!privateKey) {
