@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 export const metadata: Metadata = {
   title: 'Geri Qaytarma Siyasəti',
   description: 'Testcentre rəqəmsal xidmətlər üçün geri qaytarma qaydaları.',
+  alternates: { canonical: '/legal/refund' },
 };
 
 const sections = [

@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 export const metadata: Metadata = {
   title: 'Məxfilik Siyasəti',
   description: 'Testcentre-nin məxfilik siyasəti — hansı məlumatları topladığımız, necə emal etdiyimiz və hüquqlarınız.',
+  alternates: { canonical: '/legal/privacy' },
 };
 
 const sections = [

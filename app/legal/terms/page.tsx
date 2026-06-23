@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 export const metadata: Metadata = {
   title: 'İstifadə Şərtləri',
   description: 'Testcentre platformasından istifadə qaydaları və şərtlər.',
+  alternates: { canonical: '/legal/terms' },
 };
 
 const sections = [

@@ -6,6 +6,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: 'Haqqımızda',
   description: 'Testcentre tələbənin imtahan günündə özünü heç bir sürprizlə qarşılaşmasın deyə qurulmuşdur.',
+  alternates: { canonical: '/about' },
 };
 
 const features = [

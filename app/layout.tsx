@@ -40,6 +40,7 @@ export const metadata: Metadata = {
     default: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
   },
   description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'az_AZ',

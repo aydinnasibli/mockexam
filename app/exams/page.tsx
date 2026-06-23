@@ -10,13 +10,14 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
 export const metadata = {
   title: 'İmtahanlar',
   description: 'SAT, IELTS, TOEFL və DİM imtahanlarına professional hazırlıq üçün test paketləri. Ekspertlər tərəfindən hazırlanmış sınaqları kəşf edin.',
+  alternates: { canonical: '/exams' },
   openGraph: {
-    title: 'İmtahanlar — Məşqçi',
+    title: 'İmtahanlar — Testcentre',
     description: 'SAT, IELTS, TOEFL və DİM imtahanlarına professional hazırlıq üçün test paketləri.',
     url: '/exams',
   },
   twitter: {
-    title: 'İmtahanlar — Məşqçi',
+    title: 'İmtahanlar — Testcentre',
     description: 'SAT, IELTS, TOEFL və DİM imtahanlarına professional hazırlıq üçün test paketləri.',
   },
 };

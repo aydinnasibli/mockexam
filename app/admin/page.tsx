@@ -6,7 +6,7 @@ import Purchase from '@/lib/models/Purchase';
 import ExamModel from '@/lib/models/Exam';
 import SeedButton from './SeedButton';
 
-export const metadata = { title: 'Admin Paneli — Məşqçi' };
+export const metadata = { title: 'Admin Paneli — Testcentre' };
 
 async function getStats() {
   await dbConnect();

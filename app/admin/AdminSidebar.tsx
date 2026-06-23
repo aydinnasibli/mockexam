@@ -30,7 +30,7 @@ export default function AdminSidebar() {
         <Link href="/" className="flex items-center gap-2 group">
           <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
           <span className="text-base font-extrabold text-primary tracking-tight font-headline">
-            Test Centre
+            Testcentre
           </span>
         </Link>
       </div>

@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 export const metadata: Metadata = {
   title: 'Cookie Siyasəti',
   description: 'Testcentre-nin cookie qaydaları — hansı cookie fayllarından istifadə edilir və nə üçün.',
+  alternates: { canonical: '/legal/cookies' },
 };
 
 export default function CookiesPage() {

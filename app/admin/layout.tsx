@@ -4,7 +4,8 @@ import { checkRole } from '@/lib/admin';
 import AdminSidebar from './AdminSidebar';
 
 export const metadata = {
-  title: 'Admin Panel — Məşqçi',
+  title: 'Admin Panel — Testcentre',
+  robots: { index: false, follow: false },
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
