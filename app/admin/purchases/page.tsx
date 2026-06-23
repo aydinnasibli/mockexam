@@ -72,7 +72,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
                   {purchases.map((p) => (
                     <tr key={String(p._id)} className="hover:bg-surface-container-low/60 transition-colors">
                       <td className="px-5 py-3 font-mono text-xs text-on-surface-variant max-w-[140px] truncate">
-                        {p.lsOrderId}
+                        {p.transactionId}
                       </td>
                       <td className="px-5 py-3 font-mono text-xs text-on-surface-variant">
                         ...{p.userId.slice(-10)}

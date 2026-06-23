@@ -2,9 +2,8 @@
 
 import Navbar from '@/components/layout/Navbar';
 import { useAuth, SignInButton } from '@clerk/nextjs';
-import Script from 'next/script';
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   CheckCircle2, ShoppingBag, Settings, UserLock,
@@ -13,27 +12,7 @@ import {
 import type { PublicExam } from '@/lib/db/exams';
 import { createCheckoutSession } from '@/lib/actions/checkout';
 
-type CheckoutStatus = 'idle' | 'processing' | 'ready' | 'success' | 'unconfigured';
-
-const POLL_INTERVAL_MS = 2000;
-const POLL_MAX_ATTEMPTS = 15; // 30 s total before giving up and redirecting anyway
-
-function pollPurchaseConfirmed(examId: string, onConfirmed: () => void) {
-  let attempts = 0;
-  const tick = async () => {
-    attempts++;
-    try {
-      const res = await fetch(`/api/purchase-status/${examId}`);
-      const json = await res.json() as { confirmed: boolean };
-      if (json.confirmed) { onConfirmed(); return; }
-    } catch {
-      // network blip — keep polling
-    }
-    if (attempts < POLL_MAX_ATTEMPTS) setTimeout(tick, POLL_INTERVAL_MS);
-    else onConfirmed(); // webhook too slow — send to dashboard anyway
-  };
-  setTimeout(tick, POLL_INTERVAL_MS);
-}
+type CheckoutStatus = 'idle' | 'processing' | 'unconfigured' | 'failed';
 
 interface Props {
   exam: PublicExam;
@@ -42,11 +21,18 @@ interface Props {
 export default function CheckoutClient({ exam }: Props) {
   const { isSignedIn } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [status, setStatus] = useState<CheckoutStatus>('idle');
 
+  useEffect(() => {
+    if (searchParams.get('payment') === 'failed') {
+      toast.error('Ödəniş uğursuz oldu. Yenidən cəhd edin.');
+    }
+  }, [searchParams]);
+
   const handlePay = useCallback(async () => {
-    if (status === 'processing' || status === 'success') return;
+    if (status === 'processing') return;
     setStatus('processing');
     try {
       const result = await createCheckoutSession(exam.id);
@@ -55,27 +41,7 @@ export default function CheckoutClient({ exam }: Props) {
       if ('unconfigured' in result) { setStatus('unconfigured'); return; }
       if ('error' in result) throw new Error(result.error);
 
-      const LemonSqueezy = (window as Window & {
-        LemonSqueezy?: { Url: { Open: (url: string) => void }; Setup: (c: { eventHandler: (e: { event: string }) => void }) => void };
-      }).LemonSqueezy;
-
-      if (LemonSqueezy) {
-        LemonSqueezy.Setup({
-          eventHandler: (event) => {
-            if (event.event === 'Checkout.Success') {
-              setStatus('success');
-              pollPurchaseConfirmed(exam.id, () => {
-                toast.success('Ödəniş tamamlandı! İmtahana giriş əldə etdiniz.');
-                router.push('/dashboard');
-              });
-            }
-          },
-        });
-        LemonSqueezy.Url.Open(result.checkoutUrl);
-        setStatus('ready');
-      } else {
-        window.location.href = result.checkoutUrl;
-      }
+      window.location.href = result.redirectUrl;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Bilinməyən xəta baş verdi';
       toast.error(msg);
@@ -87,40 +53,28 @@ export default function CheckoutClient({ exam }: Props) {
 
   return (
     <>
-      <Script src="https://app.lemonsqueezy.com/js/lemon.js" defer />
       <Navbar />
       <main className="pt-16 min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
           <div className="text-center mb-6">
-            {status === 'success' ? <CheckCircle2 className="text-secondary mx-auto" size={40} /> : <ShoppingBag className="text-secondary mx-auto" size={40} />}
+            <ShoppingBag className="text-secondary mx-auto" size={40} />
             <h1 className="text-2xl font-black text-primary font-headline mt-2">
-              {status === 'success' ? 'Ödəniş Tamamlandı!' : 'Sifarişi Tamamla'}
+              Sifarişi Tamamla
             </h1>
           </div>
-
-          {status === 'success' && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
-              <CheckCircle2 className="text-green-500 mx-auto" size={48} />
-              <h3 className="font-bold text-green-900 text-lg mt-3 mb-2">Ödəniş müvəffəqiyyətlə tamamlandı!</h3>
-              <p className="text-sm text-green-800/80 mb-4"><strong>{exam.title}</strong> imtahanına giriş əldə etdiniz.</p>
-              <p className="text-xs text-green-700 mb-4">Panel səhifəsinə yönləndirilirsiniz...</p>
-              <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <button onClick={() => router.push('/dashboard')} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors">Panelə Get →</button>
-            </div>
-          )}
 
           {status === 'unconfigured' && (
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-6">
               <div className="flex items-start gap-3 mb-4">
                 <Settings className="text-amber-500 shrink-0" size={20} />
-                <h3 className="font-bold text-amber-900">LemonSqueezy konfiqurasiya tələb olunur</h3>
+                <h3 className="font-bold text-amber-900">Epoint konfiqurasiya tələb olunur</h3>
               </div>
-              <p className="text-sm text-amber-800 mb-4 leading-relaxed">LemonSqueezy mühit dəyişənləri konfiqurasiya edilməyib.</p>
+              <p className="text-sm text-amber-800 mb-4 leading-relaxed">Epoint mühit dəyişənləri konfiqurasiya edilməyib.</p>
               <button onClick={() => setStatus('idle')} className="mt-2 text-sm text-amber-700 underline">Geri</button>
             </div>
           )}
 
-          {(status === 'idle' || status === 'processing' || status === 'ready') && (
+          {(status === 'idle' || status === 'processing' || status === 'failed') && (
             <>
               <div className="tc-card p-6 mb-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Sifariş məlumatları</p>
@@ -158,7 +112,7 @@ export default function CheckoutClient({ exam }: Props) {
                   </button>
                   <div className="flex items-center justify-center gap-4 mt-4">
                     <div className="flex items-center gap-1 text-xs text-on-surface-variant"><Shield size={14} />SSL şifrəli</div>
-                    <div className="flex items-center gap-1 text-xs text-on-surface-variant"><CreditCard size={14} />Lemon Squeezy</div>
+                    <div className="flex items-center gap-1 text-xs text-on-surface-variant"><CreditCard size={14} />Epoint</div>
                     <div className="flex items-center gap-1 text-xs text-on-surface-variant"><ShieldCheck size={14} />Təhlükəsiz</div>
                   </div>
                 </div>

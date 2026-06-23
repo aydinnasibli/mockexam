@@ -44,3 +44,6 @@ next-env.d.ts
 # local dev artifacts
 /exam_parts/
 /read.md
+
+# playwright
+.playwright-mcp/

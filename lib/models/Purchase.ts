@@ -3,13 +3,12 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IPurchase extends Document {
   userId: string;
   examId: string;
-  lsOrderId: string;       // most recent LemonSqueezy order ID
-  lsOrderItemId?: string;
+  transactionId: string;
   amountCents: number;
   currency: string;
   status: 'COMPLETED' | 'FAILED';
   attemptCount: number;
-  orderHistory: string[];  // all lsOrderIds ever recorded for this (userId, examId)
+  orderHistory: string[];
   createdAt: Date;
 }
 
@@ -17,8 +16,7 @@ const PurchaseSchema = new Schema<IPurchase>(
   {
     userId: { type: String, required: true, index: true },
     examId: { type: String, required: true },
-    lsOrderId: { type: String, required: true, unique: true },
-    lsOrderItemId: { type: String },
+    transactionId: { type: String, required: true, unique: true },
     amountCents: { type: Number, required: true },
     currency: { type: String, required: true, default: 'AZN' },
     status: {

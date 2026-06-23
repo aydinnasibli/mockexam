@@ -23,9 +23,9 @@ const isAdminRoute = createRouteMatcher([
 ]);
 
 /**
- * Webhook routes are intentionally public — LemonSqueezy calls them
+ * Webhook routes are intentionally public — Epoint calls them
  * server-to-server without user session cookies.
- * Security is handled by HMAC-SHA256 signature verification inside the route.
+ * Security is handled by SHA1 signature verification inside the route.
  */
 const isWebhookRoute = createRouteMatcher([
   '/api/webhooks(.*)',

@@ -13,7 +13,7 @@ Live at [testcentre.az](https://www.testcentre.az).
 - **Audio questions** — server actions stream audio for listening modules
 - **User dashboard** — analytics, result history, and account settings
 - **Admin panel** — manage exams, view purchases, seed question banks, import question data
-- **Payments** — LemonSqueezy handles checkout and purchase webhooks
+- **Payments** — Epoint.az handles checkout and purchase webhooks
 - **Auth** — Clerk for sign-up, sign-in, and session management
 
 ## Tech Stack
@@ -25,7 +25,7 @@ Live at [testcentre.az](https://www.testcentre.az).
 | Styling | Tailwind CSS v4 |
 | Database | MongoDB via Mongoose |
 | Auth | Clerk |
-| Payments | LemonSqueezy |
+| Payments | Epoint.az |
 | AI | OpenAI API |
 | Animation | Framer Motion |
 | Deployment | Vercel |
@@ -73,11 +73,9 @@ CLERK_SECRET_KEY=sk_...
 # MongoDB Atlas connection string
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/mockexam
 
-# LemonSqueezy — https://app.lemonsqueezy.com
-LEMONSQUEEZY_API_KEY=...
-LEMONSQUEEZY_STORE_ID=...
-LEMONSQUEEZY_VARIANT_ID=...
-LEMONSQUEEZY_WEBHOOK_SECRET=...
+# Epoint.az — get from epoint.az dashboard > API idarəetmə
+EPOINT_PUBLIC_KEY=...
+EPOINT_PRIVATE_KEY=...
 
 # OpenAI
 OPENAI_API_KEY=sk-...

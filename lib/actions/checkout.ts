@@ -1,15 +1,15 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
+import { auth } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
+import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/epoint';
 
 export type CheckoutResult =
-  | { checkoutUrl: string }
+  | { redirectUrl: string }
   | { alreadyPurchased: true }
   | { unconfigured: true; error: string }
   | { error: string };
@@ -18,16 +18,13 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
 
-  const user = await currentUser();
+  const publicKey = process.env.EPOINT_PUBLIC_KEY;
+  const privateKey = process.env.EPOINT_PRIVATE_KEY;
 
-  const variantId = process.env.LEMONSQUEEZY_VARIANT_ID;
-  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
-  const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-
-  if (!variantId || !storeId || !apiKey) {
+  if (!publicKey || !privateKey) {
     return {
       unconfigured: true,
-      error: 'LemonSqueezy is not fully configured. Set LEMONSQUEEZY_VARIANT_ID, LEMONSQUEEZY_STORE_ID, and LEMONSQUEEZY_API_KEY.',
+      error: 'Epoint is not configured. Set EPOINT_PUBLIC_KEY and EPOINT_PRIVATE_KEY.',
     };
   }
 
@@ -39,43 +36,52 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
   const existing = await Purchase.findOne({ userId, examId, status: 'COMPLETED' });
   if (existing) return { alreadyPurchased: true };
 
-  lemonSqueezySetup({ apiKey });
-
-  const customPrice = Math.round(exam.price * 100);
   const headersList = await headers();
   const host = headersList.get('host') ?? 'localhost:3000';
   const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`;
 
-  const { data, error } = await createCheckout(storeId!, variantId, {
-    customPrice,
-    productOptions: {
-      name: exam.title,
-      description: exam.description,
-      redirectUrl: `${appUrl}/dashboard?purchased=${examId}`,
-      receiptThankYouNote: `${exam.title} imtahanına giriş əldə etdiniz. Panelinizdən başlaya bilərsiniz.`,
-      enabledVariants: [Number(variantId)],
-    },
-    checkoutOptions: {
-      embed: true,
-      media: false,
-      logo: true,
-      buttonColor: '#6200EE',
-    },
-    checkoutData: {
-      email: user?.emailAddresses?.[0]?.emailAddress ?? undefined,
-      name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || undefined,
-      custom: {
-        user_id: userId,
-        exam_id: examId,
-      },
-    },
-  });
+  const orderId = encodeOrderId(userId, examId);
 
-  if (error || !data?.data?.attributes?.url) {
-    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), { tags: { action: 'createCheckoutSession' } });
-    return { error: error?.message ?? 'Failed to create checkout session' };
+  const { data, signature } = signRequest(
+    {
+      public_key: publicKey,
+      amount: exam.price,
+      currency: 'AZN',
+      language: 'az',
+      order_id: orderId,
+      description: exam.title,
+      success_redirect_url: `${appUrl}/dashboard?purchased=${examId}`,
+      error_redirect_url: `${appUrl}/checkout/${examId}?payment=failed`,
+    },
+    privateKey,
+  );
+
+  try {
+    const res = await fetch(EPOINT_REQUEST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ data, signature }),
+    });
+
+    const result = await res.json() as {
+      status: string;
+      redirect_url?: string;
+      transaction?: string;
+      message?: string;
+    };
+
+    if (result.status !== 'success' || !result.redirect_url) {
+      Sentry.captureMessage('Epoint payment creation failed', {
+        level: 'error',
+        extra: { result },
+      });
+      return { error: result.message ?? 'Ödəniş yaradıla bilmədi' };
+    }
+
+    return { redirectUrl: result.redirect_url };
+  } catch (err) {
+    Sentry.captureException(err, { tags: { action: 'createCheckoutSession' } });
+    return { error: 'Ödəniş xidmətinə qoşulmaq mümkün olmadı' };
   }
-
-  return { checkoutUrl: data.data.attributes.url };
 }
