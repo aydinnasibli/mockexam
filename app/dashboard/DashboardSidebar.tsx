@@ -54,9 +54,7 @@ export default function DashboardSidebar({ isOpen = false, onClose }: Props) {
         transition={{ duration: 0.4, delay: 0.15 }}
       >
         <Link href="/" onClick={onClose} className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-ink flex items-center justify-center shrink-0">
-            <span className="text-bg text-[10px] font-black">TC</span>
-          </div>
+          <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
           <span className="text-[15px] font-black text-ink tracking-tight font-display">
             Test<span className="font-light">centre</span>
           </span>

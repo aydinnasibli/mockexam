@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { SignOutButton } from '@clerk/nextjs';
 import {
@@ -27,9 +28,7 @@ export default function AdminSidebar() {
       {/* Brand */}
       <div className="px-6 mb-2">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg editorial-gradient flex items-center justify-center">
-            <span className="text-white text-[10px] font-black">TC</span>
-          </div>
+          <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
           <span className="text-base font-extrabold text-primary tracking-tight font-headline">
             Test Centre
           </span>

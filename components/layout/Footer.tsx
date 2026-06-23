@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -8,7 +9,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <span className="dot" />
+              <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
               <span className="font-display text-[22px] font-medium text-ink tracking-tight">
                 Test<span className="font-normal">centre</span>
               </span>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
@@ -41,7 +42,7 @@ export default function Navbar() {
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center gap-2 shrink-0 group">
-            <span className="dot shrink-0 group-hover:scale-125 transition-transform duration-200" />
+            <Image src="/logo.svg" alt="Testcentre" width={24} height={22} className="shrink-0 group-hover:scale-110 transition-transform duration-200" />
             <span className="font-display text-[25px] font-medium text-ink tracking-tight leading-none">
               Test<span className="font-normal" style={{ color: 'var(--color-ink-soft)' }}>centre</span>
             </span>

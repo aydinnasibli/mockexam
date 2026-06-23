@@ -47,13 +47,11 @@ export const metadata: Metadata = {
     siteName: 'Testcentre',
     title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
     description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Testcentre — Sınaq imtahanı platforması' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
     description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
-    images: ['/og.png'],
   },
   robots: {
     index: true,
@@ -67,7 +65,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: 'Testcentre',
   url: BASE_URL,
-  logo: `${BASE_URL}/og.png`,
+  logo: `${BASE_URL}/opengraph-image`,
   contactPoint: {
     '@type': 'ContactPoint',
     telephone: '+994-12-555-14-88',
