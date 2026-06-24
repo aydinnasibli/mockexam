@@ -12,7 +12,7 @@ const sections = [
   {
     id: 'processor',
     title: 'Ödəniş emalçısı',
-    content: `Bütün ödənişlər ABB Bank-ın (Azərbaycan Beynəlxalq Bankı ASC) e-commerce ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir. Kart rekvizitləriniz bizim sistemlərimizdə saxlanılmır.`,
+    content: `Bütün ödənişlər Epoint ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir. Kart rekvizitləriniz bizim sistemlərimizdə saxlanılmır.`,
   },
   {
     id: 'no-refund',
@@ -42,7 +42,7 @@ Belə vəziyyətdə alışdan sonrakı 72 (yetmiş iki) saat ərzində testcentr
     title: 'Ödəniş mübahisəsi',
     content: `Ödənişlə bağlı narahatlığınız yaranarsa, bank vasitəsilə geri çağırma tələbi (chargeback) təqdim etməzdən əvvəl bizimlə birbaşa əlaqə saxlamanızı xahiş edirik. Əksər məsələlər 24 saat ərzində həll edilir.
 
-Əsassız geri çağırma tələbi halında ABB Bank-ın mübahisə emal qaydaları tətbiq edilir və müvafiq hesab müvəqqəti dayandırıla bilər.`,
+Əsassız geri çağırma tələbi halında Epoint-in mübahisə emal qaydaları tətbiq edilir və müvafiq hesab müvəqqəti dayandırıla bilər.`,
   },
   {
     id: 'contact',

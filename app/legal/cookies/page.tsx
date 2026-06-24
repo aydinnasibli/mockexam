@@ -113,8 +113,8 @@ export default function CookiesPage() {
               </div>
               <div className="pl-13">
                 <p className="text-[15px] leading-[1.75]" style={{ color: 'var(--color-ink-soft)' }}>
-                  Ödəniş prosesi zamanı ABB Bank-ın təhlükəsiz ödəniş səhifəsi 3D Secure autentifikasiyası üçün öz texniki cookie-lərini yerləşdirə bilər.
-                  Bu cookie-lər ABB Bank-ın məxfilik siyasəti çərçivəsindədir və bizim nəzarətimizdən kənardır.
+                  Ödəniş prosesi zamanı Epoint-in təhlükəsiz ödəniş səhifəsi 3D Secure autentifikasiyası üçün öz texniki cookie-lərini yerləşdirə bilər.
+                  Bu cookie-lər Epoint-in məxfilik siyasəti çərçivəsindədir və bizim nəzarətimizdən kənardır.
                 </p>
               </div>
             </div>

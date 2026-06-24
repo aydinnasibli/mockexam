@@ -23,7 +23,7 @@ Bu Məxfilik Siyasəti 11 may 2010-cu il tarixli "Fərdi məlumatlar haqqında" 
 
 İstifadə məlumatları: hansı sınaqları keçdiyiniz, hər sınağa sərf olunan vaxt, cavablarınız, bölmə üzrə nəticələriniz.
 
-Ödəniş məlumatları: ödəniş tarixçəsi. Kart rekvizitləri bizdə saxlanılmır — ödənişlər ABB Bankın (Azərbaycan Beynəlxalq Bankı ASC) e-commerce ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir.
+Ödəniş məlumatları: ödəniş tarixçəsi. Kart rekvizitləri bizdə saxlanılmır — ödənişlər Epoint ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir.
 
 Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri.
 
@@ -58,7 +58,7 @@ Fərdi məlumatlarınız reklam məqsədi ilə üçüncü şəxslərə verilmir.
     content: `Xidmətin göstərilməsi üçün aşağıdakı alt-emalçılardan istifadə edilir:
 
 Clerk, Inc. — istifadəçi autentifikasiyası və hesab idarəsi.
-ABB Bank (Azərbaycan Beynəlxalq Bankı ASC) — kart ödənişlərinin qəbulu və emalı (e-commerce xidməti).
+Epoint ("Global Innovations" MMC) — kart ödənişlərinin qəbulu və emalı.
 Functional Software, Inc. (Sentry) — texniki xəta izlənməsi.
 MongoDB, Inc. (MongoDB Atlas) — verilənlər bazasının yerləşdirilməsi.
 Vercel, Inc. — tətbiqin yerləşdirilməsi və məzmun çatdırılması şəbəkəsi (CDN).
@@ -70,7 +70,7 @@ Hər bir alt-emalçı öz fəaliyyəti çərçivəsində fərdi məlumatların m
     title: 'Beynəlxalq məlumat ötürülməsi',
     content: `Alt-emalçılarımızın əksəriyyəti (Clerk, Sentry, MongoDB Atlas, Vercel) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
 
-Ödəniş əməliyyatları isə Azərbaycan Respublikası ərazisində fəaliyyət göstərən ABB Bank (Azərbaycan Beynəlxalq Bankı ASC) vasitəsilə yerli olaraq emal olunur və sərhədaşırı ötürülməyə məruz qalmır.
+Ödəniş əməliyyatları isə Azərbaycan Respublikası ərazisində fəaliyyət göstərən Epoint vasitəsilə yerli olaraq emal olunur və sərhədaşırı ötürülməyə məruz qalmır.
 
 Ötürülmə zamanı hər bir alt-emalçının öz məxfilik siyasəti və müştəri məlumatlarının mühafizəsinə dair müqavilə öhdəlikləri tətbiq edilir.
 
