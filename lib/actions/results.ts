@@ -208,6 +208,7 @@ export async function saveExamResult(data: {
               rubric: authoritative.rubric,
               taskType: authoritative.writingTaskType as any,
               examType: exam.type,
+              examName: exam.title,
             });
             return { idx, evalResult };
           })
