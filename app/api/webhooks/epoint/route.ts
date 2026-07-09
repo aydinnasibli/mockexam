@@ -48,6 +48,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid data encoding' }, { status: 400 });
   }
 
+  // Payments created by the /testpayment harness carry a TEST- order_id and
+  // grant no exam access. The signature is already verified above, so just
+  // acknowledge the callback without touching purchase data.
+  if (payload.order_id?.startsWith('TEST-')) {
+    return NextResponse.json({ received: true, test: true });
+  }
+
   let userId: string;
   let examId: string;
   try {

@@ -20,6 +20,7 @@ const isProtectedRoute = createRouteMatcher([
 const isAdminRoute = createRouteMatcher([
   '/admin(.*)',
   '/api/admin(.*)',
+  '/testpayment(.*)',
 ]);
 
 /**
