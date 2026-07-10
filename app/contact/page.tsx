@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { sendContactMessage } from '@/lib/actions/contact';
 
 const contacts = [
   { l: "Əlaqə",    k: "testcentreaz@proton.me", s: "Sual, geri bildirim, kömək, tərəfdaşlıq və digər bütün müraciətlər" },
@@ -10,6 +12,33 @@ const contacts = [
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (sending) return;
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    setSending(true);
+    try {
+      const result = await sendContactMessage({
+        name: String(data.get('name') ?? ''),
+        email: String(data.get('email') ?? ''),
+        subject: String(data.get('subject') ?? ''),
+        message: String(data.get('message') ?? ''),
+      });
+      if (result.ok) {
+        setSubmitted(true);
+        form.reset();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error('Gözlənilməz xəta. Bir az sonra yenidən cəhd edin.');
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <>
@@ -51,22 +80,19 @@ export default function ContactPage() {
                   </button>
                 </div>
               ) : (
-                <form
-                  onSubmit={e => { e.preventDefault(); setSubmitted(true); }}
-                  className="space-y-5"
-                >
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div>
                       <label className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
                         Ad Soyad
                       </label>
-                      <input className="input-new" placeholder="Aysel Məmmədova" required />
+                      <input name="name" className="input-new" placeholder="Aysel Məmmədova" maxLength={100} required />
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
                         E-poçt
                       </label>
-                      <input className="input-new" type="email" placeholder="ad@nümunə.az" required />
+                      <input name="email" className="input-new" type="email" placeholder="ad@nümunə.az" maxLength={200} required />
                     </div>
                   </div>
                   <div>
@@ -74,6 +100,7 @@ export default function ContactPage() {
                       Mövzu
                     </label>
                     <select
+                      name="subject"
                       className="input-new"
                       defaultValue=""
                       required
@@ -92,15 +119,17 @@ export default function ContactPage() {
                       Mesaj
                     </label>
                     <textarea
+                      name="message"
                       className="input-new"
                       rows={5}
                       style={{ resize: "vertical" }}
                       placeholder="Nə üzərində işləyirsiniz, necə kömək edə bilərik?"
+                      maxLength={5000}
                       required
                     />
                   </div>
-                  <button type="submit" className="btn-primary">
-                    Mesajı Göndər <span className="arrow">→</span>
+                  <button type="submit" className="btn-primary" disabled={sending}>
+                    {sending ? 'Göndərilir…' : (<>Mesajı Göndər <span className="arrow">→</span></>)}
                   </button>
                 </form>
               )}

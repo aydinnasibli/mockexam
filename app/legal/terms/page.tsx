@@ -58,7 +58,7 @@ Uğurlu ödənişdən dərhal sonra müvafiq imtahana giriş açılır.`,
 
 "İstehlakçıların hüquqlarının müdafiəsi haqqında" Qanunun müvafiq müddəaları çərçivəsində — İstifadəçi xidmətin dərhal icrasına razılıq verdiyi üçün — ümumi qaydada nəzərdə tutulan imtina müddəti tətbiq edilmir.
 
-Satın almadan əvvəl platformanı tanımaq üçün sınaq səhifəsindəki nümunə materiallarından istifadə edə bilərsiniz.`,
+Hər imtahan səhifəsində satın almadan əvvəl imtahanın strukturu, sual sayı, müddəti və modulları göstərilir.`,
   },
   {
     id: 'refund',

@@ -71,19 +71,13 @@ export async function POST(req: NextRequest) {
 
   const transaction = payload.transaction ?? payload.order_id;
   const amountCents = Math.round((payload.amount ?? 0) * 100);
-  const isSuccess = payload.status === 'success';
+  const status = payload.status;
 
   try {
     await dbConnect();
 
-    // Idempotency: if this transaction was already processed, return 200 immediately
-    const existing = await Purchase.findOne({ userId, examId }).lean();
-    if (existing?.orderHistory?.includes(transaction)) {
-      return NextResponse.json({ received: true });
-    }
-
-    if (isSuccess) {
-      // Verify the paid amount matches the exam price
+    if (status === 'success') {
+      // Verify the paid amount matches the exam price before granting access.
       const exam = await getExamById(examId);
       if (!exam) {
         Sentry.captureMessage('Webhook received for unknown exam', {
@@ -102,6 +96,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
       }
 
+      // Idempotent: re-applying COMPLETED for the same transaction is a no-op.
       await Purchase.findOneAndUpdate(
         { userId, examId },
         {
@@ -110,22 +105,35 @@ export async function POST(req: NextRequest) {
         },
         { upsert: true, new: true },
       );
-    } else {
-      // Never downgrade a COMPLETED purchase — only write FAILED if no completed purchase exists.
-      // E11000 on the unique { userId, examId } index means a COMPLETED doc exists — that's expected, not an error.
+    } else if (status === 'returned') {
+      // Refund / chargeback — revoke access. Only an existing purchase is flipped
+      // to REFUNDED; never upsert a row that was never there. Idempotent.
+      await Purchase.findOneAndUpdate(
+        { userId, examId },
+        {
+          $set: { status: 'REFUNDED' },
+          $addToSet: { orderHistory: `refund:${transaction}` },
+        },
+        { new: true },
+      );
+    } else if (status === 'failed' || status === 'error' || status === 'server_error') {
+      // Record the failure, but never clobber a COMPLETED or REFUNDED purchase.
+      // E11000 on the unique { userId, examId } index means such a row already
+      // exists — that's expected here, not an error.
       try {
         await Purchase.findOneAndUpdate(
-          { userId, examId, status: { $ne: 'COMPLETED' } },
+          { userId, examId, status: { $nin: ['COMPLETED', 'REFUNDED'] } },
           {
             $set: { transactionId: transaction, amountCents, currency: 'AZN', status: 'FAILED' },
             $addToSet: { orderHistory: transaction },
           },
           { upsert: true, new: true },
         );
-      } catch (err: any) {
-        if (err.code !== 11000) throw err;
+      } catch (err) {
+        if ((err as { code?: number }).code !== 11000) throw err;
       }
     }
+    // Any other status (e.g. 'new') is a non-final state — acknowledge only.
 
     return NextResponse.json({ received: true });
   } catch (err) {

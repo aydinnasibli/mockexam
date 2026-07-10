@@ -21,7 +21,7 @@ const sections = [
 
 İstifadəçi ödəniş əməliyyatını tamamlamaqla xidmətin dərhal icrasına açıq razılıq verir. Bu səbəbdən "İstehlakçıların hüquqlarının müdafiəsi haqqında" Qanunun müvafiq müddəaları çərçivəsində ümumi qaydada nəzərdə tutulan imtina müddəti tətbiq edilmir.
 
-Satın almadan əvvəl platformanı tanımaq üçün sınaq səhifəsindəki nümunə materiallarından istifadə edə bilərsiniz.`,
+Satın almadan əvvəl hər imtahan səhifəsində onun strukturu, sual sayı, müddəti və modulları ilə tanış ola bilərsiniz.`,
   },
   {
     id: 'exception-technical',

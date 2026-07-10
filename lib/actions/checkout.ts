@@ -84,6 +84,31 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
       return { error: result.message ?? 'Ödəniş yaradıla bilmədi' };
     }
 
+    // Record a PENDING purchase carrying Epoint's transaction id. The webhook is
+    // still the primary path to COMPLETED; this only exists so we can reconcile
+    // via get-status if the webhook is delayed or missed. Best-effort — a failure
+    // here must never block the redirect to the bank page.
+    if (result.transaction) {
+      try {
+        await Purchase.findOneAndUpdate(
+          { userId, examId, status: { $ne: 'COMPLETED' } },
+          {
+            $set: {
+              transactionId: result.transaction,
+              amountCents: Math.round(exam.price * 100),
+              currency: 'AZN',
+              status: 'PENDING',
+            },
+          },
+          { upsert: true, new: true },
+        );
+      } catch (err) {
+        if ((err as { code?: number }).code !== 11000) {
+          Sentry.captureException(err, { tags: { action: 'createCheckoutSession', step: 'pending' } });
+        }
+      }
+    }
+
     return { redirectUrl: result.redirect_url };
   } catch (err) {
     Sentry.captureException(err, { tags: { action: 'createCheckoutSession' } });

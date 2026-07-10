@@ -132,7 +132,7 @@ export default function CookiesPage() {
                   <strong style={{ color: 'var(--color-ink)' }}>sessionStorage</strong> — aktiv imtahan sessiyasının vəziyyəti (cari sual, vaxt qalığı). Brauzer nişanı bağlandıqda avtomatik silinir.
                 </p>
                 <p className="text-[15px] leading-[1.75]" style={{ color: 'var(--color-ink-soft)' }}>
-                  <strong style={{ color: 'var(--color-ink)' }}>localStorage</strong> — Sentry xəta izləyicisi öz daxili növbəsini lokal yaddaşda saxlayır. Bu məlumatlar üçüncü tərəflərlə paylaşılmır.
+                  <strong style={{ color: 'var(--color-ink)' }}>localStorage</strong> — Sentry xəta izləyicisi öz daxili növbəsini lokal yaddaşda saxlayır. Texniki xətaların diaqnostikası üçün Sentry həmçinin sessiyaların kiçik bir hissəsinin maskalanmış təkrarını (session replay — görünən mətn gizlədilir, reklam və ya profilləşdirmə üçün istifadə edilmir) qeydə alıb Sentry serverlərinə göndərə bilər.
                 </p>
               </div>
             </div>

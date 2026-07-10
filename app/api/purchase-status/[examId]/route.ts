@@ -1,8 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { reconcilePurchase } from '@/lib/reconcile';
 
 const paramsSchema = z.object({
   examId: z.string().min(1),
@@ -18,7 +17,8 @@ export async function GET(
   const parsed = paramsSchema.safeParse(await params);
   if (!parsed.success) return NextResponse.json({ confirmed: false }, { status: 400 });
 
-  await dbConnect();
-  const purchase = await Purchase.findOne({ userId, examId: parsed.data.examId, status: 'COMPLETED' }).lean();
-  return NextResponse.json({ confirmed: !!purchase });
+  // Returns true if the purchase is already COMPLETED, and also actively
+  // reconciles a PENDING one against Epoint's get-status as a webhook fallback.
+  const confirmed = await reconcilePurchase(userId, parsed.data.examId);
+  return NextResponse.json({ confirmed });
 }

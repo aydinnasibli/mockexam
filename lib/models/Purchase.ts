@@ -6,7 +6,7 @@ export interface IPurchase extends Document {
   transactionId: string;
   amountCents: number;
   currency: string;
-  status: 'COMPLETED' | 'FAILED';
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
   attemptCount: number;
   orderHistory: string[];
   createdAt: Date;
@@ -21,7 +21,7 @@ const PurchaseSchema = new Schema<IPurchase>(
     currency: { type: String, required: true, default: 'AZN' },
     status: {
       type: String,
-      enum: ['COMPLETED', 'FAILED'],
+      enum: ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'],
       required: true,
       default: 'COMPLETED',
     },

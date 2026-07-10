@@ -271,6 +271,12 @@ export default async function ExamDetails({ params }: Props) {
                       <p className="text-center text-[12px] m-0" style={{ color: 'var(--color-ink-mute)' }}>
                         Güvənli ödəniş · Dərhal giriş
                       </p>
+                      <p className="text-center text-[11px] mt-3 mb-0 leading-[1.6]" style={{ color: 'var(--color-ink-mute)' }}>
+                        Rəqəmsal məhsul: ödəniş tamamlandıqda giriş dərhal açılır və geri qaytarılmır.{' '}
+                        <Link href="/legal/refund" className="underline hover:text-ink transition-colors">
+                          Geri qaytarma siyasəti
+                        </Link>
+                      </p>
                     </>
                   )}
                 </div>

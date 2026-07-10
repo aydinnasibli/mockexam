@@ -25,7 +25,7 @@ Bu Məxfilik Siyasəti 11 may 2010-cu il tarixli "Fərdi məlumatlar haqqında" 
 
 Ödəniş məlumatları: ödəniş tarixçəsi. Kart rekvizitləri bizdə saxlanılmır — ödənişlər Epoint ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir.
 
-Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri.
+Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri. Texniki xətaların diaqnostikası üçün Sentry sessiyaların kiçik bir hissəsinin maskalanmış təkrarını (session replay — görünən mətn gizlədilir) qeydə alıb öz serverlərinə göndərə bilər.
 
 İmtahan sessiyası məlumatları: başlanğıc vaxtı, keçirilmiş müddət, dinlənilmiş audio URL-lər. Bu məlumatlar 7 (yeddi) gün sonra avtomatik silinir.`,
   },
@@ -59,8 +59,10 @@ Fərdi məlumatlarınız reklam məqsədi ilə üçüncü şəxslərə verilmir.
 
 Clerk, Inc. — istifadəçi autentifikasiyası və hesab idarəsi.
 Epoint ("Global Innovations" MMC) — kart ödənişlərinin qəbulu və emalı.
-Functional Software, Inc. (Sentry) — texniki xəta izlənməsi.
+OpenAI, L.L.C. — yazı (writing) tapşırıqlarının süni intellekt əsaslı qiymətləndirilməsi. Bu zaman istifadəçinin yazdığı cavab mətni qiymətləndirmə üçün OpenAI-yə göndərilir; həmin mətn OpenAI tərəfindən model təliminə istifadə edilmir.
+Functional Software, Inc. (Sentry) — texniki xəta izlənməsi və maskalanmış sessiya təkrarları (session replay).
 MongoDB, Inc. (MongoDB Atlas) — verilənlər bazasının yerləşdirilməsi.
+Upstash, Inc. — sorğu tezliyinin məhdudlaşdırılması (rate limiting) üçün müvəqqəti texniki açarların saxlanması.
 Vercel, Inc. — tətbiqin yerləşdirilməsi və məzmun çatdırılması şəbəkəsi (CDN).
 
 Hər bir alt-emalçı öz fəaliyyəti çərçivəsində fərdi məlumatların mühafizəsinə dair müqavilə öhdəlikləri daşıyır.`,
@@ -68,7 +70,7 @@ Hər bir alt-emalçı öz fəaliyyəti çərçivəsində fərdi məlumatların m
   {
     id: 'transfers',
     title: 'Beynəlxalq məlumat ötürülməsi',
-    content: `Alt-emalçılarımızın əksəriyyəti (Clerk, Sentry, MongoDB Atlas, Vercel) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
+    content: `Alt-emalçılarımızın əksəriyyəti (Clerk, OpenAI, Sentry, MongoDB Atlas, Upstash, Vercel) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
 
 Ödəniş əməliyyatları isə Azərbaycan Respublikası ərazisində fəaliyyət göstərən Epoint vasitəsilə yerli olaraq emal olunur və sərhədaşırı ötürülməyə məruz qalmır.
 

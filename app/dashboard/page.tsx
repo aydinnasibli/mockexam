@@ -6,6 +6,7 @@ import { getUserResults } from '@/lib/db/results';
 import { getUserSettings } from '@/lib/actions/settings';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
+import { reconcilePurchase } from '@/lib/reconcile';
 import {
   BarChart2, Settings, ShoppingBag, Play, Timer, HelpCircle, ArrowRight, TrendingUp, TrendingDown,
 } from 'lucide-react';
@@ -58,11 +59,27 @@ function scoreBg(score: number) {
 
 export const metadata = { title: 'Panel — Testcentre' };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ purchased?: string }>;
+}) {
   const user = await currentUser();
   if (!user) redirect('/sign-in');
 
   await dbConnect();
+
+  // The bank redirects here on success (?purchased=<examId>). If the webhook
+  // hasn't landed yet, reconcile against Epoint's get-status so the buyer gets
+  // access immediately instead of staring at a page that doesn't show the exam.
+  const { purchased } = await searchParams;
+  if (purchased) {
+    // Never let a reconcile hiccup break the dashboard render.
+    try {
+      await reconcilePurchase(user.id, purchased);
+    } catch {}
+  }
+
   const [allExams, results, purchases, userSettings] = await Promise.all([
     getActiveExams(),
     getUserResults(user.id),
