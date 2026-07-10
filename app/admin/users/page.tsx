@@ -53,6 +53,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                     <th className="px-5 py-4 font-black">Clerk ID</th>
                     <th className="px-5 py-4 font-black">Qeydiyyat</th>
                     <th className="px-5 py-4 font-black">Son Giriş</th>
+                    <th className="px-5 py-4 font-black"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/10">
@@ -62,7 +63,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                     return (
                       <tr key={u.id} className="hover:bg-surface-container-low/60 transition-colors">
                         <td className="px-5 py-3">
-                          <div className="flex items-center gap-3">
+                          <Link href={`/admin/users/${u.id}`} className="flex items-center gap-3 group">
                             {u.imageUrl ? (
                               <Image
                                 src={u.imageUrl}
@@ -76,8 +77,8 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                                 <span className="text-white text-xs font-black">{initial}</span>
                               </div>
                             )}
-                            <span className="text-sm font-semibold text-primary">{fullName}</span>
-                          </div>
+                            <span className="text-sm font-semibold text-primary group-hover:underline">{fullName}</span>
+                          </Link>
                         </td>
                         <td className="px-5 py-3 text-sm text-on-surface-variant">
                           {u.emailAddresses[0]?.emailAddress ?? '—'}
@@ -92,6 +93,15 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                           {u.lastSignInAt
                             ? new Date(u.lastSignInAt).toLocaleDateString('az-AZ')
                             : '—'}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <Link
+                            href={`/admin/users/${u.id}`}
+                            className="inline-flex p-1.5 rounded-lg border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors"
+                            aria-label={`${fullName} detalları`}
+                          >
+                            <ChevronRight size={14} />
+                          </Link>
                         </td>
                       </tr>
                     );

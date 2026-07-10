@@ -1,5 +1,8 @@
 // Client-safe constants — no Mongoose imports
 
+/** transactionId prefix marking a Purchase as a free admin grant, not a real payment. */
+export const ADMIN_GRANT_PREFIX = 'ADMIN-GRANT';
+
 export const MODULE_TYPES = [
   { value: 'rw',           label: 'Reading & Writing (SAT)' },
   { value: 'reading',      label: 'Reading' },
