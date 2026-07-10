@@ -72,7 +72,7 @@ export async function revokeExamAccess(
     const purchase = await Purchase.findOne({ userId: targetUserId, examId });
     if (!purchase) return { error: 'Giriş qeydi tapılmadı.' };
 
-    if (!purchase.transactionId.startsWith(ADMIN_GRANT_PREFIX)) {
+    if (!(purchase.transactionId ?? '').startsWith(ADMIN_GRANT_PREFIX)) {
       return { error: 'Ödənişli alış geri alına bilməz — yalnız admin qrantları silinir.' };
     }
 

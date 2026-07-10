@@ -23,9 +23,9 @@ interface Props {
 function formatDuration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
-  if (h > 0) return `${h}s ${m}d`;
+  if (h > 0) return `${h} saat ${m} dəq`;
   const s = totalSeconds % 60;
-  return m > 0 ? `${m}d ${s}s` : `${s}s`;
+  return m > 0 ? `${m} dəq ${s} san` : `${s} san`;
 }
 
 function scoreColor(score: number): string {
@@ -227,7 +227,8 @@ export default async function AdminUserDetailPage({ params }: Props) {
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
                 {purchases.map((p) => {
-                  const isGrant = p.transactionId.startsWith(ADMIN_GRANT_PREFIX);
+                  // Legacy purchase docs may lack transactionId
+                  const isGrant = (p.transactionId ?? '').startsWith(ADMIN_GRANT_PREFIX);
                   return (
                     <tr key={String(p._id)} className="hover:bg-surface-container-low/60 transition-colors">
                       <td className="px-5 py-3 text-sm font-semibold text-primary">
