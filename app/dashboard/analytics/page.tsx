@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getUserResults } from '@/lib/db/results';
 import { getActiveExams } from '@/lib/db/exams';
+import { formatOverallScore } from '@/lib/scoring';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { ChevronRight, Timer } from 'lucide-react';
@@ -136,7 +137,10 @@ export default async function AnalyticsPage() {
           {attemptedExams.map(exam => {
             const examResults = byExam.get(exam.id)!;
             const best = Math.max(...examResults.map(r => r.score));
+            const bestResult = examResults.reduce((a, b) => (b.score > a.score ? b : a));
+            const bestDisp = formatOverallScore(bestResult);
             const last = examResults[0];
+            const lastDisp = formatOverallScore(last);
             const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
 
             return (
@@ -154,9 +158,9 @@ export default async function AnalyticsPage() {
                     </h3>
                     <div className="flex items-center gap-4 text-[12px] text-ink-mute">
                       <span className="flex items-center gap-1"><Timer size={11} />{examMinutes} dəq</span>
-                      <span>Ən yaxşı: <span className={`font-bold ${scoreColor(best)}`}>{best}%</span></span>
+                      <span>Ən yaxşı: <span className={`font-bold ${scoreColor(best)}`}>{bestDisp.value}{bestDisp.unit !== '%' ? ` ${bestDisp.unit}` : '%'}</span></span>
                       {examResults.length > 1 && (
-                        <span>Son: <span className={`font-bold ${scoreColor(last.score)}`}>{last.score}%</span></span>
+                        <span>Son: <span className={`font-bold ${scoreColor(last.score)}`}>{lastDisp.value}{lastDisp.unit !== '%' ? ` ${lastDisp.unit}` : '%'}</span></span>
                       )}
                     </div>
                   </div>
@@ -198,7 +202,7 @@ export default async function AnalyticsPage() {
                           <div className="w-16 h-1 bg-surface-2 rounded-full overflow-hidden hidden sm:block">
                             <div className={`h-full rounded-full ${scoreBarColor(r.score)}`} style={{ width: `${r.score}%` }} />
                           </div>
-                          <span className={`font-bold text-right min-w-10 ${scoreColor(r.score)}`}>{r.score}%</span>
+                          <span className={`font-bold text-right min-w-10 ${scoreColor(r.score)}`}>{(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}</span>
                         </div>
                       </div>
                     ))}

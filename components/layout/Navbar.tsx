@@ -16,7 +16,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,10 +30,7 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.header
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      <header
         className={`fixed top-0 w-full z-50 nav-premium border-b transition-shadow duration-300 ${
           scrolled ? "border-rule shadow-[0_4px_24px_rgba(26,26,26,0.07),0_1px_4px_rgba(26,26,26,0.05)]" : "border-rule/60"
         }`}
@@ -78,7 +75,11 @@ export default function Navbar() {
           {/* ── Right: desktop auth + mobile hamburger ── */}
           <div className="flex items-center gap-2">
             <div className="hidden md:flex items-center gap-2">
-              {!isSignedIn ? (
+              {!isLoaded ? (
+                /* Reserve space until Clerk resolves — prevents the signed-out
+                   buttons flashing before swapping to the signed-in state. */
+                <div className="w-44 h-9" aria-hidden />
+              ) : !isSignedIn ? (
                 <>
                   <SignInButton mode="modal">
                     <button className="text-ink-mute hover:text-ink text-[14px] font-medium px-4 py-2 rounded-lg hover:bg-surface-2 transition-all duration-200">
@@ -107,7 +108,7 @@ export default function Navbar() {
                   <div className="w-px h-5 bg-rule mx-1" />
                   <div className="w-8 h-8 rounded-full ring-2 ring-rule ring-offset-1 overflow-hidden shrink-0 flex items-center justify-center">
                     {user?.imageUrl
-                      ? <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />
+                      ? <Image src={user.imageUrl} alt="" width={32} height={32} className="w-full h-full object-cover" />
                       : <div className="w-full h-full bg-ink flex items-center justify-center text-bg text-xs font-black">
                           {user?.firstName?.[0] ?? '?'}
                         </div>
@@ -138,7 +139,7 @@ export default function Navbar() {
             </button>
           </div>
         </nav>
-      </motion.header>
+      </header>
 
       {/* Mobile menu */}
       <AnimatePresence>

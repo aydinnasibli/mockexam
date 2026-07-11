@@ -1,9 +1,13 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
-import { useState } from 'react';
+import { useState, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { renderMath } from '@/lib/render-math';
+import { reevaluatePendingWriting } from '@/lib/actions/results';
+import { formatOverallScore, formatModuleScore } from '@/lib/scoring';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
   ArrowLeft, RotateCcw, BarChart2, FileText,
@@ -30,11 +34,30 @@ function formatTime(secs: number) {
 }
 
 export default function ReviewClient({ exam, questions, result }: Props) {
+  const router = useRouter();
   const [activeModule, setActiveModule] = useState(0);
   const [expandedPassages, setExpandedPassages] = useState<Set<string>>(new Set());
+  const [recheckPending, startRecheck] = useTransition();
 
   const answerMap = new Map(result.answers.map(a => [a.questionId, a]));
   const hasAnswers = result.answers.length > 0;
+  const hasPendingWriting = result.answers.some(a => a.writingPending);
+
+  function recheckWriting() {
+    startRecheck(async () => {
+      const res = await reevaluatePendingWriting(exam.id, result.attemptNumber);
+      if ('error' in res) {
+        toast.error(res.error);
+      } else if (res.graded > 0) {
+        toast.success('Esseniz qiymətləndirildi.');
+        router.refresh();
+      } else if (res.pending > 0) {
+        toast('Qiymətləndirmə hələ hazır deyil. Bir azdan yenidən yoxlayın.');
+      } else {
+        router.refresh();
+      }
+    });
+  }
 
   const moduleGroups = exam.modules.map((mod, modIdx) => ({
     mod,
@@ -43,8 +66,29 @@ export default function ReviewClient({ exam, questions, result }: Props) {
     moduleScore: result.moduleScores.find(m => m.moduleIndex === modIdx),
   }));
 
+  // Passages are authored once, on the first question of their group — carry
+  // the most recent passage forward within the module (matches the exam player).
+  const passageByQuestion = useMemo(() => {
+    const map = new Map<string, string>();
+    let lastPassage = '';
+    let lastModule = -1;
+    for (const q of questions) {
+      if (q.moduleIndex !== lastModule) {
+        lastModule = q.moduleIndex;
+        lastPassage = '';
+      }
+      if (q.passage) lastPassage = q.passage;
+      if (lastPassage) map.set(q.id, lastPassage);
+    }
+    return map;
+  }, [questions]);
+
   const score = result.score;
   const scoreColor = score >= 80 ? 'text-ok' : score >= 60 ? 'text-warn' : 'text-error';
+  const overall = formatOverallScore(result);
+  const overallLabel = result.examType === 'ielts' ? 'Ümumi bal (band)'
+    : result.examType === 'sat' ? 'Ümumi bal'
+    : 'Ümumi bal';
 
   function togglePassage(qId: string) {
     setExpandedPassages(prev => {
@@ -82,23 +126,42 @@ export default function ReviewClient({ exam, questions, result }: Props) {
               </p>
             </div>
             <div className="bg-bg/10 border border-bg/20 rounded-2xl px-6 py-4 text-center">
-              <p className={`font-display text-3xl font-bold ${scoreColor}`}>{score}%</p>
-              <p className="eyebrow text-bg/50 mt-1">Ümumi bal</p>
+              <p className={`font-display text-3xl font-bold ${scoreColor}`}>
+                {overall.value}
+                {overall.unit !== '%'
+                  ? <span className="text-base font-medium text-bg/50 ml-1">{overall.unit}</span>
+                  : <span>%</span>}
+              </p>
+              <p className="eyebrow text-bg/50 mt-1">{overallLabel}</p>
             </div>
           </div>
+
+          {/* SAT scaled section scores */}
+          {result.examType === 'sat' && typeof result.rwScaled === 'number' && (
+            <div className="flex flex-wrap gap-2 mt-5">
+              <span className="text-xs font-bold px-3 py-1 rounded-full border bg-bg/10 text-bg/80 border-bg/20">
+                Reading & Writing: {result.rwScaled}
+              </span>
+              <span className="text-xs font-bold px-3 py-1 rounded-full border bg-bg/10 text-bg/80 border-bg/20">
+                Math: {result.mathScaled}
+              </span>
+            </div>
+          )}
 
           {/* Module score pills */}
           {result.moduleScores.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-5">
               {result.moduleScores.map(ms => {
-                const c = ms.scorePercent >= 80
+                const c = ms.pending
+                  ? 'bg-bg/10 text-bg/60 border-bg/20'
+                  : ms.scorePercent >= 80
                   ? 'bg-ok/20 text-ok/80 border-ok/30'
                   : ms.scorePercent >= 60
                   ? 'bg-warn/20 text-warn/80 border-warn/30'
                   : 'bg-error/20 text-error/80 border-error/30';
                 return (
                   <span key={ms.moduleIndex} className={`text-xs font-bold px-3 py-1 rounded-full border ${c}`}>
-                    {ms.moduleName}: {ms.correct}/{ms.total} ({ms.scorePercent}%)
+                    {ms.moduleName}: {formatModuleScore(result.examType, ms)}
                   </span>
                 );
               })}
@@ -125,6 +188,27 @@ export default function ReviewClient({ exam, questions, result }: Props) {
           </Link>
         </div>
 
+        {/* Writing still being graded */}
+        {hasPendingWriting && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <RotateCcw size={16} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
+              <div>
+                <p className="text-sm font-semibold text-purple-900">Esseniz hələ yoxlanılır</p>
+                <p className="text-xs text-purple-700">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal essene qiymət veriləndən sonra yenilənəcək.</p>
+              </div>
+            </div>
+            <button
+              onClick={recheckWriting}
+              disabled={recheckPending}
+              className="shrink-0 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-60"
+            >
+              <RotateCcw size={14} className={recheckPending ? 'animate-spin' : ''} />
+              {recheckPending ? 'Yoxlanılır…' : 'Yenidən yoxla'}
+            </button>
+          </div>
+        )}
+
         {!hasAnswers ? (
           <div className="bg-surface rounded-2xl border border-rule p-10 text-center">
             <p className="font-display text-base font-bold text-ink mb-2">Ətraflı cavab məlumatı yoxdur</p>
@@ -150,7 +234,11 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                         activeModule === modIdx ? 'bg-bg/20 text-bg' : 'bg-surface-2 text-ink-mute'
                       }`}>
-                        {moduleScore.scorePercent}%
+                        {moduleScore.pending
+                          ? '…'
+                          : result.examType === 'ielts' && typeof moduleScore.band === 'number'
+                          ? moduleScore.band.toFixed(1)
+                          : `${moduleScore.scorePercent}%`}
                       </span>
                     )}
                   </button>
@@ -168,7 +256,8 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                 const isUnanswered = !isWriting && userChoice === -1 && !answer?.userAnswerText;
                 const isCorrect = answer?.isCorrect ?? false;
                 const timeSecs = answer?.timeSeconds ?? 0;
-                const hasPassage = !!q.passage;
+                const questionPassage = passageByQuestion.get(q.id) ?? '';
+                const hasPassage = !!questionPassage;
                 const passageExpanded = expandedPassages.has(q.id);
 
                 const cardBorder = isWriting
@@ -229,7 +318,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Passage (collapsible) */}
                       {hasPassage && passageExpanded && (
                         <div className="mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-sm text-ink-soft leading-relaxed max-h-48 overflow-y-auto">
-                          <MathText text={q.passage} />
+                          <MathText text={questionPassage} />
                         </div>
                       )}
 
@@ -341,8 +430,28 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                               </div>
                             )}
 
+                            {/* Essay awaiting grading */}
+                            {essay && writingAnswer?.writingPending && (
+                              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <RotateCcw size={14} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
+                                    <p className="text-sm font-medium text-purple-900">Esseniz yoxlanılır…</p>
+                                  </div>
+                                  <button
+                                    onClick={recheckWriting}
+                                    disabled={recheckPending}
+                                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors disabled:opacity-60"
+                                  >
+                                    {recheckPending ? 'Yoxlanılır…' : 'Yenidən yoxla'}
+                                  </button>
+                                </div>
+                                {aiFeedback && <p className="text-xs text-purple-800 leading-relaxed mt-2">{aiFeedback}</p>}
+                              </div>
+                            )}
+
                             {/* AI band score */}
-                            {bandScore !== undefined && (
+                            {!writingAnswer?.writingPending && bandScore !== undefined && (
                               <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
                                 <div className="flex items-center justify-between mb-3">
                                   <p className="eyebrow text-purple-700">AI Qiymətləndirməsi</p>

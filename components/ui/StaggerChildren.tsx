@@ -7,13 +7,13 @@ import type { ReactNode } from 'react';
 const containerVariants: Variants = {
   hidden: {},
   show: (delay: number) => ({
-    transition: { staggerChildren: 0.09, delayChildren: delay },
+    transition: { staggerChildren: 0.05, delayChildren: delay },
   }),
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } },
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' } },
 };
 
 interface ContainerProps {

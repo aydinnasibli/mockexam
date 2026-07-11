@@ -7,6 +7,8 @@ export interface ModuleScoreSummary {
   correct: number;
   total: number;
   scorePercent: number;
+  pending?: boolean;
+  band?: number;
 }
 
 export interface ResultSummary {
@@ -14,11 +16,16 @@ export interface ResultSummary {
   examId: string;
   examTitle: string;
   examTag: string;
+  examType?: string;
   attemptNumber: number;
   completedAt: string;
   durationSeconds: number;
   totalQuestions: number;
   score: number;
+  overallBand?: number;
+  totalScaled?: number;
+  rwScaled?: number;
+  mathScaled?: number;
   moduleScores: ModuleScoreSummary[];
 }
 
@@ -40,6 +47,7 @@ export interface AnswerDetail {
   writingWordCount?: number;
   writingCriteria?: WritingCriterionDetail[];
   aiFeedback?: string;
+  writingPending?: boolean;
 }
 
 export interface ResultDetail extends ResultSummary {
@@ -52,17 +60,24 @@ function mapSummary(d: ReturnType<typeof Object.assign>): ResultSummary {
     examId:          d.examId,
     examTitle:       d.examTitle,
     examTag:         d.examTag,
+    examType:        d.examType,
     attemptNumber:   d.attemptNumber,
     completedAt:     d.completedAt.toISOString(),
     durationSeconds: d.durationSeconds,
     totalQuestions:  d.totalQuestions,
     score:           d.score,
+    overallBand:     d.overallBand,
+    totalScaled:     d.totalScaled,
+    rwScaled:        d.rwScaled,
+    mathScaled:      d.mathScaled,
     moduleScores:    (d.moduleScores ?? []).map((m: ModuleScoreSummary) => ({
       moduleIndex:  m.moduleIndex,
       moduleName:   m.moduleName,
       correct:      m.correct,
       total:        m.total,
       scorePercent: m.scorePercent,
+      pending:      m.pending,
+      band:         m.band,
     })),
   };
 }
@@ -101,6 +116,7 @@ export async function getResultDetail(
       writingWordCount:(a as any).writingWordCount,
       writingCriteria: (a as any).writingCriteria,
       aiFeedback:      (a as any).aiFeedback,
+      writingPending:  (a as any).writingPending,
     })),
   };
 }

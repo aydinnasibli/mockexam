@@ -19,6 +19,7 @@ export interface IAnswerRecord {
   writingWordCount?: number;
   writingCriteria?: IWritingCriterion[];
   aiFeedback?: string;         // Overall AI feedback paragraph
+  writingPending?: boolean;    // true = essay saved but not yet graded (retry pending)
 }
 
 export interface IModuleScore {
@@ -27,6 +28,8 @@ export interface IModuleScore {
   correct: number;
   total: number;
   scorePercent: number;
+  pending?: boolean;           // true = writing module still awaiting AI grading
+  band?: number;               // IELTS section band (0–9)
 }
 
 export interface IExamResult extends Document {
@@ -34,12 +37,17 @@ export interface IExamResult extends Document {
   examId: string;
   examTitle: string;
   examTag: string;
+  examType?: string;         // 'ielts' | 'sat' | ... — drives authentic score display
   attemptNumber: number;
   startedAt: Date;
   completedAt: Date;
   durationSeconds: number;
   totalQuestions: number;
-  score: number;
+  score: number;             // normalised percentage (fallback + cross-exam average)
+  overallBand?: number;      // IELTS overall band (0–9)
+  totalScaled?: number;      // SAT total (400–1600)
+  rwScaled?: number;         // SAT Reading & Writing (200–800)
+  mathScaled?: number;       // SAT Math (200–800)
   answers: IAnswerRecord[];
   moduleScores: IModuleScore[];
   createdAt: Date;
@@ -63,6 +71,7 @@ const AnswerRecordSchema = new Schema<IAnswerRecord>({
   writingWordCount:{ type: Number },
   writingCriteria: { type: [WritingCriterionSchema], default: undefined },
   aiFeedback:      { type: String },
+  writingPending:  { type: Boolean },
 }, { _id: false });
 
 const ModuleScoreSchema = new Schema<IModuleScore>({
@@ -71,6 +80,8 @@ const ModuleScoreSchema = new Schema<IModuleScore>({
   correct:      { type: Number, required: true },
   total:        { type: Number, required: true },
   scorePercent: { type: Number, required: true },
+  pending:      { type: Boolean },
+  band:         { type: Number },
 }, { _id: false });
 
 const ExamResultSchema = new Schema<IExamResult>(
@@ -79,12 +90,17 @@ const ExamResultSchema = new Schema<IExamResult>(
     examId:          { type: String, required: true, index: true },
     examTitle:       { type: String, required: true },
     examTag:         { type: String, required: true },
+    examType:        { type: String },
     attemptNumber:   { type: Number, required: true },
     startedAt:       { type: Date,   required: true },
     completedAt:     { type: Date,   required: true },
     durationSeconds: { type: Number, required: true, min: 0 },
     totalQuestions:  { type: Number, required: true, min: 0 },
     score:           { type: Number, required: true, min: 0, max: 100 },
+    overallBand:     { type: Number },
+    totalScaled:     { type: Number },
+    rwScaled:        { type: Number },
+    mathScaled:      { type: Number },
     answers:         { type: [AnswerRecordSchema], default: [] },
     moduleScores:    { type: [ModuleScoreSchema],  default: [] },
   },

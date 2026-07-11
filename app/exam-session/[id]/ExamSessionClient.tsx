@@ -2,7 +2,7 @@
 
 import 'katex/dist/katex.min.css';
 import * as Sentry from '@sentry/nextjs';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -227,6 +227,20 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const moduleAudioUrl = current
     ? (questions.find(q => q.moduleIndex === current.moduleIndex && q.audioUrl)?.audioUrl ?? null)
     : null;
+
+  // Reading passages are authored once, on the first question of their group.
+  // Carry the most recent passage forward within the same module so every
+  // question of the group shows its text.
+  const currentPassage = useMemo(() => {
+    if (!current) return '';
+    if (current.passage) return current.passage;
+    for (let i = currentIdx - 1; i >= 0; i--) {
+      const q = questions[i];
+      if (q.moduleIndex !== current.moduleIndex) break;
+      if (q.passage) return q.passage;
+    }
+    return '';
+  }, [current, currentIdx, questions]);
 
   // Count answered questions across all types
   const answeredCount = questions.filter(q => {
@@ -500,7 +514,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             )}
 
             <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
-              {current?.passage || current?.imageUrl ? (
+              {currentPassage || current?.imageUrl ? (
                 <article className="max-w-2xl">
                   {current?.imageUrl && (
                     <div className="mb-6">
@@ -514,9 +528,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       />
                     </div>
                   )}
-                  {current?.passage && (
+                  {currentPassage && (
                     <div className="leading-loose text-[15px] prose prose-sm max-w-none" style={{ color: "var(--color-ink)" }}>
-                      <MathText text={current.passage} block />
+                      <MathText text={currentPassage} block />
                     </div>
                   )}
                 </article>
@@ -579,7 +593,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             )}
 
             {/* Mobile: tab switcher between passage and question */}
-            {current?.passage && (
+            {currentPassage && (
               <div className="md:hidden shrink-0" style={{ borderBottom: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}>
                 <div className="flex">
                   <button
@@ -606,7 +620,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 {showPassage && (
                   <div className="overflow-y-auto px-4 py-4 max-h-[50vh]" style={{ borderTop: "1px solid var(--color-rule)" }}>
                     <div className="leading-loose text-sm prose prose-sm max-w-none" style={{ color: "var(--color-ink)" }}>
-                      <MathText text={current.passage} block />
+                      <MathText text={currentPassage} block />
                     </div>
                   </div>
                 )}
@@ -615,7 +629,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
             {/* Scrollable question area */}
             <div className={`flex-1 overflow-y-auto px-4 py-5 md:px-10 md:py-8 no-scrollbar ${
-              current?.passage && showPassage ? 'hidden md:block' : 'block'
+              currentPassage && showPassage ? 'hidden md:block' : 'block'
             }`}>
               <div className="max-w-2xl">
 

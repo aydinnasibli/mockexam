@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { getExamResults } from '@/lib/db/results';
 import { getExamById } from '@/lib/db/exams';
+import { formatOverallScore, formatModuleScore, roundHalfBand } from '@/lib/scoring';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import {
@@ -94,6 +95,21 @@ export default async function ExamAnalyticsPage({ params }: Props) {
   const best       = attempts > 0 ? Math.max(...results.map(r => r.score)) : null;
   const avg        = attempts > 0 ? Math.round(results.reduce((s, r) => s + r.score, 0) / attempts) : null;
   const last       = results[0] ?? null;
+
+  // Best/average shown in the exam's real units (IELTS band / SAT scaled / %).
+  const bestResult = attempts > 0 ? results.reduce((a, b) => (b.score > a.score ? b : a)) : null;
+  const bestDisp   = bestResult ? formatOverallScore(bestResult) : null;
+  const avgDisp    = (() => {
+    if (exam.type === 'ielts') {
+      const bands = results.map(r => r.overallBand).filter((x): x is number => typeof x === 'number');
+      return bands.length ? { value: roundHalfBand(bands.reduce((a, b) => a + b, 0) / bands.length).toFixed(1), unit: 'Band' } : null;
+    }
+    if (exam.type === 'sat') {
+      const tot = results.map(r => r.totalScaled).filter((x): x is number => typeof x === 'number');
+      return tot.length ? { value: String(Math.round(tot.reduce((a, b) => a + b, 0) / tot.length)), unit: '/ 1600' } : null;
+    }
+    return avg != null ? { value: String(avg), unit: '%' } : null;
+  })();
   const examNetMin = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
   const expectedSecPerQ = exam.totalQuestions > 0 ? (examNetMin * 60) / exam.totalQuestions : 0;
 
@@ -141,12 +157,16 @@ export default async function ExamAnalyticsPage({ params }: Props) {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-surface rounded-2xl border border-rule p-5 text-center">
                 <Trophy className="text-warn mx-auto mb-2" size={20} />
-                <div className={`font-display text-3xl font-bold ${scoreColor(best!)}`}>{best}%</div>
+                <div className={`font-display text-3xl font-bold ${scoreColor(best!)}`}>
+                  {bestDisp?.value}{bestDisp && bestDisp.unit !== '%' && <span className="text-base font-medium text-ink-mute ml-1">{bestDisp.unit}</span>}{bestDisp?.unit === '%' && '%'}
+                </div>
                 <p className="eyebrow mt-2">Ən yaxşı bal</p>
               </div>
               <div className="bg-surface rounded-2xl border border-rule p-5 text-center">
                 <TrendingUp className="text-ink-soft mx-auto mb-2" size={20} />
-                <div className={`font-display text-3xl font-bold ${scoreColor(avg!)}`}>{avg}%</div>
+                <div className={`font-display text-3xl font-bold ${scoreColor(avg!)}`}>
+                  {avgDisp?.value}{avgDisp && avgDisp.unit !== '%' && <span className="text-base font-medium text-ink-mute ml-1">{avgDisp.unit}</span>}{avgDisp?.unit === '%' && '%'}
+                </div>
                 <p className="eyebrow mt-2">Ortalama bal</p>
               </div>
               <div className="bg-surface rounded-2xl border border-rule p-5 text-center">
@@ -254,7 +274,9 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                             <span className="text-xs font-medium text-ink-soft">{mod.name}</span>
                           </div>
                           <span className={`text-xs font-bold ${scoreColor(ms.scorePercent)}`}>
-                            {ms.correct}/{ms.total} · {ms.scorePercent}%
+                            {exam.type === 'ielts'
+                              ? formatModuleScore(exam.type, ms)
+                              : `${ms.correct}/${ms.total} · ${ms.scorePercent}%`}
                           </span>
                         </div>
                         <div className="w-full h-2 bg-surface-2 rounded-full overflow-hidden">
@@ -287,7 +309,14 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                           <Timer size={13} />{formatDuration(r.durationSeconds)}
                         </span>
                         <div className="text-right">
-                          <span className={`font-display text-xl font-bold ${scoreColor(r.score)}`}>{r.score}%</span>
+                          {(() => {
+                            const d = formatOverallScore(r);
+                            return (
+                              <span className={`font-display text-xl font-bold ${scoreColor(r.score)}`}>
+                                {d.value}{d.unit !== '%' ? <span className="text-xs font-medium text-ink-mute ml-0.5">{d.unit}</span> : '%'}
+                              </span>
+                            );
+                          })()}
                           {r.score === best && <p className="text-[10px] text-ink-soft font-medium">Ən yaxşı</p>}
                         </div>
                         <Link href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
@@ -302,7 +331,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                           <span key={ms.moduleIndex} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                             ms.scorePercent >= 80 ? 'bg-green-50 text-green-700' : ms.scorePercent >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600'
                           }`}>
-                            {ms.moduleName}: {ms.scorePercent}%
+                            {ms.moduleName}: {formatModuleScore(r.examType, ms)}
                           </span>
                         ))}
                       </div>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getActiveExams } from '@/lib/db/exams';
 import { getUserResults } from '@/lib/db/results';
 import { getUserSettings } from '@/lib/actions/settings';
+import { formatOverallScore } from '@/lib/scoring';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { reconcilePurchase } from '@/lib/reconcile';
@@ -353,7 +354,7 @@ export default async function DashboardPage({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-[11px] text-ink-mute">Son nəticə</span>
-                                  <span className={`text-[11px] font-bold ${scoreColor(lastResult.score)}`}>{lastResult.score}%</span>
+                                  <span className={`text-[11px] font-bold ${scoreColor(lastResult.score)}`}>{(() => { const d = formatOverallScore(lastResult); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}</span>
                                 </div>
                                 <div className="w-full h-1.5 bg-surface-2 rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full ${scoreBarColor(lastResult.score)}`}
@@ -477,7 +478,7 @@ export default async function DashboardPage({
                         </p>
                       </div>
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${scoreBg(r.score)}`}>
-                        {r.score}%
+                        {(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}
                       </span>
                     </div>
                   ))}

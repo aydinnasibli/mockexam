@@ -11,15 +11,22 @@ import type { WritingTaskType } from '@/lib/models/Question';
  * that supports Structured Outputs (json_schema, strict). Reasoning models take
  * `reasoning_effort` + `max_completion_tokens` and DO NOT accept `temperature`.
  *
- * ⚠️ Confirm your OpenAI account actually has access to this exact model id.
- * An unknown id makes every call 404 → the safe fallback below (band 0) is
- * returned for every student, so verify before shipping.
+ * gpt-5.4-mini is a cost-effective reasoning model that supports Structured
+ * Outputs. `gpt-5.6` / `gpt-5.6-terra` are stronger (pricier) drop-ins if you
+ * want higher grading quality — just swap the id below.
+ *
+ * ⚠️ Confirm your OpenAI account has BILLING/quota AND access to this model id.
+ * A 429 (no quota) or an unknown id makes every call fail → writing is marked
+ * "pending" (see PENDING_RESULT) and shown to the student as "still being
+ * checked" rather than scored 0. Verify billing before relying on live grading.
  */
 const GRADER_MODEL = 'gpt-5.4-mini';
 const REASONING_EFFORT = 'medium' as const;
-// Budget must cover reasoning tokens + the JSON output. Too low → the response
-// is truncated (finish_reason 'length') and we fall back instead of scoring.
-const MAX_COMPLETION_TOKENS = 4000;
+// Budget must cover reasoning tokens + the JSON output. Reasoning models spend
+// hidden reasoning tokens first, so keep this generous — too low → the response
+// is truncated (finish_reason 'length') and we mark the essay pending instead
+// of scoring it.
+const MAX_COMPLETION_TOKENS = 8000;
 
 export interface WritingCriterionResult {
   criterion: string;
@@ -32,13 +39,26 @@ export interface WritingEvalResult {
   wordCount: number;
   criteriaFeedback: WritingCriterionResult[];
   overallComment: string;
+  /**
+   * true  → the essay could NOT be graded yet (API error, no quota, timeout,
+   *          truncation…). The caller must NOT treat bandScore as a real score;
+   *          it should keep the essay "pending" and show "still being checked".
+   * false → this is a genuine assessment (including a legitimate low band).
+   */
+  pending: boolean;
 }
 
-const FALLBACK_RESULT: WritingEvalResult = {
+// Message shown to students while an essay is waiting to be (re)graded.
+const PENDING_COMMENT = 'Esseniz hazırda yoxlanılır. Nəticə bir az sonra hazır olacaq — bu səhifəni yeniləyin.';
+
+// Returned when grading cannot run (no quota / API error / truncation). The
+// essay is preserved and re-graded later; it is never scored 0 for an outage.
+const PENDING_RESULT: WritingEvalResult = {
   bandScore: 0,
   wordCount: 0,
   criteriaFeedback: [],
-  overallComment: 'AI qiymətləndirmə hazırda əlçatan deyil. Cavabınız qeydə alınıb.',
+  overallComment: PENDING_COMMENT,
+  pending: true,
 };
 
 // ── Per-task rubric definitions ──────────────────────────────────────────────
@@ -74,11 +94,17 @@ function getRubric(
         examLabel: `IELTS Academic Writing Task 1 — ${exam}`,
         minWords: 150,
         criteria: [
-          { code: 'TA', name: 'Task Achievement', focus: 'Covers all key features/trends of the data or diagram accurately, with an appropriate overview and no invented data.' },
+          { code: 'TA', name: 'Task Achievement', focus: 'Presents a clear overview, selects and reports the key features, and makes relevant comparisons using the language of data description.' },
           { code: 'CC', name: 'Coherence & Cohesion', focus: 'Logical organisation, clear progression, appropriate cohesive devices and paragraphing.' },
           { code: 'LR', name: 'Lexical Resource', focus: 'Range, precision and appropriacy of vocabulary; spelling and word formation.' },
           { code: 'GRA', name: 'Grammatical Range & Accuracy', focus: 'Range of structures and grammatical/punctuation accuracy.' },
         ],
+        // The chart/graph is shown to the student as an image and is NOT provided
+        // to you as text. Do not invent the underlying figures and do not penalise
+        // the response for data you cannot see. Judge Task Achievement on whether
+        // there is a clear overview, an appropriate structure, selection of key
+        // features, and correct comparison/trend language.
+        note: 'The source chart is an image not included above. Never fabricate specific numbers, and do not lower Task Achievement merely because you cannot verify the figures — assess the overview, structure, feature selection and comparison language instead.',
       };
     case 'task2':
       return {
@@ -207,14 +233,22 @@ export async function evaluateWriting(params: {
 
   const wordCount = countWords(essay);
 
+  // A genuine (non-pending) low assessment: there is essentially nothing to grade.
   if (wordCount < 10) {
-    return { ...FALLBACK_RESULT, wordCount, overallComment: 'Cavab çox qısa yazılıb.' };
+    return {
+      bandScore: 0,
+      wordCount,
+      criteriaFeedback: [],
+      overallComment: 'Cavab qiymətləndirmək üçün çox qısadır.',
+      pending: false,
+    };
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    // Configuration problem — never the student's fault. Keep the essay pending.
     Sentry.captureMessage('OPENAI_API_KEY is not configured', { level: 'error' });
-    return { ...FALLBACK_RESULT, wordCount };
+    return { ...PENDING_RESULT, wordCount };
   }
 
   const rubric = getRubric(taskType, examType, examName);
@@ -286,9 +320,12 @@ export async function evaluateWriting(params: {
       wordCount,
       criteriaFeedback,
       overallComment: parsed.overallComment ?? '',
+      pending: false,
     };
   } catch (err) {
+    // API error, no quota (429), timeout, truncation, bad JSON… keep the essay
+    // pending so it is re-graded later instead of being scored 0 for an outage.
     Sentry.captureException(err, { tags: { action: 'evaluateWriting', model: GRADER_MODEL } });
-    return { ...FALLBACK_RESULT, wordCount };
+    return { ...PENDING_RESULT, wordCount };
   }
 }
