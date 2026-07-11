@@ -9,9 +9,9 @@ import {
   Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2,
   Circle, FileText, Pencil, X, Save, Sigma, Eye, EyeOff,
 } from 'lucide-react';
-import { addQuestion, updateQuestion, deleteQuestion } from '@/lib/actions/questions';
+import { addQuestion, updateQuestion, deleteQuestion, reorderQuestions } from '@/lib/actions/questions';
 import type { QuestionData } from '@/lib/actions/questions';
-import type { QuestionType } from '@/lib/models/Question';
+import type { QuestionType, WritingTaskType } from '@/lib/models/Question';
 
 interface ModuleMeta {
   index: number;
@@ -26,7 +26,22 @@ interface Props {
   initialQuestions: QuestionData[];
 }
 
-const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
+  { value: 'mcq',      label: 'Çoxseçimli (MCQ)' },
+  { value: 'open',     label: 'Açıq (qısa cavab)' },
+  { value: 'matching', label: 'Uyğunlaşdırma' },
+  { value: 'writing',  label: 'Yazı (esse)' },
+];
+
+const WRITING_TASK_TYPES: { value: WritingTaskType; label: string }[] = [
+  { value: 'task1',       label: 'IELTS Task 1 (qrafik/diaqram)' },
+  { value: 'task2',       label: 'IELTS Task 2 (esse)' },
+  { value: 'integrated',  label: 'TOEFL Integrated' },
+  { value: 'independent', label: 'TOEFL Independent' },
+  { value: 'general',     label: 'Ümumi' },
+];
 
 // ─── Math symbols palette ────────────────────────────────────────────────────
 
@@ -183,7 +198,19 @@ function MathTextarea({
 // ─── Form state ───────────────────────────────────────────────────────────────
 
 function emptyForm(moduleIndex: number, type: QuestionType = 'mcq') {
-  return { moduleIndex, type, passage: '', audioUrl: '', stem: '', options: ['', '', '', ''], correctIndex: 0, explanation: '' };
+  return {
+    moduleIndex, type,
+    passage: '', audioUrl: '', imageUrl: '', stem: '', explanation: '',
+    options: ['', '', '', ''],            // mcq choices OR matching right-column targets
+    correctIndex: 0,                       // mcq
+    openAnswers: [''],                     // open: accepted answers
+    matchItems: [''],                      // matching: left-column items
+    correctMatching: [0],                  // matching: option index per matchItem
+    writingTaskType: 'task2' as WritingTaskType,
+    minWords: 0,
+    maxWords: 0,
+    rubric: '',
+  };
 }
 type FormState = ReturnType<typeof emptyForm>;
 
@@ -199,26 +226,95 @@ function QuestionForm({
   const router = useRouter();
   const [form, setForm] = useState<FormState>(
     initial
-      ? { moduleIndex: initial.moduleIndex, type: initial.type, passage: initial.passage, audioUrl: initial.audioUrl ?? '', stem: initial.stem, options: initial.options.length === 4 ? [...initial.options] : ['', '', '', ''], correctIndex: initial.correctIndex, explanation: initial.explanation }
+      ? {
+          moduleIndex: initial.moduleIndex, type: initial.type,
+          passage: initial.passage, audioUrl: initial.audioUrl ?? '', imageUrl: initial.imageUrl ?? '',
+          stem: initial.stem, explanation: initial.explanation,
+          options: initial.options.length ? [...initial.options] : ['', '', '', ''],
+          correctIndex: initial.correctIndex >= 0 ? initial.correctIndex : 0,
+          openAnswers: initial.openAnswers?.length ? [...initial.openAnswers] : [''],
+          matchItems: initial.matchItems?.length ? [...initial.matchItems] : [''],
+          correctMatching: initial.correctMatching?.length ? [...initial.correctMatching] : [0],
+          writingTaskType: initial.writingTaskType ?? 'task2',
+          minWords: initial.minWords ?? 0,
+          maxWords: initial.maxWords ?? 0,
+          rubric: initial.rubric ?? '',
+        }
       : emptyForm(moduleIndex)
   );
   const [pending, start] = useTransition();
   const [validationError, setValidationError] = useState('');
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) { setForm(f => ({ ...f, [key]: value })); }
+
+  // Options (mcq choices / matching right-column targets)
   function setOption(i: number, value: string) { setForm(f => { const options = [...f.options]; options[i] = value; return { ...f, options }; }); }
+  function addOption() { setForm(f => (f.options.length >= 8 ? f : { ...f, options: [...f.options, ''] })); }
+  function removeOption(i: number) {
+    setForm(f => {
+      if (f.options.length <= 2) return f;
+      const options = f.options.filter((_, idx) => idx !== i);
+      const correctIndex = f.correctIndex >= options.length ? options.length - 1 : f.correctIndex > i ? f.correctIndex - 1 : f.correctIndex;
+      const correctMatching = f.correctMatching.map(v => (v === i ? 0 : v > i ? v - 1 : v));
+      return { ...f, options, correctIndex, correctMatching };
+    });
+  }
+
+  // Open answers
+  function setOpenAnswer(i: number, value: string) { setForm(f => { const a = [...f.openAnswers]; a[i] = value; return { ...f, openAnswers: a }; }); }
+  function addOpenAnswer() { setForm(f => ({ ...f, openAnswers: [...f.openAnswers, ''] })); }
+  function removeOpenAnswer(i: number) { setForm(f => (f.openAnswers.length <= 1 ? f : { ...f, openAnswers: f.openAnswers.filter((_, idx) => idx !== i) })); }
+
+  // Matching items (left column) + their correct target
+  function setMatchItem(i: number, value: string) { setForm(f => { const m = [...f.matchItems]; m[i] = value; return { ...f, matchItems: m }; }); }
+  function setMatchTarget(i: number, optIdx: number) { setForm(f => { const cm = [...f.correctMatching]; cm[i] = optIdx; return { ...f, correctMatching: cm }; }); }
+  function addMatchItem() { setForm(f => ({ ...f, matchItems: [...f.matchItems, ''], correctMatching: [...f.correctMatching, 0] })); }
+  function removeMatchItem(i: number) { setForm(f => (f.matchItems.length <= 1 ? f : { ...f, matchItems: f.matchItems.filter((_, idx) => idx !== i), correctMatching: f.correctMatching.filter((_, idx) => idx !== i) })); }
 
   function handleSubmit() {
+    const t = form.type;
     if (!form.stem.trim()) { setValidationError('Sual mətni tələb olunur'); return; }
-    if (form.type === 'mcq' && form.options.some(o => !o.trim())) { setValidationError('Bütün variantlar doldurulmalıdır'); return; }
+    if (t === 'mcq') {
+      if (form.options.filter(o => o.trim()).length < 2) { setValidationError('Ən azı 2 variant lazımdır'); return; }
+      if (form.options.some(o => !o.trim())) { setValidationError('Boş variant qalmamalıdır — silin və ya doldurun'); return; }
+    }
+    if (t === 'open' && form.openAnswers.filter(a => a.trim()).length === 0) {
+      setValidationError('Ən azı bir düzgün cavab əlavə edin — yoxsa sual avtomatik qiymətləndirilə bilməz'); return;
+    }
+    if (t === 'matching') {
+      if (form.matchItems.some(m => !m.trim())) { setValidationError('Bütün uyğunlaşdırma elementləri doldurulmalıdır'); return; }
+      if (form.options.filter(o => o.trim()).length < 2) { setValidationError('Ən azı 2 uyğunlaşdırma hədəfi lazımdır'); return; }
+      if (form.options.some(o => !o.trim())) { setValidationError('Boş hədəf qalmamalıdır'); return; }
+    }
+    if (t === 'writing') {
+      if (!form.rubric.trim()) { setValidationError('Yazı sualı üçün qiymətləndirmə meyarları (rubric) tələb olunur — AI onunla qiymətləndirir'); return; }
+      if (form.maxWords > 0 && form.minWords > 0 && form.maxWords < form.minWords) { setValidationError('Maksimum söz sayı minimumdan az ola bilməz'); return; }
+    }
     setValidationError('');
+
+    const matchCount = form.matchItems.filter(m => m.trim()).length;
+    const payload = {
+      type: t,
+      passage: form.passage,
+      audioUrl: form.audioUrl,
+      imageUrl: form.imageUrl,
+      stem: form.stem,
+      explanation: form.explanation,
+      options: t === 'mcq' || t === 'matching' ? form.options.map(o => o.trim()).filter(Boolean) : [],
+      correctIndex: t === 'mcq' ? form.correctIndex : -1,
+      openAnswers: t === 'open' ? form.openAnswers.map(a => a.trim()).filter(Boolean) : [],
+      matchItems: t === 'matching' ? form.matchItems.map(m => m.trim()).filter(Boolean) : [],
+      correctMatching: t === 'matching' ? form.correctMatching.slice(0, matchCount) : [],
+      writingTaskType: t === 'writing' ? form.writingTaskType : undefined,
+      minWords: t === 'writing' ? form.minWords : undefined,
+      maxWords: t === 'writing' ? form.maxWords : undefined,
+      rubric: t === 'writing' ? form.rubric : undefined,
+    };
+
     start(async () => {
-      let result;
-      if (isEdit && initial) {
-        result = await updateQuestion(initial.id, { type: form.type, passage: form.passage, audioUrl: form.audioUrl, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
-      } else {
-        result = await addQuestion({ examId, moduleIndex: form.moduleIndex, type: form.type, passage: form.passage, audioUrl: form.audioUrl, stem: form.stem, options: form.type === 'mcq' ? form.options : [], correctIndex: form.type === 'mcq' ? form.correctIndex : -1, explanation: form.explanation });
-      }
+      const result = isEdit && initial
+        ? await updateQuestion(initial.id, payload)
+        : await addQuestion({ examId, moduleIndex: form.moduleIndex, ...payload });
       if ('error' in result) { toast.error(result.error); return; }
       toast.success(isEdit ? 'Sual yeniləndi' : 'Sual əlavə edildi');
       onDone();
@@ -229,12 +325,12 @@ function QuestionForm({
   return (
     <div className="border border-primary/20 rounded-2xl p-6 bg-primary/5 space-y-5">
       {/* Type toggle */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Sual növü:</span>
-        {(['mcq', 'open'] as QuestionType[]).map(t => (
-          <button key={t} type="button" onClick={() => set('type', t)}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${form.type === t ? 'bg-primary text-white' : 'bg-white border border-outline-variant text-on-surface-variant'}`}>
-            {t === 'mcq' ? 'Çoxseçimli (MCQ)' : 'Açıq (Yazı/Nitq)'}
+        {QUESTION_TYPES.map(t => (
+          <button key={t.value} type="button" onClick={() => set('type', t.value)}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${form.type === t.value ? 'bg-primary text-white' : 'bg-white border border-outline-variant text-on-surface-variant hover:border-primary'}`}>
+            {t.label}
           </button>
         ))}
       </div>
@@ -261,6 +357,39 @@ function QuestionForm({
         />
       </div>
 
+      {/* Image / chart URL */}
+      <div>
+        <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
+          Şəkil / Diaqram URL <span className="font-normal normal-case">(ixtiyari — məs. IELTS Task 1 qrafiki, riyaziyyat diaqramı)</span>
+        </label>
+        <input
+          type="text"
+          value={form.imageUrl}
+          onChange={e => set('imageUrl', e.target.value)}
+          placeholder="https://....public.blob.vercel-storage.com/chart.png"
+          className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <p className="mt-1.5 text-[11px] text-on-surface-variant">
+          ⚠️ Şəkil Vercel Blob Storage-də (<code>*.public.blob.vercel-storage.com</code>) və ya saytın öz domenində saxlanılmalıdır — başqa domenlər (məs. <code>cdn.example.com</code>) təhlükəsizlik siyasəti (CSP) tərəfindən bloklanır və görünməyəcək.
+        </p>
+        {form.imageUrl.trim() && (
+          <div className="mt-2 rounded-xl border border-outline-variant bg-white p-2">
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Önizləmə</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={form.imageUrl}
+              alt="Şəkil önizləməsi"
+              className="max-h-48 rounded-lg object-contain"
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'block'); }}
+              onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = 'block'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'none'); }}
+            />
+            <p className="text-[11px] text-red-600 font-medium" style={{ display: 'none' }}>
+              Şəkil yüklənmədi — URL yanlışdır və ya domen CSP tərəfindən bloklanır.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Stem */}
       <div>
         <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
@@ -277,17 +406,146 @@ function QuestionForm({
           </label>
           <div className="space-y-3">
             {form.options.map((opt, i) => (
-              <div key={i} className="flex items-start gap-3">
+              <div key={i} className="flex items-start gap-2">
                 <button type="button" onClick={() => set('correctIndex', i)}
-                  className={`shrink-0 mt-1 w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-colors ${form.correctIndex === i ? 'bg-secondary text-white' : 'bg-white border-2 border-outline-variant text-on-surface-variant hover:border-secondary'}`}>
+                  className={`shrink-0 mt-1 w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-colors ${form.correctIndex === i ? 'bg-secondary text-white' : 'bg-white border-2 border-outline-variant text-on-surface-variant hover:border-secondary'}`}
+                  title="Düzgün cavab kimi işarələ">
                   {OPTION_LABELS[i]}
                 </button>
                 <div className="flex-1">
                   <MathTextarea value={opt} onChange={v => setOption(i, v)} placeholder={`Variant ${OPTION_LABELS[i]}`} rows={2} showToolbar />
                 </div>
                 {form.correctIndex === i && <CheckCircle2 size={16} className="text-secondary shrink-0 mt-2" />}
+                {form.options.length > 2 && (
+                  <button type="button" onClick={() => removeOption(i)} className="shrink-0 mt-1.5 p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title="Variantı sil">
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             ))}
+          </div>
+          {form.options.length < 8 && (
+            <button type="button" onClick={addOption} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+              <Plus size={13} /> Variant əlavə et
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Open answers */}
+      {form.type === 'open' && (
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
+            Düzgün cavab(lar) <span className="text-error">*</span> <span className="font-normal normal-case">(hər sətir bir qəbul edilən cavab)</span>
+          </label>
+          <div className="space-y-2">
+            {form.openAnswers.map((ans, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input type="text" value={ans} onChange={e => setOpenAnswer(i, e.target.value)} placeholder={`Cavab ${i + 1}`}
+                  className="flex-1 rounded-xl border border-outline-variant px-4 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                {form.openAnswers.length > 1 && (
+                  <button type="button" onClick={() => removeOpenAnswer(i)} className="shrink-0 p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title="Sil">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={addOpenAnswer} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+            <Plus size={13} /> Cavab variantı əlavə et
+          </button>
+          <p className="mt-1.5 text-[11px] text-on-surface-variant">Cavablar böyük/kiçik hərf və boşluqlara həssas deyil (məs. &quot;15 April&quot; = &quot;15april&quot;). Bütün düzgün variantları əlavə edin.</p>
+        </div>
+      )}
+
+      {/* Matching */}
+      {form.type === 'matching' && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
+              Hədəflər (sağ sütun) <span className="text-error">*</span>
+            </label>
+            <div className="space-y-2">
+              {form.options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-surface-container flex items-center justify-center font-black text-xs text-on-surface-variant">{OPTION_LABELS[i]}</span>
+                  <input type="text" value={opt} onChange={e => setOption(i, e.target.value)} placeholder={`Hədəf ${OPTION_LABELS[i]}`}
+                    className="flex-1 rounded-xl border border-outline-variant px-4 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  {form.options.length > 2 && (
+                    <button type="button" onClick={() => removeOption(i)} className="shrink-0 p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title="Sil">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {form.options.length < 8 && (
+              <button type="button" onClick={addOption} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                <Plus size={13} /> Hədəf əlavə et
+              </button>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
+              Elementlər (sol sütun) və düzgün uyğunluq <span className="text-error">*</span>
+            </label>
+            <div className="space-y-2">
+              {form.matchItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-surface-container flex items-center justify-center font-black text-xs text-on-surface-variant">{i + 1}</span>
+                  <input type="text" value={item} onChange={e => setMatchItem(i, e.target.value)} placeholder={`Element ${i + 1}`}
+                    className="flex-1 rounded-xl border border-outline-variant px-4 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  <span className="text-on-surface-variant text-xs">→</span>
+                  <select value={form.correctMatching[i] ?? 0} onChange={e => setMatchTarget(i, parseInt(e.target.value))}
+                    className="shrink-0 rounded-xl border border-outline-variant px-3 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                    {form.options.map((opt, oi) => (
+                      <option key={oi} value={oi}>{OPTION_LABELS[oi]}. {opt.trim() ? opt.slice(0, 24) : `Hədəf ${OPTION_LABELS[oi]}`}</option>
+                    ))}
+                  </select>
+                  {form.matchItems.length > 1 && (
+                    <button type="button" onClick={() => removeMatchItem(i)} className="shrink-0 p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title="Sil">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addMatchItem} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+              <Plus size={13} /> Element əlavə et
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Writing */}
+      {form.type === 'writing' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Tapşırıq növü</label>
+              <select value={form.writingTaskType} onChange={e => set('writingTaskType', e.target.value as WritingTaskType)}
+                className="w-full rounded-xl border border-outline-variant px-3 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {WRITING_TASK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Min. söz</label>
+              <input type="number" min={0} value={form.minWords} onChange={e => set('minWords', Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-full rounded-xl border border-outline-variant px-3 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Maks. söz <span className="font-normal normal-case">(0 = limitsiz)</span></label>
+              <input type="number" min={0} value={form.maxWords} onChange={e => set('maxWords', Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-full rounded-xl border border-outline-variant px-3 py-2.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">
+              Qiymətləndirmə meyarları / Rubric <span className="text-error">*</span> <span className="font-normal normal-case">(AI bununla qiymətləndirir)</span>
+            </label>
+            <textarea rows={4} value={form.rubric} onChange={e => set('rubric', e.target.value)}
+              placeholder="Məs.: TA — bütün əsas trendləri və müqayisələri əhatə edir; CC — aydın struktur..."
+              className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y" />
           </div>
         </div>
       )}
@@ -318,7 +576,10 @@ function QuestionForm({
 
 // ─── Question card ────────────────────────────────────────────────────────────
 
-function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; examId: string }) {
+function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
+  q: QuestionData; index: number; examId: string;
+  onMove: (dir: -1 | 1) => void; isFirst: boolean; isLast: boolean;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [deleting, startDelete] = useTransition();
@@ -342,6 +603,12 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
             🎧 Audio əlavə edilib: {q.audioUrl}
           </div>
         )}
+        {q.imageUrl && (
+          <div className="mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={q.imageUrl} alt="Sual şəkli" className="max-h-32 rounded-lg border border-outline-variant/40 object-contain" loading="lazy" />
+          </div>
+        )}
         <div className="text-sm font-semibold text-on-surface leading-relaxed mb-3">
           <MathPreview text={q.stem} />
         </div>
@@ -356,7 +623,46 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
             ))}
           </div>
         )}
-        {q.type === 'open' && <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Açıq sual</span>}
+        {q.type === 'open' && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Açıq</span>
+            {(q.openAnswers ?? []).filter(a => a.trim()).map((a, i) => (
+              <span key={i} className="text-xs px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">✓ {a}</span>
+            ))}
+            {(q.openAnswers ?? []).filter(a => a.trim()).length === 0 && (
+              <span className="text-xs text-red-600 font-medium">⚠️ Cavab təyin edilməyib — qiymətləndirilə bilməz</span>
+            )}
+          </div>
+        )}
+        {q.type === 'matching' && (
+          <div className="space-y-1">
+            {(q.matchItems ?? []).map((item, i) => {
+              const target = q.correctMatching?.[i];
+              return (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className="shrink-0 w-5 h-5 rounded bg-surface-container flex items-center justify-center font-black text-on-surface-variant">{i + 1}</span>
+                  <MathPreview text={item} className="flex-1" />
+                  <span className="text-on-surface-variant">→</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                    {typeof target === 'number' ? `${OPTION_LABELS[target]}. ${q.options[target] ?? ''}` : '—'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {q.type === 'writing' && (
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-purple-100 text-purple-700 rounded-full">Yazı · {q.writingTaskType ?? 'general'}</span>
+              {(q.minWords ?? 0) > 0 && <span className="text-[10px] px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">Min {q.minWords} söz</span>}
+              {(q.maxWords ?? 0) > 0 && <span className="text-[10px] px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">Maks {q.maxWords} söz</span>}
+            </div>
+            {q.rubric?.trim()
+              ? <p className="text-xs text-on-surface-variant line-clamp-2"><span className="font-bold">Rubric:</span> {q.rubric}</p>
+              : <span className="text-xs text-red-600 font-medium">⚠️ Rubric təyin edilməyib — AI qiymətləndirə bilməz</span>}
+          </div>
+        )}
         {q.explanation && (
           <div className="text-xs text-on-surface-variant mt-2 border-l-2 border-secondary/40 pl-2">
             <MathPreview text={q.explanation} />
@@ -364,6 +670,12 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
         )}
       </div>
       <div className="flex flex-col gap-1 shrink-0">
+        <button onClick={() => onMove(-1)} disabled={isFirst} className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Yuxarı köçür">
+          <ChevronUp size={14} />
+        </button>
+        <button onClick={() => onMove(1)} disabled={isLast} className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Aşağı köçür">
+          <ChevronDown size={14} />
+        </button>
         <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-secondary/10 text-secondary transition-colors" title="Düzəliş et">
           <Pencil size={14} />
         </button>
@@ -379,8 +691,20 @@ function QuestionCard({ q, index, examId }: { q: QuestionData; index: number; ex
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function QuestionManager({ examId, modules, initialQuestions }: Props) {
+  const router = useRouter();
   const [openModules, setOpenModules] = useState<Set<number>>(new Set([0]));
   const [addingTo, setAddingTo] = useState<number | null>(null);
+
+  function moveQuestion(moduleIndex: number, qs: QuestionData[], from: number, dir: -1 | 1) {
+    const to = from + dir;
+    if (to < 0 || to >= qs.length) return;
+    const ids = qs.map(x => x.id);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    void reorderQuestions(examId, moduleIndex, ids).then(r => {
+      if ('error' in r) toast.error(r.error); else router.refresh();
+    });
+  }
 
   function toggleModule(i: number) {
     setOpenModules(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next; });
@@ -425,7 +749,11 @@ export default function QuestionManager({ examId, modules, initialQuestions }: P
                     <p className="text-sm text-on-surface-variant">Bu modulda hələ sual yoxdur.</p>
                   </div>
                 )}
-                {qs.map((q, i) => <QuestionCard key={q.id} q={q} index={i} examId={examId} />)}
+                {qs.map((q, i) => (
+                  <QuestionCard key={q.id} q={q} index={i} examId={examId}
+                    onMove={dir => moveQuestion(mod.index, qs, i, dir)}
+                    isFirst={i === 0} isLast={i === qs.length - 1} />
+                ))}
                 {isAdding && <QuestionForm examId={examId} moduleIndex={mod.index} onDone={() => setAddingTo(null)} onCancel={() => setAddingTo(null)} />}
                 {!isAdding && (
                   <button type="button" onClick={() => setAddingTo(mod.index)}
