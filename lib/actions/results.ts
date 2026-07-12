@@ -1,15 +1,17 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
+import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import ExamResult from '@/lib/models/ExamResult';
+import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
 import QuestionModel from '@/lib/models/Question';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import ExamSessionModel from '@/lib/models/ExamSession';
 import { isRateLimited } from '@/lib/rate-limit';
+import { checkRole } from '@/lib/admin';
 import { evaluateWriting, type WritingCriterionResult } from '@/lib/actions/writing-eval';
 import { computeAuthenticScores } from '@/lib/scoring';
 
@@ -216,8 +218,13 @@ export async function saveExamResult(data: {
         correctIndex,
         isCorrect,
         timeSeconds: Math.max(0, Math.round(a.timeSeconds)),
-        // Writing answers start "pending" until the AI grader fills them in below.
-        ...(authoritative?.type === 'writing' ? { writingPending: true } : {}),
+        // Writing answers with an essay start "pending" until graded on the
+        // results page; a blank essay is a genuine 0 and is never pending.
+        ...(authoritative?.type === 'writing'
+          ? (a.userAnswerText ?? '').trim()
+            ? { writingPending: true }
+            : { writingPending: false, writingScore: 0, writingWordCount: 0 }
+          : {}),
       };
     });
 
@@ -273,10 +280,89 @@ export async function saveExamResult(data: {
 }
 
 /**
- * Re-grade any writing answers left "pending" (the AI grader was unavailable at
- * submit time). Safe to call repeatedly — it only touches pending essays and
- * recomputes the overall + module scores. Used by the "re-check" button on the
- * review page so writing evaluation is effectively "available all the time".
+ * Grade any still-"pending" writing answers on a result document (a live,
+ * non-lean Mongoose doc), then recompute the overall + module scores and save.
+ * No auth — the caller is responsible for authorising. Shared by the student
+ * results-page auto-grade and the admin re-grade tools. Only touches pending
+ * essays, so it is safe to call repeatedly.
+ */
+async function gradePendingWritingOnResult(
+  result: mongoose.HydratedDocument<IExamResult>,
+): Promise<{ graded: number; pending: number }> {
+  const exam = await getExamByIdAdmin(result.examId);
+  if (!exam) return { graded: 0, pending: 0 };
+
+  const questionDocs = await QuestionModel.find({ examId: result.examId })
+    .select('_id type stem passage writingTaskType rubric')
+    .lean();
+  const qmap = new Map(questionDocs.map(q => [String(q._id), q]));
+  const typeOf = (questionId: string) => qmap.get(questionId)?.type;
+
+  const records = result.answers as unknown as AnswerRecord[];
+  const allPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending);
+  if (allPending.length === 0) return { graded: 0, pending: 0 };
+
+  // A blank essay is a genuine 0 — resolve it immediately, no AI call needed.
+  for (const rec of allPending) {
+    if (!(rec.userAnswerText ?? '').trim()) {
+      rec.writingPending = false;
+      rec.writingScore = 0;
+      rec.writingWordCount = 0;
+      rec.writingCriteria = undefined;
+      rec.aiFeedback = 'Cavab verilməyib.';
+    }
+  }
+
+  const toGrade = allPending.filter(r => (r.userAnswerText ?? '').trim());
+  await Promise.all(toGrade.map(async (rec) => {
+    const q = qmap.get(rec.questionId);
+    const evalResult = await evaluateWriting({
+      essay: rec.userAnswerText ?? '',
+      prompt: [q?.passage, q?.stem].filter(Boolean).join('\n\n'),
+      rubric: q?.rubric,
+      taskType: q?.writingTaskType as any,
+      examType: exam.type,
+      examName: exam.title,
+    });
+    rec.writingWordCount = evalResult.wordCount;
+    rec.aiFeedback = evalResult.overallComment;
+    if (evalResult.pending) {
+      rec.writingPending = true;
+      rec.writingScore = undefined;
+      rec.writingCriteria = undefined;
+    } else {
+      rec.writingPending = false;
+      rec.writingScore = evalResult.bandScore;
+      rec.writingCriteria = evalResult.criteriaFeedback;
+    }
+  }));
+
+  const nonWriting = records.filter(r => typeOf(r.questionId) !== 'writing');
+  const nonWritingScore = nonWriting.length > 0
+    ? (nonWriting.filter(r => r.isCorrect).length / nonWriting.length) * 100
+    : null;
+
+  const modScores = buildModuleScores(exam.modules, records, typeOf);
+  const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf);
+
+  result.score = averageOfPresent([nonWritingScore, writingScorePercent(records)]);
+  result.moduleScores = modScores as never;
+  result.examType = result.examType ?? exam.type;
+  result.overallBand = auth.overallBand;
+  result.totalScaled = auth.totalScaled;
+  result.rwScaled = auth.rwScaled;
+  result.mathScaled = auth.mathScaled;
+  result.markModified('answers');
+  result.markModified('moduleScores');
+  await result.save();
+
+  const stillPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending).length;
+  return { graded: allPending.length - stillPending, pending: stillPending };
+}
+
+/**
+ * Student-facing: grade the pending essays on their own result. Called
+ * automatically when the results page opens (there is no manual button).
  */
 export async function reevaluatePendingWriting(
   examId: string,
@@ -286,84 +372,104 @@ export async function reevaluatePendingWriting(
   if (!userId) return { error: 'Unauthorized' };
   if (!examId || !Number.isInteger(attemptNumber) || attemptNumber < 1) return { error: 'Invalid request' };
 
-  // Guard against hammering the grader: 10 re-checks per user per 5 minutes.
+  // Guard against hammering the grader from repeated page loads.
   if (await isRateLimited(`reeval:${userId}`, 10, 5 * 60_000)) {
-    return { error: 'Çox tez yenidən yoxladınız. Bir az gözləyin.' };
+    return { error: 'Çox tez yoxlanıldı. Bir az gözləyin.' };
   }
 
   try {
     await dbConnect();
-
     const result = await ExamResult.findOne({ userId, examId, attemptNumber });
     if (!result) return { error: 'Nəticə tapılmadı.' };
-
-    const exam = await getExamByIdAdmin(examId);
-    if (!exam) return { error: 'Exam not found' };
-
-    const questionDocs = await QuestionModel.find({ examId })
-      .select('_id type stem passage writingTaskType rubric')
-      .lean();
-    const qmap = new Map(questionDocs.map(q => [String(q._id), q]));
-    const typeOf = (questionId: string) => qmap.get(questionId)?.type;
-
-    const records = result.answers as unknown as AnswerRecord[];
-    const pendingWriting = records.filter(
-      r => typeOf(r.questionId) === 'writing' && r.writingPending && (r.userAnswerText ?? '').trim(),
-    );
-
-    if (pendingWriting.length > 0) {
-      await Promise.all(pendingWriting.map(async (rec) => {
-        const q = qmap.get(rec.questionId);
-        const evalResult = await evaluateWriting({
-          essay: rec.userAnswerText ?? '',
-          prompt: [q?.passage, q?.stem].filter(Boolean).join('\n\n'),
-          rubric: q?.rubric,
-          taskType: q?.writingTaskType as any,
-          examType: exam.type,
-          examName: exam.title,
-        });
-        rec.writingWordCount = evalResult.wordCount;
-        rec.aiFeedback = evalResult.overallComment;
-        if (evalResult.pending) {
-          rec.writingPending = true;
-          rec.writingScore = undefined;
-          rec.writingCriteria = undefined;
-        } else {
-          rec.writingPending = false;
-          rec.writingScore = evalResult.bandScore;
-          rec.writingCriteria = evalResult.criteriaFeedback;
-        }
-      }));
-
-      const nonWriting = records.filter(r => typeOf(r.questionId) !== 'writing');
-      const nonWritingScore = nonWriting.length > 0
-        ? (nonWriting.filter(r => r.isCorrect).length / nonWriting.length) * 100
-        : null;
-
-      const modScores = buildModuleScores(exam.modules, records, typeOf);
-      const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf);
-
-      result.score = averageOfPresent([nonWritingScore, writingScorePercent(records)]);
-      result.moduleScores = modScores as never;
-      result.examType = result.examType ?? exam.type;
-      result.overallBand = auth.overallBand;
-      result.totalScaled = auth.totalScaled;
-      result.rwScaled = auth.rwScaled;
-      result.mathScaled = auth.mathScaled;
-      result.markModified('answers');
-      result.markModified('moduleScores');
-      await result.save();
-
-      revalidatePath(`/dashboard/analytics/${examId}/${attemptNumber}/review`);
-    }
-
-    const stillPending = records.filter(
-      r => typeOf(r.questionId) === 'writing' && r.writingPending,
-    ).length;
-
-    return { ok: true, graded: pendingWriting.length - stillPending, pending: stillPending };
+    const r = await gradePendingWritingOnResult(result);
+    revalidatePath(`/dashboard/analytics/${examId}/${attemptNumber}/review`);
+    return { ok: true, graded: r.graded, pending: r.pending };
   } catch (err) {
     Sentry.captureException(err, { tags: { action: 'reevaluatePendingWriting' } });
+    return { error: 'Server xətası baş verdi.' };
+  }
+}
+
+// ── Admin: writing-evaluation problems dashboard ────────────────────────────
+
+export interface WritingEvalProblem {
+  resultId: string;
+  userId: string;
+  examId: string;
+  examTitle: string;
+  examTag: string;
+  attemptNumber: number;
+  completedAt: string;      // ISO
+  completedAtLabel: string; // pre-formatted on the server (avoids hydration mismatch)
+  pendingCount: number;
+  wordCounts: number[];
+}
+
+/** Admin-only: every result that still has ungraded (pending) writing. */
+export async function getWritingEvalProblems(): Promise<WritingEvalProblem[]> {
+  if (!(await checkRole('admin'))) return [];
+  await dbConnect();
+  const docs = await ExamResult.find({ 'answers.writingPending': true })
+    .sort({ completedAt: -1 })
+    .limit(200)
+    .lean();
+  return docs.map(d => {
+    const pending = (d.answers ?? []).filter((a) => a.writingPending);
+    return {
+      resultId:      String(d._id),
+      userId:        d.userId,
+      examId:        d.examId,
+      examTitle:     d.examTitle,
+      examTag:       d.examTag,
+      attemptNumber: d.attemptNumber,
+      completedAt:   d.completedAt.toISOString(),
+      completedAtLabel: d.completedAt.toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+      pendingCount:  pending.length,
+      wordCounts:    pending.map((a) => (a.userAnswerText ?? '').trim().split(/\s+/).filter(Boolean).length),
+    };
+  });
+}
+
+/** Admin-only: manually (re-)grade the pending writing on one result. */
+export async function adminRegradeResult(
+  resultId: string,
+): Promise<{ ok: true; graded: number; pending: number } | { error: string }> {
+  if (!(await checkRole('admin'))) return { error: 'Forbidden' };
+  if (!mongoose.isValidObjectId(resultId)) return { error: 'Yanlış nəticə ID.' };
+  try {
+    await dbConnect();
+    const result = await ExamResult.findById(resultId);
+    if (!result) return { error: 'Nəticə tapılmadı.' };
+    const r = await gradePendingWritingOnResult(result);
+    revalidatePath('/admin/writing');
+    revalidatePath(`/dashboard/analytics/${result.examId}/${result.attemptNumber}/review`);
+    return { ok: true, graded: r.graded, pending: r.pending };
+  } catch (err) {
+    Sentry.captureException(err, { tags: { action: 'adminRegradeResult' } });
+    return { error: 'Server xətası baş verdi.' };
+  }
+}
+
+/** Admin-only: (re-)grade all pending results in one pass (bounded). */
+export async function adminRegradeAllPending(): Promise<
+  { ok: true; processed: number; graded: number; stillPending: number } | { error: string }
+> {
+  if (!(await checkRole('admin'))) return { error: 'Forbidden' };
+  try {
+    await dbConnect();
+    const docs = await ExamResult.find({ 'answers.writingPending': true })
+      .sort({ completedAt: 1 })
+      .limit(25);
+    let graded = 0, stillPending = 0;
+    for (const result of docs) {
+      const r = await gradePendingWritingOnResult(result);
+      graded += r.graded;
+      stillPending += r.pending;
+    }
+    revalidatePath('/admin/writing');
+    return { ok: true, processed: docs.length, graded, stillPending };
+  } catch (err) {
+    Sentry.captureException(err, { tags: { action: 'adminRegradeAllPending' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }

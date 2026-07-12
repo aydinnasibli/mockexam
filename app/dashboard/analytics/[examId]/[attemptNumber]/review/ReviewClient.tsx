@@ -46,17 +46,17 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   const hasAnswers = result.answers.length > 0;
   const hasPendingWriting = result.answers.some(a => a.writingPending);
 
+  // Silent auto-grade of pending essays when the results page opens. If the AI
+  // is unavailable the essay stays pending (the admin panel re-runs it); we do
+  // not surface an error to the student.
   function recheckWriting() {
     startRecheck(async () => {
       const res = await reevaluatePendingWriting(exam.id, result.attemptNumber);
-      if ('error' in res) {
-        toast.error(res.error);
-      } else if (res.graded > 0) {
+      if ('error' in res) return;
+      if (res.graded > 0) {
         toast.success('Esseniz qiymətləndirildi.');
         router.refresh();
-      } else if (res.pending > 0) {
-        toast('Qiymətləndirmə hələ hazır deyil. Bir azdan yenidən yoxlayın.');
-      } else {
+      } else if (res.pending === 0) {
         router.refresh();
       }
     });
@@ -207,24 +207,14 @@ export default function ReviewClient({ exam, questions, result }: Props) {
           </Link>
         </div>
 
-        {/* Writing still being graded */}
+        {/* Writing still being graded (auto — no manual action for the student) */}
         {hasPendingWriting && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50 px-5 py-4">
-            <div className="flex items-center gap-3">
-              <RotateCcw size={16} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
-              <div>
-                <p className="text-sm font-semibold text-purple-900">Esseniz hələ yoxlanılır</p>
-                <p className="text-xs text-purple-700">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal essene qiymət veriləndən sonra yenilənəcək.</p>
-              </div>
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-purple-200 bg-purple-50 px-5 py-4">
+            <RotateCcw size={16} className={`shrink-0 text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
+            <div>
+              <p className="text-sm font-semibold text-purple-900">Esseniz yoxlanılır</p>
+              <p className="text-xs text-purple-700">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal hazır olduqda avtomatik yenilənəcək — bu səhifəni bir azdan yeniləyin.</p>
             </div>
-            <button
-              onClick={recheckWriting}
-              disabled={recheckPending}
-              className="shrink-0 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-60"
-            >
-              <RotateCcw size={14} className={recheckPending ? 'animate-spin' : ''} />
-              {recheckPending ? 'Yoxlanılır…' : 'Yenidən yoxla'}
-            </button>
           </div>
         )}
 
@@ -449,21 +439,12 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                               </div>
                             )}
 
-                            {/* Essay awaiting grading */}
+                            {/* Essay awaiting grading (auto) */}
                             {essay && writingAnswer?.writingPending && (
                               <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-2">
-                                    <RotateCcw size={14} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
-                                    <p className="text-sm font-medium text-purple-900">Esseniz yoxlanılır…</p>
-                                  </div>
-                                  <button
-                                    onClick={recheckWriting}
-                                    disabled={recheckPending}
-                                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors disabled:opacity-60"
-                                  >
-                                    {recheckPending ? 'Yoxlanılır…' : 'Yenidən yoxla'}
-                                  </button>
+                                <div className="flex items-center gap-2">
+                                  <RotateCcw size={14} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
+                                  <p className="text-sm font-medium text-purple-900">Esseniz yoxlanılır…</p>
                                 </div>
                                 {aiFeedback && <p className="text-xs text-purple-800 leading-relaxed mt-2">{aiFeedback}</p>}
                               </div>

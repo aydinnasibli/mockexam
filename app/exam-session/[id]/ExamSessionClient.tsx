@@ -282,6 +282,20 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   return (
     <div className="select-none min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
 
+      {/* ── Submitting overlay — instant feedback while the result saves + results page loads ── */}
+      {submitting && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 px-6" style={{ background: "var(--color-bg)" }}>
+          <span
+            className="w-11 h-11 rounded-full animate-spin"
+            style={{ border: "3px solid var(--color-rule)", borderTopColor: "var(--color-ink)" }}
+          />
+          <div className="text-center">
+            <p className="font-display text-lg font-medium text-ink mb-1">İmtahan tamamlandı</p>
+            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>Nəticələr hazırlanır…</p>
+          </div>
+        </div>
+      )}
+
       {/* ── Top bar ── */}
       <header className="fixed top-0 w-full z-50 nav-frosted" style={{ borderBottom: "1px solid var(--color-rule)" }}>
         <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-6">

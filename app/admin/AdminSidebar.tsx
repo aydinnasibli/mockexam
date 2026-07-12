@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation';
 import { SignOutButton } from '@clerk/nextjs';
 import {
   LayoutDashboard, BookOpen, ShoppingBag, Users,
-  LogOut, Shield, Database,
+  LogOut, Shield, Database, PenLine,
 } from 'lucide-react';
 
 const navLinks = [
   { href: '/admin', label: 'Ümumi Baxış', icon: LayoutDashboard, exact: true },
   { href: '/admin/exams', label: 'İmtahanlar', icon: BookOpen, exact: false },
+  { href: '/admin/writing', label: 'Yazı Qiymətləndirmə', icon: PenLine, exact: false },
   { href: '/admin/purchases', label: 'Satışlar', icon: ShoppingBag, exact: false },
   { href: '/admin/users', label: 'İstifadəçilər', icon: Users, exact: false },
 ];
