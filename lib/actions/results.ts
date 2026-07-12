@@ -228,7 +228,6 @@ export async function saveExamResult(data: {
       const auth = correctMap.get(a.questionId);
       return auth?.type !== 'writing';
     });
-    const hasWriting = answerRecords.some(a => correctMap.get(a.questionId)?.type === 'writing');
 
     const nonWritingScore = nonWritingAnswers.length > 0
       ? (nonWritingAnswers.filter(a => a.isCorrect).length / nonWritingAnswers.length) * 100
@@ -261,62 +260,10 @@ export async function saveExamResult(data: {
 
     await ExamSessionModel.deleteOne({ userId, examId });
 
-    // AI-evaluate writing answers after the result is safely persisted
-    if (hasWriting) {
-      try {
-        const writingEvals = await Promise.all(
-          answerRecords.map(async (record, idx) => {
-            const authoritative = correctMap.get(record.questionId);
-            if (authoritative?.type !== 'writing') return null;
-            const essay = record.userAnswerText ?? '';
-            if (!essay.trim()) return null;
-            const evalResult = await evaluateWriting({
-              essay,
-              prompt: [authoritative.passage, authoritative.stem].filter(Boolean).join('\n\n'),
-              rubric: authoritative.rubric,
-              taskType: authoritative.writingTaskType as any,
-              examType: exam.type,
-              examName: exam.title,
-            });
-            return { idx, evalResult };
-          })
-        );
-
-        for (const evalRes of writingEvals) {
-          if (!evalRes) continue;
-          const { idx, evalResult } = evalRes;
-          const rec = answerRecords[idx];
-          rec.writingWordCount = evalResult.wordCount;
-          rec.aiFeedback = evalResult.overallComment;
-          if (evalResult.pending) {
-            // Grading could not run — keep the essay pending, do NOT store a 0 band.
-            rec.writingPending = true;
-            rec.writingScore = undefined;
-            rec.writingCriteria = undefined;
-          } else {
-            rec.writingPending = false;
-            rec.writingScore = evalResult.bandScore;
-            rec.writingCriteria = evalResult.criteriaFeedback;
-          }
-        }
-
-        // Only count graded essays; pending ones are excluded so the score is not
-        // dragged to 0 by an outage.
-        const writingScore = writingScorePercent(answerRecords);
-        const finalScore = averageOfPresent([nonWritingScore, writingScore]);
-        const updatedModuleScores = buildModuleScores(exam.modules, answerRecords, typeOf);
-        const updatedAuthentic = applyAuthenticScores(exam.type, exam.modules, updatedModuleScores, answerRecords, typeOf);
-
-        await ExamResult.updateOne(
-          { _id: result._id },
-          { $set: { score: finalScore, ...updatedAuthentic, answers: answerRecords, moduleScores: updatedModuleScores } },
-        );
-      } catch (err) {
-        // Whole batch failed unexpectedly — the essays stay pending (as persisted
-        // above) and can be re-graded from the review page.
-        Sentry.captureException(err, { tags: { action: 'writingEvalPostSave' } });
-      }
-    }
+    // Writing is NOT graded here — it stays "pending" on the saved result so the
+    // student is redirected to their results instantly (grading two essays takes
+    // ~10-15s). The review page auto-grades pending essays on load (with a
+    // visible "yoxlanılır" state) via reevaluatePendingWriting.
 
     return { resultId: result._id.toString(), attemptNumber };
   } catch (err) {

@@ -38,3 +38,43 @@ export function renderMath(text: string): string {
     return escapeHtml(seg);
   }).join('');
 }
+
+/**
+ * Render a reading passage as structured HTML: a title heading, visually
+ * separated paragraphs, and set-off "Paragraph A/B/C" labels — while still
+ * rendering KaTeX math and escaping all plain text (safe for
+ * dangerouslySetInnerHTML). Blank lines separate blocks; single newlines are
+ * line breaks within a block (e.g. email headers). Used by the exam + review
+ * passage panels.
+ */
+export function renderPassage(text: string): string {
+  const blocks = text.split(/\n[ \t]*\n+/);
+  const out: string[] = [];
+
+  blocks.forEach((rawBlock, bi) => {
+    const block = rawBlock.trim();
+    if (!block) return;
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+
+    // Title: the first block when it's a single, short line that isn't a full
+    // sentence (e.g. "The History of Urban Parks", "Should Governments Regulate AI?").
+    if (bi === 0 && lines.length === 1 && lines[0].length <= 70 && !lines[0].endsWith('.')) {
+      out.push(`<h3 class="passage-title">${renderMath(lines[0])}</h3>`);
+      return;
+    }
+
+    // A lettered/numbered paragraph label on its own line (e.g. "Paragraph A").
+    const label = lines[0].match(/^(Paragraph\s+[A-Za-z0-9]+)[:.]?$/);
+    if (label && lines.length > 1) {
+      const body = lines.slice(1).map(renderMath).join('<br/>');
+      out.push(`<p class="passage-para"><span class="passage-label">${renderMath(label[1])}</span>${body}</p>`);
+      return;
+    }
+
+    const body = lines.map(renderMath).join('<br/>');
+    out.push(`<p class="passage-para">${body}</p>`);
+  });
+
+  return out.join('');
+}

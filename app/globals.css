@@ -280,6 +280,30 @@
     color: var(--color-ink-mute);
   }
 
+  /* ── Reading passage typography (exam + review panels) ──────────── */
+  .passage-body {
+    line-height: 1.75;
+  }
+  .passage-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.35;
+    margin: 0 0 1rem;
+  }
+  .passage-para {
+    margin: 0 0 1rem;
+  }
+  .passage-para:last-child { margin-bottom: 0; }
+  .passage-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-ink-mute);
+    margin-bottom: 0.2rem;
+  }
+
   /* Score bar */
   .score-bar {
     width: 100%;

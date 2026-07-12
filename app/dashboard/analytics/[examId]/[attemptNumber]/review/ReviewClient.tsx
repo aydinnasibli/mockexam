@@ -1,11 +1,12 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { renderMath } from '@/lib/render-math';
+import PassageText from '@/components/ui/PassageText';
 import { reevaluatePendingWriting } from '@/lib/actions/results';
 import { formatOverallScore, formatModuleScore } from '@/lib/scoring';
 import {
@@ -25,7 +26,9 @@ interface Props {
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 function MathText({ text }: { text: string }) {
-  return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
+  // <span> keeps it valid inside <p> (e.g. matching items) — a <div> child of a
+  // <p> is invalid HTML and causes a hydration error.
+  return <span dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
 }
 
 function formatTime(secs: number) {
@@ -58,6 +61,22 @@ export default function ReviewClient({ exam, questions, result }: Props) {
       }
     });
   }
+
+  // Grade any still-pending essays automatically when the results page opens.
+  const autoGraded = useRef(false);
+  useEffect(() => {
+    if (!hasPendingWriting || autoGraded.current) return;
+    // Set the guard INSIDE the deferred call, not before it — otherwise Strict
+    // Mode's mount→cleanup→mount cycle sets the guard on the first run and the
+    // second run skips, so grading never fires.
+    const t = setTimeout(() => {
+      if (autoGraded.current) return;
+      autoGraded.current = true;
+      recheckWriting();
+    }, 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPendingWriting]);
 
   const moduleGroups = exam.modules.map((mod, modIdx) => ({
     mod,
@@ -317,8 +336,8 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                     <div className="p-5">
                       {/* Passage (collapsible) */}
                       {hasPassage && passageExpanded && (
-                        <div className="mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-sm text-ink-soft leading-relaxed max-h-48 overflow-y-auto">
-                          <MathText text={questionPassage} />
+                        <div className="passage-body mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-sm text-ink-soft max-h-48 overflow-y-auto">
+                          <PassageText text={questionPassage} />
                         </div>
                       )}
 

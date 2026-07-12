@@ -15,6 +15,7 @@ import {
   Play, Volume2
 } from 'lucide-react';
 import { renderMath } from '@/lib/render-math';
+import PassageText from '@/components/ui/PassageText';
 import type { PublicExam } from '@/lib/db/exams';
 import type { SessionQuestion } from '@/lib/actions/questions';
 
@@ -34,12 +35,12 @@ function formatTime(seconds: number) {
 }
 
 function MathText({ text, block = false }: { text: string; block?: boolean }) {
-  return (
-    <div
-      dangerouslySetInnerHTML={{ __html: renderMath(text) }}
-      className={block ? 'leading-relaxed' : 'inline leading-normal'}
-    />
-  );
+  // Inline uses <span> so it stays valid inside <p> (a <div> child of <p> is
+  // invalid HTML and triggers a hydration error).
+  if (block) {
+    return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
+  }
+  return <span dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="inline leading-normal" />;
 }
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
@@ -529,8 +530,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     </div>
                   )}
                   {currentPassage && (
-                    <div className="leading-loose text-[15px] prose prose-sm max-w-none" style={{ color: "var(--color-ink)" }}>
-                      <MathText text={currentPassage} block />
+                    <div className="passage-body text-[15px] max-w-none" style={{ color: "var(--color-ink)" }}>
+                      <PassageText text={currentPassage} />
                     </div>
                   )}
                 </article>
@@ -619,8 +620,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 </div>
                 {showPassage && (
                   <div className="overflow-y-auto px-4 py-4 max-h-[50vh]" style={{ borderTop: "1px solid var(--color-rule)" }}>
-                    <div className="leading-loose text-sm prose prose-sm max-w-none" style={{ color: "var(--color-ink)" }}>
-                      <MathText text={currentPassage} block />
+                    <div className="passage-body text-sm max-w-none" style={{ color: "var(--color-ink)" }}>
+                      <PassageText text={currentPassage} />
                     </div>
                   </div>
                 )}
