@@ -1,6 +1,5 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
@@ -8,6 +7,7 @@ import Purchase from '@/lib/models/Purchase';
 import ExamModel from '@/lib/models/Exam';
 import { checkRole } from '@/lib/admin';
 import { ADMIN_GRANT_PREFIX } from '@/lib/exam-types';
+import { captureException } from '@/lib/observability';
 
 export async function grantExamAccess(
   targetUserId: string,
@@ -55,7 +55,7 @@ export async function grantExamAccess(
     revalidatePath('/admin/purchases');
     return { success: true };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'grantExamAccess' } });
+    void captureException(err, { tags: { action: 'grantExamAccess' } });
     return { error: 'Giriş verilərkən server xətası baş verdi.' };
   }
 }
@@ -82,7 +82,7 @@ export async function revokeExamAccess(
     revalidatePath('/admin/purchases');
     return { success: true };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'revokeExamAccess' } });
+    void captureException(err, { tags: { action: 'revokeExamAccess' } });
     return { error: 'Giriş silinərkən server xətası baş verdi.' };
   }
 }

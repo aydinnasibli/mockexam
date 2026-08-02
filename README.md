@@ -27,6 +27,7 @@ Live at [testcentre.az](https://www.testcentre.az).
 | Auth | Clerk |
 | Payments | Epoint.az |
 | AI | OpenAI API |
+| Analytics & errors | PostHog (EU) |
 | Animation | Framer Motion |
 | Deployment | Vercel |
 
@@ -85,15 +86,22 @@ UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
 
 # Contact form (Gmail account + 16-char App Password)
-MAIL_USER=...
-MAIL_APP_PASSWORD=...
+EMAIL_USER=...
+EMAIL_PASS=...
 CONTACT_TO=...
 
-# Sentry (optional locally; source maps upload only when all three are set)
-NEXT_PUBLIC_SENTRY_DSN=...
-SENTRY_ORG=...
-SENTRY_PROJECT=...
-SENTRY_AUTH_TOKEN=...
+# PostHog — product analytics + error tracking (EU cloud)
+NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
+
+# PostHog source-map upload — OPTIONAL. Without these the build simply skips
+# the upload; stack traces are then minified but everything still works.
+#   personal API key: https://eu.posthog.com/settings/user-api-keys
+#                     (scope: error_tracking:write)
+#   project ID:       the number in the dashboard URL,
+#                     eu.posthog.com/project/<PROJECT_ID>/...
+POSTHOG_PERSONAL_API_KEY=phx_...
+POSTHOG_PROJECT_ID=...
 
 # Public app URL (used for OG tags, sitemaps and payment redirect URLs)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -150,10 +158,13 @@ carried published advisories (sharp: libvips CVEs; postcss: `sourceMappingURL`
 arbitrary file read + `</style>` XSS). The overrides force the patched,
 semver-compatible releases and dedupe the nested copies away.
 
-Remaining `npm audit` findings are all in the ESLint toolchain
-(`eslint`/`eslint-plugin-*`/`minimatch`), which is a devDependency that never
-ships. Clearing them needs ESLint 10, which `eslint-config-next` doesn't
-support yet.
+`brace-expansion@<1.1.17` is pinned to `^1.1.18` (GHSA-mh99-v99m-4gvg, a DoS
+in glob expansion). The range-scoped key matters: the tree contains both a 1.x
+copy (via `eslint`/`eslint-plugin-import` → `minimatch@3`) and a 5.x copy (via
+`typescript-eslint` → `minimatch@10`). A bare `"brace-expansion"` override
+would force the 5.x consumer down to v1.
+
+`npm audit` currently reports **0 vulnerabilities**.
 
 ## Scoring integrity
 
@@ -165,3 +176,25 @@ ignored. [`lib/grading.test.ts`](lib/grading.test.ts) covers these cases directl
 
 Score conversion (IELTS bands, SAT scaled scores) lives in
 [`lib/scoring.ts`](lib/scoring.ts) and is documented in [docs/scoring.md](docs/scoring.md).
+
+## Observability
+
+Error reporting goes through [`lib/observability.ts`](lib/observability.ts) —
+`captureException` / `captureMessage` — rather than importing a vendor SDK at
+each call site. Product events go through [`lib/analytics.ts`](lib/analytics.ts),
+which defines every event name in one place so a typo can't silently break a
+funnel. Both are `server-only` and neither ever throws; an observability outage
+must not be able to fail a checkout or lose an exam submission.
+
+Client-side errors, pageviews and session replay come from `posthog-js`,
+initialised in [`instrumentation-client.ts`](instrumentation-client.ts). Server
+errors are captured by `onRequestError` in
+[`instrumentation.ts`](instrumentation.ts).
+
+PostHog is reached through a same-origin rewrite at `/relay` (see
+`next.config.ts`), so analytics survives ad blockers and no PostHog host needs
+to appear in the CSP. Session replay masks all text and inputs — this app
+renders exam questions and student essays.
+
+Tracked funnel events: `checkout_started`, `purchase_completed`,
+`purchase_refunded`, `exam_started`, `exam_submitted`.

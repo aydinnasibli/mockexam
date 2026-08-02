@@ -1,6 +1,5 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
 import dbConnect from '@/lib/mongodb';
@@ -8,6 +7,8 @@ import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
 import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/epoint';
 import { isRateLimited } from '@/lib/rate-limit';
+import { captureException, captureMessage } from '@/lib/observability';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
 
 export type CheckoutResult =
   | { redirectUrl: string }
@@ -77,7 +78,7 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
     };
 
     if (result.status !== 'success' || !result.redirect_url) {
-      Sentry.captureMessage('Epoint payment creation failed', {
+      void captureMessage('Epoint payment creation failed', {
         level: 'error',
         extra: { result },
       });
@@ -104,14 +105,21 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
         );
       } catch (err) {
         if ((err as { code?: number }).code !== 11000) {
-          Sentry.captureException(err, { tags: { action: 'createCheckoutSession', step: 'pending' } });
+          void captureException(err, { tags: { action: 'createCheckoutSession', step: 'pending' } });
         }
       }
     }
 
+    void trackEvent(ANALYTICS_EVENTS.checkoutStarted, userId, {
+      examId,
+      examTitle: exam.title,
+      examType: exam.type,
+      priceAzn: exam.price,
+    });
+
     return { redirectUrl: result.redirect_url };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'createCheckoutSession' } });
+    void captureException(err, { tags: { action: 'createCheckoutSession' } });
     return { error: 'Ödəniş xidmətinə qoşulmaq mümkün olmadı' };
   }
 }

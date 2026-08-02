@@ -1,6 +1,5 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
@@ -10,6 +9,7 @@ import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
 import { checkRole } from '@/lib/admin';
 import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
+import { captureException } from '@/lib/observability';
 
 export interface QuestionData {
   id: string;
@@ -181,7 +181,7 @@ export async function addQuestion(data: {
     revalidatePath(`/admin/exams/${data.examId}/questions`);
     return { id: String(doc._id) };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'addQuestion' } });
+    void captureException(err, { tags: { action: 'addQuestion' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -216,7 +216,7 @@ export async function updateQuestion(
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'updateQuestion' } });
+    void captureException(err, { tags: { action: 'updateQuestion' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -233,7 +233,7 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'deleteQuestion' } });
+    void captureException(err, { tags: { action: 'deleteQuestion' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }
@@ -251,7 +251,7 @@ export async function reorderQuestions(
     revalidatePath(`/admin/exams/${examId}/questions`);
     return { ok: true };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'reorderQuestions' } });
+    void captureException(err, { tags: { action: 'reorderQuestions' } });
     return { error: err instanceof Error ? err.message : 'Server error' };
   }
 }

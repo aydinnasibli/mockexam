@@ -1,6 +1,5 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -11,6 +10,7 @@ import { checkRole } from '@/lib/admin';
 import { validateModules } from '@/lib/actions/admin';
 import { isExamType } from '@/lib/exam-types';
 import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
+import { captureException } from '@/lib/observability';
 
 /**
  * Import payload schema.
@@ -183,7 +183,7 @@ export async function importExamFromJson(
       await QuestionModel.insertMany(questionsToInsert);
     }
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'importExamFromJson' } });
+    void captureException(err, { tags: { action: 'importExamFromJson' } });
     return { error: 'Fayl yüklənərkən daxili server xətası baş verdi.' };
   }
 

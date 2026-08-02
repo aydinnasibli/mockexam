@@ -1,8 +1,8 @@
-import * as Sentry from '@sentry/nextjs';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
 import { signRequest, EPOINT_STATUS_URL } from '@/lib/epoint';
+import { captureException, captureMessage } from '@/lib/observability';
 
 /**
  * Safety net for a missed or delayed webhook.
@@ -51,7 +51,7 @@ export async function reconcilePurchase(userId: string, examId: string): Promise
     const expectedCents = Math.round(exam.price * 100);
     const paidCents = Math.round((result.amount ?? 0) * 100);
     if (paidCents !== expectedCents) {
-      Sentry.captureMessage('Reconcile amount mismatch', {
+      void captureMessage('Reconcile amount mismatch', {
         level: 'error',
         extra: { examId, transaction: purchase.transactionId, expected: expectedCents, paid: paidCents },
       });
@@ -79,7 +79,7 @@ export async function reconcilePurchase(userId: string, examId: string): Promise
     }
     return true;
   } catch (err) {
-    Sentry.captureException(err, { tags: { fn: 'reconcilePurchase' }, extra: { examId } });
+    void captureException(err, { tags: { fn: 'reconcilePurchase' }, extra: { examId } });
     return false;
   }
 }

@@ -1,10 +1,10 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
 import { isRateLimited } from '@/lib/rate-limit';
+import { captureException, captureMessage } from '@/lib/observability';
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Ad tələb olunur').max(100),
@@ -40,12 +40,12 @@ export async function sendContactMessage(input: {
   }
 
   // Gmail account + 16-char App Password (Google 2-Step Verification required).
-  const user = process.env.MAIL_USER;
-  const pass = process.env.MAIL_APP_PASSWORD;
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
   const to = process.env.CONTACT_TO ?? user;
 
   if (!user || !pass) {
-    Sentry.captureMessage('Contact form mail is not configured', { level: 'error' });
+    void captureMessage('Contact form mail is not configured', { level: 'error' });
     return { ok: false, error: 'Mesaj göndərmə xidməti hazırda əlçatan deyil. Zəhmət olmasa e-poçt ilə yazın.' };
   }
 
@@ -67,7 +67,7 @@ export async function sendContactMessage(input: {
 
     return { ok: true };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'sendContactMessage' } });
+    void captureException(err, { tags: { action: 'sendContactMessage' } });
     return { ok: false, error: 'Mesaj göndərilə bilmədi. Bir az sonra yenidən cəhd edin.' };
   }
 }

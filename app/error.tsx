@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import * as Sentry from '@sentry/nextjs';
+import { usePostHog } from '@posthog/react';
 
 interface Props {
   error: Error & { digest?: string };
@@ -10,9 +10,10 @@ interface Props {
 }
 
 export default function GlobalError({ error, reset }: Props) {
+  const posthog = usePostHog();
   useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
+    posthog.captureException(error);
+  }, [error, posthog]);
 
   return (
     <main className="min-h-screen bg-[#f0f2f5] flex items-center justify-center px-6">

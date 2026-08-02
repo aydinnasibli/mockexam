@@ -228,23 +228,41 @@ export default function HomeContent({ countsByType }: Props) {
             <div className="flex items-center justify-between mb-14">
               <div>
                 <div className="eyebrow mb-3">Tələbə rəyləri</div>
-                <div className="flex items-center gap-1.5 mt-2">
+                {/*
+                  The dot is 6px for visual reasons, but the *button* is 24px so
+                  it meets the WCAG 2.5.8 minimum target size. The dot itself is
+                  a child span; the button is transparent padding around it.
+                */}
+                <div className="flex items-center mt-2">
                   {reviews.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => setReviewIndex(i)}
                       aria-label={`Rəy ${i + 1}`}
+                      aria-current={i === reviewIndex ? 'true' : undefined}
                       style={{
-                        width: i === reviewIndex ? 20 : 6,
-                        height: 6,
-                        borderRadius: 3,
-                        border: "none",
+                        width: 24,
+                        height: 24,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
                         padding: 0,
-                        cursor: "pointer",
-                        background: i === reviewIndex ? "var(--color-ink)" : "var(--color-rule)",
-                        transition: "width 0.2s ease, background 0.2s ease",
+                        background: 'transparent',
+                        cursor: 'pointer',
                       }}
-                    />
+                    >
+                      <span
+                        style={{
+                          display: 'block',
+                          width: i === reviewIndex ? 20 : 6,
+                          height: 6,
+                          borderRadius: 3,
+                          background: i === reviewIndex ? 'var(--color-ink)' : 'var(--color-rule)',
+                          transition: 'width 0.2s ease, background 0.2s ease',
+                        }}
+                      />
+                    </button>
                   ))}
                 </div>
               </div>

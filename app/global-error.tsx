@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import * as Sentry from '@sentry/nextjs';
+// The singleton, not usePostHog(): global-error replaces the root layout, so
+// the PostHogProvider that supplies the hook's context is not mounted here.
+import posthog from 'posthog-js';
 
 interface Props {
   error: Error & { digest?: string };
@@ -10,7 +12,7 @@ interface Props {
 
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {
-    Sentry.captureException(error);
+    posthog.captureException(error);
   }, [error]);
 
   return (

@@ -1,8 +1,8 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import OpenAI from 'openai';
 import type { WritingTaskType } from '@/lib/models/Question';
+import { captureException, captureMessage } from '@/lib/observability';
 
 /**
  * Reasoning-grader configuration.
@@ -257,7 +257,7 @@ export async function evaluateWriting(params: {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     // Configuration problem — never the student's fault. Keep the essay pending.
-    Sentry.captureMessage('OPENAI_API_KEY is not configured', { level: 'error' });
+    void captureMessage('OPENAI_API_KEY is not configured', { level: 'error' });
     return { ...PENDING_RESULT, wordCount };
   }
 
@@ -335,7 +335,7 @@ export async function evaluateWriting(params: {
   } catch (err) {
     // API error, no quota (429), timeout, truncation, bad JSON… keep the essay
     // pending so it is re-graded later instead of being scored 0 for an outage.
-    Sentry.captureException(err, { tags: { action: 'evaluateWriting', model: GRADER_MODEL } });
+    void captureException(err, { tags: { action: 'evaluateWriting', model: GRADER_MODEL } });
     return { ...PENDING_RESULT, wordCount };
   }
 }

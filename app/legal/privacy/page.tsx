@@ -25,7 +25,7 @@ Bu Məxfilik Siyasəti 11 may 2010-cu il tarixli "Fərdi məlumatlar haqqında" 
 
 Ödəniş məlumatları: ödəniş tarixçəsi. Kart rekvizitləri bizdə saxlanılmır — ödənişlər Epoint ödəniş sistemi vasitəsilə, 3D Secure protokolu ilə təhlükəsiz şəkildə emal edilir.
 
-Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri. Texniki xətaların diaqnostikası üçün Sentry sessiyaların kiçik bir hissəsinin maskalanmış təkrarını (session replay — görünən mətn gizlədilir) qeydə alıb öz serverlərinə göndərə bilər.
+Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri. Texniki xətaların diaqnostikası və məhsul statistikası üçün PostHog sessiyaların maskalanmış təkrarını (session replay — bütün görünən mətn və daxil edilən məlumat gizlədilir) qeydə alıb Avropa İttifaqındakı serverlərinə göndərə bilər.
 
 İmtahan sessiyası məlumatları: başlanğıc vaxtı, keçirilmiş müddət, dinlənilmiş audio URL-lər. Bu məlumatlar 7 (yeddi) gün sonra avtomatik silinir.`,
   },
@@ -36,7 +36,7 @@ Texniki məlumatlar: IP ünvanı, brauzer növü, cihaz tipi, sessiya qeydləri.
 
 — Xidmətin göstərilməsi: hesabın idarə olunması, sınaq nəticələrinin saxlanması, proqresin izlənməsi.
 — Ödənişlərin emalı: satın alma əməliyyatlarının tamamlanması.
-— Texniki dəstək: xətaların aşkar edilməsi (Sentry vasitəsilə).
+— Texniki dəstək: xətaların aşkar edilməsi və platformadan istifadə statistikası (PostHog vasitəsilə).
 — Kommunikasiya: hesabınızla bağlı vacib bildirişlər.
 — Platformanın inkişafı: anonim istifadə statistikası.
 
@@ -48,7 +48,7 @@ Fərdi məlumatlarınız reklam məqsədi ilə üçüncü şəxslərə verilmir.
     content: `"Fərdi məlumatlar haqqında" Qanunun 9-cu maddəsinə uyğun olaraq fərdi məlumatlarınız aşağıdakı hüquqi əsaslarla emal edilir:
 
 — Müqavilənin icrası: hesabın yaradılması, sınaq nəticələrinin saxlanması və ödəniş əməliyyatları Sizimlə bağlanan xidmət müqaviləsinin icrasına əsaslanır.
-— Qanuni maraq: platformanın təhlükəsizliyinin təmin edilməsi, texniki xətaların izlənməsi (Sentry) və anonim statistika qanuni maraqlar əsasında həyata keçirilir.
+— Qanuni maraq: platformanın təhlükəsizliyinin təmin edilməsi, texniki xətaların izlənməsi və anonim istifadə statistikası (PostHog) qanuni maraqlar əsasında həyata keçirilir.
 — Hüquqi öhdəlik: ödəniş tarixçəsinin vergi və mühasibat qanunvericiliyinə uyğun saxlanılması.
 — Razılıq: marketinq bildirişlərinin göndərilməsi üçün ayrıca razılığınız alınır.`,
   },
@@ -60,17 +60,18 @@ Fərdi məlumatlarınız reklam məqsədi ilə üçüncü şəxslərə verilmir.
 Clerk, Inc. — istifadəçi autentifikasiyası və hesab idarəsi.
 Epoint ("Global Innovations" MMC) — kart ödənişlərinin qəbulu və emalı.
 OpenAI, L.L.C. — yazı (writing) tapşırıqlarının süni intellekt əsaslı qiymətləndirilməsi. Bu zaman istifadəçinin yazdığı cavab mətni qiymətləndirmə üçün OpenAI-yə göndərilir; həmin mətn OpenAI tərəfindən model təliminə istifadə edilmir.
-Functional Software, Inc. (Sentry) — texniki xəta izlənməsi və maskalanmış sessiya təkrarları (session replay).
+PostHog, Inc. — texniki xəta izlənməsi, məhsul analitikası və maskalanmış sessiya təkrarları (session replay). Məlumatlar Avropa İttifaqı (EU) regionunda saxlanılır.
 MongoDB, Inc. (MongoDB Atlas) — verilənlər bazasının yerləşdirilməsi.
 Upstash, Inc. — sorğu tezliyinin məhdudlaşdırılması (rate limiting) üçün müvəqqəti texniki açarların saxlanması.
 Vercel, Inc. — tətbiqin yerləşdirilməsi və məzmun çatdırılması şəbəkəsi (CDN).
+Google LLC (Gmail) — əlaqə formu vasitəsilə göndərdiyiniz mesajların bizə çatdırılması. Mesajın mətni, adınız və e-poçt ünvanınız Gmail serverləri üzərindən ötürülür.
 
 Hər bir alt-emalçı öz fəaliyyəti çərçivəsində fərdi məlumatların mühafizəsinə dair müqavilə öhdəlikləri daşıyır.`,
   },
   {
     id: 'transfers',
     title: 'Beynəlxalq məlumat ötürülməsi',
-    content: `Alt-emalçılarımızın əksəriyyəti (Clerk, OpenAI, Sentry, MongoDB Atlas, Upstash, Vercel) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
+    content: `Alt-emalçılarımızın əksəriyyəti (Clerk, OpenAI, MongoDB Atlas, Upstash, Vercel, Google) Azərbaycan Respublikasının hüdudlarından kənarda — ABŞ-da yerləşir. PostHog məlumatları Avropa İttifaqı regionunda saxlayır. Fərdi məlumatlarınız həmin şirkətlərin serverlərinə ötürülür və saxlanılır.
 
 Ödəniş əməliyyatları isə Azərbaycan Respublikası ərazisində fəaliyyət göstərən Epoint vasitəsilə yerli olaraq emal olunur və sərhədaşırı ötürülməyə məruz qalmır.
 
@@ -95,7 +96,7 @@ Hesabınızı silmək üçün testcentreaz@proton.me ünvanına müraciət edin.
 — Bütün məlumat ötürülmələri TLS/HTTPS protokolu vasitəsilə şifrələnir.
 — Verilənlər bazası MongoDB Atlas infrastrukturunda şifrələnmiş formada saxlanılır.
 — İstifadəçi autentifikasiyası Clerk tərəfindən idarə edilir; istifadəçi şifrələri bizim sistemlərimizdə saxlanılmır.
-— Sentry vasitəsilə ötürülən xəta məlumatlarından şəxsi məlumatlar süzülür.
+— PostHog vasitəsilə ötürülən xəta məlumatlarından şəxsi məlumatlar süzülür; sessiya təkrarlarında bütün mətn maskalanır.
 — Daxili sistemlərə giriş hüququ "minimum imtiyaz" prinsipinə uyğun məhdudlaşdırılır.
 
 Heç bir texniki sistem mütləq mühafizəni zəmanət verə bilməz. Hesabınızda şübhəli fəaliyyət aşkar etsəniz, dərhal testcentreaz@proton.me ünvanına məlumat verin.`,

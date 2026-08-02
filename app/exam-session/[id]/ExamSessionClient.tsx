@@ -1,7 +1,7 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
-import * as Sentry from '@sentry/nextjs';
+import posthog from 'posthog-js';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -947,7 +947,7 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
       const { name, message } = err instanceof Error
         ? { name: err.name, message: err.message }
         : { name: undefined, message: String(err) };
-      Sentry.captureException(err, { tags: { context: 'audioPlay' }, extra: { name, message } });
+      posthog.captureException(err, { context: 'audioPlay', error_name: name, error_message: message });
       toast.error(`Audionu başlatmaq mümkün olmadı: ${message}. Zəhmət olmasa təkrar sınayın.`);
       return;
     }

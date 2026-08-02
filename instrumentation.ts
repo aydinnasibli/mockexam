@@ -1,14 +1,14 @@
-import * as Sentry from '@sentry/nextjs';
+/**
+ * Server + edge instrumentation.
+ *
+ * `onRequestError` from @posthog/next captures errors thrown in Server
+ * Components, route handlers, server actions and the proxy, linking each to the
+ * originating session and user. This is the server half of what Sentry's
+ * `captureRequestError` used to do.
+ */
+export { onRequestError } from '@posthog/next';
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    await import('./sentry.server.config');
-  }
-
-  if (process.env.NEXT_RUNTIME === 'edge') {
-    await import('./sentry.edge.config');
-  }
+  // Nothing runtime-specific to set up: the PostHog server client is created
+  // lazily per request in lib/posthog/server.ts.
 }
-
-// Captures errors from Server Components, middleware, and proxies
-export const onRequestError = Sentry.captureRequestError;

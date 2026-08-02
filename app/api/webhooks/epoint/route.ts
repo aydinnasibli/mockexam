@@ -1,9 +1,10 @@
-import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
 import { verifySignature, decodeData, decodeOrderId } from '@/lib/epoint';
+import { captureException, captureMessage } from '@/lib/observability';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
 
 interface EpointCallback {
   order_id: string;
@@ -25,7 +26,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const privateKey = process.env.EPOINT_PRIVATE_KEY;
   if (!privateKey) {
-    Sentry.captureMessage('EPOINT_PRIVATE_KEY is not configured', { level: 'error' });
+    void captureMessage('EPOINT_PRIVATE_KEY is not configured', { level: 'error' });
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
   }
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     userId = decoded.u;
     examId = decoded.e;
   } catch {
-    Sentry.captureMessage('Could not decode order_id', {
+    void captureMessage('Could not decode order_id', {
       level: 'error',
       extra: { order_id: payload.order_id },
     });
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
       // Verify the paid amount matches the exam price before granting access.
       const exam = await getExamById(examId);
       if (!exam) {
-        Sentry.captureMessage('Webhook received for unknown exam', {
+        void captureMessage('Webhook received for unknown exam', {
           level: 'error',
           extra: { examId, transaction },
         });
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
 
       const expectedCents = Math.round(exam.price * 100);
       if (amountCents !== expectedCents) {
-        Sentry.captureMessage('Payment amount mismatch', {
+        void captureMessage('Payment amount mismatch', {
           level: 'error',
           extra: { examId, transaction, expected: expectedCents, received: amountCents },
         });
@@ -97,6 +98,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Idempotent: re-applying COMPLETED for the same transaction is a no-op.
+      const before = await Purchase.findOne({ userId, examId }).lean();
       await Purchase.findOneAndUpdate(
         { userId, examId },
         {
@@ -105,17 +107,39 @@ export async function POST(req: NextRequest) {
         },
         { upsert: true, new: true },
       );
+
+      // Only report a purchase the first time it reaches COMPLETED — Epoint can
+      // redeliver a webhook, and a duplicate would inflate revenue reporting.
+      if (before?.status !== 'COMPLETED') {
+        void trackEvent(ANALYTICS_EVENTS.purchaseCompleted, userId, {
+          examId,
+          examTitle:   exam.title,
+          examType:    exam.type,
+          revenueAzn:  amountCents / 100,
+          transaction,
+        });
+      }
     } else if (status === 'returned') {
       // Refund / chargeback — revoke access. Only an existing purchase is flipped
       // to REFUNDED; never upsert a row that was never there. Idempotent.
-      await Purchase.findOneAndUpdate(
-        { userId, examId },
+      const refunded = await Purchase.findOneAndUpdate(
+        { userId, examId, status: { $ne: 'REFUNDED' } },
         {
           $set: { status: 'REFUNDED' },
           $addToSet: { orderHistory: `refund:${transaction}` },
         },
         { new: true },
       );
+
+      // `refunded` is null when there was nothing to revoke, or when this is a
+      // redelivery of a refund already applied — neither should be reported.
+      if (refunded) {
+        void trackEvent(ANALYTICS_EVENTS.purchaseRefunded, userId, {
+          examId,
+          revenueAzn: -(refunded.amountCents ?? 0) / 100,
+          transaction,
+        });
+      }
     } else if (status === 'failed' || status === 'error' || status === 'server_error') {
       // Record the failure, but never clobber a COMPLETED or REFUNDED purchase.
       // E11000 on the unique { userId, examId } index means such a row already
@@ -137,7 +161,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (err) {
-    Sentry.captureException(err, {
+    void captureException(err, {
       tags: { route: 'webhook/epoint' },
       extra: { transaction, userId, examId },
     });

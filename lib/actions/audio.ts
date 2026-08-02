@@ -1,10 +1,10 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import ExamSessionModel, { type IExamSession } from '@/lib/models/ExamSession';
 import { isRateLimited } from '@/lib/rate-limit';
+import { captureException } from '@/lib/observability';
 
 /** Read-only check — does NOT mark the audio as played. Used on component mount. */
 export async function checkAudioPlayed(
@@ -22,7 +22,7 @@ export async function checkAudioPlayed(
     const played = (session as IExamSession).playedAudioUrls ?? [];
     return { alreadyPlayed: played.includes(audioUrl) };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'checkAudioPlayed' } });
+    void captureException(err, { tags: { action: 'checkAudioPlayed' } });
     return { error: 'Server xətası.' };
   }
 }
@@ -66,7 +66,7 @@ export async function markAudioPlayed(
 
     return { alreadyPlayed: false };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'markAudioPlayed' } });
+    void captureException(err, { tags: { action: 'markAudioPlayed' } });
     return { error: 'Server xətası.' };
   }
 }

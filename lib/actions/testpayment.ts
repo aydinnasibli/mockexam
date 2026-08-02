@@ -1,6 +1,5 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 import { checkRole } from '@/lib/admin';
 import {
@@ -10,6 +9,7 @@ import {
   EPOINT_REQUEST_URL,
   EPOINT_STATUS_URL,
 } from '@/lib/epoint';
+import { captureException } from '@/lib/observability';
 
 /**
  * Order-id prefix for payments created from the /testpayment harness.
@@ -122,7 +122,7 @@ export async function createTestPayment(
       redirectUrl: succeeded ? redirectUrl : null,
     };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'createTestPayment' } });
+    void captureException(err, { tags: { action: 'createTestPayment' } });
     return { ok: false, error: 'Epoint xidmətinə qoşulmaq mümkün olmadı.' };
   }
 }
@@ -163,7 +163,7 @@ export async function checkTestPaymentStatus(transaction: string): Promise<Statu
       };
     }
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'checkTestPaymentStatus' } });
+    void captureException(err, { tags: { action: 'checkTestPaymentStatus' } });
     return { ok: false, error: 'Epoint xidmətinə qoşulmaq mümkün olmadı.' };
   }
 }

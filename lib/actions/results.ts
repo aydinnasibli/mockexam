@@ -1,6 +1,5 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
@@ -15,6 +14,8 @@ import { checkRole } from '@/lib/admin';
 import { evaluateWriting, type WritingCriterionResult } from '@/lib/actions/writing-eval';
 import { computeAuthenticScores } from '@/lib/scoring';
 import { gradeAnswers } from '@/lib/grading';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
+import { captureException, captureMessage } from '@/lib/observability';
 
 type AnswerRecord = {
   questionId: string;
@@ -208,7 +209,7 @@ export async function saveExamResult(data: {
     if (session) {
       serverElapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
       if (serverElapsed > session.totalSeconds + 300) {
-        Sentry.captureMessage('Exam submission overtime', {
+        void captureMessage('Exam submission overtime', {
           level: 'warning',
           extra: { userId, examId, serverElapsed, allowed: session.totalSeconds },
         });
@@ -317,7 +318,7 @@ export async function saveExamResult(data: {
         { $max: { attemptCount: attemptNumber } },
       );
     } catch (err) {
-      Sentry.captureException(err, {
+      void captureException(err, {
         tags: { action: 'saveExamResult', step: 'syncAttemptCount' },
         extra: { userId, examId, attemptNumber },
       });
@@ -330,9 +331,20 @@ export async function saveExamResult(data: {
     // ~10-15s). The review page auto-grades pending essays on load (with a
     // visible "yoxlanılır" state) via reevaluatePendingWriting.
 
+    void trackEvent(ANALYTICS_EVENTS.examSubmitted, userId, {
+      examId,
+      examTitle:      exam.title,
+      examType:       exam.type,
+      attemptNumber,
+      score:          initialScore,
+      totalQuestions: answerRecords.length,
+      answered:       answerRecords.filter(a => a.userAnswer !== -1 || a.userAnswerText.trim()).length,
+      durationSeconds: safeDurationSeconds,
+    });
+
     return { resultId: result._id.toString(), attemptNumber };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'saveExamResult' } });
+    void captureException(err, { tags: { action: 'saveExamResult' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }
@@ -444,7 +456,7 @@ export async function reevaluatePendingWriting(
     revalidatePath(`/dashboard/analytics/${examId}/${attemptNumber}/review`);
     return { ok: true, graded: r.graded, pending: r.pending };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'reevaluatePendingWriting' } });
+    void captureException(err, { tags: { action: 'reevaluatePendingWriting' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }
@@ -504,7 +516,7 @@ export async function adminRegradeResult(
     revalidatePath(`/dashboard/analytics/${result.examId}/${result.attemptNumber}/review`);
     return { ok: true, graded: r.graded, pending: r.pending };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'adminRegradeResult' } });
+    void captureException(err, { tags: { action: 'adminRegradeResult' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }
@@ -528,7 +540,7 @@ export async function adminRegradeAllPending(): Promise<
     revalidatePath('/admin/writing');
     return { ok: true, processed: docs.length, graded, stillPending };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'adminRegradeAllPending' } });
+    void captureException(err, { tags: { action: 'adminRegradeAllPending' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }

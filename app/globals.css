@@ -11,10 +11,16 @@
   --color-surface-2: #F4F2EC;
   --color-surface-3: #EAE7DE;
 
-  /* Ink scale */
+  /* Ink scale.
+     `ink-mute` was #9A9A92, which measured 2.5–2.8:1 against the three page
+     backgrounds — below the WCAG AA 4.5:1 minimum for body text, and it is used
+     for real reading text (nav links, question counters, meta labels).
+     #6E6E66 is the lightest value that clears 4.5:1 on all of
+     bg #FAFAF6, white, and surface-2 #F4F2EC. */
   --color-ink:       #1A1A1A;
   --color-ink-soft:  #5A5A5A;
-  --color-ink-mute:  #9A9A92;
+  --color-ink-mute:  #6E6E66;
+  /* Decorative only — never use for text that must be read. */
   --color-ink-faint: #C8C5BC;
 
   /* Borders */

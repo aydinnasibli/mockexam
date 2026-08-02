@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import * as Sentry from '@sentry/nextjs';
+import { usePostHog } from '@posthog/react';
 
 interface Props {
   error: Error & { digest?: string };
@@ -9,9 +9,10 @@ interface Props {
 }
 
 export default function AdminError({ error, reset }: Props) {
+  const posthog = usePostHog();
   useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
+    posthog.captureException(error);
+  }, [error, posthog]);
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

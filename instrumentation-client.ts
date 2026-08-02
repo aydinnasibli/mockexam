@@ -1,24 +1,40 @@
-import * as Sentry from '@sentry/nextjs';
+import posthog from 'posthog-js';
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
+/**
+ * Client-side PostHog init — product analytics, session replay and error
+ * tracking (this replaces Sentry).
+ *
+ * `api_host` points at our own /relay path, which next.config.ts rewrites to
+ * PostHog's EU ingest. Requests therefore originate from our own domain, which
+ * stops ad blockers silently dropping analytics and errors — the same job
+ * Sentry's `tunnelRoute` did.
+ */
+const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+if (key) {
+  posthog.init(key, {
+    api_host: '/relay',
+    // When proxying, posthog-js still needs to know where the real instance is
+    // so that "view in PostHog" links and asset URLs resolve correctly.
+    ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.posthog.com',
 
-  // 1% of sessions replayed; 100% when an error occurs
-  replaysSessionSampleRate: 0.01,
-  replaysOnErrorSampleRate: 1.0,
+    // App Router: posthog-js cannot observe client-side route changes on its
+    // own, so <PostHogPageView> in the root layout captures them instead.
+    capture_pageview: false,
+    capture_pageleave: true,
 
-  integrations: [
-    Sentry.replayIntegration({
-      maskAllText: true,
-      blockAllMedia: false,
-    }),
-  ],
+    // Error tracking — the Sentry replacement.
+    capture_exceptions: true,
 
-  // tunnel is auto-injected by withSentryConfig tunnelRoute — do not set manually here
-});
+    // Session replay. Everything textual is masked: this app renders exam
+    // questions and student essays, none of which should leave the browser.
+    session_recording: {
+      maskAllInputs: true,
+      maskTextSelector: '*',
+    },
 
-// Required by @sentry/nextjs to instrument App Router navigation spans
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+    persistence: 'localStorage+cookie',
+    // Honour the browser's Do Not Track signal.
+    respect_dnt: true,
+  });
+}

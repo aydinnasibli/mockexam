@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import * as Sentry from '@sentry/nextjs';
+import { usePostHog } from '@posthog/react';
 
 interface Props {
   error: Error & { digest?: string };
@@ -10,9 +10,10 @@ interface Props {
 }
 
 export default function DashboardError({ error, reset }: Props) {
+  const posthog = usePostHog();
   useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
+    posthog.captureException(error);
+  }, [error, posthog]);
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-20">

@@ -35,7 +35,7 @@ async function isDatabaseHealthy(): Promise<boolean> {
     );
     return true;
   } catch (err) {
-    // Logged server-side only (Sentry picks it up). The public response never
+    // Logged server-side only (PostHog picks it up). The public response never
     // echoes error detail, versions, or infra names to anonymous callers.
     console.error('[health] database check failed:', err);
     return false;

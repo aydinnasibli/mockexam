@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Newsreader, Geist, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
+import { PostHogProvider, PostHogPageView } from '@posthog/next';
 import { Toaster } from 'sonner';
 import MotionProvider from "@/components/ui/MotionProvider";
+import CookieNotice from "@/components/ui/CookieNotice";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -96,7 +98,18 @@ export default function RootLayout({
           />
         </head>
         <body className="antialiased">
-          <MotionProvider>{children}</MotionProvider>
+          {/*
+            posthog-js is initialised in instrumentation-client.ts; this provider
+            only supplies the React context for usePostHog(). PostHogPageView
+            captures App Router navigations, which posthog-js cannot see itself.
+          */}
+          <PostHogProvider>
+            <PostHogPageView />
+            <MotionProvider>
+              {children}
+              <CookieNotice />
+            </MotionProvider>
+          </PostHogProvider>
           <Toaster richColors position="top-right" />
         </body>
       </html>

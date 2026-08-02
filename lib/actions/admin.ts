@@ -1,12 +1,12 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import ExamModel, { computeExamTotals, MODULE_TYPES, type ModuleType } from '@/lib/models/Exam';
 import { checkRole } from '@/lib/admin';
 import { isExamType, type ExamType } from '@/lib/exam-types';
+import { captureException } from '@/lib/observability';
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
@@ -145,7 +145,7 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
     if ('error' in result) return result;
     modules = result;
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'createExam', step: 'moduleParse' } });
+    void captureException(err, { tags: { action: 'createExam', step: 'moduleParse' } });
     return { error: 'Modul məlumatları yanlışdır.' };
   }
 
@@ -169,7 +169,7 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
   } catch (err: unknown) {
     if ((err as { code?: number }).code === 11000)
       return { error: 'Bu ID ilə imtahan artıq mövcuddur.' };
-    Sentry.captureException(err, { tags: { action: 'createExam' } });
+    void captureException(err, { tags: { action: 'createExam' } });
     return { error: 'Server xətası baş verdi.' };
   }
 
@@ -192,7 +192,7 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
     if ('error' in result) return result;
     modules = result;
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'updateExam', step: 'moduleParse' } });
+    void captureException(err, { tags: { action: 'updateExam', step: 'moduleParse' } });
     return { error: 'Modul məlumatları yanlışdır.' };
   }
 
@@ -213,7 +213,7 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
     );
     if (!exam) return { error: 'İmtahan tapılmadı.' };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'updateExam' } });
+    void captureException(err, { tags: { action: 'updateExam' } });
     return { error: 'Server xətası baş verdi.' };
   }
 
@@ -231,7 +231,7 @@ export async function toggleExamActive(examId: string, newActive: boolean): Prom
     revalidatePath('/exams');
     return {};
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'toggleExamActive' } });
+    void captureException(err, { tags: { action: 'toggleExamActive' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }
@@ -245,7 +245,7 @@ export async function deleteExam(examId: string): Promise<ActionResult> {
     revalidatePath('/exams');
     return {};
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'deleteExam' } });
+    void captureException(err, { tags: { action: 'deleteExam' } });
     return { error: 'Server xətası baş verdi.' };
   }
 }
@@ -304,7 +304,7 @@ export async function seedExams(_prev: SeedResult): Promise<SeedResult> {
     revalidatePath('/exams');
     return { created, skipped };
   } catch (err) {
-    Sentry.captureException(err, { tags: { action: 'seedExams' } });
+    void captureException(err, { tags: { action: 'seedExams' } });
     return { created: 0, skipped: 0, error: 'Server xətası baş verdi.' };
   }
 }

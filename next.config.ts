@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withPostHogConfig } from "@posthog/nextjs-config";
 
 const isDev = process.env.NODE_ENV === 'development';
+
+/**
+ * PostHog ingest, proxied through our own origin.
+ *
+ * `/relay/*` is rewritten to PostHog below, so analytics and error reports
+ * leave the browser as first-party requests and ad blockers don't silently drop
+ * them. Because everything is same-origin, `connect-src 'self'` already covers
+ * it and no PostHog host needs to appear in the CSP.
+ */
+const POSTHOG_PROXY_PATH = '/relay';
+const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com';
+const posthogAssetHost = posthogHost.includes('eu.')
+  ? 'https://eu-assets.i.posthog.com'
+  : 'https://us-assets.i.posthog.com';
 
 /**
  * Clerk's Frontend API (FAPI) host.
@@ -55,7 +69,8 @@ const csp = [
   "media-src 'self' https://*.public.blob.vercel-storage.com",
   // next/font/google self-hosts fonts; data: covers KaTeX font fallbacks
   "font-src 'self' data:",
-  // 'self' already covers same-origin paths like the Sentry tunnel at /monitoring — no separate entry needed
+  // PostHog is reached through the same-origin /relay rewrite, so 'self' covers
+  // both analytics ingest and session-replay uploads — no PostHog host needed.
   `connect-src 'self' ${clerkHosts} https://api.clerk.com wss://*.accounts.dev${fapi ? ` wss://${fapi}` : ''}`,
   // Clerk Turnstile (bot protection) renders in an iframe from Cloudflare
   "frame-src 'self' https://challenges.cloudflare.com https://*.protect.clerk.com",
@@ -89,17 +104,28 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**.public.blob.vercel-storage.com', port: '', search: '' },
     ],
   },
+  // PostHog's ingest endpoints depend on trailing slashes; Next's default
+  // trailing-slash redirect would break event capture through the proxy.
+  skipTrailingSlashRedirect: true,
+  // NOTE: `experimental.serverSourceMaps: true` was measured here and made no
+  // difference under Turbopack — same 310 uploaded source-map pairs, same 27
+  // "empty sourcemap" warnings from PostHog's uploader. Left off rather than
+  // carrying an experimental flag that buys nothing.
+  async rewrites() {
+    return [
+      // Static assets (posthog-js bundle, session-replay recorder, toolbar)
+      { source: `${POSTHOG_PROXY_PATH}/static/:path*`, destination: `${posthogAssetHost}/static/:path*` },
+      // Everything else: event capture, flag decisions, replay uploads
+      { source: `${POSTHOG_PROXY_PATH}/:path*`, destination: `${posthogHost}/:path*` },
+    ];
+  },
   async headers() {
     return [
-      ...(!isDev ? [{
-        // Immutable static assets — fingerprinted by Next.js, safe to cache forever.
-        // Production only: dev chunks are rebuilt frequently and must not be cached immutably,
-        // otherwise Turbopack chunk-reference mismatches cause "module factory not available" errors.
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      }] : []),
+      // NOTE: there is deliberately no rule for `/_next/static/:path*`.
+      // Next.js already serves those fingerprinted assets with
+      // `public, max-age=31536000, immutable` and documents that the value
+      // "cannot be overridden" — a custom rule there is ignored and only
+      // produces a build warning.
       {
         // Public folder assets (images, fonts, og.png, etc.)
         source: '/:file((?!api/).*\\.(?:ico|png|jpg|jpeg|svg|webp|gif|woff2?))',
@@ -128,37 +154,30 @@ const nextConfig: NextConfig = {
   },
 };
 
+/**
+ * Source map upload, so production stack traces in PostHog show real file names
+ * and line numbers instead of minified gibberish. Requires a personal API key
+ * with `error_tracking:write`; without it we ship unchanged and skip the upload,
+ * which is what local builds and CI do.
+ */
 const hasSourceMapCreds = !!(
-  process.env.SENTRY_AUTH_TOKEN &&
-  process.env.SENTRY_ORG &&
-  process.env.SENTRY_PROJECT
+  process.env.POSTHOG_PERSONAL_API_KEY &&
+  process.env.POSTHOG_PROJECT_ID
 );
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Route Sentry events through /monitoring so they bypass ad-blockers
-  // and sentry.io never appears in the connect-src CSP header.
-  // withSentryConfig auto-injects tunnel: '/monitoring' into the client bundle.
-  tunnelRoute: '/monitoring',
-
-  // Upload dependency source maps too — fixes [native code] frames in stack traces
-  widenClientFileUpload: true,
-
-  // Skip source map upload entirely when credentials are absent (e.g. local dev)
-  sourcemaps: {
-    disable: !hasSourceMapCreds,
-    filesToDeleteAfterUpload: ['.next/static/**/*.map'],
-  },
-
-  // Tree-shake Sentry debug logging from production bundles (webpack only, not Turbopack)
-  webpack: {
-    treeshake: {
-      removeDebugLogging: true,
-    },
-  },
-
-  silent: !process.env.CI,
-});
+export default hasSourceMapCreds
+  ? withPostHogConfig(nextConfig, {
+      // Personal API key (phx_…), NOT the phc_ project key. Needs the
+      // error_tracking:write scope. https://eu.posthog.com/settings/user-api-keys
+      personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY!,
+      // The numeric project id, from the URL: eu.posthog.com/project/<id>/...
+      // (the older `envId` option is a deprecated alias for this same value).
+      projectId: process.env.POSTHOG_PROJECT_ID!,
+      host: posthogHost,
+      sourcemaps: {
+        enabled: true,
+        // Strip the .map files after upload so they are never served publicly.
+        deleteAfterUpload: true,
+      },
+    })
+  : nextConfig;
