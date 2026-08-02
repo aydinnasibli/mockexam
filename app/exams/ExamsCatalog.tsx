@@ -5,15 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
+import { EXAM_TYPE_LABELS } from '@/lib/exam-types';
 
-const examTypeLabels: Record<string, string> = {
-  sat:             'SAT',
-  ielts:           'IELTS',
-  toefl:           'TOEFL',
-  dim:             'DİM',
-  gre:             'GRE',
-  general_english: 'General English',
-};
+const examTypeLabels: Record<string, string> = EXAM_TYPE_LABELS;
 
 interface Props {
   exams: PublicExam[];
@@ -41,7 +35,10 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
     setActiveType('all');
   }
 
-  const FilterPanel = () => (
+  // Rendered as a plain function call rather than a nested component: declaring
+  // a component inside render gives it a new identity every render, which
+  // remounts it and drops its state (react-hooks/static-components).
+  const filterPanel = (
     <>
       <div className="eyebrow mb-4">İmtahan növü</div>
       <div className="flex flex-col gap-0.5">
@@ -54,6 +51,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             <button
               key={type}
               onClick={() => { setActiveType(type); setFiltersOpen(false); }}
+              aria-pressed={isActive}
               className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-colors text-left"
               style={{
                 background: isActive ? 'var(--color-surface-2)' : 'transparent',
@@ -117,6 +115,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           <select
             value={sortOrder}
             onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+            aria-label="Sınaqları sırala"
             className="input-new"
             style={{ width: 'auto', paddingTop: 10, paddingBottom: 10, fontSize: 13 }}
           >
@@ -142,7 +141,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                     <X size={16} />
                   </button>
                 </div>
-                <FilterPanel />
+                {filterPanel}
               </div>
             </motion.div>
           )}
@@ -153,7 +152,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
 
           {/* Desktop sidebar */}
           <aside className="hidden lg:block shrink-0 sticky top-24 self-start">
-            <FilterPanel />
+            {filterPanel}
           </aside>
 
           {/* Main */}
@@ -166,6 +165,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               <select
                 value={sortOrder}
                 onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+                aria-label="Sınaqları sırala"
                 className="input-new"
                 style={{ width: 'auto', paddingTop: 8, paddingBottom: 8, fontSize: 13 }}
               >

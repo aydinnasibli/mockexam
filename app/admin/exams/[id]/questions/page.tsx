@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import { getExamQuestions } from '@/lib/actions/questions';
 import QuestionManager from './QuestionManager';
+import { requireAdminPage } from '@/lib/admin';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function ExamQuestionsPage({ params }: Props) {
+  await requireAdminPage();
   const { id } = await params;
 
   await dbConnect();

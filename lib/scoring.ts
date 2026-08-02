@@ -44,24 +44,41 @@ export function ieltsReadingBand(correct: number): number {
   return rawToBand(IELTS_ACADEMIC_READING, correct);
 }
 
-/** Writing section band from the two task bands; Task 2 is weighted double. */
-export function ieltsWritingBand(taskBands: number[]): number | null {
-  const bands = taskBands.filter(b => typeof b === 'number');
-  if (bands.length === 0) return null;
-  if (bands.length === 1) return roundHalfBand(bands[0]);
-  const [t1, t2] = bands;               // task order: [Task 1, Task 2]
-  return roundHalfBand((t1 + 2 * t2) / 3);
+/** One graded writing task, tagged with the task type declared on the question. */
+export interface WritingTaskBand {
+  /** 'task1' | 'task2' | 'integrated' | … — from the question, NOT submission order. */
+  taskType?: string;
+  band: number;
+}
+
+/**
+ * Writing section band. Task 2 counts double in the official IELTS scheme, so
+ * the tasks are identified by their declared `taskType` rather than by array
+ * position — otherwise the order answers happen to arrive in would change the
+ * band. When the tasks aren't labelled task1/task2 (e.g. a single general
+ * prompt, or a TOEFL-style pair), fall back to a plain mean instead of guessing.
+ */
+export function ieltsWritingBand(tasks: WritingTaskBand[]): number | null {
+  const valid = tasks.filter(t => typeof t.band === 'number');
+  if (valid.length === 0) return null;
+  if (valid.length === 1) return roundHalfBand(valid[0].band);
+
+  const t1 = valid.find(t => t.taskType === 'task1');
+  const t2 = valid.find(t => t.taskType === 'task2');
+  if (t1 && t2) return roundHalfBand((t1.band + 2 * t2.band) / 3);
+
+  return roundHalfBand(valid.reduce((s, t) => s + t.band, 0) / valid.length);
 }
 
 /** Band for one IELTS section by module type, or null if it isn't a graded section. */
 export function ieltsSectionBand(
   moduleType: string,
   correct: number,
-  writingTaskBands?: number[],
+  writingTasks?: WritingTaskBand[],
 ): number | null {
   if (moduleType === 'listening') return ieltsListeningBand(correct);
   if (moduleType === 'reading')   return ieltsReadingBand(correct);
-  if (moduleType === 'writing')   return ieltsWritingBand(writingTaskBands ?? []);
+  if (moduleType === 'writing')   return ieltsWritingBand(writingTasks ?? []);
   return null;
 }
 
@@ -99,9 +116,9 @@ export function computeAuthenticScores(params: {
   examType: ExamKind;
   modules: { type: string }[];
   moduleScores: { moduleIndex: number; correct: number; total: number; pending?: boolean }[];
-  writingTaskBands?: number[];
+  writingTasks?: WritingTaskBand[];
 }): AuthenticScores {
-  const { examType, modules, moduleScores, writingTaskBands = [] } = params;
+  const { examType, modules, moduleScores, writingTasks = [] } = params;
   const moduleBands: Record<number, number> = {};
 
   if (examType === 'ielts') {
@@ -110,7 +127,7 @@ export function computeAuthenticScores(params: {
       const type = modules[ms.moduleIndex]?.type ?? '';
       let band: number | null = null;
       if (type === 'writing') {
-        if (!ms.pending) band = ieltsWritingBand(writingTaskBands);
+        if (!ms.pending) band = ieltsWritingBand(writingTasks);
       } else {
         band = ieltsSectionBand(type, ms.correct);
       }

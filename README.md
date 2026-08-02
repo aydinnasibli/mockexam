@@ -1,14 +1,14 @@
 # Test Centre — Academic Exam Preparation Platform
 
-A full-stack exam preparation platform for SAT, IELTS, TOEFL, DİM, GMAT, and GRE. Students take timed mock exams in the real test format, get AI-powered feedback, and track their progress over time.
+A full-stack exam preparation platform for SAT, IELTS, TOEFL, DİM, and GRE. Students take timed mock exams in the real test format, get AI-powered feedback, and track their progress over time.
 
 Live at [testcentre.az](https://www.testcentre.az).
 
 ## Features
 
-- **Exam catalog** — browse and purchase exam packages by type (SAT, IELTS, TOEFL, DİM, GMAT, GRE)
+- **Exam catalog** — browse and purchase exam packages by type (SAT, IELTS, TOEFL, DİM, GRE, General English)
 - **Timed exam sessions** — module-by-module structure with breaks, adaptive modules, and countdown timers
-- **AI writing evaluation** — OpenAI grades open-ended writing and speaking responses
+- **AI writing evaluation** — OpenAI grades open-ended writing tasks against exam-specific rubrics (see [docs/writing-evaluation.md](docs/writing-evaluation.md))
 - **Math rendering** — KaTeX renders LaTeX in questions and explanations
 - **Audio questions** — server actions stream audio for listening modules
 - **User dashboard** — analytics, result history, and account settings
@@ -80,12 +80,35 @@ EPOINT_PRIVATE_KEY=...
 # OpenAI
 OPENAI_API_KEY=sk-...
 
-# Comma-separated Clerk user IDs that get admin access
-ADMIN_USER_IDS=user_...
+# Upstash Redis — rate limiting (checkout, contact form, submissions)
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
 
-# Public app URL (used for OG tags and sitemaps)
+# Contact form (Gmail account + 16-char App Password)
+MAIL_USER=...
+MAIL_APP_PASSWORD=...
+CONTACT_TO=...
+
+# Sentry (optional locally; source maps upload only when all three are set)
+NEXT_PUBLIC_SENTRY_DSN=...
+SENTRY_ORG=...
+SENTRY_PROJECT=...
+SENTRY_AUTH_TOKEN=...
+
+# Public app URL (used for OG tags, sitemaps and payment redirect URLs)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+> **Admin access** is granted through Clerk, not an environment variable. Set
+> `{ "role": "admin" }` on a user's **public metadata** in the Clerk dashboard,
+> and expose it on the session token (Sessions → Customize session token) as
+> `{ "metadata": "{{user.public_metadata}}" }`. `lib/admin.ts` reads
+> `sessionClaims.metadata.role`.
+
+> **Deploying to production:** switch to Clerk *production* keys (`pk_live_` /
+> `sk_live_`). The CSP in `next.config.ts` derives Clerk's Frontend API host
+> from the publishable key, so it follows automatically — but the key must be
+> present at build time.
 
 **3. Run the dev server**
 
@@ -103,11 +126,42 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run build` | Production build |
 | `npm start` | Start production server |
 | `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript with no emit |
+| `npm test` | Run the unit tests (Vitest) |
+| `npm run verify` | Typecheck + lint + test — what CI runs |
 
-## Exam Module Types
+## Exam & Module Types
 
-Exams are composed of one or more modules. Supported module types:
+Exam types and module types are both defined once in [`lib/exam-types.ts`](lib/exam-types.ts)
+and consumed everywhere (schemas, validators, importer, admin form, catalog filter).
+Add a type there and it becomes usable across the whole app.
 
-`rw` · `reading` · `writing` · `listening` · `speaking` · `grammar` · `math` · `verbal` · `quantitative` · `analytical` · `general`
+**Exam types:** `sat` · `ielts` · `toefl` · `dim` · `gre` · `general_english`
+
+**Module types:** `rw` · `reading` · `writing` · `listening` · `speaking` · `grammar` · `math` · `verbal` · `quantitative` · `analytical` · `general`
 
 Each module has a duration, question count, optional break, and an `isAdaptive` flag (used for SAT-style adaptive routing).
+
+## Dependency overrides
+
+`package.json` pins `sharp` and `postcss` via `overrides`. Next.js vendors its
+own copies of both under `node_modules/next/node_modules`, and those versions
+carried published advisories (sharp: libvips CVEs; postcss: `sourceMappingURL`
+arbitrary file read + `</style>` XSS). The overrides force the patched,
+semver-compatible releases and dedupe the nested copies away.
+
+Remaining `npm audit` findings are all in the ESLint toolchain
+(`eslint`/`eslint-plugin-*`/`minimatch`), which is a devDependency that never
+ships. Clearing them needs ESLint 10, which `eslint-config-next` doesn't
+support yet.
+
+## Scoring integrity
+
+Attempts are graded **server-side against the question bank**, never against the
+submitted payload — see [`lib/grading.ts`](lib/grading.ts). The score denominator
+is the exam's real question count, `moduleIndex` and `correctIndex` always come
+from the database, duplicate answers are collapsed, and unknown question IDs are
+ignored. [`lib/grading.test.ts`](lib/grading.test.ts) covers these cases directly.
+
+Score conversion (IELTS bands, SAT scaled scores) lives in
+[`lib/scoring.ts`](lib/scoring.ts) and is documented in [docs/scoring.md](docs/scoring.md).

@@ -5,8 +5,9 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamModel from '@/lib/models/Exam';
 import SeedButton from './SeedButton';
+import { requireAdminPage } from '@/lib/admin';
 
-export const metadata = { title: 'Admin Paneli — Testcentre' };
+export const metadata = { title: 'Admin Paneli' };
 
 async function getStats() {
   await dbConnect();
@@ -44,6 +45,7 @@ async function getStats() {
 }
 
 export default async function AdminOverviewPage() {
+  await requireAdminPage();
   const stats = await getStats();
   const revenue = (stats.totalRevenueCents / 100).toFixed(2);
 

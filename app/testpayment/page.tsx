@@ -13,8 +13,8 @@ interface Props {
 }
 
 export default async function TestPaymentPage({ searchParams }: Props) {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) return redirectToSignIn();
   if (!(await checkRole('admin'))) redirect('/dashboard');
 
   const { result, order } = await searchParams;

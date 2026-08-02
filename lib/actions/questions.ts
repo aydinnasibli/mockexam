@@ -9,6 +9,7 @@ import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/mo
 import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
 import { checkRole } from '@/lib/admin';
+import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
 
 export interface QuestionData {
   id: string;
@@ -172,6 +173,7 @@ export async function addQuestion(data: {
 }): Promise<{ id: string } | { error: string }> {
   try {
     await requireAdmin();
+    if (!isAllowedImageUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
     await dbConnect();
 
     const count = await QuestionModel.countDocuments({ examId: data.examId, moduleIndex: data.moduleIndex });
@@ -207,6 +209,7 @@ export async function updateQuestion(
   if (!validId(id)) return { error: 'Invalid question ID' };
   try {
     await requireAdmin();
+    if (!isAllowedImageUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
     await dbConnect();
     const doc = await QuestionModel.findByIdAndUpdate(id, data, { new: true });
     if (!doc) return { error: 'Not found' };

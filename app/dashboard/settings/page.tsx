@@ -1,11 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import SettingsClient from './SettingsClient';
 
-export const metadata = { title: 'Parametrlər — Testcentre' };
+export const metadata = { title: 'Parametrlər' };
 
 export default async function SettingsPage() {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) return redirectToSignIn();
   return <SettingsClient />;
 }

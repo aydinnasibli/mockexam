@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { EXAM_TYPE_VALUES, type ExamType } from '@/lib/exam-types';
 
 export interface IUserSettings extends Document {
   userId: string;
   targetExamDate?: string;  // 'YYYY-MM-DD'
-  targetExamType?: string;  // 'sat' | 'ielts' | 'toefl' | 'general_english'
+  targetExamType?: ExamType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,7 +13,7 @@ const UserSettingsSchema = new Schema<IUserSettings>(
   {
     userId:         { type: String, required: true, unique: true },
     targetExamDate: { type: String },
-    targetExamType: { type: String, enum: ['sat', 'ielts', 'toefl', 'general_english'] },
+    targetExamType: { type: String, enum: EXAM_TYPE_VALUES },
   },
   { timestamps: true }
 );

@@ -39,11 +39,13 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isAdminRoute(req)) {
-    const { userId, sessionClaims } = await auth();
+    const { userId, sessionClaims, redirectToSignIn } = await auth();
+    // This app has no local /sign-in route — auth is Clerk modals plus the
+    // hosted Account Portal. redirectToSignIn() resolves the correct URL from
+    // the Clerk instance, so signed-out admins land on a real sign-in page
+    // instead of a 404.
     if (!userId) {
-      const signInUrl = new URL('/sign-in', req.url);
-      signInUrl.searchParams.set('redirect_url', req.url);
-      return NextResponse.redirect(signInUrl);
+      return redirectToSignIn({ returnBackUrl: req.url });
     }
     if (sessionClaims?.metadata?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', req.url));

@@ -13,12 +13,17 @@ import ExamSessionModel from '@/lib/models/ExamSession';
 import ExamModel from '@/lib/models/Exam';
 import { ADMIN_GRANT_PREFIX } from '@/lib/exam-types';
 import { GrantAccessForm, RevokeAccessButton } from './AccessManager';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'İstifadəçi Detalları — Admin' };
 
 interface Props {
   params: Promise<{ id: string }>;
 }
+
+/** Row caps for this admin detail view — aggregate stats are computed separately. */
+const MAX_ROWS  = 100;
+const MAX_EXAMS = 500;
 
 function formatDuration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
@@ -53,6 +58,7 @@ function buildSessionViews(
 }
 
 export default async function AdminUserDetailPage({ params }: Props) {
+  await requireAdminPage();
   const { id: userId } = await params;
 
   const clerk = await clerkClient();
@@ -60,12 +66,26 @@ export default async function AdminUserDetailPage({ params }: Props) {
   if (!user) notFound();
 
   await dbConnect();
-  const [purchases, results, sessions, allExams] = await Promise.all([
-    Purchase.find({ userId }).sort({ createdAt: -1 }).lean(),
-    ExamResult.find({ userId }).sort({ completedAt: -1 }).lean(),
-    ExamSessionModel.find({ userId }).lean(),
-    ExamModel.find().select('examId title price isActive').sort({ title: 1 }).lean(),
+  // Bounded + projected: an ExamResult carries the full answers array (including
+  // essay text), so loading every attempt unprojected would pull megabytes per
+  // page view. The page only needs the summary fields and the aggregate totals.
+  const [purchases, results, sessions, allExams, resultTotals] = await Promise.all([
+    Purchase.find({ userId }).sort({ createdAt: -1 }).limit(MAX_ROWS).lean(),
+    ExamResult.find({ userId })
+      .select('examId examTitle examTag examType attemptNumber completedAt durationSeconds totalQuestions score overallBand totalScaled moduleScores')
+      .sort({ completedAt: -1 })
+      .limit(MAX_ROWS)
+      .lean(),
+    ExamSessionModel.find({ userId }).limit(MAX_ROWS).lean(),
+    ExamModel.find().select('examId title price isActive').sort({ title: 1 }).limit(MAX_EXAMS).lean(),
+    // Averages must cover every attempt, not just the page's worth.
+    ExamResult.aggregate<{ count: number; avgScore: number; totalSeconds: number }>([
+      { $match: { userId } },
+      { $group: { _id: null, count: { $sum: 1 }, avgScore: { $avg: '$score' }, totalSeconds: { $sum: '$durationSeconds' } } },
+    ]),
   ]);
+
+  const totals = resultTotals[0] ?? { count: 0, avgScore: 0, totalSeconds: 0 };
 
   const sessionViews = buildSessionViews(sessions);
 
@@ -82,14 +102,12 @@ export default async function AdminUserDetailPage({ params }: Props) {
   const initial = (user.firstName?.[0] ?? email[0] ?? '?').toUpperCase();
   const isAdmin = (user.publicMetadata as { role?: string })?.role === 'admin';
 
-  const avgScore = results.length > 0
-    ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-    : null;
-  const totalTimeSeconds = results.reduce((s, r) => s + r.durationSeconds, 0);
+  const avgScore = totals.count > 0 ? Math.round(totals.avgScore) : null;
+  const totalTimeSeconds = totals.totalSeconds;
 
   const stats = [
     { label: 'İmtahan Girişi', value: String(ownedExamIds.size), icon: BookOpen },
-    { label: 'Cəhdlər', value: String(results.length), icon: PlayCircle },
+    { label: 'Cəhdlər', value: String(totals.count), icon: PlayCircle },
     { label: 'Orta Bal', value: avgScore !== null ? `${avgScore}%` : '—', icon: Trophy },
     { label: 'Ümumi Vaxt', value: totalTimeSeconds > 0 ? formatDuration(totalTimeSeconds) : '—', icon: Timer },
   ];

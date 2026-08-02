@@ -77,8 +77,8 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ExamAnalyticsPage({ params }: Props) {
   const { examId } = await params;
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) return redirectToSignIn();
 
   await dbConnect();
   const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();

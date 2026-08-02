@@ -447,3 +447,38 @@
   /* Section head */
   .section-head { margin-bottom: 56px; }
 }
+
+/* ── Accessibility ──────────────────────────────────────────────────────────
+   Keyboard focus and reduced-motion support. Both are global on purpose: this
+   is a timed-exam product, so users navigate long sessions by keyboard and may
+   sit with the UI for hours. */
+
+/* Visible focus ring for keyboard users only — mouse clicks stay unchanged. */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Inputs that null out the default outline still need a keyboard affordance. */
+.input-field:focus-visible,
+.input-new:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 1px;
+}
+
+/*
+  Honour the OS "reduce motion" setting (WCAG 2.3.3). Framer Motion reads
+  this via useReducedMotion for its JS-driven animations; this block covers
+  CSS transitions/animations, including .animate-spin and .animate-pulse.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

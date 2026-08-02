@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'İstifadəçilər — Admin' };
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default async function AdminUsersPage({ searchParams }: Props) {
+  await requireAdminPage();
   const { page: pageStr = '1' } = await searchParams;
   const page   = Math.max(1, parseInt(pageStr, 10));
   const offset = (page - 1) * PAGE_SIZE;

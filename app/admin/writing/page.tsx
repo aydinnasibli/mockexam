@@ -1,5 +1,6 @@
 import { getWritingEvalProblems } from '@/lib/actions/results';
 import WritingProblemsClient from './WritingProblemsClient';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'Yazı Qiymətləndirmə — Admin' };
 
@@ -7,6 +8,7 @@ export const metadata = { title: 'Yazı Qiymətləndirmə — Admin' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminWritingPage() {
+  await requireAdminPage();
   const problems = await getWritingEvalProblems();
   const pendingEssays = problems.reduce((s, p) => s + p.pendingCount, 0);
 

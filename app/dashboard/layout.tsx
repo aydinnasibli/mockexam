@@ -1,5 +1,4 @@
-import { currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import DashboardShell from './DashboardShell';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -7,7 +6,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // paint — no client-side pop-in. Deduped with the page's own currentUser()
   // call within the same request, so this costs no extra Clerk API roundtrip.
   const user = await currentUser();
-  if (!user) redirect('/sign-in');
+  // There is no local /sign-in route; let Clerk resolve its own sign-in URL.
+  if (!user) return (await auth()).redirectToSignIn();
 
   const viewer = {
     firstName: user.firstName ?? 'Tələbə',

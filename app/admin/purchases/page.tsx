@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'Satışlar — Admin' };
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default async function AdminPurchasesPage({ searchParams }: Props) {
+  await requireAdminPage();
   const { page: pageStr = '1' } = await searchParams;
   const page = Math.max(1, parseInt(pageStr, 10));
   const skip = (page - 1) * PAGE_SIZE;

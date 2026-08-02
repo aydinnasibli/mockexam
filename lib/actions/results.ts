@@ -14,6 +14,7 @@ import { isRateLimited } from '@/lib/rate-limit';
 import { checkRole } from '@/lib/admin';
 import { evaluateWriting, type WritingCriterionResult } from '@/lib/actions/writing-eval';
 import { computeAuthenticScores } from '@/lib/scoring';
+import { gradeAnswers } from '@/lib/grading';
 
 type AnswerRecord = {
   questionId: string;
@@ -59,12 +60,15 @@ function applyAuthenticScores(
   moduleScores: ModuleScore[],
   records: AnswerRecord[],
   typeOf: (questionId: string) => string | undefined,
+  writingTaskTypeOf: (questionId: string) => string | undefined,
 ): { overallBand?: number; totalScaled?: number; rwScaled?: number; mathScaled?: number } {
-  const writingTaskBands = records
+  // Tag each graded essay with the task type declared on its question, so the
+  // Task-2-counts-double weighting can't be flipped by submission order.
+  const writingTasks = records
     .filter(r => typeOf(r.questionId) === 'writing' && !r.writingPending && typeof r.writingScore === 'number')
-    .map(r => r.writingScore as number);
+    .map(r => ({ taskType: writingTaskTypeOf(r.questionId), band: r.writingScore as number }));
 
-  const auth = computeAuthenticScores({ examType, modules, moduleScores, writingTaskBands });
+  const auth = computeAuthenticScores({ examType, modules, moduleScores, writingTasks });
   for (const ms of moduleScores) {
     ms.band = auth.moduleBands[ms.moduleIndex]; // undefined clears a stale band
   }
@@ -102,9 +106,64 @@ function buildModuleScores(
   });
 }
 
+/** Everything needed to store an attempt, except the attempt number itself. */
+interface NewResultInput {
+  userId: string;
+  examId: string;
+  examTitle: string;
+  examTag: string;
+  examType: string;
+  startedAt: Date;
+  completedAt: Date;
+  durationSeconds: number;
+  totalQuestions: number;
+  score: number;
+  overallBand?: number;
+  totalScaled?: number;
+  rwScaled?: number;
+  mathScaled?: number;
+  answers: AnswerRecord[];
+  moduleScores: ModuleScore[];
+}
+
+/**
+ * Insert a result under the next free attempt number for this user+exam.
+ *
+ * Reads the current maximum, inserts at max+1, and retries if the unique index
+ * rejects it (another submission landed first). Bounded so a persistent
+ * failure surfaces as an error instead of spinning.
+ */
+async function createResultWithNextAttempt(
+  doc: NewResultInput,
+): Promise<mongoose.HydratedDocument<IExamResult>> {
+  const MAX_TRIES = 5;
+  const { userId, examId } = doc;
+
+  for (let attemptTry = 0; attemptTry < MAX_TRIES; attemptTry++) {
+    const latest = await ExamResult.findOne({ userId, examId })
+      .sort({ attemptNumber: -1 })
+      .select('attemptNumber')
+      .lean();
+    const attemptNumber = (latest?.attemptNumber ?? 0) + 1;
+
+    try {
+      return await ExamResult.create({ ...doc, attemptNumber } as Partial<IExamResult>);
+    } catch (err) {
+      if ((err as { code?: number }).code === 11000 && attemptTry < MAX_TRIES - 1) continue;
+      throw err;
+    }
+  }
+  throw new Error('Could not allocate an attempt number after repeated collisions');
+}
+
 export type ClientAnswerInput = {
   questionId: string;
-  moduleIndex: number;
+  /**
+   * Ignored by the server — the module is read from the question document.
+   * Still accepted so existing clients keep working.
+   * @deprecated
+   */
+  moduleIndex?: number;
   userAnswer: number;   // -1 = unanswered, 0-3 = selected option
   userAnswerText?: string;
   timeSeconds: number;
@@ -134,14 +193,10 @@ export async function saveExamResult(data: {
   try {
     await dbConnect();
 
-    // Atomically claim the next attempt number — also validates the purchase exists
-    const updatedPurchase = await Purchase.findOneAndUpdate(
-      { userId, examId, status: 'COMPLETED' },
-      { $inc: { attemptCount: 1 } },
-      { returnDocument: 'after' }
-    );
-    if (!updatedPurchase) return { error: 'Exam not purchased' };
-    const attemptNumber = updatedPurchase.attemptCount;
+    // Validate the purchase before consuming an attempt number, so a failed
+    // submission can't permanently burn one.
+    const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
+    if (!purchase) return { error: 'Exam not purchased' };
 
     const exam = await getExamByIdAdmin(examId);
     if (!exam) return { error: 'Exam not found' };
@@ -149,8 +204,9 @@ export async function saveExamResult(data: {
     // Validate against server-side session. Log overtime but still accept the submission
     // (this is a practice platform — we never discard a student's work).
     const session = await ExamSessionModel.findOne({ userId, examId }).lean();
+    let serverElapsed: number | null = null;
     if (session) {
-      const serverElapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
+      serverElapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
       if (serverElapsed > session.totalSeconds + 300) {
         Sentry.captureMessage('Exam submission overtime', {
           level: 'warning',
@@ -161,80 +217,56 @@ export async function saveExamResult(data: {
       startDate.setTime(new Date(session.startedAt).getTime());
     }
 
-    // Fetch authoritative correct answers from the database
+    // The client reports its own elapsed time, so cap it against what the server
+    // actually observed. Without this a crafted payload could report an
+    // arbitrary duration, which would then poison the per-user time aggregates
+    // on the dashboard and the admin panel. Falls back to the exam's own length
+    // when there is no session row (e.g. it expired via TTL before submission).
+    const durationCeiling = serverElapsed !== null
+      ? serverElapsed + 300
+      : exam.durationMinutes * 60 + 300;
+    const safeDurationSeconds = Math.min(Math.round(durationSeconds), Math.max(0, durationCeiling));
+
+    // Fetch the authoritative question set. Only the fields grading and score
+    // aggregation need — notably NOT `passage`/`stem`/`rubric`, which can run to
+    // tens of KB per question and are re-queried by the writing grader when an
+    // essay is actually assessed.
     const questionDocs = await QuestionModel.find({ examId })
-      .select('_id correctIndex moduleIndex type openAnswers correctMatching stem passage writingTaskType rubric')
+      .select('_id correctIndex moduleIndex order type openAnswers correctMatching writingTaskType')
+      .sort({ moduleIndex: 1, order: 1 })
       .lean();
-    const correctMap = new Map(
+
+    if (questionDocs.length === 0) return { error: 'Bu imtahanda sual yoxdur.' };
+
+    // Lookup for the two per-question attributes the scoring aggregation needs.
+    const metaById = new Map(
       questionDocs.map(q => [String(q._id), {
-        correctIndex: q.correctIndex,
-        moduleIndex: q.moduleIndex,
         type: q.type,
-        openAnswers: q.openAnswers || [],
-        correctMatching: q.correctMatching || [],
-        stem: q.stem ?? '',
-        passage: q.passage ?? '',
         writingTaskType: q.writingTaskType,
-        rubric: q.rubric ?? '',
       }])
     );
 
-    // Build verified answer records — correctIndex and isCorrect come from DB, not client
-    // Writing questions are evaluated separately via AI after this map
-    const answerRecords: AnswerRecord[] = answers.map(a => {
-      const authoritative = correctMap.get(a.questionId);
-      const correctIndex = authoritative?.correctIndex ?? -1;
-      let isCorrect = false;
+    // Grade against the authoritative question set (see lib/grading.ts): the
+    // denominator is the exam's real question count, so a partial or padded
+    // payload cannot inflate the score, and moduleIndex/correctIndex always
+    // come from the database rather than the request body.
+    const answerRecords: AnswerRecord[] = gradeAnswers(
+      questionDocs.map(q => ({
+        id:              String(q._id),
+        moduleIndex:     q.moduleIndex,
+        type:            q.type,
+        correctIndex:    q.correctIndex,
+        openAnswers:     q.openAnswers,
+        correctMatching: q.correctMatching,
+      })),
+      answers,
+    );
 
-      if (authoritative?.type === 'mcq') {
-        isCorrect = a.userAnswer !== -1 && a.userAnswer === correctIndex;
-      } else if (authoritative?.type === 'open') {
-        if (a.userAnswerText && authoritative.openAnswers && authoritative.openAnswers.length > 0) {
-          const normalizedInput = a.userAnswerText.replace(/\s+/g, '').toLowerCase().replace(/,/g, '.');
-          isCorrect = authoritative.openAnswers.some(ans => {
-            const normalizedAns = String(ans).replace(/\s+/g, '').toLowerCase().replace(/,/g, '.');
-            return normalizedAns === normalizedInput;
-          });
-        }
-      } else if (authoritative?.type === 'matching') {
-        // userAnswerText is a JSON array string e.g. "[1,0,2,0,1]"
-        if (a.userAnswerText && authoritative.correctMatching && authoritative.correctMatching.length > 0) {
-          try {
-            const userMatches: number[] = JSON.parse(a.userAnswerText);
-            isCorrect = authoritative.correctMatching.length === userMatches.length &&
-              authoritative.correctMatching.every((correct, idx) => correct === userMatches[idx]);
-          } catch {
-            isCorrect = false;
-          }
-        }
-      }
-      // writing: isCorrect stays false (AI-scored separately below)
-
-      return {
-        questionId:  a.questionId,
-        moduleIndex: a.moduleIndex,
-        userAnswer:  a.userAnswer,
-        userAnswerText: a.userAnswerText || '',
-        correctIndex,
-        isCorrect,
-        timeSeconds: Math.max(0, Math.round(a.timeSeconds)),
-        // Writing answers with an essay start "pending" until graded on the
-        // results page; a blank essay is a genuine 0 and is never pending.
-        ...(authoritative?.type === 'writing'
-          ? (a.userAnswerText ?? '').trim()
-            ? { writingPending: true }
-            : { writingPending: false, writingScore: 0, writingWordCount: 0 }
-          : {}),
-      };
-    });
-
-    const typeOf = (questionId: string) => correctMap.get(questionId)?.type;
+    const typeOf = (questionId: string) => metaById.get(questionId)?.type;
+    const writingTaskTypeOf = (questionId: string) => metaById.get(questionId)?.writingTaskType;
 
     // Compute non-writing scores first (instant, no external calls)
-    const nonWritingAnswers = answerRecords.filter(a => {
-      const auth = correctMap.get(a.questionId);
-      return auth?.type !== 'writing';
-    });
+    const nonWritingAnswers = answerRecords.filter(a => typeOf(a.questionId) !== 'writing');
 
     const nonWritingScore = nonWritingAnswers.length > 0
       ? (nonWritingAnswers.filter(a => a.isCorrect).length / nonWritingAnswers.length) * 100
@@ -245,25 +277,51 @@ export async function saveExamResult(data: {
     const initialScore = nonWritingScore !== null ? Math.round(nonWritingScore) : 0;
 
     const moduleScores = buildModuleScores(exam.modules, answerRecords, typeOf);
-    const authentic = applyAuthenticScores(exam.type, exam.modules, moduleScores, answerRecords, typeOf);
+    const authentic = applyAuthenticScores(exam.type, exam.modules, moduleScores, answerRecords, typeOf, writingTaskTypeOf);
 
-    // Persist the result BEFORE AI evaluation — never lose student work
-    const result = await ExamResult.create({
+    // Persist the result BEFORE AI evaluation — never lose student work.
+    //
+    // The attempt number is derived from the results that actually exist rather
+    // than from Purchase.attemptCount, because a purchase can be revoked and
+    // re-granted (which resets the counter to 0) while the old results remain.
+    // Deriving it here, and retrying on the unique-index collision that a
+    // concurrent submit would cause, keeps `{userId, examId, attemptNumber}`
+    // unique without ever locking the student out.
+    const result = await createResultWithNextAttempt({
       userId,
       examId,
       examTitle:       exam.title,
       examTag:         exam.tag,
       examType:        exam.type,
-      attemptNumber,
       startedAt:       startDate,
       completedAt:     new Date(),
-      durationSeconds,
-      totalQuestions:  exam.totalQuestions,
+      durationSeconds: safeDurationSeconds,
+      // The number of questions actually graded, which is now also the score's
+      // denominator. `exam.totalQuestions` is the sum the modules *declare* and
+      // can drift from the real question bank, so it would misreport the attempt.
+      totalQuestions:  answerRecords.length,
       score:           initialScore,
       ...authentic,
       answers:         answerRecords,
       moduleScores,
     });
+    const attemptNumber = result.attemptNumber;
+
+    // Keep the purchase counter in step for the admin views. Best-effort: the
+    // result is already saved and must never be rolled back over this — but the
+    // failure is still reported rather than swallowed, since a counter that
+    // silently drifts from the real attempt count is a reporting bug.
+    try {
+      await Purchase.updateOne(
+        { userId, examId },
+        { $max: { attemptCount: attemptNumber } },
+      );
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { action: 'saveExamResult', step: 'syncAttemptCount' },
+        extra: { userId, examId, attemptNumber },
+      });
+    }
 
     await ExamSessionModel.deleteOne({ userId, examId });
 
@@ -297,6 +355,7 @@ async function gradePendingWritingOnResult(
     .lean();
   const qmap = new Map(questionDocs.map(q => [String(q._id), q]));
   const typeOf = (questionId: string) => qmap.get(questionId)?.type;
+  const writingTaskTypeOf = (questionId: string) => qmap.get(questionId)?.writingTaskType;
 
   const records = result.answers as unknown as AnswerRecord[];
   const allPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending);
@@ -320,7 +379,7 @@ async function gradePendingWritingOnResult(
       essay: rec.userAnswerText ?? '',
       prompt: [q?.passage, q?.stem].filter(Boolean).join('\n\n'),
       rubric: q?.rubric,
-      taskType: q?.writingTaskType as any,
+      taskType: q?.writingTaskType,
       examType: exam.type,
       examName: exam.title,
     });
@@ -343,7 +402,7 @@ async function gradePendingWritingOnResult(
     : null;
 
   const modScores = buildModuleScores(exam.modules, records, typeOf);
-  const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf);
+  const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf, writingTaskTypeOf);
 
   result.score = averageOfPresent([nonWritingScore, writingScorePercent(records)]);
   result.moduleScores = modScores as never;

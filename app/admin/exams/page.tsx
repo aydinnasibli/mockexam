@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import ExamSearch from './ExamSearch';
 import ExamRowActions from './ExamRowActions';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'İmtahanlar — Admin' };
 
@@ -25,6 +26,7 @@ function escapeRegex(str: string) {
 }
 
 export default async function AdminExamsPage({ searchParams }: Props) {
+  await requireAdminPage();
   const { q = '' } = await searchParams;
   const safeQ = q.slice(0, 100); // cap length too
 

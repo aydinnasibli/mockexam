@@ -10,13 +10,9 @@ import {
   LogOut, Save, Loader2,
 } from 'lucide-react';
 import { getUserSettings, saveUserSettings } from '@/lib/actions/settings';
+import { EXAM_TYPES } from '@/lib/exam-types';
 
-const examTypeOptions = [
-  { value: 'sat',             label: 'SAT' },
-  { value: 'ielts',           label: 'IELTS' },
-  { value: 'toefl',           label: 'TOEFL' },
-  { value: 'general_english', label: 'General English' },
-];
+const examTypeOptions = EXAM_TYPES;
 
 export default function SettingsClient() {
   const { user }           = useUser();

@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/nextjs';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { saveExamResult } from '@/lib/actions/results';
 import { beginExamSession } from '@/lib/actions/session';
@@ -158,11 +159,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     });
   }, [answers, openAnswers, matchingAnswers, flagged, currentIdx, sessionReady, exam.id]);
 
-  // ── Reset passage panel when moving between questions ────────────────────
-  useEffect(() => {
-    setShowPassage(false);
-  }, [currentIdx]);
-
   // ── Core actions ──────────────────────────────────────────────────────────
 
   const recordCurrentQuestionTime = useCallback(() => {
@@ -275,6 +271,10 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     currentIdxRef.current = newIdx;
     setCurrentIdx(newIdx);
     setShowGrid(false);
+    // Collapse the mobile passage panel here rather than in an effect on
+    // currentIdx — navigation is the only thing that should reset it, and an
+    // effect would fire an extra render pass every time (react-hooks/set-state-in-effect).
+    setShowPassage(false);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -319,6 +319,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             {!hasNoQuestions && (
               <button
                 onClick={() => setShowGrid(g => !g)}
+                aria-expanded={showGrid}
+                aria-label={`Sual siyahısı — ${questions.length} sualdan ${answeredCount}-i cavablandırılıb`}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-sm font-medium transition-colors ${
                   showGrid ? 'bg-surface-2' : 'hover:bg-surface-2'
                 }`}
@@ -328,15 +330,26 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 <span className="t-mono text-xs">{answeredCount}/{questions.length}</span>
               </button>
             )}
-            <div className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-full transition-all ${
-              remaining < 300 ? 'animate-pulse'
-              : ''
-            }`} style={{
-              background: remaining < 300 ? "rgba(162,58,46,0.08)" : "var(--color-surface)",
-              borderColor: remaining < 300 ? "var(--color-error)" : "var(--color-rule)",
-            }}>
+            {/*
+              The countdown updates every second, so it must NOT be a live
+              region — that would make a screen reader announce it 60× a minute.
+              It is labelled for on-demand reading; the low-time warning below
+              is what gets announced, once, when it crosses the threshold.
+            */}
+            <div
+              role="timer"
+              aria-label="Qalan vaxt"
+              className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-full transition-all ${
+                remaining < 300 ? 'animate-pulse' : ''
+              }`}
+              style={{
+                background: remaining < 300 ? "rgba(162,58,46,0.08)" : "var(--color-surface)",
+                borderColor: remaining < 300 ? "var(--color-error)" : "var(--color-rule)",
+              }}
+            >
               <Timer
                 size={14}
+                aria-hidden="true"
                 style={{ color: remaining < 300 ? "var(--color-error)" : "var(--color-ink-soft)" }}
               />
               <span className="t-mono tabular-nums text-xs md:text-sm" style={{
@@ -345,6 +358,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 {sessionReady ? formatTime(remaining) : '--:--'}
               </span>
             </div>
+            <span role="status" aria-live="assertive" className="sr-only">
+              {sessionReady && remaining > 0 && remaining < 300 ? 'Diqqət: 5 dəqiqədən az vaxt qalıb.' : ''}
+            </span>
             <button
               onClick={() => setShowConfirm(true)}
               disabled={submitting || !sessionReady}
@@ -387,10 +403,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </div>
               <button
                 onClick={() => setShowGrid(false)}
+                aria-label="Sual siyahısını bağla"
                 className="p-1.5 rounded-lg transition-colors"
                 style={{ color: "var(--color-ink-soft)" }}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
             <div className="p-4 space-y-5">
@@ -410,6 +427,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         <button
                           key={q.id}
                           onClick={() => goTo(globalIdx)}
+                          aria-current={isCurrent ? 'true' : undefined}
+                          aria-label={`Sual ${globalIdx + 1}${isAnswered ? ' — cavablandırılıb' : ' — cavablandırılmayıb'}${isFlagged ? ', işarələnib' : ''}`}
                           className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${isCurrent ? 'ring-2 ring-offset-1' : ''}`}
                           style={{
                             background: isAnswered
@@ -534,12 +553,24 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   {current?.imageUrl && (
                     <div className="mb-6">
                       <p className="eyebrow mb-3">📊 Diaqram / Şəkil</p>
-                      <img
+                      {/*
+                        Diagrams have no fixed aspect ratio. width/height are
+                        required props but are inert here: once `sizes` is set
+                        with viewport units, next/image builds its srcset from
+                        `sizes`, and the rendered size comes from the CSS below.
+                        (Next's own recommendation for unknown dimensions is the
+                        `fill` prop, but that needs a positioned parent and a
+                        fixed container height, which a variable-ratio diagram
+                        inside flowing exam content doesn't have.)
+                      */}
+                      <Image
                         src={current.imageUrl}
                         alt="Sual diaqramı"
-                        className="w-full rounded-xl shadow-sm"
+                        width={0}
+                        height={0}
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="w-full h-auto rounded-xl shadow-sm"
                         style={{ border: "1px solid var(--color-rule)" }}
-                        loading="lazy"
                       />
                     </div>
                   )}
@@ -675,6 +706,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   {current && (
                     <button
                       onClick={() => toggleFlag(current.id)}
+                      aria-pressed={flagged.has(current.id)}
+                      aria-label="Bu sualı sonra baxmaq üçün işarələ"
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors"
                       style={{
                         background: flagged.has(current.id) ? "rgba(184,115,43,0.1)" : "transparent",
@@ -838,12 +871,14 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 {/* ── Image for current question (mobile) ── */}
                 {current?.imageUrl && (
                   <div className="mt-4 md:hidden">
-                    <img
+                    <Image
                       src={current.imageUrl}
                       alt="Sual diaqramı"
-                      className="w-full rounded-xl shadow-sm"
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      className="w-full h-auto rounded-xl shadow-sm"
                       style={{ border: "1px solid var(--color-rule)" }}
-                      loading="lazy"
                     />
                   </div>
                 )}
@@ -855,10 +890,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               <button
                 onClick={() => goTo(currentIdx - 1)}
                 disabled={currentIdx === 0}
+                aria-label="Əvvəlki sual"
                 className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium"
                 style={{ color: "var(--color-ink)" }}
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={18} aria-hidden="true" />
                 <span className="hidden sm:inline">Əvvəlki</span>
               </button>
               <span className="t-mono tabular-nums text-xs" style={{ color: "var(--color-ink-soft)" }}>
@@ -866,12 +902,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </span>
               <button
                 onClick={() => currentIdx === questions.length - 1 ? setShowConfirm(true) : goTo(currentIdx + 1)}
+                aria-label={currentIdx === questions.length - 1 ? 'İmtahanı bitir' : 'Növbəti sual'}
                 className="btn-primary flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 rounded-xl text-sm"
               >
                 <span className="hidden sm:inline">
                   {currentIdx === questions.length - 1 ? 'Bitir' : 'Növbəti'}
                 </span>
-                <ChevronRight size={18} />
+                <ChevronRight size={18} aria-hidden="true" />
               </button>
             </footer>
           </section>
@@ -906,9 +943,12 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
     try {
       await audioRef.current.play();
       setStatus('playing');
-    } catch (err: any) {
-      Sentry.captureException(err, { tags: { context: 'audioPlay' }, extra: { name: err?.name, message: err?.message } });
-      toast.error(`Audionu başlatmaq mümkün olmadı: ${err?.message ?? err}. Zəhmət olmasa təkrar sınayın.`);
+    } catch (err) {
+      const { name, message } = err instanceof Error
+        ? { name: err.name, message: err.message }
+        : { name: undefined, message: String(err) };
+      Sentry.captureException(err, { tags: { context: 'audioPlay' }, extra: { name, message } });
+      toast.error(`Audionu başlatmaq mümkün olmadı: ${message}. Zəhmət olmasa təkrar sınayın.`);
       return;
     }
 

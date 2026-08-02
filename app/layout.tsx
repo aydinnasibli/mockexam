@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Newsreader, Geist, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'sonner';
+import MotionProvider from "@/components/ui/MotionProvider";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -80,8 +81,13 @@ const organizationSchema = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Clerk's usage telemetry posts to clerk-telemetry.com, which is not in our
+  // connect-src CSP — it was being blocked and logging a console error on every
+  // page load. Turned off at the source rather than widening the CSP: this app
+  // handles student exam data, so there is no reason to add a third-party
+  // egress destination for analytics we don't use.
   return (
-    <ClerkProvider>
+    <ClerkProvider telemetry={false}>
       <html lang="az" className={`${newsreader.variable} ${geist.variable} ${mono.variable}`}>
         <head>
           <script
@@ -90,7 +96,7 @@ export default function RootLayout({
           />
         </head>
         <body className="antialiased">
-          {children}
+          <MotionProvider>{children}</MotionProvider>
           <Toaster richColors position="top-right" />
         </body>
       </html>

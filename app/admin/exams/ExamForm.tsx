@@ -8,23 +8,17 @@ import {
   Clock, HelpCircle, Coffee, ChevronDown, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { createExam, updateExam, type ActionResult, type ParsedModule } from '@/lib/actions/admin';
-import { MODULE_TYPES } from '@/lib/exam-types';
+import { MODULE_TYPES, EXAM_TYPES } from '@/lib/exam-types';
 
-// ─── Exam types ───────────────────────────────────────────────────────────────
-
-const EXAM_TYPES = [
-  { value: 'sat',   label: 'SAT' },
-  { value: 'ielts', label: 'IELTS' },
-  { value: 'toefl', label: 'TOEFL' },
-  { value: 'general_english', label: 'General English (CEFR)' },
-];
-
-// Module types allowed per exam type
+// Module types allowed per exam type. Types absent here fall back to the full
+// module list (see ModuleCard), which is what DİM/GRE want — their sections
+// don't map onto a fixed template the way SAT/IELTS/TOEFL do.
 const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
   sat:   ['rw', 'math'],
   ielts: ['listening', 'reading', 'writing', 'speaking'],
   toefl: ['reading', 'listening', 'speaking', 'writing'],
   general_english: ['grammar', 'reading', 'listening'],
+  gre:   ['verbal', 'quantitative', 'analytical'],
 };
 
 // Auto-fill defaults per exam type
@@ -44,6 +38,14 @@ const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
   general_english: {
     tag: 'General English',
     description: 'Ümumi İngilis dili imtahanı (CEFR standartı: A1-C2). Grammar, Reading və Listening bölmələri. 45 dəqiqə, 45 sual.',
+  },
+  dim: {
+    tag: 'DİM',
+    description: 'DİM (Dövlət İmtahan Mərkəzi) formatına uyğun sınaq imtahanı. Fənn blokları ayrı-ayrı modul kimi qurulur və hər biri müstəqil qiymətləndirilir.',
+  },
+  gre: {
+    tag: 'GRE',
+    description: 'GRE General Test sınağı. Verbal Reasoning, Quantitative Reasoning və Analytical Writing bölmələri daxildir.',
   },
 };
 

@@ -6,9 +6,25 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { importExamFromJson } from '@/lib/actions/import';
 
+/** Best-effort read of the fields shown in the confirmation preview. */
+function previewOf(data: unknown) {
+  const d = (data ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v : '—');
+  const len = (v: unknown) => (Array.isArray(v) ? v.length : 0);
+  return {
+    examId:    str(d.examId),
+    title:     str(d.title),
+    type:      typeof d.type === 'string' ? d.type.toUpperCase() : '—',
+    modules:   len(d.modules),
+    questions: len(d.questions),
+  };
+}
+
 export default function ImportExamPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<any>(null);
+  // Shape is validated server-side by importExamFromJson; the client only needs
+  // to know whether the file parsed as JSON at all.
+  const [parsedData, setParsedData] = useState<unknown>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +40,7 @@ export default function ImportExamPage() {
       try {
         const json = JSON.parse(event.target?.result as string);
         setParsedData(json);
-      } catch (err) {
+      } catch {
         setError('Yüklədiyiniz fayl düzgün JSON formatında deyil. Zəhmət olmasa yoxlayın.');
         setParsedData(null);
       }
@@ -104,18 +120,18 @@ export default function ImportExamPage() {
           )}
 
           {/* Success / Preview State */}
-          {parsedData && !error && (
+          {parsedData != null && !error && (
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
               <div className="flex items-center gap-2 text-emerald-800 font-bold mb-3">
                 <CheckCircle size={18} />
                 Fayl uğurla oxundu! Təfərrüatlar:
               </div>
               <ul className="text-sm text-emerald-700 space-y-1.5 ml-1">
-                <li><strong>İmtahan ID:</strong> {parsedData.examId}</li>
-                <li><strong>Başlıq:</strong> {parsedData.title}</li>
-                <li><strong>Növ:</strong> {parsedData.type?.toUpperCase()}</li>
-                <li><strong>Modul sayı:</strong> {parsedData.modules?.length || 0}</li>
-                <li><strong>Sualların sayı:</strong> {parsedData.questions?.length || 0}</li>
+                <li><strong>İmtahan ID:</strong> {previewOf(parsedData).examId}</li>
+                <li><strong>Başlıq:</strong> {previewOf(parsedData).title}</li>
+                <li><strong>Növ:</strong> {previewOf(parsedData).type}</li>
+                <li><strong>Modul sayı:</strong> {previewOf(parsedData).modules}</li>
+                <li><strong>Sualların sayı:</strong> {previewOf(parsedData).questions}</li>
               </ul>
             </div>
           )}

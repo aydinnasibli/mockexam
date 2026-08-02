@@ -23,8 +23,8 @@ export default async function ReviewPage({ params }: Props) {
   const attemptNumber = parseInt(attemptStr, 10);
   if (isNaN(attemptNumber) || attemptNumber < 1) notFound();
 
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) return redirectToSignIn();
 
   await dbConnect();
   const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();

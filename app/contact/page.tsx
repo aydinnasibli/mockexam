@@ -83,23 +83,24 @@ export default function ContactPage() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                      <label htmlFor="contact-name" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
                         Ad Soyad
                       </label>
-                      <input name="name" className="input-new" placeholder="Aysel Məmmədova" maxLength={100} required />
+                      <input id="contact-name" name="name" className="input-new" placeholder="Aysel Məmmədova" maxLength={100} required />
                     </div>
                     <div>
-                      <label className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                      <label htmlFor="contact-email" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
                         E-poçt
                       </label>
-                      <input name="email" className="input-new" type="email" placeholder="ad@nümunə.az" maxLength={200} required />
+                      <input id="contact-email" name="email" className="input-new" type="email" placeholder="ad@nümunə.az" maxLength={200} required />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                    <label htmlFor="contact-subject" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
                       Mövzu
                     </label>
                     <select
+                      id="contact-subject"
                       name="subject"
                       className="input-new"
                       defaultValue=""
@@ -115,10 +116,11 @@ export default function ContactPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                    <label htmlFor="contact-message" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
                       Mesaj
                     </label>
                     <textarea
+                      id="contact-message"
                       name="message"
                       className="input-new"
                       rows={5}

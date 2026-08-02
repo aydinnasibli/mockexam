@@ -1,8 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { MODULE_TYPES, type ModuleType } from '@/lib/exam-types';
+import { MODULE_TYPES, EXAM_TYPE_VALUES, type ModuleType, type ExamType } from '@/lib/exam-types';
 
-export type ExamType = 'sat' | 'ielts' | 'toefl' | 'general_english';
-export { MODULE_TYPES, type ModuleType };
+export { MODULE_TYPES, type ModuleType, type ExamType };
 
 export interface IModule {
   name: string;
@@ -48,7 +47,7 @@ const ExamSchema = new Schema<IExam>(
   {
     examId:         { type: String, required: true, unique: true, trim: true },
     title:          { type: String, required: true, trim: true },
-    type:           { type: String, required: true, enum: ['sat', 'ielts', 'toefl', 'dim', 'gre', 'general_english'] },
+    type:           { type: String, required: true, enum: EXAM_TYPE_VALUES },
     description:    { type: String, required: true },
     tag:            { type: String, required: true, trim: true },
     price:          { type: Number, required: true, min: 0 },

@@ -4,14 +4,14 @@ import { checkRole } from '@/lib/admin';
 import AdminSidebar from './AdminSidebar';
 
 export const metadata = {
-  title: 'Admin Panel — Testcentre',
+  title: 'Admin Panel',
   robots: { index: false, follow: false },
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth();
+  const { userId, redirectToSignIn } = await auth();
 
-  if (!userId) redirect('/sign-in');
+  if (!userId) return redirectToSignIn();
   if (!(await checkRole('admin'))) redirect('/dashboard');
 
   return (

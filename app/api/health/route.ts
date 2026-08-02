@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
+import { isRateLimited } from '@/lib/rate-limit';
 
 // Mongoose needs the Node.js runtime; never cache — every probe must be live.
 export const runtime = 'nodejs';
@@ -40,7 +42,22 @@ async function isDatabaseHealthy(): Promise<boolean> {
   }
 }
 
+/**
+ * This endpoint is unauthenticated (uptime monitors need it) and every call
+ * costs a live database round-trip, so it is rate limited per client IP to stop
+ * it being used as a cheap amplification target. 30/min is far more than any
+ * monitor needs. Fails open — see lib/rate-limit.ts.
+ */
+async function probeAllowed(): Promise<boolean> {
+  const h = await headers();
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown';
+  return !(await isRateLimited(`health:${ip}`, 30, 60_000));
+}
+
 export async function GET() {
+  if (!(await probeAllowed())) {
+    return NextResponse.json({ status: 'rate_limited' }, { status: 429, headers: NO_STORE });
+  }
   const ok = await isDatabaseHealthy();
   return NextResponse.json(
     { status: ok ? 'ok' : 'error' },
@@ -50,6 +67,9 @@ export async function GET() {
 
 // Many uptime monitors default to HEAD — same status code, no body.
 export async function HEAD() {
+  if (!(await probeAllowed())) {
+    return new NextResponse(null, { status: 429, headers: NO_STORE });
+  }
   const ok = await isDatabaseHealthy();
   return new NextResponse(null, { status: ok ? 200 : 503, headers: NO_STORE });
 }

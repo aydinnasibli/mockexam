@@ -6,10 +6,11 @@ import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import ExamModel, { computeExamTotals, MODULE_TYPES, type ModuleType } from '@/lib/models/Exam';
 import { checkRole } from '@/lib/admin';
+import { isExamType, type ExamType } from '@/lib/exam-types';
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
-type SeedExam = { id: string; title: string; type: string; description: string; tag: string; price: number; features: string[] };
+type SeedExam = { id: string; title: string; type: ExamType; description: string; tag: string; price: number; features: string[] };
 
 const SEED_EXAMS: SeedExam[] = [
   { id: 'sat-mock-1', title: 'Digital SAT Full Mock #1', type: 'sat', tag: 'SAT', price: 12, description: 'College Board-un Bluebook formatına 100% uyğunlaşdırılmış rəqəmsal SAT sınağı. Reading/Writing və Math bölmələri adaptive rejimdə verilir.', features: ['Adaptive modul sistemi', 'Dərhal bal hesablaması', 'Hər soruya izahat', 'Rəsmi Bluebook interfeysi'] },
@@ -30,7 +31,6 @@ async function requireAdmin() {
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const EXAM_ID_RE    = /^[a-z0-9-]{1,64}$/;
-const VALID_TYPES   = new Set(['sat', 'ielts', 'toefl', 'general_english']);
 const VALID_MOD_TYPES: Set<string> = new Set(MODULE_TYPES.map(t => t.value));
 
 function validateExamId(raw: string): string | { error: string } {
@@ -105,14 +105,22 @@ function parseBaseFields(formData: FormData) {
   };
 }
 
-function validateBaseFields(f: ReturnType<typeof parseBaseFields>): string | undefined {
+type BaseFields = ReturnType<typeof parseBaseFields>;
+/** Same shape, but `type` has been narrowed to a real ExamType. */
+type ValidBaseFields = Omit<BaseFields, 'type'> & { type: ExamType };
+
+/**
+ * Validates the base fields and narrows `type` to `ExamType` so it can be
+ * written straight to the schema (Mongoose types the enum field as the union).
+ */
+function validateBaseFields(f: BaseFields): { error: string } | { fields: ValidBaseFields } {
   if (!f.title || !f.type || !f.description || !f.tag)
-    return 'Bütün tələb olunan sahələri doldurun.';
-  if (!VALID_TYPES.has(f.type))
-    return 'Yanlış imtahan növü.';
+    return { error: 'Bütün tələb olunan sahələri doldurun.' };
+  if (!isExamType(f.type))
+    return { error: 'Yanlış imtahan növü.' };
   if (isNaN(f.price) || f.price < 0 || f.price > 10_000)
-    return 'Qiymət 0 ilə 10 000 arasında olmalıdır.';
-  return undefined;
+    return { error: 'Qiymət 0 ilə 10 000 arasında olmalıdır.' };
+  return { fields: { ...f, type: f.type } };
 }
 
 // ─── Exam Actions ─────────────────────────────────────────────────────────────
@@ -126,9 +134,9 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
   const examIdResult = validateExamId(rawExamId);
   if (typeof examIdResult === 'object') return examIdResult;
 
-  const fields = parseBaseFields(formData);
-  const baseError = validateBaseFields(fields);
-  if (baseError) return { error: baseError };
+  const baseResult = validateBaseFields(parseBaseFields(formData));
+  if ('error' in baseResult) return baseResult;
+  const fields = baseResult.fields;
 
   let modules: ParsedModule[];
   try {
@@ -173,9 +181,9 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
 export async function updateExam(examId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireAdmin();
 
-  const fields = parseBaseFields(formData);
-  const baseError = validateBaseFields(fields);
-  if (baseError) return { error: baseError };
+  const baseResult = validateBaseFields(parseBaseFields(formData));
+  if ('error' in baseResult) return baseResult;
+  const fields = baseResult.fields;
 
   let modules: ParsedModule[];
   try {

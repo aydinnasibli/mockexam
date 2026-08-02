@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import UserSettings from '@/lib/models/UserSettings';
+import { isExamType } from '@/lib/exam-types';
 
 export interface UserSettingsData {
   targetExamDate: string | null;
@@ -33,7 +34,7 @@ export async function saveUserSettings(
     const d = new Date(targetExamDate);
     if (isNaN(d.getTime())) return { error: 'Invalid date' };
   }
-  if (targetExamType && !['sat', 'ielts', 'toefl', 'general_english'].includes(targetExamType)) {
+  if (targetExamType && !isExamType(targetExamType)) {
     return { error: 'Invalid exam type' };
   }
 

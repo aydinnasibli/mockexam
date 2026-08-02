@@ -1,5 +1,4 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getUserResults } from '@/lib/db/results';
 import { getActiveExams } from '@/lib/db/exams';
@@ -8,7 +7,7 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { ChevronRight, Timer } from 'lucide-react';
 
-export const metadata = { title: 'Nəticələr — Testcentre' };
+export const metadata = { title: 'Nəticələr' };
 
 function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -35,8 +34,8 @@ function scoreBarColor(score: number) {
 }
 
 export default async function AnalyticsPage() {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) return redirectToSignIn();
 
   const [results, allExams] = await Promise.all([
     getUserResults(userId),

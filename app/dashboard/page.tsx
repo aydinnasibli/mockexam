@@ -1,5 +1,4 @@
-import { currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { getActiveExams } from '@/lib/db/exams';
 import { getUserResults } from '@/lib/db/results';
@@ -14,9 +13,7 @@ import {
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 
-const examTypeLabels: Record<string, string> = {
-  sat: 'SAT', ielts: 'IELTS', toefl: 'TOEFL', general_english: 'General English',
-};
+import { examTypeLabel } from '@/lib/exam-types';
 
 function weekAgoMs(): number {
   return Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -58,7 +55,7 @@ function scoreBg(score: number) {
   return 'bg-red-50 text-red-700 border-red-200';
 }
 
-export const metadata = { title: 'Panel — Testcentre' };
+export const metadata = { title: 'Panel' };
 
 export default async function DashboardPage({
   searchParams,
@@ -66,7 +63,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ purchased?: string }>;
 }) {
   const user = await currentUser();
-  if (!user) redirect('/sign-in');
+  if (!user) return (await auth()).redirectToSignIn();
 
   await dbConnect();
 
@@ -108,7 +105,7 @@ export default async function DashboardPage({
   }
   const typeAvgs = Array.from(resultsByType.entries()).map(([type, typeResults]) => ({
     type,
-    label: examTypeLabels[type] ?? type.toUpperCase(),
+    label: examTypeLabel(type),
     avg: Math.round(typeResults.reduce((s, r) => s + r.score, 0) / typeResults.length),
     count: typeResults.length,
   })).sort((a, b) => b.count - a.count);

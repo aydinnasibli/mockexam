@@ -3,6 +3,7 @@
 import 'katex/dist/katex.min.css';
 import { useState, useTransition, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { renderMath } from '@/lib/render-math';
 import {
@@ -370,11 +371,17 @@ function QuestionForm({
           className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <p className="mt-1.5 text-[11px] text-on-surface-variant">
-          ⚠️ Şəkil Vercel Blob Storage-də (<code>*.public.blob.vercel-storage.com</code>) və ya saytın öz domenində saxlanılmalıdır — başqa domenlər (məs. <code>cdn.example.com</code>) təhlükəsizlik siyasəti (CSP) tərəfindən bloklanır və görünməyəcək.
+          ⚠️ Şəkil Vercel Blob Storage-də (<code>*.public.blob.vercel-storage.com</code>) və ya saytın öz domenində (<code>/</code> ilə başlayan yol) saxlanılmalıdır. Başqa domenlər saxlanılarkən rədd ediləcək.
         </p>
         {form.imageUrl.trim() && (
           <div className="mt-2 rounded-xl border border-outline-variant bg-white p-2">
             <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Önizləmə</p>
+            {/*
+              Deliberately a raw <img>, not next/image: this is a live validation
+              preview of a URL the admin is still typing. Its job is to FAIL
+              visibly for an unreachable or CSP-blocked host (see the message
+              below), which is exactly what the image optimizer would mask.
+            */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={form.imageUrl}
@@ -605,8 +612,14 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
         )}
         {q.imageUrl && (
           <div className="mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={q.imageUrl} alt="Sual şəkli" className="max-h-32 rounded-lg border border-outline-variant/40 object-contain" loading="lazy" />
+            <Image
+              src={q.imageUrl}
+              alt="Sual şəkli"
+              width={0}
+              height={0}
+              sizes="16rem"
+              className="max-h-32 w-auto rounded-lg border border-outline-variant/40 object-contain"
+            />
           </div>
         )}
         <div className="text-sm font-semibold text-on-surface leading-relaxed mb-3">

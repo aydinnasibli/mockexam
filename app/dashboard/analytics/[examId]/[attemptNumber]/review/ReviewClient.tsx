@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css';
 import { useState, useMemo, useTransition, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { renderMath } from '@/lib/render-math';
 import PassageText from '@/components/ui/PassageText';
@@ -490,7 +491,14 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Image display */}
                       {q.imageUrl && (
                         <div className="mb-4">
-                          <img src={q.imageUrl} alt="Sual diaqramı" className="w-full max-w-md rounded-xl border border-rule" loading="lazy" />
+                          <Image
+                            src={q.imageUrl}
+                            alt="Sual diaqramı"
+                            width={0}
+                            height={0}
+                            sizes="(max-width: 768px) 100vw, 28rem"
+                            className="w-full max-w-md h-auto rounded-xl border border-rule"
+                          />
                         </div>
                       )}
 

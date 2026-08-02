@@ -7,7 +7,6 @@ if (!MONGODB_URI) {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var _mongooseCache: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
 }
 
@@ -15,22 +14,6 @@ let cached = global._mongooseCache;
 
 if (!cached) {
   cached = global._mongooseCache = { conn: null, promise: null };
-}
-
-let indexesCleaned = false;
-
-async function dropStaleIndexes() {
-  if (indexesCleaned) return;
-  indexesCleaned = true;
-  try {
-    const col = mongoose.connection.collection('purchases');
-    const indexes = await col.indexes();
-    if (indexes.some(i => i.name === 'transactionId_1')) {
-      await col.dropIndex('transactionId_1');
-    }
-  } catch {
-    // Collection may not exist yet — safe to ignore
-  }
 }
 
 async function dbConnect() {
@@ -41,12 +24,19 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      // Serverless-tuned. Each instance keeps its own pool, and instances scale
+      // out independently, so the driver default of 100 would let a traffic
+      // spike exhaust the cluster's connection limit. 10 is ample per instance
+      // because a request holds a connection only for the duration of a query.
+      maxPoolSize: 10,
+      // Close idle sockets so scaled-down instances release their connections.
+      maxIdleTimeMS: 60_000,
+      // Fail fast instead of hanging the request for the 30s default when the
+      // cluster is unreachable — the caller can render an error far sooner.
+      serverSelectionTimeoutMS: 10_000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then(async (mongoose) => {
-      await dropStaleIndexes();
-      return mongoose;
-    });
+    cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
 
   try {

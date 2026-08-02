@@ -99,7 +99,7 @@ export default function AboutPage() {
               Akademik hazırlıq{" "}
               <span style={{ color: "var(--color-accent)" }}>oyun mexaniki</span>{" "}
               deyil. Burada gizli abunəlik, qondarma sertifikat və{" "}
-              <span>"qarantili 100 bal"</span>{" "}
+              <span>&ldquo;qarantili 100 bal&rdquo;</span>{" "}
               vədi yoxdur — yalnız ciddi iş və ölçülə bilən nəticə.
             </blockquote>
           </div>

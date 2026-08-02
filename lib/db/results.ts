@@ -1,5 +1,16 @@
 import dbConnect from '@/lib/mongodb';
-import ExamResult from '@/lib/models/ExamResult';
+import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
+
+/**
+ * Cap on how many attempts a single listing loads. Well above any realistic
+ * study history, but it keeps one heavy account from stalling a page.
+ */
+const MAX_RESULTS = 500;
+
+/** Fields needed for a summary — deliberately excludes the heavy `answers` array. */
+const SUMMARY_FIELDS =
+  'examId examTitle examTag examType attemptNumber completedAt durationSeconds ' +
+  'totalQuestions score overallBand totalScaled rwScaled mathScaled moduleScores';
 
 export interface ModuleScoreSummary {
   moduleIndex: number;
@@ -54,7 +65,15 @@ export interface ResultDetail extends ResultSummary {
   answers: AnswerDetail[];
 }
 
-function mapSummary(d: ReturnType<typeof Object.assign>): ResultSummary {
+/** The subset of an ExamResult document a summary is built from. */
+type SummarySource = Pick<
+  IExamResult,
+  | 'examId' | 'examTitle' | 'examTag' | 'examType' | 'attemptNumber' | 'completedAt'
+  | 'durationSeconds' | 'totalQuestions' | 'score' | 'overallBand' | 'totalScaled'
+  | 'rwScaled' | 'mathScaled' | 'moduleScores'
+> & { _id: unknown };
+
+function mapSummary(d: SummarySource): ResultSummary {
   return {
     id:              String(d._id),
     examId:          d.examId,
@@ -84,13 +103,21 @@ function mapSummary(d: ReturnType<typeof Object.assign>): ResultSummary {
 
 export async function getUserResults(userId: string): Promise<ResultSummary[]> {
   await dbConnect();
-  const docs = await ExamResult.find({ userId }).sort({ completedAt: -1 }).lean();
+  const docs = await ExamResult.find({ userId })
+    .select(SUMMARY_FIELDS)
+    .sort({ completedAt: -1 })
+    .limit(MAX_RESULTS)
+    .lean();
   return docs.map(mapSummary);
 }
 
 export async function getExamResults(userId: string, examId: string): Promise<ResultSummary[]> {
   await dbConnect();
-  const docs = await ExamResult.find({ userId, examId }).sort({ completedAt: -1 }).lean();
+  const docs = await ExamResult.find({ userId, examId })
+    .select(SUMMARY_FIELDS)
+    .sort({ completedAt: -1 })
+    .limit(MAX_RESULTS)
+    .lean();
   return docs.map(mapSummary);
 }
 
@@ -112,11 +139,11 @@ export async function getResultDetail(
       correctIndex:    a.correctIndex,
       isCorrect:       a.isCorrect,
       timeSeconds:     a.timeSeconds,
-      writingScore:    (a as any).writingScore,
-      writingWordCount:(a as any).writingWordCount,
-      writingCriteria: (a as any).writingCriteria,
-      aiFeedback:      (a as any).aiFeedback,
-      writingPending:  (a as any).writingPending,
+      writingScore:    a.writingScore,
+      writingWordCount:a.writingWordCount,
+      writingCriteria: a.writingCriteria,
+      aiFeedback:      a.aiFeedback,
+      writingPending:  a.writingPending,
     })),
   };
 }

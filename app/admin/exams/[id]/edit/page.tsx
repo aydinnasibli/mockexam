@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
 import ExamForm from '../../ExamForm';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'İmtahanı Düzəlt — Admin' };
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default async function EditExamPage({ params }: Props) {
+  await requireAdminPage();
   const { id } = await params;
 
   await dbConnect();
