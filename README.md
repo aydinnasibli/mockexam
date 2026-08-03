@@ -54,15 +54,18 @@ components/
 
 ## Node version
 
-Pinned to the Node 22 LTS line via `.nvmrc` and `engines` in `package.json`;
-CI reads `.nvmrc` so it cannot drift from local. The floor is **22.22.0** —
-`posthog-node` and `@posthog/nextjs-config` declare
-`^20.20.0 || >=22.22.0`, and anything older installs with `EBADENGINE`
-warnings and is formally unsupported.
+Pinned to the **Node 24 LTS ("Krypton")** line via `.nvmrc` and `engines` in
+`package.json`; CI reads `.nvmrc` so it cannot drift from local, and Vercel
+reads `engines` so the deployed runtime matches too.
 
 ```bash
-nvm use          # or: n 22
+nvm use          # or: n 24
 ```
+
+Node 24 is also Vercel's current default, so no project-level Node override is
+needed. The previous 22.x pin existed only because `posthog-node` and
+`@posthog/nextjs-config` require `^20.20.0 || >=22.22.0`; every Node 24 release
+satisfies that.
 
 ## Local Setup
 
