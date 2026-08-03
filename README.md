@@ -52,6 +52,18 @@ components/
   ui/                   # Animation wrappers (FadeUp, StaggerChildren, PageTransition)
 ```
 
+## Node version
+
+Pinned to the Node 22 LTS line via `.nvmrc` and `engines` in `package.json`;
+CI reads `.nvmrc` so it cannot drift from local. The floor is **22.22.0** —
+`posthog-node` and `@posthog/nextjs-config` declare
+`^20.20.0 || >=22.22.0`, and anything older installs with `EBADENGINE`
+warnings and is formally unsupported.
+
+```bash
+nvm use          # or: n 22
+```
+
 ## Local Setup
 
 **1. Clone and install**
