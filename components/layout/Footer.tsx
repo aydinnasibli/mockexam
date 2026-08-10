@@ -71,9 +71,14 @@ export default function Footer() {
           </div>
         </div>
 
+        {/*
+          The "tr · az · en" locale list was removed: the site ships only in
+          Azerbaijani, with no translated routes and no hreflang, so it
+          advertised languages that don't exist. Put it back alongside real
+          localised routes, not before.
+        */}
         <div className="pt-6 border-t border-rule flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="eyebrow">© 2026 Testcentre · Bakı, Azərbaycan</p>
-          <span className="eyebrow">tr · az · en</span>
         </div>
       </div>
     </footer>

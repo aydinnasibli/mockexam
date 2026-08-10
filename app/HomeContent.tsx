@@ -1,21 +1,30 @@
-'use client';
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import ReviewCarousel from "./ReviewCarousel";
 
 interface Props {
   countsByType: Record<string, number>;
 }
 
+/*
+ * `type` is the database value and is written out literally — it must NOT be
+ * derived with `code.toLowerCase()`.
+ *
+ * "DİM".toLowerCase() returns "di̇m" (U+0069 U+0307 — a plain i followed by a
+ * combining dot above), not "dim". That produced the link
+ * /exams?type=di%CC%87m, which matches no exam type, so the DİM card led to an
+ * empty results page — and Google crawled and indexed that URL.
+ *
+ * GMAT is not in EXAM_TYPES at all, so it has no type and is never linked.
+ */
 const categories = [
-  { code: "SAT", name: "Digital SAT", desc: "College Board Bluebook formatı. Reading/Writing + Math, adaptive.", featured: true },
-  { code: "IELTS", name: "IELTS Academic", desc: "Listening, Reading, Writing band sınaqları. Cambridge formatı.", featured: false },
-  { code: "TOEFL", name: "TOEFL iBT", desc: "ETS strukturu. Dörd bölmə — Reading, Listening, Speaking, Writing.", featured: false },
-  { code: "DİM", name: "DİM Buraxılış", desc: "Riyaziyyat, ədəbiyyat, məntiq, dil bilikləri blokları.", featured: true },
-  { code: "GMAT", name: "GMAT Focus", desc: "Quant, Verbal, Data Insights. MBA hazırlığı.", featured: false },
-  { code: "GRE", name: "GRE General", desc: "Verbal Reasoning, Quantitative, Analytical Writing.", featured: false },
+  { code: "SAT", type: "sat", name: "Digital SAT", desc: "College Board Bluebook formatı. Reading/Writing + Math, adaptive.", featured: true },
+  { code: "IELTS", type: "ielts", name: "IELTS Academic", desc: "Listening, Reading, Writing band sınaqları. Cambridge formatı.", featured: false },
+  { code: "TOEFL", type: "toefl", name: "TOEFL iBT", desc: "ETS strukturu. Dörd bölmə — Reading, Listening, Speaking, Writing.", featured: false },
+  { code: "DİM", type: "dim", name: "DİM Buraxılış", desc: "Riyaziyyat, ədəbiyyat, məntiq, dil bilikləri blokları.", featured: true },
+  { code: "GMAT", type: null, name: "GMAT Focus", desc: "Quant, Verbal, Data Insights. MBA hazırlığı.", featured: false },
+  { code: "GRE", type: "gre", name: "GRE General", desc: "Verbal Reasoning, Quantitative, Analytical Writing.", featured: false },
 ];
 
 const steps = [
@@ -32,46 +41,7 @@ const checklist = [
   "Mobil və desktop dəstək",
 ];
 
-const reviews = [
-  {
-    initials: "AM",
-    quote: "On səkkiz dəfə cəhd etdim. Sayı eyni qalır, lakin hər səhvim üçün yeni izahat verən başqa platforma tapmadım. Bal 200 vahid artdı.",
-    name: "Aysel Məmmədova",
-    detail: "SAT 1480 · Boğaziçi Universiteti",
-    accent: "hər səhvim üçün yeni izahat",
-  },
-  {
-    initials: "KH",
-    quote: "IELTS üçün altı ay hazırlandım amma nəticə yaxşı deyildi. Buraya keçdikdən sonra iki ayda 6.0-dan 7.5-ə çıxdım. Band analizi hər şeyi dəyişdi.",
-    name: "Kərim Hüseynov",
-    detail: "IELTS 7.5 · Edinburq Universiteti",
-    accent: "iki ayda 6.0-dan 7.5-ə çıxdım",
-  },
-  {
-    initials: "NQ",
-    quote: "Adaptive suallar mənim nəyə görə yanıldığımı dəqiq göstərdi. TOEFL Reading bölməsini tam yenidən öyrəndim — nəticə 105 oldu.",
-    name: "Nigar Quliyeva",
-    detail: "TOEFL 105 · Amsterdam",
-    accent: "nəyə görə yanıldığımı dəqiq göstərdi",
-  },
-  {
-    initials: "TA",
-    quote: "SAT Math modullarını dörd dəfə keçdim. Hər dəfə fərqli zəif nöqtə çıxdı. Platforma olmadan 1540 balı görmək mümkün olmazdı.",
-    name: "Tural Əliyev",
-    detail: "SAT 1540 · MIT",
-    accent: "Hər dəfə fərqli zəif nöqtə çıxdı",
-  },
-];
-
 export default function HomeContent({ countsByType }: Props) {
-  const [reviewIndex, setReviewIndex] = useState(0);
-  const current = reviews[reviewIndex];
-
-  useEffect(() => {
-    const t = setInterval(() => setReviewIndex(i => (i + 1) % reviews.length), 4000);
-    return () => clearInterval(t);
-  }, []);
-
   return (
     <>
       <Navbar />
@@ -87,14 +57,20 @@ export default function HomeContent({ countsByType }: Props) {
                 <span className="dot" />
                 <span className="eyebrow">Akademik İmtahan Platforması</span>
               </div>
+              {/*
+                The h1 carries the exam names on purpose: it is the strongest
+                on-page relevance signal the homepage has, and the previous
+                headline ("Gələcəyinizi sınağa çəkin.") named none of the terms
+                anyone actually searches for. The slogan now opens the lede.
+              */}
               <h1 className="t-display mb-8">
-                Gələcəyinizi{" "}
-                <span style={{ color: "var(--color-accent)" }}>sınağa</span>{" "}
-                çəkin.
+                SAT, IELTS və DİM üçün{" "}
+                <span style={{ color: "var(--color-accent)" }}>sınaq</span>{" "}
+                imtahanları.
               </h1>
               <p className="t-lede mb-10 max-w-135" style={{ color: "var(--color-ink-soft)" }}>
-                On minlərlə tələbə real imtahan formatında hazırlaşır. Süni intellekt yön verir,
-                statistika doğrulayır — heç bir şey təxmin deyil.
+                Gələcəyinizi sınağa çəkin. On minlərlə tələbə real imtahan formatında hazırlaşır.
+                Süni intellekt yön verir, statistika doğrulayır — heç bir şey təxmin deyil.
               </p>
               <div className="flex gap-3">
                 <Link href="/exams" className="btn-primary">
@@ -199,123 +175,53 @@ export default function HomeContent({ countsByType }: Props) {
               Hər bir sınaq akademik mütəxəssislər tərəfindən yoxlanılır və rəsmi formatla 1:1 üst-üstə düşür.
             </p>
           </div>
+          {/*
+            A category is only a link when it actually has exams. Four of these
+            six had none, so their cards pointed at empty result pages that
+            Google then crawled — real URLs promising SAT/TOEFL/GMAT content and
+            delivering "Nəticə tapılmadı". Empty ones render as plain cards
+            marked "Tezliklə", which keeps them on the page without minting a
+            crawlable dead end.
+          */}
           <div className="grid md:grid-cols-3 gap-5">
-            {categories.map((c) => (
-              <Link
-                key={c.code}
-                href={`/exams?type=${c.code.toLowerCase()}`}
-                className="card-new card-new-hover flex flex-col"
-              >
-                <div className="flex items-center justify-between mb-8">
-                  <span className={`tag ${c.featured ? "tag-accent" : ""}`}>{c.code}</span>
-                  <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>
-                    {countsByType[c.code.toLowerCase()] ?? 0} sınaq
-                  </span>
+            {categories.map((c) => {
+              const count = c.type ? (countsByType[c.type] ?? 0) : 0;
+              const body = (
+                <>
+                  <div className="flex items-center justify-between mb-8">
+                    <span className={`tag ${c.featured && count > 0 ? "tag-accent" : ""}`}>{c.code}</span>
+                    <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>
+                      {count > 0 ? `${count} sınaq` : "Tezliklə"}
+                    </span>
+                  </div>
+                  <h3 className="t-headline mb-3" style={{ fontSize: 24 }}>{c.name}</h3>
+                  <p className="text-[15px] leading-[1.6] flex-1 mb-8" style={{ color: "var(--color-ink-soft)" }}>{c.desc}</p>
+                  <div
+                    className="flex items-center gap-2 text-[14px] font-medium"
+                    style={{ color: count > 0 ? "var(--color-ink)" : "var(--color-ink-mute)" }}
+                  >
+                    {count > 0 ? <>Sınaqlara bax <span>→</span></> : "Hazırlanır"}
+                  </div>
+                </>
+              );
+
+              return count > 0 && c.type ? (
+                <Link key={c.code} href={`/exams?type=${c.type}`} className="card-new card-new-hover flex flex-col">
+                  {body}
+                </Link>
+              ) : (
+                <div key={c.code} className="card-new flex flex-col" style={{ opacity: 0.6 }}>
+                  {body}
                 </div>
-                <h3 className="t-headline mb-3" style={{ fontSize: 24 }}>{c.name}</h3>
-                <p className="text-[15px] leading-[1.6] flex-1 mb-8" style={{ color: "var(--color-ink-soft)" }}>{c.desc}</p>
-                <div className="flex items-center gap-2 text-[14px] font-medium text-ink">
-                  Sınaqlara bax <span>→</span>
-                </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* ── REVIEWS ── */}
         <section style={{ background: "var(--color-surface)", borderTop: "1px solid var(--color-rule)", borderBottom: "1px solid var(--color-rule)" }}>
           <div className="max-w-340 mx-auto px-8 py-24">
-            <div className="flex items-center justify-between mb-14">
-              <div>
-                <div className="eyebrow mb-3">Tələbə rəyləri</div>
-                {/*
-                  The dot is 6px for visual reasons, but the *button* is 24px so
-                  it meets the WCAG 2.5.8 minimum target size. The dot itself is
-                  a child span; the button is transparent padding around it.
-                */}
-                <div className="flex items-center mt-2">
-                  {reviews.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setReviewIndex(i)}
-                      aria-label={`Rəy ${i + 1}`}
-                      aria-current={i === reviewIndex ? 'true' : undefined}
-                      style={{
-                        width: 24,
-                        height: 24,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: 'none',
-                        padding: 0,
-                        background: 'transparent',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span
-                        style={{
-                          display: 'block',
-                          width: i === reviewIndex ? 20 : 6,
-                          height: 6,
-                          borderRadius: 3,
-                          background: i === reviewIndex ? 'var(--color-ink)' : 'var(--color-rule)',
-                          transition: 'width 0.2s ease, background 0.2s ease',
-                        }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setReviewIndex(i => (i - 1 + reviews.length) % reviews.length)}
-                  className="w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ border: "1px solid var(--color-rule)", color: "var(--color-ink-soft)", background: "transparent" }}
-                >
-                  ←
-                </button>
-                <button
-                  onClick={() => setReviewIndex(i => (i + 1) % reviews.length)}
-                  className="w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ border: "1px solid var(--color-rule)", color: "var(--color-ink-soft)", background: "transparent" }}
-                >
-                  →
-                </button>
-              </div>
-            </div>
-
-            <blockquote
-              className="font-display font-normal text-ink leading-[1.35] tracking-[-0.015em] mb-10"
-              style={{ fontSize: "clamp(20px, 2.2vw, 32px)", maxWidth: 820 }}
-            >
-              {(() => {
-                const parts = current.quote.split(current.accent);
-                return parts.map((part, i) => (
-                  <span key={i}>
-                    {part}
-                    {i < parts.length - 1 && (
-                      <span style={{ color: "var(--color-accent)" }}>{current.accent}</span>
-                    )}
-                  </span>
-                ));
-              })()}
-            </blockquote>
-
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0"
-                style={{
-                  background: "linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%)",
-                  color: "var(--color-ink-mute)",
-                }}
-              >
-                {current.initials}
-              </div>
-              <div>
-                <div className="text-[14px] font-medium text-ink">{current.name}</div>
-                <div className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>{current.detail}</div>
-              </div>
-            </div>
+            <ReviewCarousel />
           </div>
         </section>
 

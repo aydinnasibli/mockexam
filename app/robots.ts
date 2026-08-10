@@ -1,13 +1,21 @@
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
+import { BASE_URL } from '@/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/dashboard', '/admin', '/checkout/', '/exam-session/', '/api/'],
+      disallow: [
+        '/dashboard',
+        '/admin',
+        '/checkout/',
+        '/exam-session/',
+        '/api/',
+        '/testpayment',
+        // Same-origin rewrite to PostHog ingest — nothing crawlable behind it.
+        '/relay/',
+      ],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
   };

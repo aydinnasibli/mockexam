@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Məxfilik Siyasəti',
   description: 'Testcentre-nin məxfilik siyasəti — hansı məlumatları topladığımız, necə emal etdiyimiz və hüquqlarınız.',
-  alternates: { canonical: '/legal/privacy' },
-};
+  path: '/legal/privacy',
+});
 
 const sections = [
   {

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'İstifadə Şərtləri',
   description: 'Testcentre platformasından istifadə qaydaları və şərtlər.',
-  alternates: { canonical: '/legal/terms' },
-};
+  path: '/legal/terms',
+});
 
 const sections = [
   {

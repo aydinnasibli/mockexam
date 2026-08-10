@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Cookie Siyasəti',
   description: 'Testcentre-nin cookie qaydaları — hansı cookie fayllarından istifadə edilir və nə üçün.',
-  alternates: { canonical: '/legal/cookies' },
-};
+  path: '/legal/cookies',
+});
 
 export default function CookiesPage() {
   return (

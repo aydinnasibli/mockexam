@@ -1,7 +1,15 @@
 import type { MetadataRoute } from 'next';
 import { getActiveExams } from '@/lib/db/exams';
+import { BASE_URL } from '@/lib/seo';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
+/**
+ * sitemap.ts is a Route Handler, and Next caches it indefinitely unless it uses
+ * a request-time API or sets a dynamic config option. It reads exams straight
+ * from Mongo rather than through `fetch`, so nothing here invalidates it on its
+ * own: without this line the sitemap is a build artefact and a newly published
+ * exam never reaches Google until someone happens to redeploy.
+ */
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const exams = await getActiveExams();
@@ -11,6 +19,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: exam.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.8,
+  }));
+
+  // One entry per exam type that actually has active exams. These are the
+  // pages targeting "SAT sınaq", "IELTS hazırlıq" and friends.
+  const typeUrls: MetadataRoute.Sitemap = Array.from(
+    new Set(exams.map((exam) => exam.type)),
+  ).map((type) => ({
+    url: `${BASE_URL}/exams?type=${type}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.85,
   }));
 
   return [
@@ -38,6 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.5,
     },
+    ...typeUrls,
     ...examUrls,
     {
       url: `${BASE_URL}/legal/terms`,

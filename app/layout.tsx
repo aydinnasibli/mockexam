@@ -5,27 +5,39 @@ import { PostHogProvider, PostHogPageView } from '@posthog/next';
 import { Toaster } from 'sonner';
 import MotionProvider from "@/components/ui/MotionProvider";
 import CookieNotice from "@/components/ui/CookieNotice";
+import { BASE_URL } from "@/lib/seo";
 import "./globals.css";
 
+/*
+ * All three families are variable fonts, so no `weight` is declared: passing a
+ * weight list makes next/font fetch one static instance per weight (12 files
+ * here) instead of a single variable file covering the whole range.
+ *
+ * `latin-ext` is not optional for this site. Azerbaijani needs ə (U+0259),
+ * ğ (U+011F), ş (U+015F) and Ə (U+018F), all of which live in latin-ext, not
+ * latin. With `latin` alone next/font preloads only the ASCII subset and the
+ * browser discovers the file carrying most of our glyphs after first paint —
+ * a guaranteed swap and layout shift on essentially every line of body text.
+ *
+ * The subset lists are repeated per call rather than shared from a constant:
+ * next/font resolves these options at build time and rejects a spread.
+ */
 const newsreader = Newsreader({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-newsreader",
-  weight: ["300", "400", "500", "600"],
   style: ["normal"],
   display: "swap",
 });
 
 const geist = Geist({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-geist",
-  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
 const mono = JetBrains_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-jetbrains-mono",
-  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -34,8 +46,6 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.testcentre.az';
-
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
@@ -43,7 +53,10 @@ export const metadata: Metadata = {
     default: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
   },
   description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
-  alternates: { canonical: '/' },
+  // NOTE: deliberately no `alternates.canonical` here. Metadata is inherited by
+  // every segment that doesn't override it, so a canonical on the root layout
+  // silently points new pages at the homepage and folds them out of the index.
+  // Each public page sets its own via pageMetadata().
   openGraph: {
     type: 'website',
     locale: 'az_AZ',
@@ -64,20 +77,38 @@ export const metadata: Metadata = {
   },
 };
 
+/*
+ * `logo` points at the square app icon, not the 1200×630 opengraph banner —
+ * Google reads this field as the organisation's actual mark.
+ *
+ * There is deliberately no `telephone`: the previous value (+994-12-555-14-88)
+ * was a placeholder that appears nowhere else on the site, and a phone number
+ * in structured data that contradicts the contact page is worse than none.
+ * Add it back here and on /contact together, or not at all. Same for `sameAs` —
+ * an empty array carries no meaning, so it is omitted until there are real
+ * profiles to list.
+ */
 const organizationSchema = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
+  '@type': 'EducationalOrganization',
   name: 'Testcentre',
   url: BASE_URL,
-  logo: `${BASE_URL}/opengraph-image`,
+  logo: `${BASE_URL}/icon`,
+  image: `${BASE_URL}/opengraph-image`,
+  description:
+    'SAT, IELTS, TOEFL və DİM imtahanlarına hazırlıq üçün rəsmi formata uyğun sınaq imtahanları.',
+  areaServed: 'AZ',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Bakı',
+    addressCountry: 'AZ',
+  },
   contactPoint: {
     '@type': 'ContactPoint',
-    telephone: '+994-12-555-14-88',
     contactType: 'customer service',
     email: 'testcentreaz@proton.me',
-    availableLanguage: 'Azerbaijani',
+    availableLanguage: ['az'],
   },
-  sameAs: [],
 };
 
 export default function RootLayout({
@@ -92,9 +123,18 @@ export default function RootLayout({
     <ClerkProvider telemetry={false}>
       <html lang="az" className={`${newsreader.variable} ${geist.variable} ${mono.variable}`}>
         <head>
+          {/*
+            Kept in <head> rather than as a child of <body>: Clerk and PostHog
+            both inject a <script> at the top of the body, and React matches
+            this element against theirs during hydration, which throws a
+            hydration mismatch. `<` is escaped so a future data-driven field
+            cannot break out of the script tag.
+          */}
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(organizationSchema).replace(/</g, '\\u003c'),
+            }}
           />
         </head>
         <body className="antialiased">

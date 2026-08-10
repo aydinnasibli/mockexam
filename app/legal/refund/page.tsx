@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Geri Qaytarma Siyasəti',
   description: 'Testcentre rəqəmsal xidmətlər üçün geri qaytarma qaydaları.',
-  alternates: { canonical: '/legal/refund' },
-};
+  path: '/legal/refund',
+});
 
 const sections = [
   {

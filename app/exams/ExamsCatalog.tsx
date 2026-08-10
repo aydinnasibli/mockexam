@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
-import { EXAM_TYPE_LABELS } from '@/lib/exam-types';
+import { EXAM_TYPE_LABELS, examTypeLabel } from '@/lib/exam-types';
 
 const examTypeLabels: Record<string, string> = EXAM_TYPE_LABELS;
 
@@ -21,6 +21,21 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
 
   const types = Array.from(new Set(exams.map(e => e.type)));
 
+  /**
+   * Filtering is client-side, but the URL has to follow it: `/exams?type=sat`
+   * is a distinct landing page with its own title, description and canonical,
+   * and until now clicking a filter left the address bar on /exams so those
+   * pages were unreachable and unshareable. `history.pushState` integrates
+   * with the Next router and updates the URL without a server round-trip.
+   */
+  function selectType(type: string) {
+    setActiveType(type);
+    setFiltersOpen(false);
+    if (typeof window === 'undefined') return;
+    const url = type === 'all' ? '/exams' : `/exams?type=${type}`;
+    window.history.pushState(null, '', url);
+  }
+
   const filtered = exams
     .filter(exam => activeType === 'all' || exam.type === activeType)
     .sort((a, b) => {
@@ -32,7 +47,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
   const hasActiveFilters = activeType !== 'all';
 
   function clearAllFilters() {
-    setActiveType('all');
+    selectType('all');
   }
 
   // Rendered as a plain function call rather than a nested component: declaring
@@ -50,7 +65,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           return (
             <button
               key={type}
-              onClick={() => { setActiveType(type); setFiltersOpen(false); }}
+              onClick={() => selectType(type)}
               aria-pressed={isActive}
               className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-colors text-left"
               style={{
@@ -92,12 +107,30 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             <span className="dot" />
             <span className="eyebrow" style={{ color: 'var(--color-ink)' }}>Kataloq</span>
           </div>
-          <h1 className="t-display-2 m-0 mb-6">
-            Bütün <span>sınaqlar.</span>
-          </h1>
-          <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
-            SAT, IELTS, TOEFL imtahanlarına peşəkar hazırlıq paketləri.
-          </p>
+          {/*
+            Heading and lede track the active filter so `?type=sat` is a page
+            about SAT rather than a generic catalog that happens to be filtered.
+          */}
+          {activeType === 'all' ? (
+            <>
+              <h1 className="t-display-2 m-0 mb-6">
+                Bütün <span>sınaqlar.</span>
+              </h1>
+              <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
+                SAT, IELTS, TOEFL imtahanlarına peşəkar hazırlıq paketləri.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="t-display-2 m-0 mb-6">
+                {examTypeLabel(activeType)} <span>sınaqları.</span>
+              </h1>
+              <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
+                {examTypeLabel(activeType)} imtahanına rəsmi formata uyğun hazırlıq paketləri —
+                vaxt limitli modullar, dərhal nəticə və hər sual üçün izahat.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Mobile filter toggle */}
