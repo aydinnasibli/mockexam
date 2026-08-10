@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { getUserResults } from '@/lib/db/results';
 import { getActiveExams } from '@/lib/db/exams';
 import { formatOverallScore } from '@/lib/scoring';
+import { examTypeLabel } from '@/lib/exam-types';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import { ChevronRight, Timer } from 'lucide-react';
+import { ChevronRight, Timer, BookOpen } from 'lucide-react';
 
 export const metadata = { title: 'Nəticələr' };
 
@@ -33,6 +34,41 @@ function scoreBarColor(score: number) {
   return 'bg-error';
 }
 
+type ScoreFields = {
+  score: number;
+  examType?: string;
+  overallBand?: number;
+  totalScaled?: number;
+};
+
+/**
+ * Average and best for ONE exam type, expressed in that type's own unit.
+ *
+ * Aggregating across types was meaningless: a 100% General English paper and a
+ * Band 6.5 IELTS paper are not comparable quantities, so a single "best" told
+ * the student nothing except which of their exams happened to be easiest.
+ * Bands and scaled scores are averaged natively; anything else stays a percent.
+ */
+function aggregate(type: string | undefined, rs: ScoreFields[]): { avg: string; best: string; isPercent: boolean } {
+  const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
+
+  if (type === 'ielts' && rs.every(r => typeof r.overallBand === 'number')) {
+    const bands = rs.map(r => r.overallBand!);
+    // IELTS reports to the nearest half band — averaging to 2dp would invent
+    // precision the scale does not have.
+    const avg = Math.round(mean(bands) * 2) / 2;
+    return { avg: `${avg.toFixed(1)} Band`, best: `${Math.max(...bands).toFixed(1)} Band`, isPercent: false };
+  }
+
+  if (type === 'sat' && rs.every(r => typeof r.totalScaled === 'number')) {
+    const scaled = rs.map(r => r.totalScaled!);
+    return { avg: `${Math.round(mean(scaled))}`, best: `${Math.max(...scaled)}`, isPercent: false };
+  }
+
+  const pct = rs.map(r => r.score);
+  return { avg: `${Math.round(mean(pct))}%`, best: `${Math.max(...pct)}%`, isPercent: true };
+}
+
 export default async function AnalyticsPage() {
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
@@ -57,12 +93,27 @@ export default async function AnalyticsPage() {
   const notAttemptedCount = purchasedExams.length - attemptedExams.length;
 
   const totalAttempts = results.length;
-  const avgScore = results.length > 0
-    ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-    : null;
-  const bestScore = results.length > 0
-    ? Math.max(...results.map(r => r.score))
-    : null;
+
+  // Grouped by exam type so averages compare like with like. The type is taken
+  // from the exam record, falling back to whatever the result stored, so
+  // attempts on an exam that was later removed still land in a group.
+  const typeGroups = (() => {
+    const byType = new Map<string, typeof results>();
+    for (const r of results) {
+      const type = allExams.find(e => e.id === r.examId)?.type ?? r.examType ?? 'other';
+      if (!byType.has(type)) byType.set(type, []);
+      byType.get(type)!.push(r);
+    }
+    return Array.from(byType.entries())
+      .map(([type, rs]) => ({
+        type,
+        label: examTypeLabel(type),
+        count: rs.length,
+        ...aggregate(type, rs),
+        avgPercent: Math.round(rs.reduce((s, r) => s + r.score, 0) / rs.length),
+      }))
+      .sort((a, b) => b.count - a.count);
+  })();
 
   return (
     <div className="p-8">
@@ -82,32 +133,42 @@ export default async function AnalyticsPage() {
         <p className="text-[16px] leading-[1.55] text-ink-soft m-0">Bütün imtahan cəhdlərinin tarixi və statistikası.</p>
       </div>
 
-      {/* Summary stats */}
+      {/* Summary — one row per exam type, never one figure across all of them */}
       {totalAttempts > 0 && (
-        <div className="grid grid-cols-3 gap-4 border-y border-rule py-8 mb-10">
-          <div>
-            <div className="eyebrow mb-3">Ümumi cəhd</div>
+        <div className="border-y border-rule py-8 mb-10">
+          <div className="flex items-baseline gap-3 mb-7">
             <div className="t-num text-ink" style={{ fontSize: 'clamp(28px, 4vw, 40px)', lineHeight: 1, letterSpacing: '-0.02em' }}>
               {totalAttempts}
             </div>
+            <div className="eyebrow">ümumi cəhd</div>
           </div>
-          <div className="border-l border-rule pl-6 md:pl-8">
-            <div className="eyebrow mb-3">Ortalama</div>
-            <div
-              className={`t-num ${avgScore != null ? scoreColor(avgScore) : 'text-ink-mute'}`}
-              style={{ fontSize: 'clamp(28px, 4vw, 40px)', lineHeight: 1, letterSpacing: '-0.02em' }}
-            >
-              {avgScore != null ? `${avgScore}%` : '—'}
+
+          <div className="eyebrow mb-4">Növ üzrə nəticə</div>
+          <div className="space-y-px">
+            {/* Column headers — hidden on narrow screens where rows stack */}
+            <div className="hidden sm:grid sm:grid-cols-[1fr_90px_120px_120px] px-1 pb-2 text-[11px] font-medium text-ink-mute">
+              <span>İmtahan növü</span>
+              <span className="text-right">Cəhd</span>
+              <span className="text-right">Ortalama</span>
+              <span className="text-right">Ən yaxşı</span>
             </div>
-          </div>
-          <div className="border-l border-rule pl-6 md:pl-8">
-            <div className="eyebrow mb-3">Ən yaxşı</div>
-            <div
-              className={`t-num ${bestScore != null ? scoreColor(bestScore) : 'text-ink-mute'}`}
-              style={{ fontSize: 'clamp(28px, 4vw, 40px)', lineHeight: 1, letterSpacing: '-0.02em' }}
-            >
-              {bestScore != null ? `${bestScore}%` : '—'}
-            </div>
+            {typeGroups.map(g => (
+              <div
+                key={g.type}
+                className="grid grid-cols-2 sm:grid-cols-[1fr_90px_120px_120px] gap-y-1.5 items-center px-1 py-3 border-t border-rule"
+              >
+                <span className="col-span-2 sm:col-span-1 text-[14px] font-medium text-ink">{g.label}</span>
+                <span className="text-[13px] text-ink-mute sm:text-right">
+                  <span className="sm:hidden">Cəhd: </span>{g.count}
+                </span>
+                <span className={`text-[14px] font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
+                  <span className="sm:hidden text-[13px] font-normal text-ink-mute">Ortalama: </span>{g.avg}
+                </span>
+                <span className={`text-[14px] font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
+                  <span className="sm:hidden text-[13px] font-normal text-ink-mute">Ən yaxşı: </span>{g.best}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -178,13 +239,14 @@ export default async function AnalyticsPage() {
                     className="grid px-6 py-2 text-[11px] font-medium text-ink-mute"
                     style={{
                       background: 'var(--color-surface-2)',
-                      gridTemplateColumns: '40px 1fr 100px 80px',
+                      gridTemplateColumns: '40px 1fr 100px 80px 80px',
                     }}
                   >
                     <span>#</span>
                     <span>Tarix</span>
                     <span className="text-right">Müddət</span>
                     <span className="text-right">Nəticə</span>
+                    <span className="text-right">Cavablar</span>
                   </div>
 
                   <div className="divide-y divide-rule">
@@ -192,7 +254,7 @@ export default async function AnalyticsPage() {
                       <div
                         key={r.id}
                         className="grid px-6 py-3 items-center text-[13px]"
-                        style={{ gridTemplateColumns: '40px 1fr 100px 80px' }}
+                        style={{ gridTemplateColumns: '40px 1fr 100px 80px 80px' }}
                       >
                         <span className="text-ink-mute font-medium">#{r.attemptNumber}</span>
                         <span className="text-ink-soft truncate">{formatDate(r.completedAt)}</span>
@@ -203,6 +265,15 @@ export default async function AnalyticsPage() {
                           </div>
                           <span className={`font-bold text-right min-w-10 ${scoreColor(r.score)}`}>{(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}</span>
                         </div>
+                        {/* The answer-by-answer review had no entry point on this
+                            page at all — students had to guess it lived a level
+                            deeper, under "Ətraflı". */}
+                        <Link
+                          href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
+                          className="justify-self-end flex items-center gap-1 px-2.5 py-1 border border-rule rounded-lg text-[11px] font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+                        >
+                          <BookOpen size={11} /> İcmal
+                        </Link>
                       </div>
                     ))}
                   </div>

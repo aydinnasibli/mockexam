@@ -12,7 +12,7 @@ import { reevaluatePendingWriting } from '@/lib/actions/results';
 import { formatOverallScore, formatModuleScore } from '@/lib/scoring';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
-  ArrowLeft, RotateCcw, BarChart2, FileText,
+  ArrowLeft, RotateCcw, BarChart2, FileText, Pencil,
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 import type { QuestionData } from '@/lib/actions/questions';
@@ -35,6 +35,30 @@ function MathText({ text }: { text: string }) {
 function formatTime(secs: number) {
   if (secs < 60) return `${secs}s`;
   return `${Math.floor(secs / 60)}d ${secs % 60}s`;
+}
+
+const AZ_MONTHS = [
+  'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+  'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr',
+];
+
+/**
+ * Deterministic az-AZ date, built by hand rather than via
+ * `toLocaleDateString('az-AZ')`.
+ *
+ * That call resolves differently on either side of the render boundary: Node's
+ * ICU build falls back to "2026 M07 12" while browsers produce "12 iyul 2026".
+ * In a client component that is a hydration mismatch, and React responded by
+ * throwing away the whole review tree and re-rendering it on every page load.
+ *
+ * UTC parts, not local ones — the server runs in UTC and the visitor does not,
+ * so local parts would reintroduce the same mismatch for any attempt finished
+ * late in the day. It also keeps this date consistent with the analytics pages,
+ * which format on the server.
+ */
+function formatAzDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${AZ_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 export default function ReviewClient({ exam, questions, result }: Props) {
@@ -141,18 +165,24 @@ export default function ReviewClient({ exam, questions, result }: Props) {
               </div>
               <h1 className="font-display text-xl font-bold text-bg">{exam.title}</h1>
               <p className="text-bg/40 text-sm mt-1.5">
-                {new Date(result.completedAt).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {formatAzDate(result.completedAt)}
                 {' · '}{Math.floor(result.durationSeconds / 60)}:{String(result.durationSeconds % 60).padStart(2, '0')} dəq
               </p>
             </div>
-            <div className="bg-bg/10 border border-bg/20 rounded-2xl px-6 py-4 text-center">
+            {/*
+              The score card sits on the dark header, where the semantic score
+              colours (a deep green / amber / red tuned for light surfaces) were
+              effectively invisible. It gets its own light panel instead, so the
+              same tokens land on the background they were designed for.
+            */}
+            <div className="bg-bg border border-bg/20 rounded-2xl px-6 py-4 text-center shadow-sm">
               <p className={`font-display text-3xl font-bold ${scoreColor}`}>
                 {overall.value}
                 {overall.unit !== '%'
-                  ? <span className="text-base font-medium text-bg/50 ml-1">{overall.unit}</span>
+                  ? <span className="text-base font-medium text-ink-mute ml-1">{overall.unit}</span>
                   : <span>%</span>}
               </p>
-              <p className="eyebrow text-bg/50 mt-1">{overallLabel}</p>
+              <p className="eyebrow text-ink-mute mt-1">{overallLabel}</p>
             </div>
           </div>
 
@@ -172,13 +202,17 @@ export default function ReviewClient({ exam, questions, result }: Props) {
           {result.moduleScores.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-5">
               {result.moduleScores.map(ms => {
+                // Light pills on the dark header. Tinting the dark score colours
+                // against a dark background produced text that could not be read
+                // at all — these are the same light-surface pairs the attempt
+                // list and analytics page already use.
                 const c = ms.pending
-                  ? 'bg-bg/10 text-bg/60 border-bg/20'
+                  ? 'bg-bg/15 text-bg/70 border-bg/25'
                   : ms.scorePercent >= 80
-                  ? 'bg-ok/20 text-ok/80 border-ok/30'
+                  ? 'bg-green-100 text-green-800 border-green-200'
                   : ms.scorePercent >= 60
-                  ? 'bg-warn/20 text-warn/80 border-warn/30'
-                  : 'bg-error/20 text-error/80 border-error/30';
+                  ? 'bg-amber-100 text-amber-800 border-amber-200'
+                  : 'bg-red-100 text-red-800 border-red-200';
                 return (
                   <span key={ms.moduleIndex} className={`text-xs font-bold px-3 py-1 rounded-full border ${c}`}>
                     {ms.moduleName}: {formatModuleScore(result.examType, ms)}
@@ -332,8 +366,9 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                         </div>
                       )}
 
-                      {/* Stem */}
-                      <div className="text-sm font-medium text-ink leading-relaxed mb-4">
+                      {/* Stem — `whitespace-pre-line` so authored paragraph
+                          breaks survive (renderMath emits no <br>). */}
+                      <div className="text-sm font-medium text-ink leading-relaxed mb-4 whitespace-pre-line">
                         <MathText text={q.stem} />
                       </div>
 
@@ -413,6 +448,51 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           })()}
                         </div>
                       )}
+
+                      {/*
+                        Open-answer review. Previously an open question rendered
+                        only its explanation, so the student could see neither
+                        what they typed nor what would have been accepted —
+                        leaving no way to tell a wrong answer from a typo.
+                      */}
+                      {q.type === 'open' && (() => {
+                        const typed    = (answer?.userAnswerText ?? '').trim();
+                        const accepted = (q.openAnswers ?? []).filter(a => a.trim());
+                        return (
+                          <div className="space-y-2 mb-4">
+                            <div className={`px-4 py-3 rounded-xl border-2 ${
+                              !typed ? 'border-rule bg-surface-2'
+                                : isCorrect ? 'border-green-400 bg-green-50'
+                                : 'border-red-400 bg-red-50'
+                            }`}>
+                              <p className="eyebrow text-ink-mute mb-1.5 flex items-center gap-1.5">
+                                <Pencil size={11} /> Sizin cavabınız
+                              </p>
+                              {typed ? (
+                                <p className={`text-sm font-medium m-0 whitespace-pre-wrap ${
+                                  isCorrect ? 'text-green-800' : 'text-red-800'
+                                }`}>
+                                  {typed}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-ink-mute m-0">Cavab verilməyib.</p>
+                              )}
+                            </div>
+
+                            {accepted.length > 0 && (
+                              <div className="px-4 py-3 rounded-xl border-2 border-green-400 bg-green-50">
+                                <p className="eyebrow text-ink-mute mb-1.5 flex items-center gap-1.5">
+                                  <CheckCircle2 size={11} className="text-ok" />
+                                  {accepted.length > 1 ? 'Qəbul edilən cavablar' : 'Doğru cavab'}
+                                </p>
+                                <p className="text-sm font-medium text-green-800 m-0">
+                                  {accepted.join('  ·  ')}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Writing: student essay + AI feedback */}
                       {q.type === 'writing' && (() => {

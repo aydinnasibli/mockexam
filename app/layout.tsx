@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { PostHogProvider, PostHogPageView } from '@posthog/next';
 import { Toaster } from 'sonner';
 import MotionProvider from "@/components/ui/MotionProvider";
+import PostHogIdentify from "@/components/PostHogIdentify";
 import CookieNotice from "@/components/ui/CookieNotice";
 import { BASE_URL } from "@/lib/seo";
 import "./globals.css";
@@ -142,9 +143,12 @@ export default function RootLayout({
             posthog-js is initialised in instrumentation-client.ts; this provider
             only supplies the React context for usePostHog(). PostHogPageView
             captures App Router navigations, which posthog-js cannot see itself.
+            PostHogIdentify binds the browser identity to the Clerk user so that
+            client events and server events resolve to one person.
           */}
           <PostHogProvider>
             <PostHogPageView />
+            <PostHogIdentify />
             <MotionProvider>
               {children}
               <CookieNotice />

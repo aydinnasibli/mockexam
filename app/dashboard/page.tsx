@@ -8,10 +8,11 @@ import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { reconcilePurchase } from '@/lib/reconcile';
 import {
-  BarChart2, Settings, ShoppingBag, Play, Timer, HelpCircle, ArrowRight, TrendingUp, TrendingDown,
+  BarChart2, ShoppingBag, Timer, HelpCircle, ArrowRight, TrendingUp, TrendingDown, BookOpen,
 } from 'lucide-react';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
+import MyExamsList, { type MyExamRow } from './MyExamsList';
 
 import { examTypeLabel } from '@/lib/exam-types';
 
@@ -149,10 +150,14 @@ export default async function DashboardPage({
       desc: 'Mövcud sınaqları kəşf edin və hazırlığa başlayın.',
       href: '/exams', cta: 'Kataloqa bax',
     };
+    // Names the exam, not its type. This used to read "<TAG> sınağınızı
+    // başladın!", which looked like the platform was pitching a product the
+    // student hadn't bought — when in fact it is one they already own and
+    // simply haven't opened.
     const untouched = purchasedExams.find(e => !lastResultByExam.has(e.id));
     if (untouched) return {
-      label: `${untouched.tag} sınağınızı başladın!`,
-      desc: `"${untouched.title}" — hələ başlamadınız. İlk addımı atın.`,
+      label: 'Başlanmamış sınağınız var',
+      desc: `"${untouched.title}" — hələ heç bir cəhd etməmisiniz.`,
       href: `/exam-session/${untouched.id}`, cta: 'İndi başla',
     };
     const worst = purchasedExams
@@ -169,6 +174,26 @@ export default async function DashboardPage({
       href: '/exams', cta: 'Kataloqa bax',
     };
   })();
+
+  // Flattened for the client list, which owns the search/filter/sort controls.
+  const myExamRows: MyExamRow[] = purchasedExams.map(exam => {
+    const last = lastResultByExam.get(exam.id) ?? null;
+    const disp = last ? formatOverallScore(last) : null;
+    return {
+      id:                exam.id,
+      title:             exam.title,
+      tag:               exam.tag,
+      type:              exam.type,
+      typeLabel:         examTypeLabel(exam.type),
+      minutes:           exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0),
+      totalQuestions:    exam.totalQuestions,
+      attemptCount:      results.filter(r => r.examId === exam.id).length,
+      lastScore:         last?.score ?? null,
+      lastScoreLabel:    disp ? (disp.unit !== '%' ? `${disp.value} ${disp.unit}` : `${disp.value}%`) : null,
+      lastAttemptNumber: last?.attemptNumber ?? null,
+      lastCompletedAt:   last?.completedAt ?? null,
+    };
+  });
 
   const firstName = user.firstName ?? 'Tələbə';
 
@@ -320,69 +345,7 @@ export default async function DashboardPage({
                   </Link>
                 </FadeUp>
               ) : (
-                <StaggerContainer className="space-y-3" delay={0.12}>
-                  {purchasedExams.map(exam => {
-                    const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
-                    const lastResult  = lastResultByExam.get(exam.id);
-                    const attemptCount = results.filter(r => r.examId === exam.id).length;
-
-                    return (
-                      <StaggerItem key={exam.id} className="bg-surface rounded-2xl border border-rule overflow-hidden">
-                        <div className="p-4 flex items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                              <span className="tag tag-accent">{exam.tag}</span>
-                              {attemptCount > 0
-                                ? <span className="tag">{attemptCount} cəhd</span>
-                                : <span className="text-[11px] font-medium text-warn bg-amber-50 px-2 py-0.5 rounded-full">Başlanmayıb</span>
-                              }
-                            </div>
-                            <h3 className="font-display text-[15px] font-normal text-ink leading-snug m-0">{exam.title}</h3>
-                            <div className="flex items-center gap-3 mt-1.5 text-[12px] text-ink-mute">
-                              <span className="flex items-center gap-1"><Timer size={11} />{examMinutes} dəq</span>
-                              <span className="flex items-center gap-1"><HelpCircle size={11} />{exam.totalQuestions} sual</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-4 pb-4 flex items-center gap-3">
-                          {lastResult ? (
-                            <>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[11px] text-ink-mute">Son nəticə</span>
-                                  <span className={`text-[11px] font-bold ${scoreColor(lastResult.score)}`}>{(() => { const d = formatOverallScore(lastResult); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-surface-2 rounded-full overflow-hidden">
-                                  <div className={`h-full rounded-full ${scoreBarColor(lastResult.score)}`}
-                                    style={{ width: `${lastResult.score}%` }} />
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Link href={`/dashboard/analytics/${exam.id}`}
-                                  className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-[12px] font-medium text-ink-soft hover:bg-surface-2 transition-colors">
-                                  <BarChart2 size={12} /> Analiz
-                                </Link>
-                                <Link href={`/exam-session/${exam.id}`}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-ink text-bg rounded-lg text-[12px] font-medium hover:opacity-90 transition-opacity">
-                                  <Play size={12} /> Yenidən
-                                </Link>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <p className="flex-1 text-[13px] text-ink-soft m-0">İlk cəhdinizi başladın!</p>
-                              <Link href={`/exam-session/${exam.id}`}
-                                className="flex items-center gap-1.5 px-4 py-1.5 bg-ink text-bg rounded-lg text-[12px] font-medium hover:opacity-90 transition-opacity">
-                                <Play size={13} /> Başla
-                              </Link>
-                            </>
-                          )}
-                        </div>
-                      </StaggerItem>
-                    );
-                  })}
-                </StaggerContainer>
+                <MyExamsList exams={myExamRows} />
               )}
             </section>
 
@@ -462,9 +425,19 @@ export default async function DashboardPage({
                   <h2 className="eyebrow">Son Fəaliyyət</h2>
                   <Link href="/dashboard/analytics" className="text-[12px] font-medium text-ink-soft hover:text-ink">Hamısı</Link>
                 </div>
+                {/*
+                  Each row links straight to that attempt's answer-by-answer
+                  review. It was previously inert text, and the review page —
+                  the thing students actually want after a test — was reachable
+                  only via a small link two pages deep.
+                */}
                 <div className="divide-y divide-rule">
                   {recentResults.map(r => (
-                    <div key={r.id} className="px-4 py-3 flex items-center gap-3">
+                    <Link
+                      key={r.id}
+                      href={`/dashboard/analytics/${r.examId}/${r.attemptNumber}/review`}
+                      className="px-4 py-3 flex items-center gap-3 hover:bg-surface-2 transition-colors group"
+                    >
                       <span
                         className={`w-2 h-2 rounded-full shrink-0 ${scoreBarColor(r.score)}`}
                       />
@@ -477,8 +450,14 @@ export default async function DashboardPage({
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${scoreBg(r.score)}`}>
                         {(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}
                       </span>
-                    </div>
+                      <BookOpen size={13} className="shrink-0 text-ink-mute opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
                   ))}
+                </div>
+                <div className="px-4 py-2.5 border-t border-rule">
+                  <p className="text-[11px] text-ink-mute m-0">
+                    Cavablarınızı görmək üçün bir cəhdə toxunun.
+                  </p>
                 </div>
               </StaggerItem>
             ) : (
@@ -499,34 +478,12 @@ export default async function DashboardPage({
               </StaggerItem>
             )}
 
-            {/* Quick links */}
-            <StaggerItem className="bg-surface rounded-2xl border border-rule overflow-hidden">
-              <div className="px-5 py-4 border-b border-rule">
-                <h2 className="eyebrow">Sürətli Keçidlər</h2>
-              </div>
-              <div className="divide-y divide-rule">
-                {[
-                  { href: '/dashboard/analytics', icon: BarChart2,   label: 'Bütün nəticələr',   sub: `${results.length} cəhd` },
-                  { href: '/exams',               icon: ShoppingBag, label: 'Sınaq kataloqu',     sub: `${allExams.length} sınaq` },
-                  { href: '/dashboard/settings',  icon: Settings,    label: 'Hesab parametrləri', sub: 'Profil, şifrə' },
-                ].map(({ href, icon: Icon, label, sub }) => (
-                  <Link key={href} href={href}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors group">
-                    <div
-                      className="w-8 h-8 rounded-lg group-hover:bg-surface-3 flex items-center justify-center shrink-0 transition-colors"
-                      style={{ background: 'var(--color-surface-2)' }}
-                    >
-                      <Icon size={15} style={{ color: 'var(--color-ink-mute)' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-medium text-ink m-0">{label}</p>
-                      <p className="text-[11px] text-ink-mute m-0">{sub}</p>
-                    </div>
-                    <ArrowRight size={13} className="text-ink-mute opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
-                ))}
-              </div>
-            </StaggerItem>
+            {/*
+              A "Sürətli Keçidlər" card used to sit here listing Nəticələr /
+              Kataloq / Parametrlər — the exact three destinations already in the
+              sidebar one column to the left. Removed rather than restyled: a
+              duplicate nav costs a scan every visit and pays back nothing.
+            */}
 
           </StaggerContainer>
         </div>

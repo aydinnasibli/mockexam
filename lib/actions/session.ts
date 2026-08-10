@@ -15,6 +15,47 @@ export interface SessionInfo {
   totalSeconds: number;
 }
 
+/** `exists: false` means the clock has not been started for this exam yet. */
+export type SessionPeek =
+  | { exists: false }
+  | ({ exists: true } & SessionInfo);
+
+/**
+ * Read-only counterpart to `beginExamSession`: reports whether a session is
+ * already running WITHOUT creating one.
+ *
+ * The player needs this because the timer must not start until the student
+ * presses "Başla" on the briefing screen. Loading the page can therefore no
+ * longer be what creates the session — but a reload mid-exam still has to drop
+ * the student straight back into a running clock rather than showing the
+ * briefing again (which would silently burn exam time).
+ */
+export async function peekExamSession(examId: string): Promise<SessionPeek | { error: string }> {
+  const { userId } = await auth();
+  if (!userId) return { error: 'Unauthorized' };
+
+  try {
+    await dbConnect();
+
+    const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
+    if (!purchase) return { error: 'Not purchased' };
+
+    const session = await ExamSessionModel.findOne({ userId, examId }).lean();
+    if (!session) return { exists: false };
+
+    const startedAt = new Date(session.startedAt);
+    return {
+      exists:       true,
+      startedAt:    startedAt.toISOString(),
+      elapsed:      Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000)),
+      totalSeconds: session.totalSeconds,
+    };
+  } catch (err) {
+    void captureException(err, { tags: { action: 'peekExamSession' } });
+    return { error: 'Server xətası baş verdi.' };
+  }
+}
+
 /**
  * Records the authoritative start time for an exam session server-side.
  * On first call: creates the session with startedAt = now.

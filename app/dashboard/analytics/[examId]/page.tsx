@@ -319,9 +319,12 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                           })()}
                           {r.score === best && <p className="text-[10px] text-ink-soft font-medium">Ən yaxşı</p>}
                         </div>
+                        {/* Promoted to the row's primary action: this is the
+                            page students come back for, and as a muted ghost
+                            button it read as a secondary detail. */}
                         <Link href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 hover:bg-surface-3 border border-rule rounded-xl text-xs font-medium text-ink-soft transition-colors">
-                          <BookOpen size={12} /> İcmal
+                          className="flex items-center gap-1.5 px-3.5 py-2 bg-ink text-bg rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity">
+                          <BookOpen size={12} /> Cavablara bax
                         </Link>
                       </div>
                     </div>

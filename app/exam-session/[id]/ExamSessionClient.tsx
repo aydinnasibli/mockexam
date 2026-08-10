@@ -7,13 +7,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { saveExamResult } from '@/lib/actions/results';
-import { beginExamSession } from '@/lib/actions/session';
+import { beginExamSession, peekExamSession } from '@/lib/actions/session';
 import { markAudioPlayed, checkAudioPlayed } from '@/lib/actions/audio';
 import {
   Timer, Flag, ChevronLeft, ChevronRight,
   CheckCircle2, Grid3X3, BookOpen, Pencil, FileText, X,
-  Play, Volume2
+  Play, Volume2, ArrowRight, Headphones, TriangleAlert, ListChecks, Layers,
 } from 'lucide-react';
 import { renderMath } from '@/lib/render-math';
 import PassageText from '@/components/ui/PassageText';
@@ -35,6 +36,18 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+/** Icon standing in for a module's discipline on the briefing screens. */
+function moduleIcon(type: string) {
+  switch (type) {
+    case 'listening':                   return Headphones;
+    case 'writing': case 'analytical':  return Pencil;
+    case 'reading': case 'rw':
+    case 'verbal':                      return BookOpen;
+    case 'grammar':                     return ListChecks;
+    default:                            return Layers;
+  }
+}
+
 function MathText({ text, block = false }: { text: string; block?: boolean }) {
   // Inline uses <span> so it stays valid inside <p> (a <div> child of <p> is
   // invalid HTML and triggers a hydration error).
@@ -52,6 +65,8 @@ interface SavedSession {
   matchingAnswers?: [string, string][];
   flagged: string[];
   currentIdx: number;
+  /** Modules whose briefing card has already been shown, so a reload doesn't repeat it. */
+  seenModules?: number[];
 }
 
 function storageKey(examId: string) {
@@ -91,7 +106,16 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const currentIdxRef = useRef(0);
   const qEnterTimeRef = useRef<number>(0);
   const qTimeSecsRef  = useRef<Map<string, number>>(new Map());
+  // Scroll containers — navigating must land at the top of the new question
+  // rather than inheriting how far the previous one was scrolled.
+  const questionScrollRef = useRef<HTMLDivElement>(null);
+  const passageScrollRef  = useRef<HTMLDivElement>(null);
 
+  // 'loading'  — asking the server whether a clock is already running
+  // 'briefing'  — pre-exam briefing; the clock has NOT started yet
+  // 'running'  — questions are on screen and the clock is ticking
+  const [phase, setPhase]               = useState<'loading' | 'briefing' | 'running'>('loading');
+  const [starting, setStarting]         = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [elapsed, setElapsed]           = useState(0);
   const [currentIdx, setCurrentIdx]     = useState(0);
@@ -104,41 +128,89 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [showPassage, setShowPassage] = useState(false);
+  // Modules already briefed. `moduleIntro` holds the module whose card is on
+  // screen right now — the questions behind it stay mounted but covered.
+  const [seenModules, setSeenModules] = useState<Set<number>>(new Set());
+  const [moduleIntro, setModuleIntro] = useState<{ to: number; from: number | null } | null>(null);
 
   const totalSeconds = exam.durationMinutes * 60;
   const remaining    = Math.max(0, totalSeconds - elapsed);
 
-  // ── Init: get server-authoritative start time, then restore saved answers ───
+  // Restores answers/flags/position saved by a previous visit, and reports the
+  // module the student is resuming into so its briefing is not replayed.
+  const restoreSavedAnswers = useCallback((): number => {
+    const saved = loadSavedSession(exam.id);
+    let resumeIdx = 0;
+    if (saved) {
+      if (saved.answers?.length)     setAnswers(new Map(saved.answers));
+      if (saved.openAnswers?.length) setOpenAnswers(new Map(saved.openAnswers));
+      if (saved.matchingAnswers?.length) setMatchingAnswers(new Map(saved.matchingAnswers.map(([k, v]) => [k, JSON.parse(v)])));
+      if (saved.flagged?.length)     setFlagged(new Set(saved.flagged));
+      if (
+        typeof saved.currentIdx === 'number' &&
+        saved.currentIdx >= 0 &&
+        saved.currentIdx < questions.length
+      ) {
+        resumeIdx = saved.currentIdx;
+        setCurrentIdx(resumeIdx);
+        currentIdxRef.current = resumeIdx;
+      }
+    }
+    const landingModule = questions[resumeIdx]?.moduleIndex ?? 0;
+    // Everything up to and including the landing module counts as briefed: the
+    // pre-exam screen already covered the first one, and modules the student has
+    // been through were briefed on the way in.
+    setSeenModules(new Set([
+      ...(saved?.seenModules ?? []),
+      ...Array.from({ length: landingModule + 1 }, (_, i) => i),
+    ]));
+    return resumeIdx;
+  }, [exam.id, questions]);
+
+  // ── Init: does a clock already exist? Never starts one — that is `startExam`.
   useEffect(() => {
     async function init() {
-      const result = await beginExamSession(exam.id);
-      if ('error' in result) {
+      const peek = await peekExamSession(exam.id);
+      if ('error' in peek) {
         router.push('/dashboard');
         return;
       }
-      startedAtRef.current  = new Date(result.startedAt);
-      qEnterTimeRef.current = Date.now();
-      setElapsed(result.elapsed);
-
-      const saved = loadSavedSession(exam.id);
-      if (saved) {
-        if (saved.answers?.length)     setAnswers(new Map(saved.answers));
-        if (saved.openAnswers?.length) setOpenAnswers(new Map(saved.openAnswers));
-        if (saved.matchingAnswers?.length) setMatchingAnswers(new Map(saved.matchingAnswers.map(([k, v]) => [k, JSON.parse(v)])));
-        if (saved.flagged?.length)     setFlagged(new Set(saved.flagged));
-        if (
-          typeof saved.currentIdx === 'number' &&
-          saved.currentIdx >= 0 &&
-          saved.currentIdx < questions.length
-        ) {
-          setCurrentIdx(saved.currentIdx);
-          currentIdxRef.current = saved.currentIdx;
-        }
+      if (!peek.exists) {
+        // No clock yet: show the briefing. A stale draft from an expired session
+        // must not leak into a fresh attempt.
+        clearPersistedSession(exam.id);
+        setPhase('briefing');
+        return;
       }
+      // Reload mid-exam — resume straight into the running clock.
+      startedAtRef.current  = new Date(peek.startedAt);
+      qEnterTimeRef.current = Date.now();
+      setElapsed(peek.elapsed);
+      restoreSavedAnswers();
       setSessionReady(true);
+      setPhase('running');
     }
     void init();
-  }, [exam.id, questions.length, router]);
+  }, [exam.id, router, restoreSavedAnswers]);
+
+  // ── Start: the button on the briefing screen is what starts the clock ──────
+  const startExam = useCallback(async () => {
+    if (starting) return;
+    setStarting(true);
+    const result = await beginExamSession(exam.id);
+    if ('error' in result) {
+      toast.error('İmtahan başladıla bilmədi. Yenidən cəhd edin.');
+      setStarting(false);
+      return;
+    }
+    startedAtRef.current  = new Date(result.startedAt);
+    qEnterTimeRef.current = Date.now();
+    setElapsed(result.elapsed);
+    setSeenModules(new Set([questions[0]?.moduleIndex ?? 0]));
+    setSessionReady(true);
+    setPhase('running');
+    setStarting(false);
+  }, [exam.id, questions, starting]);
 
   // ── Timer — only after server session is confirmed ────────────────────────
   useEffect(() => {
@@ -156,8 +228,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       matchingAnswers: [...matchingAnswers.entries()].map(([k, v]) => [k, JSON.stringify(v)]),
       flagged:         [...flagged],
       currentIdx,
+      seenModules:     [...seenModules],
     });
-  }, [answers, openAnswers, matchingAnswers, flagged, currentIdx, sessionReady, exam.id]);
+  }, [answers, openAnswers, matchingAnswers, flagged, currentIdx, seenModules, sessionReady, exam.id]);
 
   // ── Core actions ──────────────────────────────────────────────────────────
 
@@ -239,6 +312,57 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     return '';
   }, [current, currentIdx, questions]);
 
+  /**
+   * How many questions hang off the text currently on screen, and which one of
+   * them this is.
+   *
+   * The bank stores passage groups two different ways: some exams author the
+   * text once on the first question and leave the rest blank (carried forward
+   * by `currentPassage`), others repeat the identical text on every question of
+   * the group. Grouping therefore keys on the text CHANGING, which handles both
+   * — keying on "has a passage" would score every question of a repeated-text
+   * group as its own group of one.
+   */
+  const passageGroups = useMemo(() => {
+    const out: Array<{ position: number; size: number } | null> = new Array(questions.length).fill(null);
+    let start = -1;
+    let lastModule = -1;
+    let lastPassage = '';
+
+    function closeGroup(endExclusive: number) {
+      if (start < 0) return;
+      const size = endExclusive - start;
+      for (let i = start; i < endExclusive; i++) out[i] = { position: i - start + 1, size };
+      start = -1;
+    }
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (q.moduleIndex !== lastModule) {
+        closeGroup(i);
+        lastModule  = q.moduleIndex;
+        lastPassage = '';
+      }
+      // A new group starts only where the text CHANGES. Keying on "has a
+      // passage" scored every question of a repeated-text group as its own
+      // group of one, so the counter never appeared.
+      if (q.passage && q.passage !== lastPassage) {
+        closeGroup(i);
+        lastPassage = q.passage;
+        start = i;
+      }
+      if (!lastPassage) closeGroup(i);
+    }
+    closeGroup(questions.length);
+    return out;
+  }, [questions]);
+
+  const passageGroup = passageGroups[currentIdx] ?? null;
+
+  // Grammar-style questions carry no text, image or audio — there is nothing to
+  // put beside them, so the split view collapses to a single centred column.
+  const hasSidePanel = !!(currentPassage || current?.imageUrl || moduleAudioUrl);
+
   // Count answered questions across all types
   const answeredCount = questions.filter(q => {
     if (q.type === 'mcq') return answers.has(q.id);
@@ -266,6 +390,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   }
 
   function goTo(idx: number) {
+    // Captured before the ref moves, so the hand-over card can name the module
+    // actually being left rather than assuming linear order.
+    const fromModule = questions[currentIdxRef.current]?.moduleIndex ?? null;
     recordCurrentQuestionTime();
     const newIdx = Math.max(0, Math.min(questions.length - 1, idx));
     currentIdxRef.current = newIdx;
@@ -275,12 +402,186 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     // currentIdx — navigation is the only thing that should reset it, and an
     // effect would fire an extra render pass every time (react-hooks/set-state-in-effect).
     setShowPassage(false);
+
+    questionScrollRef.current?.scrollTo({ top: 0 });
+    // Only rewind the passage when a NEW text starts — otherwise every question
+    // in a group would throw away where the student had read up to.
+    if ((passageGroups[newIdx]?.position ?? 1) === 1) passageScrollRef.current?.scrollTo({ top: 0 });
+
+    // Crossing into a module for the first time: hand over with a briefing card
+    // instead of silently swapping the question text. Fires once per module, so
+    // paging back and forth over the boundary doesn't nag.
+    const targetModule = questions[newIdx]?.moduleIndex;
+    if (typeof targetModule === 'number' && !seenModules.has(targetModule)) {
+      setModuleIntro({ to: targetModule, from: fromModule === targetModule ? null : fromModule });
+    }
+  }
+
+  function dismissModuleIntro() {
+    if (moduleIntro == null) return;
+    setSeenModules(prev => new Set(prev).add(moduleIntro.to));
+    setModuleIntro(null);
+    qEnterTimeRef.current = Date.now(); // don't bill briefing time to the question
+  }
+
+  // ── Pre-exam: loading / briefing ──────────────────────────────────────────
+  // Rendered instead of the player, because until the student presses "Başla"
+  // there is no clock and no session — nothing to show a question against.
+  if (phase !== 'running') {
+    return (
+      <div className="min-h-dvh flex flex-col" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
+        <header className="h-14 md:h-16 px-4 md:px-8 flex items-center shrink-0" style={{ borderBottom: "1px solid var(--color-rule)" }}>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="dot" />
+            <span className="font-display text-[18px] font-normal text-ink">Test<span>centre</span></span>
+          </Link>
+        </header>
+
+        {phase === 'loading' ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <span
+              className="w-9 h-9 rounded-full animate-spin"
+              style={{ border: "3px solid var(--color-rule)", borderTopColor: "var(--color-ink)" }}
+            />
+            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>Hazırlanır…</p>
+          </div>
+        ) : (
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-5 py-10 md:py-14">
+
+              <div className="flex items-center gap-2 mb-4">
+                <span className="tag tag-accent">{exam.tag}</span>
+                <span className="eyebrow">İmtahan brifinqi</span>
+              </div>
+
+              <h1
+                className="font-display font-normal text-ink m-0 mb-3"
+                style={{ fontSize: 'clamp(28px, 4vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.02em' }}
+              >
+                {exam.title}
+              </h1>
+              <p className="text-[15px] leading-[1.6] m-0 mb-8" style={{ color: "var(--color-ink-soft)" }}>
+                Başlamazdan əvvəl imtahanın quruluşunu nəzərdən keçirin. Vaxt yalnız
+                aşağıdakı düyməyə basdıqdan sonra işləməyə başlayacaq.
+              </p>
+
+              {/* Headline numbers */}
+              <div className="grid grid-cols-3 gap-4 border-y py-6 mb-8" style={{ borderColor: "var(--color-rule)" }}>
+                <div>
+                  <div className="eyebrow mb-2">Müddət</div>
+                  <div className="t-num text-ink" style={{ fontSize: 'clamp(22px, 3vw, 30px)', lineHeight: 1 }}>
+                    {exam.durationMinutes}<span className="text-[14px] ml-1" style={{ color: "var(--color-ink-mute)" }}>dəq</span>
+                  </div>
+                </div>
+                <div className="border-l pl-5" style={{ borderColor: "var(--color-rule)" }}>
+                  <div className="eyebrow mb-2">Sual</div>
+                  <div className="t-num text-ink" style={{ fontSize: 'clamp(22px, 3vw, 30px)', lineHeight: 1 }}>
+                    {questions.length}
+                  </div>
+                </div>
+                <div className="border-l pl-5" style={{ borderColor: "var(--color-rule)" }}>
+                  <div className="eyebrow mb-2">Bölmə</div>
+                  <div className="t-num text-ink" style={{ fontSize: 'clamp(22px, 3vw, 30px)', lineHeight: 1 }}>
+                    {exam.modules.length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Module breakdown */}
+              <p className="eyebrow mb-3">İmtahanın quruluşu</p>
+              <ol className="list-none p-0 m-0 space-y-2 mb-8">
+                {questionsByModule.map(({ mod, modIdx, qs }) => {
+                  const Icon = moduleIcon(mod.type);
+                  return (
+                    <li
+                      key={modIdx}
+                      className="flex items-start gap-4 p-4 rounded-2xl"
+                      style={{ background: "var(--color-surface)", border: "1px solid var(--color-rule)" }}
+                    >
+                      <span
+                        className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
+                        style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}
+                      >
+                        <Icon size={16} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="t-mono text-xs" style={{ color: "var(--color-ink-mute)" }}>
+                            {String(modIdx + 1).padStart(2, '0')}
+                          </span>
+                          <span className="text-sm font-medium text-ink">{mod.name}</span>
+                        </div>
+                        <p className="text-xs mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                          {qs.length > 0 ? `${qs.length} sual` : 'Açıq tapşırıq'}
+                          {mod.durationMinutes > 0 && ` · təxminən ${mod.durationMinutes} dəq`}
+                        </p>
+                        {mod.instructions && (
+                          <p className="text-xs mt-2 mb-0 leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+                            {mod.instructions}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              {/* Rules */}
+              <div
+                className="rounded-2xl p-5 mb-8"
+                style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <TriangleAlert size={14} style={{ color: "var(--color-warn)" }} />
+                  <span className="eyebrow">Başlamazdan əvvəl</span>
+                </div>
+                <ul className="list-none p-0 m-0 space-y-2 text-xs leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+                  <li>· Vaxt serverdə saxlanılır — səhifəni yeniləmək və ya bağlamaq sayğacı dayandırmır.</li>
+                  <li>· Vaxt bitdikdə imtahan avtomatik təhvil verilir.</li>
+                  <li>· Cavablarınız avtomatik yadda saxlanılır; qayıdanda qaldığınız yerdən davam edirsiniz.</li>
+                  {questions.some(q => q.audioUrl) && (
+                    <li>· Dinləmə audioları <span className="font-medium text-ink">yalnız bir dəfə</span> oxunur — dayandırmaq və geri sarmaq mümkün deyil.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <button
+                  onClick={startExam}
+                  disabled={starting || hasNoQuestions}
+                  className="btn-primary justify-center py-3.5 px-8 text-[15px] disabled:opacity-60"
+                >
+                  {starting ? 'Başladılır…' : 'Başla'}
+                  {!starting && <ArrowRight size={17} />}
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="btn-ghost justify-center py-3.5 px-6 text-[15px]"
+                >
+                  Panelə qayıt
+                </Link>
+              </div>
+              {hasNoQuestions && (
+                <p className="text-xs mt-3 m-0" style={{ color: "var(--color-warn)" }}>
+                  Bu imtahan üçün sual bankı hələ hazırlanır.
+                </p>
+              )}
+            </div>
+          </main>
+        )}
+      </div>
+    );
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="select-none min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
+    // `data-ph-mask` blanks every string inside this subtree in PostHog session
+    // replays (see the maskTextSelector in instrumentation-client.ts). The whole
+    // exam session is the boundary rather than individual question nodes:
+    // paid question banks, passages and student answers all live in here, and a
+    // per-element list would silently miss whatever gets added next.
+    <div data-ph-mask className="select-none min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
 
       {/* ── Submitting overlay — instant feedback while the result saves + results page loads ── */}
       {submitting && (
@@ -295,6 +596,101 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           </div>
         </div>
       )}
+
+      {/*
+        ── Module hand-over ──
+        Crossing a module boundary used to be a silent text swap, so students
+        did not register that Grammar had ended and Reading had begun. The clock
+        keeps running behind this card — it is an orientation beat, not a break.
+      */}
+      <AnimatePresence>
+        {moduleIntro && (() => {
+          const from     = moduleIntro.from != null ? exam.modules[moduleIntro.from] : null;
+          const to       = exam.modules[moduleIntro.to];
+          const toQs     = questions.filter(q => q.moduleIndex === moduleIntro.to);
+          const fromQs   = moduleIntro.from != null ? questions.filter(q => q.moduleIndex === moduleIntro.from) : [];
+          const fromDone = fromQs.filter(q =>
+            q.type === 'mcq' ? answers.has(q.id)
+              : q.type === 'matching' ? matchingAnswers.has(q.id)
+              : !!(openAnswers.get(q.id)?.trim())
+          ).length;
+          const Icon = moduleIcon(to?.type ?? '');
+          if (!to) return null;
+          return (
+            <motion.div
+              key={moduleIntro.to}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-90 flex items-center justify-center p-5 overflow-y-auto"
+              style={{ background: "var(--color-bg)" }}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${to.name} bölməsi başlayır`}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.05, ease: 'easeOut' }}
+                className="w-full max-w-lg text-center"
+              >
+                {from && (
+                  <div className="mb-8 pb-8" style={{ borderBottom: "1px solid var(--color-rule)" }}>
+                    <CheckCircle2 size={20} className="mx-auto mb-3" style={{ color: "var(--color-ok)" }} />
+                    <p className="text-sm font-medium text-ink m-0">{from.name} bölməsi bitdi</p>
+                    {fromQs.length > 0 && (
+                      <p className="text-xs mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                        {fromQs.length} sualdan {fromDone}-i cavablandırıldı
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <span
+                  className="inline-flex w-14 h-14 rounded-2xl items-center justify-center mb-5"
+                  style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
+                >
+                  <Icon size={22} />
+                </span>
+
+                <p className="eyebrow mb-3">
+                  Bölmə {moduleIntro.to + 1} / {exam.modules.length}
+                </p>
+                <h2
+                  className="font-display font-normal text-ink m-0 mb-3"
+                  style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', lineHeight: 1.1, letterSpacing: '-0.02em' }}
+                >
+                  {to.name} başlayır
+                </h2>
+                <p className="text-sm m-0 mb-6" style={{ color: "var(--color-ink-soft)" }}>
+                  {toQs.length > 0 ? `${toQs.length} sual` : 'Açıq tapşırıq'}
+                  {to.durationMinutes > 0 && ` · təxminən ${to.durationMinutes} dəq`}
+                </p>
+
+                {to.instructions && (
+                  <div
+                    className="rounded-2xl p-4 mb-7 text-left"
+                    style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}
+                  >
+                    <p className="eyebrow mb-2">Təlimat</p>
+                    <p className="text-xs leading-relaxed m-0" style={{ color: "var(--color-ink-soft)" }}>
+                      {to.instructions}
+                    </p>
+                  </div>
+                )}
+
+                <button onClick={dismissModuleIntro} className="btn-primary justify-center py-3.5 px-8 text-[15px]">
+                  Davam et <ArrowRight size={17} />
+                </button>
+                <p className="text-[11px] mt-4 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                  Vaxt işləməyə davam edir.
+                </p>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* ── Top bar ── */}
       <header className="fixed top-0 w-full z-50 nav-frosted" style={{ borderBottom: "1px solid var(--color-rule)" }}>
@@ -320,14 +716,21 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               <button
                 onClick={() => setShowGrid(g => !g)}
                 aria-expanded={showGrid}
-                aria-label={`Sual siyahısı — ${questions.length} sualdan ${answeredCount}-i cavablandırılıb`}
+                aria-label={`Sual siyahısı — ${questions.length} sualdan ${currentIdx + 1}-cidəsiniz, ${answeredCount}-i cavablandırılıb`}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-sm font-medium transition-colors ${
                   showGrid ? 'bg-surface-2' : 'hover:bg-surface-2'
                 }`}
                 style={{ color: "var(--color-ink-soft)" }}
               >
+                {/*
+                  Shows the CURRENT question, matching the counter in the question
+                  pane. It used to show the answered count against the same total,
+                  so two different numbers sat over the same "/45" and read as a
+                  contradiction. The answered count now lives inside the panel this
+                  button opens, where it is labelled.
+                */}
                 <Grid3X3 size={15} />
-                <span className="t-mono text-xs">{answeredCount}/{questions.length}</span>
+                <span className="t-mono tabular-nums text-xs">{currentIdx + 1}/{questions.length}</span>
               </button>
             )}
             {/*
@@ -523,8 +926,16 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       ) : (
         <main className="pt-14 md:pt-16 h-dvh flex flex-col md:flex-row overflow-hidden">
 
-          {/* ── Left panel — passage or module overview (desktop only) ── */}
-          <section className="hidden md:flex md:w-[45%] flex-col overflow-hidden" style={{ borderRight: "1px solid var(--color-rule)", background: "var(--color-surface)" }}>
+          {/*
+            ── Left panel — passage / diagram / audio (desktop only) ──
+            Only rendered when there is actually something to put beside the
+            question. Grammar-style items have no companion material, and the
+            split view left a permanently empty half-screen next to them.
+          */}
+          <section
+            className={`${hasSidePanel ? 'hidden md:flex' : 'hidden'} md:w-[45%] flex-col overflow-hidden`}
+            style={{ borderRight: "1px solid var(--color-rule)", background: "var(--color-surface)" }}
+          >
             <div className="px-6 py-3 flex justify-between items-center shrink-0" style={{ borderBottom: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}>
               <div className="flex items-center gap-2">
                 <span className="eyebrow">{currentModule?.name ?? 'Modul'}</span>
@@ -547,9 +958,25 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
+            <div ref={passageScrollRef} className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
               {currentPassage || current?.imageUrl ? (
                 <article className="max-w-2xl">
+                  {/*
+                    How many questions this text carries. Without it a student
+                    reading a passage has no idea whether it serves one question
+                    or six, so they can't budget the read.
+                  */}
+                  {passageGroup && passageGroup.size > 1 && (
+                    <div
+                      className="flex items-center justify-between gap-3 mb-5 pb-4"
+                      style={{ borderBottom: "1px solid var(--color-rule)" }}
+                    >
+                      <span className="eyebrow">Bu mətnə aid {passageGroup.size} sual</span>
+                      <span className="t-mono tabular-nums text-xs" style={{ color: "var(--color-ink-soft)" }}>
+                        {passageGroup.position} / {passageGroup.size}
+                      </span>
+                    </div>
+                  )}
                   {current?.imageUrl && (
                     <div className="mb-6">
                       <p className="eyebrow mb-3">📊 Diaqram / Şəkil</p>
@@ -674,10 +1101,39 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             )}
 
             {/* Scrollable question area */}
-            <div className={`flex-1 overflow-y-auto px-4 py-5 md:px-10 md:py-8 no-scrollbar ${
-              currentPassage && showPassage ? 'hidden md:block' : 'block'
-            }`}>
-              <div className="max-w-2xl">
+            {/*
+              Single-column mode centres the question in the viewport. A short
+              grammar item pinned to the top of a full-height empty pane looks
+              stranded. `flex` + `m-auto` on the child rather than
+              `justify-center`: auto margins still let a long question scroll
+              from its top, where centred justification would clip it.
+            */}
+            <div
+              ref={questionScrollRef}
+              className={`flex-1 overflow-y-auto px-4 py-5 md:px-10 md:py-8 no-scrollbar ${
+                hasSidePanel ? '' : 'flex flex-col'
+              } ${
+                currentPassage && showPassage ? 'hidden md:block' : ''
+              }`}
+            >
+              {/*
+                Keyed on the question id, so React remounts the block and the
+                enter animation replays on every navigation. Changing question
+                used to be a silent text substitution with no visible event.
+              */}
+              {/*
+                In single-column mode the bottom padding biases the auto-margin
+                centring upward, so the question sits above the true centre —
+                which reads as balanced rather than low. Padding rather than
+                margin, so a long question still scrolls from its own top.
+              */}
+              <motion.div
+                key={current?.id ?? currentIdx}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className={`max-w-2xl ${hasSidePanel ? '' : 'm-auto w-full pb-56'}`}
+              >
 
                 {/* Mobile: module label */}
                 {currentModule && (
@@ -691,17 +1147,27 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mb-4 md:mb-5">
-                  <div className="flex items-center gap-2 md:gap-3">
+                <div className="flex items-center justify-between mb-4 md:mb-5 gap-2">
+                  <div className="flex items-center gap-2 md:gap-3 min-w-0">
                     <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center font-medium text-xs md:text-sm shrink-0" style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}>
                       {currentIdx + 1}
                     </span>
-                    <span className="text-xs md:text-sm" style={{ color: "var(--color-ink-soft)" }}>
+                    <span className="text-xs md:text-sm truncate" style={{ color: "var(--color-ink-soft)" }}>
                       {current?.type === 'open' ? 'Açıq tapşırıq'
                         : current?.type === 'matching' ? 'Uyğunlaşdırma'
                         : current?.type === 'writing' ? 'Yazı tapşırığı'
                         : 'Çoxseçimli'}
                     </span>
+                    {/* Position within the shared-text group, visible from the question side too. */}
+                    {passageGroup && passageGroup.size > 1 && (
+                      <span
+                        className="shrink-0 t-mono text-[10px] px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}
+                        title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cisi`}
+                      >
+                        Mətn {passageGroup.position}/{passageGroup.size}
+                      </span>
+                    )}
                   </div>
                   {current && (
                     <button
@@ -720,8 +1186,15 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   )}
                 </div>
 
+                {/*
+                  `whitespace-pre-line` lets a stem carry real paragraph breaks.
+                  renderMath escapes its input and emits no <br>, so authored
+                  newlines used to collapse — running trailing notes ("NB There
+                  are more headings than paragraphs…") straight on from the
+                  instruction they qualify.
+                */}
                 {current && (
-                  <div className="text-sm md:text-base leading-relaxed mb-5 md:mb-7" style={{ color: "var(--color-ink)" }}>
+                  <div className="text-sm md:text-base leading-relaxed mb-5 md:mb-7 whitespace-pre-line" style={{ color: "var(--color-ink)" }}>
                     <MathText text={current.stem} block />
                   </div>
                 )}
@@ -882,7 +1355,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     />
                   </div>
                 )}
-              </div>
+              </motion.div>
             </div>
 
             {/* ── Footer navigation ── */}
