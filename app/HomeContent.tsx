@@ -63,12 +63,12 @@ export default function HomeContent({ countsByType }: Props) {
                 headline ("Gələcəyinizi sınağa çəkin.") named none of the terms
                 anyone actually searches for. The slogan now opens the lede.
               */}
-              <h1 className="t-display mb-8">
+              <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink mb-8">
                 SAT, IELTS və DİM üçün{" "}
                 <span style={{ color: "var(--color-accent)" }}>sınaq</span>{" "}
                 imtahanları.
               </h1>
-              <p className="t-lede mb-10 max-w-135" style={{ color: "var(--color-ink-soft)" }}>
+              <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-10 max-w-135">
                 Gələcəyinizi sınağa çəkin. On minlərlə tələbə real imtahan formatında hazırlaşır.
                 Süni intellekt yön verir, statistika doğrulayır — heç bir şey təxmin deyil.
               </p>
@@ -94,17 +94,17 @@ export default function HomeContent({ countsByType }: Props) {
                 >
                   <div className="flex items-center gap-3">
                     <span className="tag tag-accent">SAT</span>
-                    <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>Math · Module II</span>
+                    <span className="text-sm">Math · Module II</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="dot" />
-                    <span className="t-mono text-[13px] text-ink">32:14</span>
+                    <span className="font-mono text-sm text-ink">32:14</span>
                   </div>
                 </div>
 
                 <div className="px-6 py-8">
                   <div className="eyebrow mb-4">Sual 14 / 22</div>
-                  <p className="font-display font-normal text-ink leading-[1.4]" style={{ fontSize: 22 }}>
+                  <p className="font-display font-normal text-ink text-xl leading-snug">
                     If{" "}
                     <span style={{ color: "var(--color-accent)" }}>ƒ(x) = 3x² − 5x + 2</span>
                     , what is the value of{" "}
@@ -126,9 +126,9 @@ export default function HomeContent({ countsByType }: Props) {
                           color: opt.correct ? "var(--color-bg)" : "var(--color-ink)",
                         }}
                       >
-                        <span className="font-mono text-[11px] opacity-60 w-3.5">{opt.k}</span>
-                        <span className="font-display text-[18px] font-normal">{opt.v}</span>
-                        {opt.correct && <span className="ml-auto text-[14px]">✓</span>}
+                        <span className="font-mono text-xs opacity-60 w-3.5">{opt.k}</span>
+                        <span className="font-display text-lg font-normal">{opt.v}</span>
+                        {opt.correct && <span className="ml-auto text-sm">✓</span>}
                       </div>
                     ))}
                   </div>
@@ -138,7 +138,7 @@ export default function HomeContent({ countsByType }: Props) {
                   className="flex items-center justify-between px-6 py-4"
                   style={{ borderTop: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}
                 >
-                  <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>Tərəqqi 52%</span>
+                  <span className="text-sm">Tərəqqi 52%</span>
                   <div className="w-35 h-1 rounded-full overflow-hidden" style={{ background: "var(--color-rule-soft)" }}>
                     <div className="h-full rounded-full" style={{ width: "52%", background: "var(--color-ink)" }} />
                   </div>
@@ -158,8 +158,8 @@ export default function HomeContent({ countsByType }: Props) {
               >
                 <div className="eyebrow mb-1">Orta bal artımı</div>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="t-num font-display text-ink" style={{ fontSize: 36, lineHeight: 1 }}>+184</span>
-                  <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>SAT</span>
+                  <span className="font-display tabular-nums lining-nums text-ink text-4xl leading-none">+184</span>
+                  <span className="text-sm text-ink-soft">SAT</span>
                 </div>
               </div>
             </div>
@@ -170,8 +170,8 @@ export default function HomeContent({ countsByType }: Props) {
         <section className="max-w-340 mx-auto px-8 py-24">
           <div className="section-head">
             <div className="eyebrow mb-4">Kateqoriyalar</div>
-            <h2 className="t-headline">Beynəlxalq və yerli imtahanlar üçün tam hazırlıq.</h2>
-            <p className="t-body-lg mt-4">
+            <h2 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink">Beynəlxalq və yerli imtahanlar üçün tam hazırlıq.</h2>
+            <p className="text-lg leading-relaxed text-ink-soft mt-4">
               Hər bir sınaq akademik mütəxəssislər tərəfindən yoxlanılır və rəsmi formatla 1:1 üst-üstə düşür.
             </p>
           </div>
@@ -190,14 +190,14 @@ export default function HomeContent({ countsByType }: Props) {
                 <>
                   <div className="flex items-center justify-between mb-8">
                     <span className={`tag ${c.featured && count > 0 ? "tag-accent" : ""}`}>{c.code}</span>
-                    <span className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>
+                    <span className="text-sm">
                       {count > 0 ? `${count} sınaq` : "Tezliklə"}
                     </span>
                   </div>
-                  <h3 className="t-headline mb-3" style={{ fontSize: 24 }}>{c.name}</h3>
-                  <p className="text-[15px] leading-[1.6] flex-1 mb-8" style={{ color: "var(--color-ink-soft)" }}>{c.desc}</p>
+                  <h3 className="font-display font-normal text-2xl leading-tight tracking-tight text-ink mb-3">{c.name}</h3>
+                  <p className="text-base leading-relaxed text-ink-soft flex-1 mb-8">{c.desc}</p>
                   <div
-                    className="flex items-center gap-2 text-[14px] font-medium"
+                    className="flex items-center gap-2 text-sm font-medium"
                     style={{ color: count > 0 ? "var(--color-ink)" : "var(--color-ink-mute)" }}
                   >
                     {count > 0 ? <>Sınaqlara bax <span>→</span></> : "Hazırlanır"}
@@ -229,17 +229,17 @@ export default function HomeContent({ countsByType }: Props) {
         <section className="max-w-340 mx-auto px-8 py-30">
           <div className="section-head">
             <div className="eyebrow mb-4">Metod</div>
-            <h2 className="t-headline">Hazırlıq üç sadə pillədir.</h2>
-            <p className="t-body-lg mt-4">
+            <h2 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink">Hazırlıq üç sadə pillədir.</h2>
+            <p className="text-lg leading-relaxed text-ink-soft mt-4">
               Hər mərhələ ölçülə bilən nəticə ilə bitir — boş söz yox, yalnız tərəqqi.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {steps.map((s, i) => (
               <div key={i} className="pt-8 border-t border-rule">
-                <div className="t-num mb-8 text-ink" style={{ fontSize: 18 }}>{s.n}</div>
-                <h3 className="t-headline mb-4" style={{ fontSize: 24 }}>{s.t}</h3>
-                <p className="text-[15px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{s.d}</p>
+                <div className="font-display tabular-nums lining-nums mb-8 text-ink text-lg">{s.n}</div>
+                <h3 className="font-display font-normal text-2xl leading-tight tracking-tight text-ink mb-4">{s.t}</h3>
+                <p className="text-base leading-relaxed text-ink-soft">{s.d}</p>
               </div>
             ))}
           </div>
@@ -253,15 +253,14 @@ export default function HomeContent({ countsByType }: Props) {
           >
             <div>
               <h2
-                className="font-display font-normal leading-[1.02] tracking-[-0.02em] mb-6"
-                style={{ fontSize: "clamp(30px, 3.6vw, 54px)", color: "var(--color-bg)" }}
+                className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight text-bg mb-6"
               >
                 Hazırlığa başlamaq üçün heç bir{" "}
                 <span style={{ color: "var(--color-accent-soft)" }}>bəhanə</span>{" "}
                 qalmır.
               </h2>
               <p
-                className="text-[16px] leading-[1.55] mb-8 max-w-135"
+                className="text-base leading-[1.55] mb-8 max-w-135"
                 style={{ color: "rgba(250,250,246,0.7)" }}
               >
                 Qeydiyyat 30 saniyə çəkir.
@@ -290,7 +289,7 @@ export default function HomeContent({ countsByType }: Props) {
                 {checklist.map((t, i) => (
                   <div key={i} className="flex items-center gap-3" style={{ color: "var(--color-bg)" }}>
                     <span style={{ color: "var(--color-accent-soft)" }}>✓</span>
-                    <span className="text-[14px]">{t}</span>
+                    <span className="text-sm">{t}</span>
                   </div>
                 ))}
               </div>

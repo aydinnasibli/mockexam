@@ -67,7 +67,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               key={type}
               onClick={() => selectType(type)}
               aria-pressed={isActive}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-colors text-left"
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors text-left"
               style={{
                 background: isActive ? 'var(--color-surface-2)' : 'transparent',
                 color: isActive ? 'var(--color-ink)' : 'var(--color-ink-soft)',
@@ -79,7 +79,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               <span className="flex-1">
                 {type === 'all' ? 'Hamısı' : (examTypeLabels[type] ?? type.toUpperCase())}
               </span>
-              <span className="text-[12px]" style={{ color: 'var(--color-ink-mute)' }}>{count}</span>
+              <span className="text-xs" style={{ color: 'var(--color-ink-mute)' }}>{count}</span>
             </button>
           );
         })}
@@ -88,7 +88,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
       {hasActiveFilters && (
         <button
           onClick={clearAllFilters}
-          className="mt-6 text-[13px] font-medium transition-colors"
+          className="mt-6 text-sm font-medium transition-colors"
           style={{ color: 'var(--color-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
         >
           Filtri təmizlə
@@ -113,19 +113,19 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           */}
           {activeType === 'all' ? (
             <>
-              <h1 className="t-display-2 m-0 mb-6">
+              <h1 className="font-display font-normal text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight text-ink m-0 mb-6">
                 Bütün <span>sınaqlar.</span>
               </h1>
-              <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
+              <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft m-0" style={{ maxWidth: 560 }}>
                 SAT, IELTS, TOEFL imtahanlarına peşəkar hazırlıq paketləri.
               </p>
             </>
           ) : (
             <>
-              <h1 className="t-display-2 m-0 mb-6">
+              <h1 className="font-display font-normal text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight text-ink m-0 mb-6">
                 {examTypeLabel(activeType)} <span>sınaqları.</span>
               </h1>
-              <p className="t-lede m-0" style={{ color: 'var(--color-ink-soft)', maxWidth: 560 }}>
+              <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft m-0" style={{ maxWidth: 560 }}>
                 {examTypeLabel(activeType)} imtahanına rəsmi formata uyğun hazırlıq paketləri —
                 vaxt limitli modullar, dərhal nəticə və hər sual üçün izahat.
               </p>
@@ -137,7 +137,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
         <div className="lg:hidden mb-6 flex items-center justify-between gap-3">
           <button
             onClick={() => setFiltersOpen(o => !o)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rule text-[14px] font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rule text-sm font-medium text-ink-soft hover:bg-surface-2 transition-colors"
           >
             <SlidersHorizontal size={15} />
             Filtrlər
@@ -149,8 +149,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             value={sortOrder}
             onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
             aria-label="Sınaqları sırala"
-            className="input-new"
-            style={{ width: 'auto', paddingTop: 10, paddingBottom: 10, fontSize: 13 }}
+            className="input-new w-auto py-2.5"
           >
             <option value="popular">Popularlığa görə</option>
             <option value="price-asc">Qiymətə görə ↑</option>
@@ -192,15 +191,14 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           <div>
             {/* Results row */}
             <div className="hidden lg:flex items-center justify-between mb-6">
-              <span className="text-[14px]" style={{ color: 'var(--color-ink-mute)' }}>
+              <span className="text-sm" style={{ color: 'var(--color-ink-mute)' }}>
                 <span className="font-medium" style={{ color: 'var(--color-ink)' }}>{filtered.length}</span> nəticə
               </span>
               <select
                 value={sortOrder}
                 onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
                 aria-label="Sınaqları sırala"
-                className="input-new"
-                style={{ width: 'auto', paddingTop: 8, paddingBottom: 8, fontSize: 13 }}
+                className="input-new w-auto py-2"
               >
                 <option value="popular">Popularlığa görə</option>
                 <option value="price-asc">Qiymət ↑</option>
@@ -208,7 +206,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               </select>
             </div>
 
-            <p className="lg:hidden text-[13px] text-ink-mute mb-4">
+            <p className="lg:hidden text-sm text-ink-mute mb-4">
               <span className="font-medium text-ink">{filtered.length}</span> nəticə
             </p>
 
@@ -221,8 +219,8 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   exit={{ opacity: 0 }}
                   className="card-new text-center py-20"
                 >
-                  <p className="t-title m-0 mb-3">Nəticə tapılmadı</p>
-                  <p className="text-[14px] m-0 mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+                  <p className="font-display font-medium text-xl leading-tight tracking-tight text-ink m-0 mb-3">Nəticə tapılmadı</p>
+                  <p className="text-sm m-0 mb-6">
                     Filtrləri dəyişdirməyi cəhd edin
                   </p>
                   <button onClick={clearAllFilters} className="btn-ghost">
@@ -255,27 +253,25 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                             <span className="tag tag-accent">{exam.tag}</span>
                             {exam.price > 0 && (
                               <span
-                                className="font-display font-medium shrink-0 ml-2"
-                                style={{ fontSize: 20, color: 'var(--color-ink)' }}
+                                className="font-display font-medium text-xl text-ink shrink-0 ml-2"
                               >
                                 {exam.price} ₼
                               </span>
                             )}
                           </div>
 
-                          <h3 className="t-title m-0 mb-3" style={{ fontSize: 18, lineHeight: 1.3 }}>
+                          <h3 className="font-display font-medium text-lg leading-snug tracking-tight text-ink m-0 mb-3">
                             {exam.title}
                           </h3>
 
                           <p
-                            className="text-[14px] leading-[1.55] m-0 flex-1"
-                            style={{ color: 'var(--color-ink-soft)' }}
+                            className="text-sm leading-[1.55] m-0 flex-1"
                           >
                             {exam.description}
                           </p>
 
                           <div
-                            className="flex items-center gap-4 mt-5 pt-4 border-t border-rule text-[12px]"
+                            className="flex items-center gap-4 mt-5 pt-4 border-t border-rule text-xs"
                             style={{ color: 'var(--color-ink-mute)' }}
                           >
                             <span>{examMinutes} dəq</span>

@@ -51,10 +51,10 @@ export default function AboutPage() {
               <span className="dot" />
               <span className="eyebrow">Haqqımızda</span>
             </div>
-            <h1 className="t-display rise rise-1">
+            <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink rise rise-1">
               Hazırlıq, <span style={{ color: "var(--color-accent)" }}>ciddiyyətlə.</span>
             </h1>
-            <p className="t-lede mt-8 max-w-180 rise rise-2" style={{ color: "var(--color-ink-soft)" }}>
+            <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mt-8 max-w-180 rise rise-2">
               Testcentre tələbənin imtahan günündə özünü heç bir sürprizlə qarşılaşmasın deyə qurulmuşdur.
               Burada oyunlaşdırma və boş vədlər yoxdur — yalnız rəsmi format, ölçülə bilən tərəqqi və
               hər sualın arxasındakı izahat.
@@ -75,15 +75,15 @@ export default function AboutPage() {
           <div className="max-w-310 mx-auto px-8 py-24">
             <div className="section-head">
               <div className="eyebrow mb-4">Nə edirik</div>
-              <h2 className="t-headline">Üç prinsipdə qurulan bir platforma.</h2>
-              <p className="t-body-lg mt-4">Mürəkkəblik gizlənmiş, mühüm olan üzdə.</p>
+              <h2 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink">Üç prinsipdə qurulan bir platforma.</h2>
+              <p className="text-lg leading-relaxed text-ink-soft mt-4">Mürəkkəblik gizlənmiş, mühüm olan üzdə.</p>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {features.map((v, i) => (
                 <div key={i} className="pt-8 border-t border-rule">
-                  <div className="t-num mb-6" style={{ fontSize: 18, color: "var(--color-ink)" }}>{v.n}</div>
-                  <h3 className="t-headline mb-4" style={{ fontSize: 26 }}>{v.t}</h3>
-                  <p className="text-[15px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{v.d}</p>
+                  <div className="font-display tabular-nums lining-nums text-lg text-ink mb-6">{v.n}</div>
+                  <h3 className="font-display font-normal text-2xl leading-tight tracking-tight text-ink mb-4">{v.t}</h3>
+                  <p className="text-base leading-relaxed text-ink-soft">{v.d}</p>
                 </div>
               ))}
             </div>
@@ -95,8 +95,7 @@ export default function AboutPage() {
           <div className="bg-surface border border-rule rounded-2xl px-16 py-18 text-center">
             <div className="eyebrow mb-6" style={{ color: "var(--color-ink)" }}>Bizim prinsiplərimiz</div>
             <blockquote
-              className="font-display font-normal text-ink leading-[1.3] tracking-[-0.015em] max-w-220 mx-auto"
-              style={{ fontSize: "clamp(28px, 3.4vw, 44px)" }}
+              className="font-display font-normal text-ink text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight max-w-220 mx-auto"
             >
               Akademik hazırlıq{" "}
               <span style={{ color: "var(--color-accent)" }}>oyun mexaniki</span>{" "}
@@ -112,13 +111,13 @@ export default function AboutPage() {
           <div className="max-w-310 mx-auto px-8 py-24">
             <div className="section-head">
               <div className="eyebrow mb-4">Necə işləyirik</div>
-              <h2 className="t-headline">Vacib detallar.</h2>
+              <h2 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink">Vacib detallar.</h2>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               {values.map((v, i) => (
                 <div key={i} className="card-new">
-                  <h3 className="t-title mb-3" style={{ fontSize: 18 }}>{v.t}</h3>
-                  <p className="text-[14px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{v.d}</p>
+                  <h3 className="font-display font-medium text-lg leading-tight tracking-tight text-ink mb-3">{v.t}</h3>
+                  <p className="text-base leading-relaxed text-ink-soft">{v.d}</p>
                 </div>
               ))}
             </div>
@@ -130,13 +129,12 @@ export default function AboutPage() {
           <div className="card-ink text-center rounded-2xl py-16 px-14">
             <div className="eyebrow mb-5" style={{ color: "var(--color-accent-soft)" }}>Başlayın</div>
             <h2
-              className="font-display font-normal leading-[1.1] tracking-[-0.02em] mb-6"
-              style={{ fontSize: "clamp(32px, 4vw, 56px)", color: "var(--color-bg)" }}
+              className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight text-bg mb-6"
             >
               Hazırlığa <span>bu gün başlayın.</span>
             </h2>
             <p
-              className="text-[17px] leading-[1.55] max-w-135 mx-auto mb-8"
+              className="text-lg leading-[1.55] max-w-135 mx-auto mb-8"
               style={{ color: "rgba(250,250,246,0.7)" }}
             >
               Qeydiyyat 30 saniyə çəkir, nəticə dərhal görünür.

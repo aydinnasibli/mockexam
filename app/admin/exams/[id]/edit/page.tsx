@@ -49,7 +49,7 @@ export default async function EditExamPage({ params }: Props) {
           </div>
           <div>
             <p className="font-bold text-primary text-sm">Sual Bankı</p>
-            <p className="text-xs text-on-surface-variant mt-0.5">
+            <p className="text-sm text-on-surface-variant mt-0.5">
               {questionCount} / {totalExpected} sual əlavə edilib
               {questionCount < totalExpected && (
                 <span className="ml-1 text-amber-600 font-semibold">· {totalExpected - questionCount} çatışmır</span>

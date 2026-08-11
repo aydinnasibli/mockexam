@@ -40,7 +40,7 @@ export default function AdminSidebar() {
       <div className="px-6 mb-6">
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary-fixed/60 rounded-lg w-fit">
           <Shield size={12} className="text-secondary" />
-          <span className="text-[10px] font-black text-secondary uppercase tracking-widest">
+          <span className="text-xs font-black text-secondary uppercase tracking-widest">
             Admin Panel
           </span>
         </div>

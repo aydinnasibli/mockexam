@@ -10,11 +10,11 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
-              <span className="font-display text-[22px] font-medium text-ink tracking-tight">
+              <span className="font-display text-xl font-medium text-ink tracking-tight">
                 Test<span className="font-normal">centre</span>
               </span>
             </div>
-            <p className="text-[15px] text-ink-soft leading-[1.6] max-w-85">
+            <p className="text-base text-ink-soft leading-[1.6] max-w-85">
               Akademik imtahan hazırlığı — sadə, ölçülə bilən, ciddi.
             </p>
           </div>
@@ -23,16 +23,16 @@ export default function Footer() {
           <div>
             <div className="eyebrow mb-4">Platforma</div>
             <div className="flex flex-col gap-3">
-              <Link href="/exams" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/exams" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Sınaqlar
               </Link>
-              <Link href="/dashboard" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/dashboard" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Kabinet
               </Link>
-              <Link href="/dashboard/analytics" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/dashboard/analytics" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Analitika
               </Link>
-              <span className="text-[15px] text-ink-mute">Qiymətlər</span>
+              <span className="text-base text-ink-mute">Qiymətlər</span>
             </div>
           </div>
 
@@ -40,14 +40,14 @@ export default function Footer() {
           <div>
             <div className="eyebrow mb-4">Şirkət</div>
             <div className="flex flex-col gap-3">
-              <Link href="/about" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/about" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Haqqımızda
               </Link>
-              <Link href="/contact" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/contact" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Əlaqə
               </Link>
-              <span className="text-[15px] text-ink-mute">Karyera</span>
-              <span className="text-[15px] text-ink-mute">Blog</span>
+              <span className="text-base text-ink-mute">Karyera</span>
+              <span className="text-base text-ink-mute">Blog</span>
             </div>
           </div>
 
@@ -55,16 +55,16 @@ export default function Footer() {
           <div>
             <div className="eyebrow mb-4">Hüquqi</div>
             <div className="flex flex-col gap-3">
-              <Link href="/legal/terms" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/legal/terms" className="text-base text-ink-soft hover:text-ink transition-colors">
                 İstifadə şərtləri
               </Link>
-              <Link href="/legal/privacy" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/legal/privacy" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Məxfilik
               </Link>
-              <Link href="/legal/cookies" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/legal/cookies" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Cookie
               </Link>
-              <Link href="/legal/refund" className="text-[15px] text-ink-soft hover:text-ink transition-colors">
+              <Link href="/legal/refund" className="text-base text-ink-soft hover:text-ink transition-colors">
                 Geri qaytarma
               </Link>
             </div>

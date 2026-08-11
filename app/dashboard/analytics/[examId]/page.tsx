@@ -124,7 +124,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
         {/* Exam header */}
         <div className="bg-surface rounded-2xl border border-rule p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <span className="tag-ink text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide mb-2 inline-block">
+            <span className="tag-ink text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide mb-2 inline-block">
               {exam.tag}
             </span>
             <h1 className="font-display text-xl font-bold text-ink">{exam.title}</h1>
@@ -181,14 +181,14 @@ export default async function ExamAnalyticsPage({ params }: Props) {
               <div className="bg-surface rounded-2xl border border-rule p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="eyebrow">Bal dinamikası</h2>
-                  <div className="flex items-center gap-3 text-[10px] text-ink-mute">
+                  <div className="flex items-center gap-3 text-xs text-ink-mute">
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-ok inline-block" />≥80%</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-warn inline-block" />60–79%</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-error inline-block" />&lt;60%</span>
                   </div>
                 </div>
                 <ScoreTrendChart results={results} />
-                <div className="flex justify-between mt-2 text-[10px] text-ink-mute font-medium px-2">
+                <div className="flex justify-between mt-2 text-xs text-ink-mute font-medium px-2">
                   <span>Cəhd #{[...results].reverse()[0]?.attemptNumber}</span>
                   <span>Cəhd #{results[0]?.attemptNumber}</span>
                 </div>
@@ -205,7 +205,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                       <Clock size={16} className="text-blue-600" />
                     </div>
                     <p className="font-display text-lg font-bold text-ink">{Math.round(expectedSecPerQ)}s</p>
-                    <p className="text-[11px] text-ink-mute mt-0.5">Gözlənilən / sual</p>
+                    <p className="text-sm text-ink-mute mt-0.5">Gözlənilən / sual</p>
                   </div>
                   <div className="text-center">
                     <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center mx-auto mb-2">
@@ -214,7 +214,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                     <p className="font-display text-lg font-bold text-ink">
                       {Math.round(last.durationSeconds / last.totalQuestions)}s
                     </p>
-                    <p className="text-[11px] text-ink-mute mt-0.5">Ortalama / sual (son)</p>
+                    <p className="text-sm text-ink-mute mt-0.5">Ortalama / sual (son)</p>
                   </div>
                   <div className="text-center">
                     {(() => {
@@ -230,7 +230,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                             <Zap size={16} className={icon} />
                           </div>
                           <p className={`font-display text-lg font-bold ${color}`}>{label}</p>
-                          <p className="text-[11px] text-ink-mute mt-0.5">Temp qiymətləndirməsi</p>
+                          <p className="text-sm text-ink-mute mt-0.5">Temp qiymətləndirməsi</p>
                         </>
                       );
                     })()}
@@ -283,7 +283,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                           <div className={`h-full rounded-full ${ms.scorePercent >= 80 ? 'bg-ok' : ms.scorePercent >= 60 ? 'bg-warn' : 'bg-error'}`}
                             style={{ width: `${ms.scorePercent}%` }} />
                         </div>
-                        <p className="text-[10px] text-ink-mute mt-0.5">Son cəhd əsasında</p>
+                        <p className="text-sm text-ink-mute mt-0.5">Son cəhd əsasında</p>
                       </div>
                     );
                   }).filter(Boolean)}
@@ -302,7 +302,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                       <div>
                         <p className="font-display text-sm font-bold text-ink">Cəhd #{r.attemptNumber}</p>
-                        <p className="text-xs text-ink-mute mt-0.5">{formatDate(r.completedAt)}</p>
+                        <p className="text-sm text-ink-mute mt-0.5">{formatDate(r.completedAt)}</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1.5 text-ink-mute text-xs">
@@ -317,7 +317,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                               </span>
                             );
                           })()}
-                          {r.score === best && <p className="text-[10px] text-ink-soft font-medium">Ən yaxşı</p>}
+                          {r.score === best && <p className="text-sm text-ink-soft font-medium">Ən yaxşı</p>}
                         </div>
                         {/* Promoted to the row's primary action: this is the
                             page students come back for, and as a muted ghost
@@ -331,7 +331,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                     {r.moduleScores.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {r.moduleScores.map(ms => (
-                          <span key={ms.moduleIndex} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          <span key={ms.moduleIndex} className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                             ms.scorePercent >= 80 ? 'bg-green-50 text-green-700' : ms.scorePercent >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600'
                           }`}>
                             {ms.moduleName}: {formatModuleScore(r.examType, ms)}

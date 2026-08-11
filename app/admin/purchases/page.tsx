@@ -45,7 +45,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
           { label: `Səhifə ${page} / ${totalPages}`, value: PAGE_SIZE },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white rounded-2xl border border-outline-variant/40 p-4 shadow-sm">
-            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest mb-1">{label}</p>
+            <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest mb-1">{label}</p>
             <p className="text-2xl font-black text-primary">{value}</p>
           </div>
         ))}
@@ -61,7 +61,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest border-b border-outline-variant/20">
+                  <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
                     <th className="px-5 py-4 font-black">Sifariş ID</th>
                     <th className="px-5 py-4 font-black">İstifadəçi</th>
                     <th className="px-5 py-4 font-black">İmtahan</th>
@@ -106,7 +106,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-4 border-t border-outline-variant/20">
-                <p className="text-xs text-on-surface-variant font-medium">
+                <p className="text-sm text-on-surface-variant font-medium">
                   Səhifə {page} / {totalPages} · Ümumi {total} satış
                 </p>
                 <div className="flex gap-2">

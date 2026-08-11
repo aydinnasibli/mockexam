@@ -40,9 +40,9 @@ export default function DashboardShell({ viewer, children }: Props) {
             </button>
             <Link href="/" className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-ink flex items-center justify-center shrink-0">
-                <span className="text-bg text-[9px] font-black">TC</span>
+                <span className="text-bg text-xs font-black">TC</span>
               </div>
-              <span className="font-display text-[15px] font-black text-ink tracking-tight">
+              <span className="font-display text-base font-black text-ink tracking-tight">
                 Test<span className="font-light">centre</span>
               </span>
             </Link>

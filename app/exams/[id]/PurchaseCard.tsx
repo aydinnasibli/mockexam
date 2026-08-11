@@ -58,7 +58,7 @@ export default function PurchaseCard({ examId, tag, price }: Props) {
       <div className="px-6 sm:px-7 py-6" style={{ background: 'var(--color-ink)' }}>
         <div className="eyebrow mb-2" style={{ color: 'rgba(250,250,246,0.45)' }}>Sifariş</div>
         <p
-          className="text-[12px] mb-6"
+          className="text-xs mb-6"
           style={{ color: 'rgba(250,250,246,0.35)', margin: '4px 0 20px' }}
         >
           {tag} · {examId}
@@ -66,18 +66,18 @@ export default function PurchaseCard({ examId, tag, price }: Props) {
 
         {hasPurchased ? (
           <div>
-            <p className="text-[15px] font-medium m-0" style={{ color: 'var(--color-bg)' }}>
+            <p className="text-base font-medium m-0" style={{ color: 'var(--color-bg)' }}>
               Artıq alınmışdır
             </p>
-            <p className="text-[13px] mt-1 m-0" style={{ color: 'rgba(250,250,246,0.45)' }}>
+            <p className="text-sm mt-1 m-0" style={{ color: 'rgba(250,250,246,0.45)' }}>
               Bu sınağa girişiniz var
             </p>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[13px]" style={{ color: 'rgba(250,250,246,0.5)' }}>Qiymət</span>
-              <span className="text-[13px] font-medium" style={{ color: 'var(--color-bg)' }}>
+              <span className="text-sm" style={{ color: 'rgba(250,250,246,0.5)' }}>Qiymət</span>
+              <span className="text-sm font-medium" style={{ color: 'var(--color-bg)' }}>
                 {price} ₼
               </span>
             </div>
@@ -85,17 +85,16 @@ export default function PurchaseCard({ examId, tag, price }: Props) {
               className="flex items-center justify-between"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 16 }}
             >
-              <span className="text-[13px]" style={{ color: 'rgba(250,250,246,0.5)' }}>ƏDV daxil</span>
-              <span className="text-[13px]" style={{ color: 'rgba(250,250,246,0.3)' }}>—</span>
+              <span className="text-sm" style={{ color: 'rgba(250,250,246,0.5)' }}>ƏDV daxil</span>
+              <span className="text-sm" style={{ color: 'rgba(250,250,246,0.3)' }}>—</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span
-                className="font-display font-normal"
-                style={{ fontSize: 40, lineHeight: 1, color: 'var(--color-bg)', letterSpacing: '-0.025em' }}
+                className="font-display font-normal text-4xl leading-none tracking-tight text-bg"
               >
                 {price}
               </span>
-              <span className="text-[16px]" style={{ color: 'rgba(250,250,246,0.45)' }}>AZN</span>
+              <span className="text-base" style={{ color: 'rgba(250,250,246,0.45)' }}>AZN</span>
             </div>
           </>
         )}
@@ -122,10 +121,10 @@ export default function PurchaseCard({ examId, tag, price }: Props) {
             >
               Giriş əldə et <span className="arrow">→</span>
             </Link>
-            <p className="text-center text-[12px] m-0" style={{ color: 'var(--color-ink-mute)' }}>
+            <p className="text-center text-sm m-0" style={{ color: 'var(--color-ink-mute)' }}>
               Güvənli ödəniş · Dərhal giriş
             </p>
-            <p className="text-center text-[11px] mt-3 mb-0 leading-[1.6]" style={{ color: 'var(--color-ink-mute)' }}>
+            <p className="text-center text-sm mt-3 mb-0 leading-[1.6]" style={{ color: 'var(--color-ink-mute)' }}>
               Rəqəmsal məhsul: ödəniş tamamlandıqda giriş dərhal açılır və geri qaytarılmır.{' '}
               <Link href="/legal/refund" className="underline hover:text-ink transition-colors">
                 Geri qaytarma siyasəti

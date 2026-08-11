@@ -49,7 +49,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest border-b border-outline-variant/20">
+                  <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
                     <th className="px-5 py-4 font-black">İstifadəçi</th>
                     <th className="px-5 py-4 font-black">E-poçt</th>
                     <th className="px-5 py-4 font-black">Clerk ID</th>
@@ -115,7 +115,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-4 border-t border-outline-variant/20">
-                <p className="text-xs text-on-surface-variant font-medium">
+                <p className="text-sm text-on-surface-variant font-medium">
                   Səhifə {page} / {totalPages} · Ümumi {total} istifadəçi
                 </p>
                 <div className="flex gap-2">

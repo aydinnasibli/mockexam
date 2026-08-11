@@ -125,7 +125,7 @@ export default async function ExamDetails({ params }: Props) {
         {/* Breadcrumb */}
         <div style={{ borderBottom: '1px solid var(--color-rule)' }}>
           <div className="max-w-340 mx-auto px-4 sm:px-8 py-4">
-            <div className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--color-ink-mute)' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-ink-mute)' }}>
               <Link href="/" className="hover:text-ink transition-colors">Ana</Link>
               <span>›</span>
               <Link href="/exams" className="hover:text-ink transition-colors">Sınaqlar</Link>
@@ -150,12 +150,11 @@ export default async function ExamDetails({ params }: Props) {
               {/* Tag + title + desc */}
               <span className="tag tag-accent inline-block mb-6">{exam.tag}</span>
               <h1
-                className="font-display font-normal m-0 mb-6 text-ink"
-                style={{ fontSize: 'clamp(30px, 4.5vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.02em' }}
+                className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight text-ink m-0 mb-6"
               >
                 {exam.title}
               </h1>
-              <p className="t-lede m-0 mb-10" style={{ color: 'var(--color-ink-soft)' }}>
+              <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft-soft m-0 mb-10">
                 {exam.description}
               </p>
 
@@ -183,7 +182,7 @@ export default async function ExamDetails({ params }: Props) {
                       ].filter(Boolean).join(' ')}
                     >
                       <div className="eyebrow mb-2">{stat.label}</div>
-                      <div className="t-num text-ink" style={{ fontSize: 22 }}>{stat.value}</div>
+                      <div className="font-display tabular-nums lining-nums text-ink text-xl">{stat.value}</div>
                     </div>
                   ))}
                 </div>
@@ -193,8 +192,7 @@ export default async function ExamDetails({ params }: Props) {
               {exam.modules.length > 0 && (
                 <div className="mb-10">
                   <h2
-                    className="font-display font-normal m-0 mb-8 text-ink"
-                    style={{ fontSize: 26, letterSpacing: '-0.01em' }}
+                    className="font-display font-normal text-2xl tracking-tight text-ink m-0 mb-8"
                   >
                     Sınaq strukturu
                   </h2>
@@ -203,23 +201,22 @@ export default async function ExamDetails({ params }: Props) {
                       <div key={i}>
                         <div className="flex items-start gap-4 sm:gap-5 pt-4 border-t border-rule">
                           <span
-                            className="t-num shrink-0"
-                            style={{ fontSize: 13, color: 'var(--color-ink)', minWidth: 28, paddingTop: 2 }}
+                            className="font-display tabular-nums lining-nums text-sm text-ink shrink-0 min-w-7 pt-0.5"
                           >
                             {String(i + 1).padStart(2, '0')}
                           </span>
                           <div className="flex-1 pb-4 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div className="min-w-0">
-                                <p className="font-medium text-[15px] text-ink mb-0.5">{mod.name}</p>
+                                <p className="font-medium text-base text-ink mb-0.5">{mod.name}</p>
                                 {mod.isAdaptive && (
-                                  <span className="text-[12px]" style={{ color: 'var(--color-ink-mute)' }}>
+                                  <span className="text-xs" style={{ color: 'var(--color-ink-mute)' }}>
                                     Adaptive
                                   </span>
                                 )}
                               </div>
                               <div
-                                className="flex items-center gap-3 sm:gap-4 text-[13px] shrink-0"
+                                className="flex items-center gap-3 sm:gap-4 text-sm shrink-0"
                                 style={{ color: 'var(--color-ink-mute)' }}
                               >
                                 {mod.questions > 0 && <span>{mod.questions} sual</span>}
@@ -227,7 +224,7 @@ export default async function ExamDetails({ params }: Props) {
                               </div>
                             </div>
                             {mod.breakAfterMinutes > 0 && (
-                              <p className="text-[12px] mt-2 mb-0" style={{ color: 'var(--color-ink-mute)' }}>
+                              <p className="text-sm mt-2 mb-0" style={{ color: 'var(--color-ink-mute)' }}>
                                 {mod.breakAfterMinutes} dəqiqəlik fasilə
                               </p>
                             )}
@@ -236,7 +233,7 @@ export default async function ExamDetails({ params }: Props) {
                       </div>
                     ))}
                     {totalBreak > 0 && (
-                      <p className="text-[12px] pt-4 border-t border-rule" style={{ color: 'var(--color-ink-mute)' }}>
+                      <p className="text-sm pt-4 border-t border-rule" style={{ color: 'var(--color-ink-mute)' }}>
                         Fasilə daxil ümumi müddət: {exam.durationMinutes} dəq
                       </p>
                     )}
@@ -248,8 +245,7 @@ export default async function ExamDetails({ params }: Props) {
               {exam.features.length > 0 && (
                 <div>
                   <h2
-                    className="font-display font-normal m-0 mb-8 text-ink"
-                    style={{ fontSize: 26, letterSpacing: '-0.01em' }}
+                    className="font-display font-normal text-2xl tracking-tight text-ink m-0 mb-8"
                   >
                     Daxildir
                   </h2>
@@ -260,8 +256,8 @@ export default async function ExamDetails({ params }: Props) {
                         className="flex items-start gap-3 p-4 rounded-xl"
                         style={{ background: 'var(--color-surface-2)' }}
                       >
-                        <span className="shrink-0 font-medium text-[14px] text-ink mt-0.5">✓</span>
-                        <span className="text-[14px] leading-normal text-ink">{feature}</span>
+                        <span className="shrink-0 font-medium text-sm text-ink mt-0.5">✓</span>
+                        <span className="text-sm leading-normal text-ink">{feature}</span>
                       </div>
                     ))}
                   </div>

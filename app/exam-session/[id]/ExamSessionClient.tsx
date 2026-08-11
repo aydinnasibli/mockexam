@@ -433,7 +433,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         <header className="h-14 md:h-16 px-4 md:px-8 flex items-center shrink-0" style={{ borderBottom: "1px solid var(--color-rule)" }}>
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="dot" />
-            <span className="font-display text-[18px] font-normal text-ink">Test<span>centre</span></span>
+            <span className="font-display text-lg font-normal text-ink">Test<span>centre</span></span>
           </Link>
         </header>
 
@@ -443,7 +443,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               className="w-9 h-9 rounded-full animate-spin"
               style={{ border: "3px solid var(--color-rule)", borderTopColor: "var(--color-ink)" }}
             />
-            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>Hazırlanır…</p>
+            <p className="text-sm">Hazırlanır…</p>
           </div>
         ) : (
           <main className="flex-1 overflow-y-auto">
@@ -455,12 +455,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </div>
 
               <h1
-                className="font-display font-normal text-ink m-0 mb-3"
-                style={{ fontSize: 'clamp(28px, 4vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.02em' }}
+                className="font-display font-normal text-ink text-3xl md:text-4xl leading-tight tracking-tight m-0 mb-3"
               >
                 {exam.title}
               </h1>
-              <p className="text-[15px] leading-[1.6] m-0 mb-8" style={{ color: "var(--color-ink-soft)" }}>
+              <p className="text-base leading-[1.6] m-0 mb-8">
                 Başlamazdan əvvəl imtahanın quruluşunu nəzərdən keçirin. Vaxt yalnız
                 aşağıdakı düyməyə basdıqdan sonra işləməyə başlayacaq.
               </p>
@@ -469,19 +468,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               <div className="grid grid-cols-3 gap-4 border-y py-6 mb-8" style={{ borderColor: "var(--color-rule)" }}>
                 <div>
                   <div className="eyebrow mb-2">Müddət</div>
-                  <div className="t-num text-ink" style={{ fontSize: 'clamp(22px, 3vw, 30px)', lineHeight: 1 }}>
-                    {exam.durationMinutes}<span className="text-[14px] ml-1" style={{ color: "var(--color-ink-mute)" }}>dəq</span>
+                  <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
+                    {exam.durationMinutes}<span className="text-sm ml-1" style={{ color: "var(--color-ink-mute)" }}>dəq</span>
                   </div>
                 </div>
                 <div className="border-l pl-5" style={{ borderColor: "var(--color-rule)" }}>
                   <div className="eyebrow mb-2">Sual</div>
-                  <div className="t-num text-ink" style={{ fontSize: 'clamp(22px, 3vw, 30px)', lineHeight: 1 }}>
+                  <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
                     {questions.length}
                   </div>
                 </div>
                 <div className="border-l pl-5" style={{ borderColor: "var(--color-rule)" }}>
                   <div className="eyebrow mb-2">Bölmə</div>
-                  <div className="t-num text-ink" style={{ fontSize: 'clamp(22px, 3vw, 30px)', lineHeight: 1 }}>
+                  <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
                     {exam.modules.length}
                   </div>
                 </div>
@@ -506,17 +505,17 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="t-mono text-xs" style={{ color: "var(--color-ink-mute)" }}>
+                          <span className="font-mono text-xs" style={{ color: "var(--color-ink-mute)" }}>
                             {String(modIdx + 1).padStart(2, '0')}
                           </span>
                           <span className="text-sm font-medium text-ink">{mod.name}</span>
                         </div>
-                        <p className="text-xs mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                        <p className="text-sm mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
                           {qs.length > 0 ? `${qs.length} sual` : 'Açıq tapşırıq'}
                           {mod.durationMinutes > 0 && ` · təxminən ${mod.durationMinutes} dəq`}
                         </p>
                         {mod.instructions && (
-                          <p className="text-xs mt-2 mb-0 leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+                          <p className="text-sm mt-2 mb-0 leading-relaxed">
                             {mod.instructions}
                           </p>
                         )}
@@ -535,7 +534,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   <TriangleAlert size={14} style={{ color: "var(--color-warn)" }} />
                   <span className="eyebrow">Başlamazdan əvvəl</span>
                 </div>
-                <ul className="list-none p-0 m-0 space-y-2 text-xs leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+                <ul className="list-none p-0 m-0 space-y-2 text-xs leading-relaxed">
                   <li>· Vaxt serverdə saxlanılır — səhifəni yeniləmək və ya bağlamaq sayğacı dayandırmır.</li>
                   <li>· Vaxt bitdikdə imtahan avtomatik təhvil verilir.</li>
                   <li>· Cavablarınız avtomatik yadda saxlanılır; qayıdanda qaldığınız yerdən davam edirsiniz.</li>
@@ -549,20 +548,20 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 <button
                   onClick={startExam}
                   disabled={starting || hasNoQuestions}
-                  className="btn-primary justify-center py-3.5 px-8 text-[15px] disabled:opacity-60"
+                  className="btn-primary justify-center py-3.5 px-8 text-base disabled:opacity-60"
                 >
                   {starting ? 'Başladılır…' : 'Başla'}
                   {!starting && <ArrowRight size={17} />}
                 </button>
                 <Link
                   href="/dashboard"
-                  className="btn-ghost justify-center py-3.5 px-6 text-[15px]"
+                  className="btn-ghost justify-center py-3.5 px-6 text-base"
                 >
                   Panelə qayıt
                 </Link>
               </div>
               {hasNoQuestions && (
-                <p className="text-xs mt-3 m-0" style={{ color: "var(--color-warn)" }}>
+                <p className="text-sm mt-3 m-0" style={{ color: "var(--color-warn)" }}>
                   Bu imtahan üçün sual bankı hələ hazırlanır.
                 </p>
               )}
@@ -592,7 +591,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           />
           <div className="text-center">
             <p className="font-display text-lg font-medium text-ink mb-1">İmtahan tamamlandı</p>
-            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>Nəticələr hazırlanır…</p>
+            <p className="text-sm">Nəticələr hazırlanır…</p>
           </div>
         </div>
       )}
@@ -640,7 +639,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     <CheckCircle2 size={20} className="mx-auto mb-3" style={{ color: "var(--color-ok)" }} />
                     <p className="text-sm font-medium text-ink m-0">{from.name} bölməsi bitdi</p>
                     {fromQs.length > 0 && (
-                      <p className="text-xs mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                      <p className="text-sm mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
                         {fromQs.length} sualdan {fromDone}-i cavablandırıldı
                       </p>
                     )}
@@ -658,12 +657,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   Bölmə {moduleIntro.to + 1} / {exam.modules.length}
                 </p>
                 <h2
-                  className="font-display font-normal text-ink m-0 mb-3"
-                  style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', lineHeight: 1.1, letterSpacing: '-0.02em' }}
+                  className="font-display font-normal text-ink text-2xl md:text-3xl leading-tight tracking-tight m-0 mb-3"
                 >
                   {to.name} başlayır
                 </h2>
-                <p className="text-sm m-0 mb-6" style={{ color: "var(--color-ink-soft)" }}>
+                <p className="text-sm m-0 mb-6">
                   {toQs.length > 0 ? `${toQs.length} sual` : 'Açıq tapşırıq'}
                   {to.durationMinutes > 0 && ` · təxminən ${to.durationMinutes} dəq`}
                 </p>
@@ -674,16 +672,16 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}
                   >
                     <p className="eyebrow mb-2">Təlimat</p>
-                    <p className="text-xs leading-relaxed m-0" style={{ color: "var(--color-ink-soft)" }}>
+                    <p className="text-sm leading-relaxed m-0">
                       {to.instructions}
                     </p>
                   </div>
                 )}
 
-                <button onClick={dismissModuleIntro} className="btn-primary justify-center py-3.5 px-8 text-[15px]">
+                <button onClick={dismissModuleIntro} className="btn-primary justify-center py-3.5 px-8 text-base">
                   Davam et <ArrowRight size={17} />
                 </button>
-                <p className="text-[11px] mt-4 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                <p className="text-sm mt-4 m-0" style={{ color: "var(--color-ink-mute)" }}>
                   Vaxt işləməyə davam edir.
                 </p>
               </motion.div>
@@ -698,7 +696,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
             <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
               <span className="dot" />
-              <span className="font-display text-[18px] font-normal text-ink hidden sm:block">
+              <span className="font-display text-lg font-normal text-ink hidden sm:block">
                 Test<span>centre</span>
               </span>
             </Link>
@@ -720,7 +718,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-sm font-medium transition-colors ${
                   showGrid ? 'bg-surface-2' : 'hover:bg-surface-2'
                 }`}
-                style={{ color: "var(--color-ink-soft)" }}
               >
                 {/*
                   Shows the CURRENT question, matching the counter in the question
@@ -730,7 +727,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   button opens, where it is labelled.
                 */}
                 <Grid3X3 size={15} />
-                <span className="t-mono tabular-nums text-xs">{currentIdx + 1}/{questions.length}</span>
+                <span className="font-mono tabular-nums text-xs">{currentIdx + 1}/{questions.length}</span>
               </button>
             )}
             {/*
@@ -755,7 +752,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 aria-hidden="true"
                 style={{ color: remaining < 300 ? "var(--color-error)" : "var(--color-ink-soft)" }}
               />
-              <span className="t-mono tabular-nums text-xs md:text-sm" style={{
+              <span className="font-mono tabular-nums text-xs md:text-sm" style={{
                 color: remaining < 300 ? "var(--color-error)" : "var(--color-ink)",
               }}>
                 {sessionReady ? formatTime(remaining) : '--:--'}
@@ -799,7 +796,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-rule)" }}>
               <div>
                 <p className="text-sm font-medium text-ink">Sual navigasiyası</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--color-ink-soft)" }}>
+                <p className="text-sm mt-0.5">
                   {answeredCount}/{questions.length} cavablandı
                   {flagged.size > 0 && ` · ${flagged.size} işarəli`}
                 </p>
@@ -808,7 +805,6 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 onClick={() => setShowGrid(false)}
                 aria-label="Sual siyahısını bağla"
                 className="p-1.5 rounded-lg transition-colors"
-                style={{ color: "var(--color-ink-soft)" }}
               >
                 <X size={16} aria-hidden="true" />
               </button>
@@ -847,7 +843,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       );
                     })}
                     {qs.length === 0 && (
-                      <p className="text-xs" style={{ color: "var(--color-ink-mute)" }}>Bu modulda sual yoxdur</p>
+                      <p className="text-sm" style={{ color: "var(--color-ink-mute)" }}>Bu modulda sual yoxdur</p>
                     )}
                   </div>
                 </div>
@@ -875,8 +871,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "var(--color-accent-soft)" }}>
               <CheckCircle2 style={{ color: "var(--color-ink)" }} size={24} />
             </div>
-            <h3 className="t-title mb-3">İmtahanı bitirirsiniz?</h3>
-            <div className="text-sm mb-2" style={{ color: "var(--color-ink-soft)" }}>
+            <h3 className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-3">İmtahanı bitirirsiniz?</h3>
+            <div className="text-sm mb-2">
               <p>
                 <span className="font-medium text-ink">{answeredCount}</span> / {questions.length} sual cavablandı.
               </p>
@@ -886,7 +882,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 </p>
               )}
             </div>
-            <p className="text-xs mb-6" style={{ color: "var(--color-ink-mute)" }}>
+            <p className="text-sm mb-6" style={{ color: "var(--color-ink-mute)" }}>
               Bu əməliyyat geri qaytarıla bilməz.
             </p>
             <div className="flex gap-3">
@@ -914,8 +910,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         <main className="pt-14 md:pt-16 min-h-screen flex items-center justify-center">
           <div className="text-center max-w-sm px-6">
             <BookOpen className="mx-auto mb-4" style={{ color: "var(--color-ink-mute)" }} size={48} />
-            <h2 className="t-title mb-2">Suallar hələ əlavə edilməyib</h2>
-            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+            <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-2">Suallar hələ əlavə edilməyib</h2>
+            <p className="text-sm mb-6 leading-relaxed">
               Bu imtahan üçün sual bankı hazırlanır. Tezliklə əlçatan olacaq.
             </p>
             <Link href="/dashboard" className="btn-primary">
@@ -940,12 +936,12 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               <div className="flex items-center gap-2">
                 <span className="eyebrow">{currentModule?.name ?? 'Modul'}</span>
                 {exam.modules.length > 1 && current && (
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-surface-3)", color: "var(--color-ink-soft)" }}>
+                  <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-surface-3)", color: "var(--color-ink-soft)" }}>
                     {current.moduleIndex + 1}/{exam.modules.length}
                   </span>
                 )}
               </div>
-              <span className="t-mono tabular-nums" style={{ color: "var(--color-ink-soft)" }}>
+              <span className="font-mono text-sm tabular-nums">
                 {currentIdx + 1} / {questions.length}
               </span>
             </div>
@@ -953,7 +949,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             {/* Audio player anchored at module level — persists across question navigation */}
             {moduleAudioUrl && (
               <div className="px-6 py-3 border-b border-slate-100 bg-surface-container-low shrink-0">
-                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">🎧 Audio / Dinləmə</p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">🎧 Audio / Dinləmə</p>
                 <StrictAudioPlayer src={moduleAudioUrl} examId={exam.id} />
               </div>
             )}
@@ -972,7 +968,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       style={{ borderBottom: "1px solid var(--color-rule)" }}
                     >
                       <span className="eyebrow">Bu mətnə aid {passageGroup.size} sual</span>
-                      <span className="t-mono tabular-nums text-xs" style={{ color: "var(--color-ink-soft)" }}>
+                      <span className="font-mono tabular-nums text-xs">
                         {passageGroup.position} / {passageGroup.size}
                       </span>
                     </div>
@@ -1002,7 +998,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     </div>
                   )}
                   {currentPassage && (
-                    <div className="passage-body text-[15px] max-w-none" style={{ color: "var(--color-ink)" }}>
+                    <div className="passage-body text-ink max-w-none">
                       <PassageText text={currentPassage} />
                     </div>
                   )}
@@ -1013,7 +1009,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     <p className="eyebrow mb-2">Cari Modul</p>
                     <p className="font-medium text-ink">{currentModule?.name}</p>
                     {currentModule?.instructions && (
-                      <p className="text-xs mt-2 leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+                      <p className="text-sm mt-2 leading-relaxed">
                         {currentModule.instructions}
                       </p>
                     )}
@@ -1092,7 +1088,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 </div>
                 {showPassage && (
                   <div className="overflow-y-auto px-4 py-4 max-h-[50vh]" style={{ borderTop: "1px solid var(--color-rule)" }}>
-                    <div className="passage-body text-sm max-w-none" style={{ color: "var(--color-ink)" }}>
+                    <div className="passage-body text-ink max-w-none">
                       <PassageText text={currentPassage} />
                     </div>
                   </div>
@@ -1140,7 +1136,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   <div className="flex items-center gap-2 mb-3 md:hidden">
                     <span className="eyebrow">{currentModule.name}</span>
                     {exam.modules.length > 1 && (
-                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}>
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}>
                         {(current?.moduleIndex ?? 0) + 1}/{exam.modules.length}
                       </span>
                     )}
@@ -1152,7 +1148,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center font-medium text-xs md:text-sm shrink-0" style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}>
                       {currentIdx + 1}
                     </span>
-                    <span className="text-xs md:text-sm truncate" style={{ color: "var(--color-ink-soft)" }}>
+                    <span className="text-xs md:text-sm truncate">
                       {current?.type === 'open' ? 'Açıq tapşırıq'
                         : current?.type === 'matching' ? 'Uyğunlaşdırma'
                         : current?.type === 'writing' ? 'Yazı tapşırığı'
@@ -1161,7 +1157,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     {/* Position within the shared-text group, visible from the question side too. */}
                     {passageGroup && passageGroup.size > 1 && (
                       <span
-                        className="shrink-0 t-mono text-[10px] px-2 py-0.5 rounded-full"
+                        className="shrink-0 font-mono text-xs px-2 py-0.5 rounded-full"
                         style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}
                         title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cisi`}
                       >
@@ -1235,8 +1231,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 {current?.type === 'open' && (
                   <div className="space-y-3">
                     <div className="p-3 rounded-xl flex items-center gap-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
-                      <Pencil size={13} className="shrink-0" style={{ color: "var(--color-ink-soft)" }} />
-                      <p className="text-xs leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>Bu açıq tapşırıqdır. Cavabınızı daxil edin. Cavab avtomatik qiymətləndiriləcək.</p>
+                      <Pencil size={13} className="shrink-0" />
+                      <p className="text-sm leading-relaxed">Bu açıq tapşırıqdır. Cavabınızı daxil edin. Cavab avtomatik qiymətləndiriləcək.</p>
                     </div>
                     <textarea
                       rows={2}
@@ -1253,8 +1249,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 {current?.type === 'matching' && current.matchItems && current.matchItems.length > 0 && (
                   <div className="space-y-3">
                     <div className="p-3 rounded-xl flex items-center gap-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
-                      <Grid3X3 size={13} className="shrink-0" style={{ color: "var(--color-ink-soft)" }} />
-                      <p className="text-xs leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>Hər element üçün uyğun cavabı seçin.</p>
+                      <Grid3X3 size={13} className="shrink-0" />
+                      <p className="text-sm leading-relaxed">Hər element üçün uyğun cavabı seçin.</p>
                     </div>
                     <div className="space-y-2.5">
                       {current.matchItems.map((item, itemIdx) => {
@@ -1308,8 +1304,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   return (
                     <div className="space-y-3">
                       <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
-                        <Pencil size={13} className="shrink-0 mt-0.5" style={{ color: "var(--color-ink-soft)" }} />
-                        <p className="text-xs leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+                        <Pencil size={13} className="shrink-0 mt-0.5" />
+                        <p className="text-sm leading-relaxed">
                           Bu yazı tapşırığıdır. Cavabınız tamamlandıqdan sonra AI tərəfindən qiymətləndiriləcəkdir.
                           {minW > 0 && ` Minimum: ${minW} söz.`}
                           {maxW > 0 && ` Maksimum: ${maxW} söz.`}
@@ -1318,7 +1314,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       {current.rubric && (
                         <div className="p-3 rounded-xl" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
                           <p className="eyebrow mb-1">Qiymətləndirmə meyarları</p>
-                          <p className="text-xs leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>{current.rubric}</p>
+                          <p className="text-sm leading-relaxed">{current.rubric}</p>
                         </div>
                       )}
                       <textarea
@@ -1370,7 +1366,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 <ChevronLeft size={18} aria-hidden="true" />
                 <span className="hidden sm:inline">Əvvəlki</span>
               </button>
-              <span className="t-mono tabular-nums text-xs" style={{ color: "var(--color-ink-soft)" }}>
+              <span className="font-mono tabular-nums text-xs">
                 {sessionReady ? formatTime(elapsed) : '--:--'} keçdi
               </span>
               <button
@@ -1489,7 +1485,7 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
           >
             <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
           </button>
-          <p className="text-[10px] text-center px-2 leading-tight font-medium" style={{ color: "var(--color-warn)" }}>
+          <p className="text-sm text-center px-2 leading-tight font-medium" style={{ color: "var(--color-warn)" }}>
             ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.
           </p>
         </>
@@ -1504,7 +1500,7 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
               <span>Səs oxunur...</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="t-mono tabular-nums text-base">{fmtTime(remaining)}</span>
+              <span className="font-mono tabular-nums text-base">{fmtTime(remaining)}</span>
               <span className="eyebrow">qaldı</span>
             </div>
           </div>
@@ -1514,7 +1510,7 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
               style={{ width: `${progress}%`, background: "var(--color-ink)" }}
             />
           </div>
-          <div className="flex justify-between t-mono tabular-nums text-[10px]" style={{ color: "var(--color-ink-mute)" }}>
+          <div className="flex justify-between font-mono tabular-nums text-xs" style={{ color: "var(--color-ink-mute)" }}>
             <span>{fmtTime(currentTime)}</span>
             <span>{fmtTime(duration)}</span>
           </div>
@@ -1524,12 +1520,12 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
       {/* Finished state */}
       {status === 'finished' && (
         <div className="w-full rounded-2xl px-4 py-3 space-y-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
-          <div className="flex items-center justify-between" style={{ color: "var(--color-ink-soft)" }}>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium">
               <CheckCircle2 size={16} className="shrink-0" style={{ color: "var(--color-ok)" }} />
               <span>Audio bitdi</span>
             </div>
-            {duration > 0 && <span className="t-mono text-sm">{fmtTime(duration)}</span>}
+            {duration > 0 && <span className="font-mono text-sm">{fmtTime(duration)}</span>}
           </div>
           <div className="score-bar">
             <div className="absolute inset-0 rounded-full" style={{ background: "rgba(47,92,62,0.3)" }} />

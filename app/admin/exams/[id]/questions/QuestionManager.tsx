@@ -122,13 +122,13 @@ function MathToolbar({ onInsert }: { onInsert: (s: string) => void }) {
               <button key={t.label} type="button" onClick={() => onInsert(`$${t.insert}$`)}
                 className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white border border-outline-variant/40 text-xs hover:border-primary hover:text-primary transition-colors group">
                 <span className="font-semibold">{t.label}</span>
-                <MathPreview text={`$${t.insert}$`} className="text-[10px] opacity-70 group-hover:opacity-100" />
+                <MathPreview text={`$${t.insert}$`} className="text-xs opacity-70 group-hover:opacity-100" />
               </button>
             ))}
           </div>
         )}
       </div>
-      <p className="px-3 pb-2 text-[10px] text-on-surface-variant">İnline: <code>$formula$</code> · Blok: <code>$$formula$$</code></p>
+      <p className="px-3 pb-2 text-sm text-on-surface-variant">İnline: <code>$formula$</code> · Blok: <code>$$formula$$</code></p>
     </div>
   );
 }
@@ -370,12 +370,12 @@ function QuestionForm({
           placeholder="https://....public.blob.vercel-storage.com/chart.png"
           className="w-full rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
-        <p className="mt-1.5 text-[11px] text-on-surface-variant">
+        <p className="mt-1.5 text-sm text-on-surface-variant">
           ⚠️ Şəkil Vercel Blob Storage-də (<code>*.public.blob.vercel-storage.com</code>) və ya saytın öz domenində (<code>/</code> ilə başlayan yol) saxlanılmalıdır. Başqa domenlər saxlanılarkən rədd ediləcək.
         </p>
         {form.imageUrl.trim() && (
           <div className="mt-2 rounded-xl border border-outline-variant bg-white p-2">
-            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Önizləmə</p>
+            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Önizləmə</p>
             {/*
               Deliberately a raw <img>, not next/image: this is a live validation
               preview of a URL the admin is still typing. Its job is to FAIL
@@ -390,7 +390,7 @@ function QuestionForm({
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'block'); }}
               onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = 'block'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'none'); }}
             />
-            <p className="text-[11px] text-red-600 font-medium" style={{ display: 'none' }}>
+            <p className="text-sm text-red-600 font-medium" style={{ display: 'none' }}>
               Şəkil yüklənmədi — URL yanlışdır və ya domen CSP tərəfindən bloklanır.
             </p>
           </div>
@@ -461,7 +461,7 @@ function QuestionForm({
           <button type="button" onClick={addOpenAnswer} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
             <Plus size={13} /> Cavab variantı əlavə et
           </button>
-          <p className="mt-1.5 text-[11px] text-on-surface-variant">Cavablar böyük/kiçik hərf və boşluqlara həssas deyil (məs. &quot;15 April&quot; = &quot;15april&quot;). Bütün düzgün variantları əlavə edin.</p>
+          <p className="mt-1.5 text-sm text-on-surface-variant">Cavablar böyük/kiçik hərf və boşluqlara həssas deyil (məs. &quot;15 April&quot; = &quot;15april&quot;). Bütün düzgün variantları əlavə edin.</p>
         </div>
       )}
 
@@ -565,7 +565,7 @@ function QuestionForm({
         <MathTextarea value={form.explanation} onChange={v => set('explanation', v)} placeholder="Düzgün cavabın izahatı... $formula$ dəstəklənir" rows={2} showToolbar />
       </div>
 
-      {validationError && <p className="text-xs text-red-600 font-medium">{validationError}</p>}
+      {validationError && <p className="text-sm text-red-600 font-medium">{validationError}</p>}
 
       <div className="flex items-center gap-2 pt-1">
         <button type="button" onClick={handleSubmit} disabled={pending}
@@ -638,7 +638,7 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
         )}
         {q.type === 'open' && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Açıq</span>
+            <span className="text-xs font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Açıq</span>
             {(q.openAnswers ?? []).filter(a => a.trim()).map((a, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">✓ {a}</span>
             ))}
@@ -667,12 +667,12 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
         {q.type === 'writing' && (
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-purple-100 text-purple-700 rounded-full">Yazı · {q.writingTaskType ?? 'general'}</span>
-              {(q.minWords ?? 0) > 0 && <span className="text-[10px] px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">Min {q.minWords} söz</span>}
-              {(q.maxWords ?? 0) > 0 && <span className="text-[10px] px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">Maks {q.maxWords} söz</span>}
+              <span className="text-xs font-black uppercase tracking-widest px-2 py-1 bg-purple-100 text-purple-700 rounded-full">Yazı · {q.writingTaskType ?? 'general'}</span>
+              {(q.minWords ?? 0) > 0 && <span className="text-xs px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">Min {q.minWords} söz</span>}
+              {(q.maxWords ?? 0) > 0 && <span className="text-xs px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">Maks {q.maxWords} söz</span>}
             </div>
             {q.rubric?.trim()
-              ? <p className="text-xs text-on-surface-variant line-clamp-2"><span className="font-bold">Rubric:</span> {q.rubric}</p>
+              ? <p className="text-sm text-on-surface-variant line-clamp-2"><span className="font-bold">Rubric:</span> {q.rubric}</p>
               : <span className="text-xs text-red-600 font-medium">⚠️ Rubric təyin edilməyib — AI qiymətləndirə bilməz</span>}
           </div>
         )}
@@ -744,7 +744,7 @@ export default function QuestionManager({ examId, modules, initialQuestions }: P
                 <span className="w-6 h-6 rounded-full bg-secondary-fixed/60 text-secondary flex items-center justify-center text-xs font-black">{mod.index + 1}</span>
                 <div className="text-left">
                   <p className="text-sm font-bold text-primary">{mod.name}</p>
-                  <p className="text-xs text-on-surface-variant">
+                  <p className="text-sm text-on-surface-variant">
                     {qs.length} / {mod.questionCount} sual
                     {qs.length < mod.questionCount && <span className="ml-1 text-amber-600 font-medium">· {mod.questionCount - qs.length} çatışmır</span>}
                     {qs.length >= mod.questionCount && mod.questionCount > 0 && <span className="ml-1 text-emerald-600 font-medium">· Tam</span>}

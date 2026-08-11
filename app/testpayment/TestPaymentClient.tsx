@@ -31,7 +31,7 @@ interface Props {
 
 function Json({ value }: { value: unknown }) {
   return (
-    <pre className="mt-2 overflow-x-auto rounded-lg bg-[#0d1117] p-4 text-xs leading-relaxed text-[#c9d1d9]">
+    <pre className="mt-2 overflow-x-auto rounded-lg bg-[#0d1117] p-4 text-sm leading-relaxed text-[#c9d1d9]">
       <code>{JSON.stringify(value, null, 2)}</code>
     </pre>
   );
@@ -161,7 +161,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
               <Webhook size={13} />
               Callback (result_url) — Epoint kabinetində bu ünvana yönləndirin:
             </p>
-            <code className="block break-all rounded bg-surface-container px-2 py-1 font-mono text-[11px] text-primary">
+            <code className="block break-all rounded bg-surface-container px-2 py-1 font-mono text-xs text-primary">
               {config.webhookUrl}
             </code>
           </div>
@@ -342,7 +342,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
               3 · İmza yoxlaması (offline)
             </h2>
           </div>
-          <p className="mb-4 text-xs text-on-surface-variant">
+          <p className="mb-4 text-sm text-on-surface-variant">
             Nümunə payload-u imzalayır və yerli olaraq təsdiqləyir — Epoint-ə sorğu göndərmədən
             data + signature kriptoqrafiyasının düzgün işlədiyini sübut edir.
           </p>

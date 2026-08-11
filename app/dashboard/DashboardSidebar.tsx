@@ -39,7 +39,7 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
       <div className="px-5 py-5 border-b border-rule">
         <Link href="/" onClick={onClose} className="flex items-center gap-2">
           <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
-          <span className="text-[15px] font-black text-ink tracking-tight font-display">
+          <span className="text-base font-black text-ink tracking-tight font-display">
             Test<span className="font-light">centre</span>
           </span>
         </Link>
@@ -99,8 +99,8 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
             </div>
           )}
           <div className="min-w-0">
-            <p className="font-medium text-ink text-xs leading-tight truncate">{viewer.fullName}</p>
-            <p className="text-[10px] text-ink-mute truncate">{viewer.email}</p>
+            <p className="font-medium text-ink text-sm leading-tight truncate">{viewer.fullName}</p>
+            <p className="text-sm text-ink-mute truncate">{viewer.email}</p>
           </div>
         </div>
       </div>

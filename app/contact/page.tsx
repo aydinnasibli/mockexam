@@ -53,11 +53,11 @@ export default function ContactPage() {
                 <span className="dot" />
                 <span className="eyebrow">Əlaqə</span>
               </div>
-              <h1 className="t-display mb-8 rise rise-1">
+              <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink mb-8 rise rise-1">
                 Birbaşa bizə{" "}
                 <span style={{ color: "var(--color-accent)" }}>yazın.</span>
               </h1>
-              <p className="t-lede max-w-120 mb-12 rise rise-2" style={{ color: "var(--color-ink-soft)" }}>
+              <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft max-w-120 mb-12 rise rise-2">
                 Hər mesajı insan oxuyur. Bot yoxdur, avtomatik cavab yoxdur. 24 saat ərzində geri qayıdırıq.
               </p>
 
@@ -67,8 +67,8 @@ export default function ContactPage() {
                   style={{ background: "var(--color-accent-soft)", border: "1px solid var(--color-ink)" }}
                 >
                   <div className="eyebrow mb-2" style={{ color: "var(--color-ink)" }}>Qəbul edildi</div>
-                  <h3 className="t-title mb-3">Təşəkkür edirik.</h3>
-                  <p className="text-[15px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>
+                  <h3 className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-3">Təşəkkür edirik.</h3>
+                  <p className="text-base leading-[1.6]">
                     Mesajınız bizə çatdı. Növbəti 24 saat ərzində geri yazacağıq.
                   </p>
                   <button
@@ -83,20 +83,20 @@ export default function ContactPage() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div>
-                      <label htmlFor="contact-name" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                      <label htmlFor="contact-name" className="block text-sm font-medium mb-2">
                         Ad Soyad
                       </label>
                       <input id="contact-name" name="name" className="input-new" placeholder="Aysel Məmmədova" maxLength={100} required />
                     </div>
                     <div>
-                      <label htmlFor="contact-email" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                      <label htmlFor="contact-email" className="block text-sm font-medium mb-2">
                         E-poçt
                       </label>
                       <input id="contact-email" name="email" className="input-new" type="email" placeholder="ad@nümunə.az" maxLength={200} required />
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="contact-subject" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                    <label htmlFor="contact-subject" className="block text-sm font-medium mb-2">
                       Mövzu
                     </label>
                     <select
@@ -116,7 +116,7 @@ export default function ContactPage() {
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="contact-message" className="block text-[13px] font-medium mb-2" style={{ color: "var(--color-ink-soft)" }}>
+                    <label htmlFor="contact-message" className="block text-sm font-medium mb-2">
                       Mesaj
                     </label>
                     <textarea
@@ -142,8 +142,8 @@ export default function ContactPage() {
               {contacts.map((c, i) => (
                 <div key={i} className="card-new">
                   <div className="eyebrow mb-3">{c.l}</div>
-                  <div className="font-display font-medium text-ink mb-1.5" style={{ fontSize: 22 }}>{c.k}</div>
-                  <p className="text-[13px] leading-[1.6]" style={{ color: "var(--color-ink-soft)" }}>{c.s}</p>
+                  <div className="font-display font-medium text-ink text-xl mb-1.5">{c.k}</div>
+                  <p className="text-sm leading-relaxed text-ink-soft">{c.s}</p>
                 </div>
               ))}
             </div>

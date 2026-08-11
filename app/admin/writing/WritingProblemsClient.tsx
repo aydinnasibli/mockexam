@@ -59,7 +59,7 @@ export default function WritingProblemsClient({ problems }: { problems: WritingE
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest border-b border-outline-variant/20">
+            <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
               <th className="px-5 py-4 font-black">İmtahan</th>
               <th className="px-5 py-4 font-black">İstifadəçi</th>
               <th className="px-5 py-4 font-black">Cəhd</th>
@@ -73,7 +73,7 @@ export default function WritingProblemsClient({ problems }: { problems: WritingE
               <tr key={p.resultId} className="hover:bg-surface-container-low/60 transition-colors">
                 <td className="px-5 py-3">
                   <span className="text-sm font-semibold text-primary">{p.examTitle}</span>
-                  <span className="ml-2 text-[10px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">{p.examTag}</span>
+                  <span className="ml-2 text-xs font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">{p.examTag}</span>
                 </td>
                 <td className="px-5 py-3 font-mono text-xs text-on-surface-variant">…{p.userId.slice(-10)}</td>
                 <td className="px-5 py-3 text-sm text-on-surface-variant">#{p.attemptNumber}</td>

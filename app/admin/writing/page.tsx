@@ -30,7 +30,7 @@ export default async function AdminWritingPage() {
           { label: 'Status', value: problems.length === 0 ? 'Təmiz' : 'Diqqət' },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white rounded-2xl border border-outline-variant/40 p-4 shadow-sm">
-            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest mb-1">{label}</p>
+            <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest mb-1">{label}</p>
             <p className={`text-2xl font-black ${label === 'Status' && problems.length > 0 ? 'text-amber-600' : 'text-primary'}`}>{value}</p>
           </div>
         ))}

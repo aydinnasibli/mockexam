@@ -143,13 +143,13 @@ export default async function AdminUserDetailPage({ params }: Props) {
                 {fullName}
               </h1>
               {isAdmin && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary-fixed/60 rounded-md text-[10px] font-black text-secondary uppercase tracking-widest">
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary-fixed/60 rounded-md text-xs font-black text-secondary uppercase tracking-widest">
                   <Shield size={10} /> Admin
                 </span>
               )}
             </div>
             <p className="text-sm text-on-surface-variant font-medium mt-0.5">{email}</p>
-            <p className="font-mono text-xs text-on-surface-variant mt-1">{user.id}</p>
+            <p className="font-mono text-sm text-on-surface-variant mt-1">{user.id}</p>
           </div>
           <div className="text-xs text-on-surface-variant space-y-1 sm:text-right shrink-0">
             <p>
@@ -170,7 +170,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
           <div key={label} className="bg-white rounded-2xl border border-outline-variant/40 p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <Icon size={12} className="text-on-surface-variant" />
-              <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">{label}</p>
+              <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest">{label}</p>
             </div>
             <p className="text-2xl font-black text-primary">{value}</p>
           </div>
@@ -193,7 +193,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
                   <p className="text-sm font-bold text-primary">
                     {examTitles.get(s.examId) ?? s.examId}
                   </p>
-                  <p className="text-xs text-on-surface-variant">
+                  <p className="text-sm text-on-surface-variant">
                     Başlanıb: {new Date(s.startedAt).toLocaleString('az-AZ')}
                   </p>
                 </div>
@@ -213,7 +213,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
         <h2 className="text-lg font-extrabold text-primary font-headline mb-1 flex items-center gap-2">
           <Gift size={18} className="text-secondary" /> Ödənişsiz Giriş Ver
         </h2>
-        <p className="text-xs text-on-surface-variant font-medium mb-4">
+        <p className="text-sm text-on-surface-variant font-medium mb-4">
           Seçilmiş imtahana ödəniş olmadan tam giriş verilir. Qrant istənilən vaxt geri alına bilər.
         </p>
         <GrantAccessForm userId={user.id} exams={grantableExams} />
@@ -234,7 +234,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest border-b border-outline-variant/20">
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
                   <th className="px-5 py-3 font-black">İmtahan</th>
                   <th className="px-5 py-3 font-black">Mənbə</th>
                   <th className="px-5 py-3 font-black">Status</th>
@@ -254,7 +254,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
                       </td>
                       <td className="px-5 py-3">
                         {isGrant ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary-fixed/60 rounded-md text-[10px] font-black text-secondary uppercase tracking-widest">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary-fixed/60 rounded-md text-xs font-black text-secondary uppercase tracking-widest">
                             <Gift size={10} /> Admin Qrantı
                           </span>
                         ) : (
@@ -307,7 +307,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest border-b border-outline-variant/20">
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
                   <th className="px-5 py-3 font-black">İmtahan</th>
                   <th className="px-5 py-3 font-black">Cəhd</th>
                   <th className="px-5 py-3 font-black">Bal</th>
@@ -321,7 +321,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
                   <tr key={String(r._id)} className="hover:bg-surface-container-low/60 transition-colors">
                     <td className="px-5 py-3">
                       <p className="text-sm font-semibold text-primary">{r.examTitle}</p>
-                      <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">{r.examTag}</p>
+                      <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest">{r.examTag}</p>
                     </td>
                     <td className="px-5 py-3 text-sm text-on-surface-variant">#{r.attemptNumber}</td>
                     <td className="px-5 py-3">
@@ -334,7 +334,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
                         {(r.moduleScores ?? []).map((m) => (
                           <span
                             key={m.moduleIndex}
-                            className="px-2 py-0.5 rounded-md bg-surface-container-low border border-outline-variant/20 text-[11px] font-bold text-on-surface-variant"
+                            className="px-2 py-0.5 rounded-md bg-surface-container-low border border-outline-variant/20 text-xs font-bold text-on-surface-variant"
                           >
                             {m.moduleName}: {m.scorePercent}%
                           </span>

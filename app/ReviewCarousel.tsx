@@ -121,8 +121,7 @@ export default function ReviewCarousel() {
       </div>
 
       <blockquote
-        className="font-display font-normal text-ink leading-[1.35] tracking-[-0.015em] mb-10"
-        style={{ fontSize: "clamp(20px, 2.2vw, 32px)", maxWidth: 820 }}
+        className="font-display font-normal text-ink text-xl md:text-2xl lg:text-3xl leading-snug tracking-tight mb-10 max-w-205"
       >
         {current.quote.split(current.accent).map((part, i, parts) => (
           <span key={i}>
@@ -136,7 +135,7 @@ export default function ReviewCarousel() {
 
       <div className="flex items-center gap-3">
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
           style={{
             background: "linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%)",
             color: "var(--color-ink-mute)",
@@ -145,8 +144,8 @@ export default function ReviewCarousel() {
           {current.initials}
         </div>
         <div>
-          <div className="text-[14px] font-medium text-ink">{current.name}</div>
-          <div className="text-[13px]" style={{ color: "var(--color-ink-soft)" }}>{current.detail}</div>
+          <div className="text-sm font-medium text-ink">{current.name}</div>
+          <div className="text-sm">{current.detail}</div>
         </div>
       </div>
     </>

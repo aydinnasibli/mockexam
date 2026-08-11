@@ -88,7 +88,7 @@ export default function SettingsClient() {
                   <p className="font-display font-bold text-ink text-lg leading-tight">{fullName}</p>
                   <p className="text-sm text-ink-soft mt-0.5">{email}</p>
                   {memberSince && (
-                    <p className="flex items-center gap-1.5 text-xs text-ink-mute mt-1.5">
+                    <p className="flex items-center gap-1.5 text-sm text-ink-mute mt-1.5">
                       <CalendarDays size={12} /> Üzv olduğu tarix: {memberSince}
                     </p>
                   )}
@@ -128,7 +128,7 @@ export default function SettingsClient() {
               <h2 className="eyebrow text-ink-mute">İmtahan Hədəfi</h2>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-xs text-ink-soft">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
+              <p className="text-sm text-ink-soft">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

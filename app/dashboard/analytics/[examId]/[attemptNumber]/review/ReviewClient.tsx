@@ -157,7 +157,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="tag-ink text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-bg/10 text-bg/70 border-0">
+                <span className="tag-ink text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-bg/10 text-bg/70 border-0">
                   {exam.tag}
                 </span>
                 <span className="text-bg/40 text-xs">·</span>
@@ -248,7 +248,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
             <RotateCcw size={16} className={`shrink-0 text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
             <div>
               <p className="text-sm font-semibold text-purple-900">Esseniz yoxlanılır</p>
-              <p className="text-xs text-purple-700">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal hazır olduqda avtomatik yenilənəcək — bu səhifəni bir azdan yeniləyin.</p>
+              <p className="text-sm text-purple-700">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal hazır olduqda avtomatik yenilənəcək — bu səhifəni bir azdan yeniləyin.</p>
             </div>
           </div>
         )}
@@ -275,7 +275,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                   >
                     {mod.name}
                     {moduleScore && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                         activeModule === modIdx ? 'bg-bg/20 text-bg' : 'bg-surface-2 text-ink-mute'
                       }`}>
                         {moduleScore.pending
@@ -342,14 +342,14 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       </div>
                       <div className="flex items-center gap-3">
                         {timeSecs > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] text-ink-mute font-medium">
+                          <span className="flex items-center gap-1 text-xs text-ink-mute font-medium">
                             <Clock size={11} /> {formatTime(timeSecs)}
                           </span>
                         )}
                         {hasPassage && (
                           <button
                             onClick={() => togglePassage(q.id)}
-                            className="flex items-center gap-1 text-[10px] font-medium text-ink-soft hover:text-ink transition-colors"
+                            className="flex items-center gap-1 text-xs font-medium text-ink-soft hover:text-ink transition-colors"
                           >
                             Mətn
                             <ChevronDown size={11} className={`transition-transform ${passageExpanded ? 'rotate-180' : ''}`} />
@@ -361,7 +361,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                     <div className="p-5">
                       {/* Passage (collapsible) */}
                       {hasPassage && passageExpanded && (
-                        <div className="passage-body mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-sm text-ink-soft max-h-48 overflow-y-auto">
+                        <div className="passage-body mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-ink-soft max-h-48 overflow-y-auto">
                           <PassageText text={questionPassage} />
                         </div>
                       )}
@@ -434,9 +434,9 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                   <div className="flex-1 text-sm">
                                     <p className="font-medium text-ink mb-1"><MathText text={item} /></p>
                                     {userPick >= 0 && !itemCorrect && (
-                                      <p className="text-error text-xs">Sizin: {OPTION_LABELS[userPick]}. {q.options[userPick]}</p>
+                                      <p className="text-error text-sm">Sizin: {OPTION_LABELS[userPick]}. {q.options[userPick]}</p>
                                     )}
-                                    <p className="text-ok text-xs font-medium">Doğru: {OPTION_LABELS[correctPick]}. {q.options[correctPick]}</p>
+                                    <p className="text-ok text-sm font-medium">Doğru: {OPTION_LABELS[correctPick]}. {q.options[correctPick]}</p>
                                   </div>
                                   {itemCorrect
                                     ? <CheckCircle2 size={15} className="text-ok shrink-0 mt-0.5" />
@@ -527,7 +527,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                   <RotateCcw size={14} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
                                   <p className="text-sm font-medium text-purple-900">Esseniz yoxlanılır…</p>
                                 </div>
-                                {aiFeedback && <p className="text-xs text-purple-800 leading-relaxed mt-2">{aiFeedback}</p>}
+                                {aiFeedback && <p className="text-sm text-purple-800 leading-relaxed mt-2">{aiFeedback}</p>}
                               </div>
                             )}
 
@@ -551,8 +551,8 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                           {c.score}
                                         </span>
                                         <div className="min-w-0">
-                                          <p className="text-xs font-medium text-ink">{c.criterion}</p>
-                                          <p className="text-xs text-ink-soft leading-relaxed">{c.comment}</p>
+                                          <p className="text-sm font-medium text-ink">{c.criterion}</p>
+                                          <p className="text-sm text-ink-soft leading-relaxed">{c.comment}</p>
                                         </div>
                                       </div>
                                     ))}
@@ -560,7 +560,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                 )}
 
                                 {aiFeedback && (
-                                  <p className="text-xs text-purple-900 leading-relaxed border-t border-purple-200 pt-3">{aiFeedback}</p>
+                                  <p className="text-sm text-purple-900 leading-relaxed border-t border-purple-200 pt-3">{aiFeedback}</p>
                                 )}
                               </div>
                             )}

@@ -19,15 +19,14 @@ export default function NotFound() {
       <main className="pt-18 min-h-screen bg-bg flex items-center justify-center px-6 py-24">
         <div className="text-center max-w-md">
           <p
-            className="font-display font-normal text-ink-faint leading-none select-none"
-            style={{ fontSize: 'clamp(80px, 15vw, 140px)', letterSpacing: '-0.04em' }}
+            className="font-display font-normal text-ink-faint text-8xl md:text-9xl leading-none tracking-tighter select-none"
           >
             404
           </p>
-          <h1 className="t-headline mt-4 mb-3">
+          <h1 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink mt-4 mb-3">
             Səhifə tapılmadı
           </h1>
-          <p className="text-[15px] text-ink-soft mb-8 leading-relaxed">
+          <p className="text-base text-ink-soft mb-8 leading-relaxed">
             Axtardığınız səhifə mövcud deyil və ya köçürülüb.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">

@@ -208,12 +208,11 @@ export default async function DashboardPage({
         <div className="relative z-10">
           <p className="eyebrow mb-4 capitalize" style={{ color: 'rgba(250,250,246,0.4)' }}>{todayString()}</p>
           <h1
-            className="font-display font-normal m-0"
-            style={{ fontSize: 40, lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--color-bg)' }}
+            className="font-display font-normal text-3xl md:text-4xl leading-tight tracking-tight text-bg m-0"
           >
             Xoş gəlmisiniz, {firstName}.
           </h1>
-          <p className="text-[14px] mt-3 mb-0" style={{ color: 'rgba(250,250,246,0.4)' }}>
+          <p className="text-sm mt-3 mb-0" style={{ color: 'rgba(250,250,246,0.4)' }}>
             {purchasedExams.length === 0
               ? 'Başlamaq üçün bir sınaq əldə edin.'
               : `${purchasedExams.length} aktiv sınaq · ${results.length} tamamlanan cəhd`}
@@ -236,10 +235,10 @@ export default async function DashboardPage({
                 <ArrowRight size={18} style={{ color: 'var(--color-ink)' }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-semibold text-ink m-0">{nextStep.label}</p>
-                <p className="text-[13px] text-ink-soft mt-0.5 line-clamp-1 m-0">{nextStep.desc}</p>
+                <p className="text-sm font-semibold text-ink m-0">{nextStep.label}</p>
+                <p className="text-sm text-ink-soft mt-0.5 line-clamp-1 m-0">{nextStep.desc}</p>
               </div>
-              <Link href={nextStep.href} className="btn-primary shrink-0 py-2! px-4! text-[13px]!">
+              <Link href={nextStep.href} className="btn-primary shrink-0 py-2! px-4! text-sm!">
                 {nextStep.cta}
               </Link>
             </FadeUp>
@@ -251,13 +250,13 @@ export default async function DashboardPage({
                   className="w-8 h-8 rounded-lg flex items-center justify-center mb-3"
                   style={{ background: 'var(--color-surface-2)' }}
                 >
-                  <ShoppingBag size={15} style={{ color: 'var(--color-ink-soft)' }} />
+                  <ShoppingBag size={15} />
                 </div>
-                <div className="font-display text-[28px] font-normal text-ink leading-none">{purchasedExams.length}</div>
-                <p className="text-[11px] text-ink-mute mt-1 m-0">Sınaqlarım</p>
+                <div className="font-display text-3xl font-normal text-ink leading-none">{purchasedExams.length}</div>
+                <p className="text-sm text-ink-mute mt-1 m-0">Sınaqlarım</p>
                 {exploreExams.length > 0
-                  ? <p className="text-[11px] text-ink-soft font-medium mt-1 m-0">+{exploreExams.length} kataloqda</p>
-                  : <p className="text-[11px] text-ink-mute mt-1 m-0">hamısı əldə edilib</p>
+                  ? <p className="text-sm text-ink-soft font-medium mt-1 m-0">+{exploreExams.length} kataloqda</p>
+                  : <p className="text-sm text-ink-mute mt-1 m-0">hamısı əldə edilib</p>
                 }
               </StaggerItem>
 
@@ -266,13 +265,13 @@ export default async function DashboardPage({
                   className="w-8 h-8 rounded-lg flex items-center justify-center mb-3"
                   style={{ background: 'var(--color-surface-2)' }}
                 >
-                  <TrendingUp size={15} style={{ color: 'var(--color-ink-soft)' }} />
+                  <TrendingUp size={15} />
                 </div>
-                <div className="font-display text-[28px] font-normal text-ink leading-none">{results.length}</div>
-                <p className="text-[11px] text-ink-mute mt-1 m-0">Cəhdlər</p>
+                <div className="font-display text-3xl font-normal text-ink leading-none">{results.length}</div>
+                <p className="text-sm text-ink-mute mt-1 m-0">Cəhdlər</p>
                 {weeklyAttempts > 0
-                  ? <p className="text-[11px] text-ok font-medium mt-1 m-0">+{weeklyAttempts} bu həftə</p>
-                  : <p className="text-[11px] text-ink-mute mt-1 m-0">bu həftə yoxdur</p>
+                  ? <p className="text-sm text-ok font-medium mt-1 m-0">+{weeklyAttempts} bu həftə</p>
+                  : <p className="text-sm text-ink-mute mt-1 m-0">bu həftə yoxdur</p>
                 }
               </StaggerItem>
 
@@ -281,21 +280,21 @@ export default async function DashboardPage({
                   className="w-8 h-8 rounded-lg flex items-center justify-center mb-3"
                   style={{ background: 'var(--color-surface-2)' }}
                 >
-                  <BarChart2 size={15} style={{ color: 'var(--color-ink-soft)' }} />
+                  <BarChart2 size={15} />
                 </div>
                 {typeAvgs.length === 0 ? (
                   <>
-                    <div className="font-display text-[28px] font-normal text-ink-mute leading-none">—</div>
-                    <p className="text-[11px] text-ink-mute mt-1 m-0">Ortalama</p>
+                    <div className="font-display text-3xl font-normal text-ink-mute leading-none">—</div>
+                    <p className="text-sm text-ink-mute mt-1 m-0">Ortalama</p>
                   </>
                 ) : typeAvgs.length === 1 ? (
                   <>
-                    <div className={`font-display text-[28px] font-normal leading-none ${scoreColor(typeAvgs[0].avg)}`}>
+                    <div className={`font-display text-3xl font-normal leading-none ${scoreColor(typeAvgs[0].avg)}`}>
                       {typeAvgs[0].avg}%
                     </div>
-                    <p className="text-[11px] text-ink-mute mt-1 m-0">{typeAvgs[0].label} ortalama</p>
+                    <p className="text-sm text-ink-mute mt-1 m-0">{typeAvgs[0].label} ortalama</p>
                     {scoreTrend != null && (
-                      <p className={`text-[11px] font-medium mt-1 m-0 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-ok' : scoreTrend < 0 ? 'text-error' : 'text-ink-mute'}`}>
+                      <p className={`text-sm font-medium mt-1 m-0 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-ok' : scoreTrend < 0 ? 'text-error' : 'text-ink-mute'}`}>
                         {scoreTrend > 0 ? <TrendingUp size={10} /> : scoreTrend < 0 ? <TrendingDown size={10} /> : null}
                         {scoreTrend > 0 ? `+${scoreTrend}` : scoreTrend}% son 3 cəhd
                       </p>
@@ -303,12 +302,12 @@ export default async function DashboardPage({
                   </>
                 ) : (
                   <>
-                    <p className="text-[11px] text-ink-mute mb-2 m-0">Növ üzrə ortalama</p>
+                    <p className="text-sm text-ink-mute mb-2 m-0">Növ üzrə ortalama</p>
                     <div className="space-y-1">
                       {typeAvgs.map(t => (
                         <div key={t.type} className="flex items-center justify-between">
-                          <span className="text-[11px] font-medium text-ink-soft">{t.label}</span>
-                          <span className={`text-[11px] font-bold ${scoreColor(t.avg)}`}>{t.avg}%</span>
+                          <span className="text-xs font-medium text-ink-soft">{t.label}</span>
+                          <span className={`text-xs font-bold ${scoreColor(t.avg)}`}>{t.avg}%</span>
                         </div>
                       ))}
                     </div>
@@ -322,7 +321,7 @@ export default async function DashboardPage({
               <FadeUp delay={0.1} className="flex items-center justify-between mb-4">
                 <h2 className="eyebrow">Mənim Sınaqlarım</h2>
                 {results.length > 0 && (
-                  <Link href="/dashboard/analytics" className="text-[12px] font-medium text-ink-soft hover:text-ink flex items-center gap-1">
+                  <Link href="/dashboard/analytics" className="text-xs font-medium text-ink-soft hover:text-ink flex items-center gap-1">
                     Nəticələr <ArrowRight size={12} />
                   </Link>
                 )}
@@ -336,8 +335,8 @@ export default async function DashboardPage({
                   >
                     <ShoppingBag size={20} style={{ color: 'var(--color-bg)' }} />
                   </div>
-                  <h3 className="font-display text-[16px] font-normal text-ink mb-2">Hələ sınaq yoxdur</h3>
-                  <p className="text-[13px] text-ink-soft mb-6 max-w-xs mx-auto m-0">
+                  <h3 className="font-display text-base font-normal text-ink mb-2">Hələ sınaq yoxdur</h3>
+                  <p className="text-sm text-ink-soft mb-6 max-w-xs mx-auto m-0">
                     Mövcud sınaq paketlərini kəşf edin və hazırlığa başlayın.
                   </p>
                   <Link href="/exams" className="btn-primary">
@@ -354,7 +353,7 @@ export default async function DashboardPage({
               <section>
                 <FadeUp delay={0.05} className="flex items-center justify-between mb-4">
                   <h2 className="eyebrow">Kəşf et</h2>
-                  <Link href="/exams" className="text-[12px] font-medium text-ink-soft hover:text-ink flex items-center gap-1">
+                  <Link href="/exams" className="text-xs font-medium text-ink-soft hover:text-ink flex items-center gap-1">
                     Hamısı <ArrowRight size={12} />
                   </Link>
                 </FadeUp>
@@ -367,12 +366,12 @@ export default async function DashboardPage({
                           className="bg-surface rounded-2xl border border-rule p-4 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
                           <div className="flex items-start justify-between mb-3">
                             <span className="tag tag-accent">{exam.tag}</span>
-                            <span className="font-display text-[15px] font-normal text-ink">{exam.price} ₼</span>
+                            <span className="font-display text-base font-normal text-ink">{exam.price} ₼</span>
                           </div>
-                          <h3 className="font-display font-normal text-ink text-[13px] leading-snug mb-auto group-hover:text-ink-soft transition-colors m-0">
+                          <h3 className="font-display font-normal text-ink text-sm leading-snug mb-auto group-hover:text-ink-soft transition-colors m-0">
                             {exam.title}
                           </h3>
-                          <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-rule text-[11px] text-ink-mute">
+                          <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-rule text-xs text-ink-mute">
                             <span className="flex items-center gap-0.5"><Timer size={10} />{examMinutes}d</span>
                             <span className="flex items-center gap-0.5"><HelpCircle size={10} />{exam.totalQuestions}s</span>
                             <span className="ml-auto text-ink font-medium">Bax →</span>
@@ -394,19 +393,18 @@ export default async function DashboardPage({
               <StaggerItem className="rounded-2xl border border-rule bg-surface-2 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <p className="eyebrow m-0">İmtahan geri sayımı</p>
-                  <Link href="/dashboard/settings" className="text-[11px] font-medium text-ink-mute hover:text-ink transition-colors">
+                  <Link href="/dashboard/settings" className="text-xs font-medium text-ink-mute hover:text-ink transition-colors">
                     Dəyişdir
                   </Link>
                 </div>
-                <p className="text-[12px] text-ink-soft mb-4 m-0">{countdown.dateStr}</p>
+                <p className="text-sm text-ink-soft mb-4 m-0">{countdown.dateStr}</p>
                 <div className="text-center py-3">
                   <p
-                    className="font-display font-normal text-ink"
-                    style={{ fontSize: 48, lineHeight: 1, letterSpacing: '-0.025em' }}
+                    className="font-display font-normal text-ink text-5xl leading-none tracking-tight"
                   >
                     {countdown.days}
                   </p>
-                  <p className="text-[13px] font-medium text-ink-soft mt-1 m-0">
+                  <p className="text-sm font-medium text-ink-soft mt-1 m-0">
                     {countdown.days === 0 ? 'Bugün!' : countdown.days === 1 ? 'gün qalıb' : 'gün qalır'}
                   </p>
                 </div>
@@ -423,7 +421,7 @@ export default async function DashboardPage({
               <StaggerItem className="bg-surface rounded-2xl border border-rule overflow-hidden">
                 <div className="px-5 py-4 border-b border-rule flex items-center justify-between">
                   <h2 className="eyebrow">Son Fəaliyyət</h2>
-                  <Link href="/dashboard/analytics" className="text-[12px] font-medium text-ink-soft hover:text-ink">Hamısı</Link>
+                  <Link href="/dashboard/analytics" className="text-xs font-medium text-ink-soft hover:text-ink">Hamısı</Link>
                 </div>
                 {/*
                   Each row links straight to that attempt's answer-by-answer
@@ -442,12 +440,12 @@ export default async function DashboardPage({
                         className={`w-2 h-2 rounded-full shrink-0 ${scoreBarColor(r.score)}`}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-medium text-ink truncate m-0">{r.examTitle}</p>
-                        <p className="text-[11px] text-ink-mute mt-0.5 m-0">
+                        <p className="text-sm font-medium text-ink truncate m-0">{r.examTitle}</p>
+                        <p className="text-sm text-ink-mute mt-0.5 m-0">
                           {shortDate(r.completedAt)} · {formatDuration(r.durationSeconds)}
                         </p>
                       </div>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${scoreBg(r.score)}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${scoreBg(r.score)}`}>
                         {(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}
                       </span>
                       <BookOpen size={13} className="shrink-0 text-ink-mute opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -455,7 +453,7 @@ export default async function DashboardPage({
                   ))}
                 </div>
                 <div className="px-4 py-2.5 border-t border-rule">
-                  <p className="text-[11px] text-ink-mute m-0">
+                  <p className="text-sm text-ink-mute m-0">
                     Cavablarınızı görmək üçün bir cəhdə toxunun.
                   </p>
                 </div>
@@ -468,11 +466,11 @@ export default async function DashboardPage({
                 >
                   <BarChart2 size={18} style={{ color: 'var(--color-ink-mute)' }} />
                 </div>
-                <p className="text-[13px] font-semibold text-ink mb-1 m-0">Fəaliyyət yoxdur</p>
-                <p className="text-[12px] text-ink-soft mb-4 m-0">
+                <p className="text-sm font-semibold text-ink mb-1 m-0">Fəaliyyət yoxdur</p>
+                <p className="text-sm text-ink-soft mb-4 m-0">
                   İmtahan bitirdikdən sonra nəticələriniz burada görünəcək.
                 </p>
-                <Link href="/exams" className="text-[12px] font-medium text-ink-soft hover:text-ink inline-flex items-center gap-1">
+                <Link href="/exams" className="text-xs font-medium text-ink-soft hover:text-ink inline-flex items-center gap-1">
                   Sınaqlara bax <ArrowRight size={12} />
                 </Link>
               </StaggerItem>

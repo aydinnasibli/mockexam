@@ -117,7 +117,7 @@ export default function CookieNotice() {
             </button>
 
             <p
-              className="text-[13px] leading-relaxed m-0 mb-3"
+              className="text-sm leading-relaxed m-0 mb-3"
               style={{ color: 'var(--color-ink-soft)' }}
             >
               Saytın işləməsi, təhlükəsizlik və istifadə statistikası üçün cookie və
@@ -134,7 +134,7 @@ export default function CookieNotice() {
 
             <button
               onClick={dismiss}
-              className="btn-primary text-[13px] px-4 py-2 rounded-xl"
+              className="btn-primary text-sm px-4 py-2 rounded-xl"
             >
               Anladım
             </button>

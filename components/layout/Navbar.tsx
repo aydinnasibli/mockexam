@@ -40,7 +40,7 @@ export default function Navbar() {
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center gap-2 shrink-0 group">
             <Image src="/logo.svg" alt="Testcentre" width={24} height={22} className="shrink-0 group-hover:scale-110 transition-transform duration-200" />
-            <span className="font-display text-[25px] font-medium text-ink tracking-tight leading-none">
+            <span className="font-display text-2xl font-medium text-ink tracking-tight leading-none">
               Test<span className="font-normal" style={{ color: 'var(--color-ink-soft)' }}>centre</span>
             </span>
           </Link>
@@ -53,7 +53,7 @@ export default function Navbar() {
                 <Link
                   key={href}
                   href={href}
-                  className={`relative px-4 py-2 text-[14px] font-medium rounded-xl transition-all duration-150 ${
+                  className={`relative px-4 py-2 text-sm font-medium rounded-xl transition-all duration-150 ${
                     isActive
                       ? "text-ink"
                       : "text-ink-mute hover:text-ink hover:bg-surface-2"
@@ -82,12 +82,12 @@ export default function Navbar() {
               ) : !isSignedIn ? (
                 <>
                   <SignInButton mode="modal">
-                    <button className="text-ink-mute hover:text-ink text-[14px] font-medium px-4 py-2 rounded-lg hover:bg-surface-2 transition-all duration-200">
+                    <button className="text-ink-mute hover:text-ink text-sm font-medium px-4 py-2 rounded-lg hover:bg-surface-2 transition-all duration-200">
                       Daxil ol
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className="text-[13.5px] font-medium px-5 py-2 bg-ink text-bg rounded-full hover:bg-ink/85 transition-colors">
+                    <button className="text-sm font-medium px-5 py-2 bg-ink text-bg rounded-full hover:bg-ink/85 transition-colors">
                       Qeydiyyat
                     </button>
                   </SignUpButton>
@@ -96,7 +96,7 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/dashboard"
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       pathname.startsWith("/dashboard")
                         ? "bg-surface-2 text-ink"
                         : "text-ink-mute hover:bg-surface-2 hover:text-ink"
@@ -167,7 +167,7 @@ export default function Navbar() {
                       key={href}
                       href={href}
                       onClick={() => setMobileOpen(false)}
-                      className={`block px-4 py-3 text-[15px] font-medium rounded-xl transition-colors ${
+                      className={`block px-4 py-3 text-base font-medium rounded-xl transition-colors ${
                         isActive ? "text-ink bg-surface-2" : "text-ink-soft hover:text-ink hover:bg-surface-2"
                       }`}
                     >
@@ -182,7 +182,7 @@ export default function Navbar() {
                       <SignInButton mode="modal">
                         <button
                           onClick={() => setMobileOpen(false)}
-                          className="flex-1 py-2.5 px-4 rounded-xl border border-rule text-[14px] font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+                          className="flex-1 py-2.5 px-4 rounded-xl border border-rule text-sm font-medium text-ink-soft hover:bg-surface-2 transition-colors"
                         >
                           Daxil ol
                         </button>
@@ -190,7 +190,7 @@ export default function Navbar() {
                       <SignUpButton mode="modal">
                         <button
                           onClick={() => setMobileOpen(false)}
-                          className="flex-1 py-2.5 px-4 rounded-xl bg-ink text-bg text-[14px] font-medium hover:bg-ink/90 transition-colors"
+                          className="flex-1 py-2.5 px-4 rounded-xl bg-ink text-bg text-sm font-medium hover:bg-ink/90 transition-colors"
                         >
                           Qeydiyyat
                         </button>
@@ -200,7 +200,7 @@ export default function Navbar() {
                     <Link
                       href="/dashboard"
                       onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-[15px] font-medium text-ink hover:bg-surface-2 transition-colors"
+                      className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-base font-medium text-ink hover:bg-surface-2 transition-colors"
                     >
                       <LayoutDashboard size={16} className="opacity-70" />
                       Kabinetim

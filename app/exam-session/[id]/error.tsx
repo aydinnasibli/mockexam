@@ -27,7 +27,7 @@ export default function ExamSessionError({ error, reset }: Props) {
         <p className="text-sm text-on-surface-variant mb-2">
           İmtahan yüklənərkən problem yarandı.
         </p>
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-7">
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-7">
           Əgər imtahanı artıq başlamışdınızsa, nəticəniz saxlanılmamış ola bilər.
         </p>
         <div className="flex flex-col gap-3">

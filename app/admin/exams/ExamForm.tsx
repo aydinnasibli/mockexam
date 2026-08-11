@@ -383,7 +383,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-lg font-bold text-primary font-headline">Modullar / Bölmələr</h2>
-              <p className="text-xs text-on-surface-variant mt-0.5">
+              <p className="text-sm text-on-surface-variant mt-0.5">
                 Hər imtahan bir və ya bir neçə moduldan ibarət olur. Sıra mühümdür.
               </p>
             </div>
@@ -523,7 +523,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
           />
         </div>
 
-        <span className="text-[10px] font-black text-secondary bg-secondary-fixed/60 px-2 py-0.5 rounded-full shrink-0">
+        <span className="text-xs font-black text-secondary bg-secondary-fixed/60 px-2 py-0.5 rounded-full shrink-0">
           {MODULE_TYPES.find(t => t.value === mod.type)?.label ?? mod.type}
         </span>
 
@@ -587,7 +587,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
                 className="w-4 h-4 accent-secondary"
               />
               <span className="text-sm font-medium text-on-surface">Adaptiv modul</span>
-              <span className="text-[10px] text-on-surface-variant">(nəticəyə əsasən çətinlik dəyişir)</span>
+              <span className="text-xs text-on-surface-variant">(nəticəyə əsasən çətinlik dəyişir)</span>
             </label>
           </div>
 
@@ -633,7 +633,7 @@ function Field({ label, hint, className, children }: { label: string; hint?: str
   return (
     <div className={className}>
       <label className="field-label">{label}</label>
-      {hint && <p className="text-[10px] text-on-surface-variant mb-1.5 -mt-0.5">{hint}</p>}
+      {hint && <p className="text-sm text-on-surface-variant mb-1.5 -mt-0.5">{hint}</p>}
       {children}
     </div>
   );

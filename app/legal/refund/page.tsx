@@ -63,11 +63,11 @@ export default function RefundPage() {
             <span className="dot" />
             <span className="eyebrow">Hüquqi</span>
           </div>
-          <h1 className="t-display mb-4 rise rise-1">Geri Qaytarma Siyasəti</h1>
-          <p className="t-lede mb-4 rise rise-2" style={{ color: 'var(--color-ink-soft)' }}>
+          <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink mb-4 rise rise-1">Geri Qaytarma Siyasəti</h1>
+          <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-4 rise rise-2">
             Son yenilənmə: 26 may 2026
           </p>
-          <p className="text-[16px] leading-[1.7] mb-16 rise rise-2" style={{ color: 'var(--color-ink-soft)', maxWidth: '640px' }}>
+          <p className="text-base leading-[1.7] mb-16 rise rise-2" style={{ color: 'var(--color-ink-soft)', maxWidth: '640px' }}>
             Testcentre rəqəmsal xidmət satır. Ödəniş tamamlandıqda xidmət dərhal başladığından ümumi qaydada
             geri qaytarma aparılmır. Aşağıda istisna hallar ətraflı izah edilir.
           </p>
@@ -79,13 +79,13 @@ export default function RefundPage() {
                   <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <h2 className="t-title">{s.title}</h2>
+                  <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">{s.title}</h2>
                 </div>
                 <div className="pl-13">
                   {s.content.split('\n\n').map((para, j) => (
                     <p
                       key={j}
-                      className="text-[15px] leading-[1.75] mb-4 last:mb-0"
+                      className="text-base leading-[1.75] mb-4 last:mb-0"
                       style={{ color: 'var(--color-ink-soft)', whiteSpace: 'pre-line' }}
                     >
                       {para}

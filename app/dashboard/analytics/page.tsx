@@ -125,19 +125,18 @@ export default async function AnalyticsPage() {
           <span className="eyebrow" style={{ color: 'var(--color-ink)' }}>Nəticələr</span>
         </div>
         <h1
-          className="font-display font-normal text-ink m-0 mb-3"
-          style={{ fontSize: 'clamp(28px, 2.8vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.02em' }}
+          className="font-display font-normal text-ink text-3xl md:text-4xl leading-tight tracking-tight m-0 mb-3"
         >
           Sınaq <span>analitikası.</span>
         </h1>
-        <p className="text-[16px] leading-[1.55] text-ink-soft m-0">Bütün imtahan cəhdlərinin tarixi və statistikası.</p>
+        <p className="text-base leading-[1.55] text-ink-soft m-0">Bütün imtahan cəhdlərinin tarixi və statistikası.</p>
       </div>
 
       {/* Summary — one row per exam type, never one figure across all of them */}
       {totalAttempts > 0 && (
         <div className="border-y border-rule py-8 mb-10">
           <div className="flex items-baseline gap-3 mb-7">
-            <div className="t-num text-ink" style={{ fontSize: 'clamp(28px, 4vw, 40px)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            <div className="font-display tabular-nums lining-nums text-ink text-3xl md:text-4xl leading-none tracking-tight">
               {totalAttempts}
             </div>
             <div className="eyebrow">ümumi cəhd</div>
@@ -146,7 +145,7 @@ export default async function AnalyticsPage() {
           <div className="eyebrow mb-4">Növ üzrə nəticə</div>
           <div className="space-y-px">
             {/* Column headers — hidden on narrow screens where rows stack */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_90px_120px_120px] px-1 pb-2 text-[11px] font-medium text-ink-mute">
+            <div className="hidden sm:grid sm:grid-cols-[1fr_90px_120px_120px] px-1 pb-2 text-xs font-medium text-ink-mute">
               <span>İmtahan növü</span>
               <span className="text-right">Cəhd</span>
               <span className="text-right">Ortalama</span>
@@ -157,15 +156,15 @@ export default async function AnalyticsPage() {
                 key={g.type}
                 className="grid grid-cols-2 sm:grid-cols-[1fr_90px_120px_120px] gap-y-1.5 items-center px-1 py-3 border-t border-rule"
               >
-                <span className="col-span-2 sm:col-span-1 text-[14px] font-medium text-ink">{g.label}</span>
-                <span className="text-[13px] text-ink-mute sm:text-right">
+                <span className="col-span-2 sm:col-span-1 text-sm font-medium text-ink">{g.label}</span>
+                <span className="text-sm text-ink-mute sm:text-right">
                   <span className="sm:hidden">Cəhd: </span>{g.count}
                 </span>
-                <span className={`text-[14px] font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
-                  <span className="sm:hidden text-[13px] font-normal text-ink-mute">Ortalama: </span>{g.avg}
+                <span className={`text-sm font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
+                  <span className="sm:hidden text-sm font-normal text-ink-mute">Ortalama: </span>{g.avg}
                 </span>
-                <span className={`text-[14px] font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
-                  <span className="sm:hidden text-[13px] font-normal text-ink-mute">Ən yaxşı: </span>{g.best}
+                <span className={`text-sm font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
+                  <span className="sm:hidden text-sm font-normal text-ink-mute">Ən yaxşı: </span>{g.best}
                 </span>
               </div>
             ))}
@@ -176,8 +175,8 @@ export default async function AnalyticsPage() {
       {/* No attempts */}
       {totalAttempts === 0 && (
         <div className="card-new text-center py-20">
-          <h3 className="t-title m-0 mb-3">Hələ nəticə yoxdur</h3>
-          <p className="text-[14px] text-ink-soft mb-6 max-w-xs mx-auto m-0">
+          <h3 className="font-display font-medium text-xl leading-tight tracking-tight text-ink m-0 mb-3">Hələ nəticə yoxdur</h3>
+          <p className="text-sm text-ink-soft mb-6 max-w-xs mx-auto m-0">
             {purchasedExams.length > 0
               ? 'Sınaq başlatdıqdan sonra nəticələriniz burada görünəcək.'
               : 'Sınaq aldıqdan sonra nəticələriniz burada görünəcək.'}
@@ -213,10 +212,10 @@ export default async function AnalyticsPage() {
                       <span className="tag tag-accent">{exam.tag}</span>
                       <span className="tag">{examResults.length} cəhd</span>
                     </div>
-                    <h3 className="font-display font-normal text-ink m-0 mb-1" style={{ fontSize: 18 }}>
+                    <h3 className="font-display font-normal text-ink text-lg m-0 mb-1">
                       {exam.title}
                     </h3>
-                    <div className="flex items-center gap-4 text-[12px] text-ink-mute">
+                    <div className="flex items-center gap-4 text-xs text-ink-mute">
                       <span className="flex items-center gap-1"><Timer size={11} />{examMinutes} dəq</span>
                       <span>Ən yaxşı: <span className={`font-bold ${scoreColor(best)}`}>{bestDisp.value}{bestDisp.unit !== '%' ? ` ${bestDisp.unit}` : '%'}</span></span>
                       {examResults.length > 1 && (
@@ -226,7 +225,7 @@ export default async function AnalyticsPage() {
                   </div>
                   <Link
                     href={`/dashboard/analytics/${exam.id}`}
-                    className="btn-ghost py-2! px-4! text-[13px]! shrink-0"
+                    className="btn-ghost py-2! px-4! text-sm! shrink-0"
                   >
                     Ətraflı <span className="arrow">→</span>
                   </Link>
@@ -236,7 +235,7 @@ export default async function AnalyticsPage() {
                 <div style={{ borderTop: '1px solid var(--color-rule)' }}>
                   {/* Table header */}
                   <div
-                    className="grid px-6 py-2 text-[11px] font-medium text-ink-mute"
+                    className="grid px-6 py-2 text-xs font-medium text-ink-mute"
                     style={{
                       background: 'var(--color-surface-2)',
                       gridTemplateColumns: '40px 1fr 100px 80px 80px',
@@ -253,7 +252,7 @@ export default async function AnalyticsPage() {
                     {examResults.slice(0, 3).map(r => (
                       <div
                         key={r.id}
-                        className="grid px-6 py-3 items-center text-[13px]"
+                        className="grid px-6 py-3 items-center text-sm"
                         style={{ gridTemplateColumns: '40px 1fr 100px 80px 80px' }}
                       >
                         <span className="text-ink-mute font-medium">#{r.attemptNumber}</span>
@@ -270,7 +269,7 @@ export default async function AnalyticsPage() {
                             deeper, under "Ətraflı". */}
                         <Link
                           href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
-                          className="justify-self-end flex items-center gap-1 px-2.5 py-1 border border-rule rounded-lg text-[11px] font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+                          className="justify-self-end flex items-center gap-1 px-2.5 py-1 border border-rule rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors"
                         >
                           <BookOpen size={11} /> İcmal
                         </Link>
@@ -281,7 +280,7 @@ export default async function AnalyticsPage() {
                   {examResults.length > 3 && (
                     <Link
                       href={`/dashboard/analytics/${exam.id}`}
-                      className="flex items-center justify-center gap-1 py-3 text-[12px] font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+                      className="flex items-center justify-center gap-1 py-3 text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors"
                       style={{ borderTop: '1px solid var(--color-rule)' }}
                     >
                       Bütün cəhdlərə bax <ChevronRight size={12} />
@@ -297,10 +296,10 @@ export default async function AnalyticsPage() {
       {/* Not attempted note */}
       {notAttemptedCount > 0 && totalAttempts > 0 && (
         <div className="mt-6 px-5 py-4 bg-surface rounded-2xl border border-rule flex items-center justify-between">
-          <p className="text-[13px] text-ink-soft m-0">
+          <p className="text-sm text-ink-soft m-0">
             <span className="font-semibold text-ink">{notAttemptedCount}</span> sınağa hələ başlamadınız.
           </p>
-          <Link href="/dashboard" className="text-[13px] font-medium text-ink-soft hover:text-ink">
+          <Link href="/dashboard" className="text-sm font-medium text-ink-soft hover:text-ink">
             Panelə get →
           </Link>
         </div>

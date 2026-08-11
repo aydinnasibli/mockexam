@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Newsreader, Geist, JetBrains_Mono } from "next/font/google";
+import { Roboto, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import { PostHogProvider, PostHogPageView } from '@posthog/next';
 import { Toaster } from 'sonner';
@@ -23,16 +23,17 @@ import "./globals.css";
  * The subset lists are repeated per call rather than shared from a constant:
  * next/font resolves these options at build time and rejects a spread.
  */
-const newsreader = Newsreader({
+/*
+ * One family for both headings and body. The site previously paired a display
+ * serif (Newsreader) with a separate body sans (Geist); Roboto now serves both
+ * roles, so `--font-display` and `--font-sans` resolve to the same face.
+ * The two tokens are kept distinct anyway — every call site already targets one
+ * or the other, so reintroducing a display face later is a one-line change here
+ * rather than an edit across every component.
+ */
+const roboto = Roboto({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-newsreader",
-  style: ["normal"],
-  display: "swap",
-});
-
-const geist = Geist({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-geist",
+  variable: "--font-roboto",
   display: "swap",
 });
 
@@ -122,7 +123,7 @@ export default function RootLayout({
   // egress destination for analytics we don't use.
   return (
     <ClerkProvider telemetry={false}>
-      <html lang="az" className={`${newsreader.variable} ${geist.variable} ${mono.variable}`}>
+      <html lang="az" className={`${roboto.variable} ${mono.variable}`}>
         <head>
           {/*
             Kept in <head> rather than as a child of <body>: Clerk and PostHog

@@ -96,12 +96,12 @@ export default async function AdminOverviewPage() {
               <div className="p-2 bg-secondary-fixed/60 text-secondary rounded-xl">
                 <Icon size={18} />
               </div>
-              <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">
+              <span className="text-xs font-black text-on-surface-variant uppercase tracking-widest">
                 {label}
               </span>
             </div>
             <div className="text-3xl font-black text-primary">{value}</div>
-            {sub && <p className="text-xs text-on-surface-variant mt-1 font-medium">{sub}</p>}
+            {sub && <p className="text-sm text-on-surface-variant mt-1 font-medium">{sub}</p>}
           </div>
         ))}
       </div>
@@ -127,7 +127,7 @@ export default async function AdminOverviewPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest">
+                  <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest">
                     <th className="px-5 py-4 font-black">İstifadəçi</th>
                     <th className="px-5 py-4 font-black">İmtahan</th>
                     <th className="px-5 py-4 font-black">Məbləğ</th>
@@ -186,7 +186,7 @@ export default async function AdminOverviewPage() {
           {/* Seed */}
           <div className="bg-white rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-primary font-headline mb-2">Verilənlər Bazası</h2>
-            <p className="text-xs text-on-surface-variant mb-4">
+            <p className="text-sm text-on-surface-variant mb-4">
               Standart imtahan kataloqgunu DB-yə idxal et. Mövcud imtahanlar keçilər.
             </p>
             <SeedButton />

@@ -133,7 +133,7 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Sınaq axtar…"
                 aria-label="Sınaqlarım arasında axtar"
-                className="input-new pl-9 pr-9 py-2! text-[13px]!"
+                className="input-new pl-9 pr-9 py-2! text-sm!"
               />
               {query && (
                 <button
@@ -151,7 +151,7 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
               <select
                 value={sort}
                 onChange={e => setSort(e.target.value as SortKey)}
-                className="input-new py-2! text-[13px]! w-auto"
+                className="input-new py-2! text-sm! w-auto"
               >
                 {(Object.keys(SORT_LABELS) as SortKey[]).map(k => (
                   <option key={k} value={k}>{SORT_LABELS[k]}</option>
@@ -169,7 +169,7 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                     key={t.value}
                     onClick={() => setType(t.value)}
                     aria-pressed={active}
-                    className="px-3 py-1 rounded-full text-[12px] font-medium transition-colors"
+                    className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
                     style={{
                       background: active ? 'var(--color-ink)' : 'var(--color-surface)',
                       color:      active ? 'var(--color-bg)'  : 'var(--color-ink-soft)',
@@ -190,12 +190,12 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
 
       {visible.length === 0 ? (
         <div className="bg-surface rounded-2xl border border-rule p-8 text-center">
-          <p className="text-[13px] text-ink-soft m-0">
+          <p className="text-sm text-ink-soft m-0">
             &ldquo;{query}&rdquo; üçün sınaq tapılmadı.
           </p>
           <button
             onClick={() => { setQuery(''); setType('all'); }}
-            className="text-[12px] font-medium text-ink-soft hover:text-ink mt-3"
+            className="text-xs font-medium text-ink-soft hover:text-ink mt-3"
           >
             Filtrləri sıfırla
           </button>
@@ -210,11 +210,11 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                     <span className="tag tag-accent">{exam.tag}</span>
                     {exam.attemptCount > 0
                       ? <span className="tag">{exam.attemptCount} cəhd</span>
-                      : <span className="text-[11px] font-medium text-warn bg-amber-50 px-2 py-0.5 rounded-full">Başlanmayıb</span>
+                      : <span className="text-xs font-medium text-warn bg-amber-50 px-2 py-0.5 rounded-full">Başlanmayıb</span>
                     }
                   </div>
-                  <h3 className="font-display text-[15px] font-normal text-ink leading-snug m-0">{exam.title}</h3>
-                  <div className="flex items-center gap-3 mt-1.5 text-[12px] text-ink-mute">
+                  <h3 className="font-display text-base font-normal text-ink leading-snug m-0">{exam.title}</h3>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-ink-mute">
                     <span className="flex items-center gap-1"><Timer size={11} />{exam.minutes} dəq</span>
                     <span className="flex items-center gap-1"><HelpCircle size={11} />{exam.totalQuestions} sual</span>
                   </div>
@@ -226,8 +226,8 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                   <>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] text-ink-mute">Son nəticə</span>
-                        <span className={`text-[11px] font-bold ${scoreColor(exam.lastScore)}`}>
+                        <span className="text-xs text-ink-mute">Son nəticə</span>
+                        <span className={`text-xs font-bold ${scoreColor(exam.lastScore)}`}>
                           {exam.lastScoreLabel}
                         </span>
                       </div>
@@ -240,24 +240,24 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                     </div>
                     <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                       <Link href={`/dashboard/analytics/${exam.id}/${exam.lastAttemptNumber}/review`}
-                        className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-[12px] font-medium text-ink-soft hover:bg-surface-2 transition-colors">
+                        className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors">
                         <BookOpen size={12} /> İcmal
                       </Link>
                       <Link href={`/dashboard/analytics/${exam.id}`}
-                        className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-[12px] font-medium text-ink-soft hover:bg-surface-2 transition-colors">
+                        className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors">
                         <BarChart2 size={12} /> Analiz
                       </Link>
                       <Link href={`/exam-session/${exam.id}`}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-ink text-bg rounded-lg text-[12px] font-medium hover:opacity-90 transition-opacity">
+                        className="flex items-center gap-1 px-3 py-1.5 bg-ink text-bg rounded-lg text-xs font-medium hover:opacity-90 transition-opacity">
                         <Play size={12} /> Yenidən
                       </Link>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p className="flex-1 text-[13px] text-ink-soft m-0">İlk cəhdinizi başladın!</p>
+                    <p className="flex-1 text-sm text-ink-soft m-0">İlk cəhdinizi başladın!</p>
                     <Link href={`/exam-session/${exam.id}`}
-                      className="flex items-center gap-1.5 px-4 py-1.5 bg-ink text-bg rounded-lg text-[12px] font-medium hover:opacity-90 transition-opacity">
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-ink text-bg rounded-lg text-xs font-medium hover:opacity-90 transition-opacity">
                       <Play size={13} /> Başla
                     </Link>
                   </>

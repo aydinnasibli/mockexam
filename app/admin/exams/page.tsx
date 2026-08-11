@@ -90,7 +90,7 @@ export default async function AdminExamsPage({ searchParams }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest border-b border-outline-variant/20">
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
                   <th className="px-6 py-4 font-black">ID</th>
                   <th className="px-6 py-4 font-black">Başlıq</th>
                   <th className="px-6 py-4 font-black">Növ</th>
@@ -108,7 +108,7 @@ export default async function AdminExamsPage({ searchParams }: Props) {
                     <td className="px-6 py-4 text-sm font-semibold text-primary">{exam.title}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                           TYPE_COLORS[exam.type] ?? 'bg-surface-container text-on-surface-variant'
                         }`}
                       >

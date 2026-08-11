@@ -83,15 +83,19 @@
   --color-surface-tint:                #3a5f94;
   --color-on-background:               #191c1e;
 
-  /* ── Fonts ───────────────────────────────────────────── */
-  --font-display: var(--font-newsreader), Georgia, serif;
-  --font-sans:    var(--font-geist), system-ui, -apple-system, sans-serif;
+  /* ── Fonts ───────────────────────────────────────────────
+     Roboto serves both the display and body roles. The two tokens stay
+     separate so a display face can be reintroduced by editing this block
+     alone — every component already asks for `font-display` or `font-sans`
+     rather than naming a family. */
+  --font-display: var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-sans:    var(--font-roboto), system-ui, -apple-system, sans-serif;
   --font-mono:    var(--font-jetbrains-mono), ui-monospace, monospace;
 
   /* Legacy font aliases */
-  --font-body:     var(--font-geist), system-ui, -apple-system, sans-serif;
-  --font-headline: var(--font-newsreader), Georgia, serif;
-  --font-label:    var(--font-geist), system-ui, -apple-system, sans-serif;
+  --font-body:     var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-headline: var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-label:    var(--font-roboto), system-ui, -apple-system, sans-serif;
 
   /* ── Sizing ──────────────────────────────────────────── */
   --radius-card: 16px;
@@ -108,6 +112,11 @@
     background-color: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    /* 16px / 1.5 — the browser default body size, stated explicitly so the
+       inherited size is never a surprise. 1.5 is the WCAG 1.4.12 minimum
+       for body line-height. */
+    font-size: 1rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -156,7 +165,9 @@
     background-color: #ffffff;
     border: 1px solid var(--color-outline-variant);
     border-radius: 0.75rem;
-    font-size: 0.875rem;
+    /* 16px, not 14px: iOS Safari zooms the viewport when a focused input
+       has a font-size below 16px, and the user never gets zoomed back out. */
+    font-size: 1rem;
     color: var(--color-on-surface);
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -169,7 +180,9 @@
 
   .field-label {
     display: block;
-    font-size: 0.65rem;
+    /* was 0.65rem = 10.4px — a fractional pixel size, and below the 11px
+       floor for uppercase labels. */
+    font-size: 0.75rem;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -268,7 +281,8 @@
     border-radius: 10px;
     padding: 14px 16px;
     font-family: var(--font-sans);
-    font-size: 15px;
+    /* 16px — see .input-field: anything smaller triggers iOS focus zoom. */
+    font-size: 1rem;
     color: var(--color-ink);
     outline: none;
     transition: border-color 0.2s;
@@ -287,12 +301,17 @@
   }
 
   /* ── Reading passage typography (exam + review panels) ──────────── */
+  /* Reading passages are the longest sustained read in the product, so they
+     sit one step above the 16px body rather than below it. Size is set here
+     rather than at the call site because all three call sites disagreed
+     (15px, 14px, 14px) about text that should be identical. */
   .passage-body {
+    font-size: 1.0625rem; /* 17px */
     line-height: 1.75;
   }
   .passage-title {
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 1.1875rem; /* 19px — was 1.05rem = 16.8px, fractional */
     line-height: 1.35;
     margin: 0 0 1rem;
   }
@@ -302,7 +321,7 @@
   .passage-para:last-child { margin-bottom: 0; }
   .passage-label {
     display: block;
-    font-size: 0.7rem;
+    font-size: 0.75rem; /* was 0.7rem = 11.2px, fractional */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -368,62 +387,12 @@
   .rise-3 { animation-delay: 0.15s; }
   .rise-4 { animation-delay: 0.22s; }
 
-  /* ── Type scale — matching prototype ── */
-  .t-display {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(56px, 7.5vw, 120px);
-    line-height: 0.98;
-    letter-spacing: -0.025em;
-    color: var(--color-ink);
-  }
-  .t-display-2 {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(40px, 5vw, 76px);
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-    color: var(--color-ink);
-  }
-  .t-headline {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(28px, 3.2vw, 44px);
-    line-height: 1.1;
-    letter-spacing: -0.015em;
-    color: var(--color-ink);
-  }
-  .t-title {
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: 22px;
-    line-height: 1.25;
-    letter-spacing: -0.005em;
-    color: var(--color-ink);
-  }
-  .t-lede {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: 22px;
-    line-height: 1.5;
-    color: var(--color-ink);
-  }
-  .t-body-lg {
-    font-family: var(--font-sans);
-    font-size: 18px;
-    line-height: 1.55;
-    color: var(--color-ink-soft);
-    font-weight: 400;
-  }
-  .t-num {
-    font-family: var(--font-display);
-    font-variant-numeric: tabular-nums lining-nums;
-    font-weight: 400;
-  }
-  .t-mono {
-    font-family: var(--font-mono);
-    font-size: 13px;
-  }
+  /* Type is expressed with stock Tailwind utilities at the call site
+     (font-display / text-3xl md:text-4xl / leading-tight / tracking-tight).
+     The old .t-display / .t-headline / .t-title / .t-lede / .t-body-lg /
+     .t-num / .t-mono classes were removed: they were being overridden by
+     inline `style={{ fontSize }}` at ~20 call sites, so the same class
+     rendered at three different sizes depending on the file. */
 
   /* Dot — small accent circle */
   .dot {
