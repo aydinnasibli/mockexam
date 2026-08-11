@@ -1,84 +1,104 @@
 import Link from "next/link";
 import Image from "next/image";
 
+const MONO_LABEL = "font-mono text-[11px] tracking-[0.14em] uppercase";
+
+/**
+ * Link columns. `href: null` marks a section that is announced but has no page
+ * yet — it renders as plain muted text rather than a link, so the footer never
+ * advertises a route that 404s.
+ */
+const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string | null }> }> = [
+  {
+    title: "Platforma",
+    links: [
+      { label: "Sınaqlar", href: "/exams" },
+      { label: "Kabinet", href: "/dashboard" },
+      { label: "Analitika", href: "/dashboard/analytics" },
+      { label: "Qiymətlər", href: null },
+    ],
+  },
+  {
+    title: "Şirkət",
+    links: [
+      { label: "Haqqımızda", href: "/about" },
+      { label: "Əlaqə", href: "/contact" },
+      { label: "Karyera", href: null },
+      { label: "Blog", href: null },
+    ],
+  },
+  {
+    title: "Hüquqi",
+    links: [
+      { label: "İstifadə şərtləri", href: "/legal/terms" },
+      { label: "Məxfilik", href: "/legal/privacy" },
+      { label: "Cookie", href: "/legal/cookies" },
+      { label: "Geri qaytarma", href: "/legal/refund" },
+    ],
+  },
+];
+
 export default function Footer() {
   return (
-    <footer className="w-full border-t border-rule bg-surface-2">
-      <div className="max-w-310 mx-auto px-8 pt-20 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-16">
-          {/* Brand */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
-              <span className="font-display text-xl font-medium text-ink tracking-tight">
-                Test<span className="font-normal">centre</span>
-              </span>
-            </div>
-            <p className="text-base text-ink-soft leading-[1.6] max-w-85">
-              Akademik imtahan hazırlığı — sadə, ölçülə bilən, ciddi.
-            </p>
-          </div>
+    <footer className="w-full border-t border-ink bg-bg">
+      <div className="mx-auto w-full max-w-320 px-6 lg:px-10">
 
-          {/* Platforma */}
-          <div>
-            <div className="eyebrow mb-4">Platforma</div>
-            <div className="flex flex-col gap-3">
-              <Link href="/exams" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Sınaqlar
-              </Link>
-              <Link href="/dashboard" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Kabinet
-              </Link>
-              <Link href="/dashboard/analytics" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Analitika
-              </Link>
-              <span className="text-base text-ink-mute">Qiymətlər</span>
-            </div>
-          </div>
-
-          {/* Şirkət */}
-          <div>
-            <div className="eyebrow mb-4">Şirkət</div>
-            <div className="flex flex-col gap-3">
-              <Link href="/about" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Haqqımızda
-              </Link>
-              <Link href="/contact" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Əlaqə
-              </Link>
-              <span className="text-base text-ink-mute">Karyera</span>
-              <span className="text-base text-ink-mute">Blog</span>
-            </div>
-          </div>
-
-          {/* Hüquqi */}
-          <div>
-            <div className="eyebrow mb-4">Hüquqi</div>
-            <div className="flex flex-col gap-3">
-              <Link href="/legal/terms" className="text-base text-ink-soft hover:text-ink transition-colors">
-                İstifadə şərtləri
-              </Link>
-              <Link href="/legal/privacy" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Məxfilik
-              </Link>
-              <Link href="/legal/cookies" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Cookie
-              </Link>
-              <Link href="/legal/refund" className="text-base text-ink-soft hover:text-ink transition-colors">
-                Geri qaytarma
-              </Link>
-            </div>
+        {/* Tier 1 — wordmark and contact */}
+        <div className="flex flex-col gap-8 pt-12 pb-10 sm:flex-row sm:items-end sm:justify-between lg:pt-14">
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo.svg" alt="Testcentre" width={30} height={27} className="shrink-0" />
+            <span className="text-[32px] leading-none font-light tracking-[-0.03em] text-ink lg:text-[40px]">
+              Test<span className="text-ink-soft">centre</span>
+            </span>
+          </Link>
+          <div className="flex flex-col gap-1 sm:text-right">
+            <span className={`${MONO_LABEL} text-ink-mute`}>Əlaqə</span>
+            <a
+              href="mailto:testcentreaz@proton.me"
+              className="text-base text-ink transition-colors hover:text-accent-deep"
+            >
+              testcentreaz@proton.me
+            </a>
           </div>
         </div>
 
-        {/*
-          The "tr · az · en" locale list was removed: the site ships only in
-          Azerbaijani, with no translated routes and no hreflang, so it
-          advertised languages that don't exist. Put it back alongside real
-          localised routes, not before.
-        */}
-        <div className="pt-6 border-t border-rule flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="eyebrow">© 2026 Testcentre · Bakı, Azərbaycan</p>
+        {/* Tier 2 — descriptor and link columns */}
+        <div className="grid grid-cols-2 gap-10 border-t border-rule pt-10 pb-12 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12 lg:pb-14">
+          <div className="col-span-2 lg:col-span-1">
+            <p className="m-0 max-w-80 text-[15px] leading-[1.65] text-ink-soft">
+              Akademik imtahan hazırlığı — rəsmi format, ölçülə bilən tərəqqi, hər sualın
+              arxasında izahat.
+            </p>
+          </div>
+
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
+              <div className={`${MONO_LABEL} mb-4.5 text-ink-mute`}>{column.title}</div>
+              <div className="flex flex-col gap-2.75">
+                {column.links.map((link) =>
+                  link.href ? (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className="text-[15px] text-ink-soft transition-colors duration-150 hover:text-ink"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <span key={link.label} className="text-[15px] text-ink-mute">
+                      {link.label}
+                    </span>
+                  ),
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tier 3 — baseline */}
+        <div className="flex flex-col gap-2 border-t border-rule pt-4.5 pb-7 sm:flex-row sm:items-center sm:justify-between">
+          <span className={`${MONO_LABEL} text-ink-mute`}>© 2026 Testcentre · Bakı, Azərbaycan</span>
+          <span className={`${MONO_LABEL} text-ink-mute`}>Sənəd: TC—PUB—2026.08</span>
         </div>
       </div>
     </footer>

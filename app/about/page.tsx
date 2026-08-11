@@ -11,144 +11,179 @@ export const metadata: Metadata = pageMetadata({
   path: '/about',
 });
 
-const features = [
-  {
-    n: "01",
-    t: "Rəsmi format",
-    d: "Hər sınaq College Board, ETS, Cambridge və DİM rəsmi formatları ilə tam üst-üstə düşür. Adaptive sual seçimi və modul strukturu real imtahanla eynidir.",
-  },
-  {
-    n: "02",
-    t: "Süni intellekt analitikası",
-    d: "Hər cəhd 11 müxtəlif ölçü üzrə təhlil edilir. Sistem zəif istiqamətləri görür, gündəlik 30 dəqiqəlik hədəfli məşq planı qurur.",
-  },
-  {
-    n: "03",
-    t: "Tam izahat",
-    d: "Səhv etdiyiniz hər sual üçün addım-addım həll yolu, müvafiq formul vərəqi və qısa video izah. Səhv — yeni bilik mənbəyidir.",
-  },
+const MONO_LABEL = "font-mono text-[10px] tracking-[0.14em] uppercase";
+const MONO_SECTION = "font-mono text-[11px] tracking-[0.16em] uppercase";
+
+/** The statement ledger: what the platform refuses, and what it commits to. */
+const STANCE = [
+  { mark: "✗", text: "Oyunlaşdırma",                 kind: "no"  },
+  { mark: "✗", text: "Abunəlik tələsi",              kind: "no"  },
+  { mark: "✗", text: "“Qarantili 100 bal”",          kind: "no"  },
+  { mark: "✓", text: "Rəsmi format, ölçülən nəticə", kind: "yes" },
 ];
 
-const values = [
-  { t: "Akademik nəzarət", d: "Hər sual əvvəlcə mövzu üzrə mütəxəssis, sonra isə dil və UX redaktoru tərəfindən yoxlanılır. Heç bir sual təsadüfən bazaya daxil olmur." },
-  { t: "Şəxsi məxfilik",   d: "Tələbə məlumatları üçüncü tərəflərlə paylaşılmır. Reklam izləməsi yoxdur. Hesab silindikdə bütün məlumat 30 gün ərzində məhv edilir." },
-  { t: "İnsan dəstəyi",    d: "İstifadəçinin hər sualı 24 saat ərzində insan tərəfindən cavablanır. Bot yoxdur, avtomatik cavab yoxdur." },
-  { t: "Sübut edilmiş nəticə", d: "Platforma hər sınaq növü üçün real imtahan formatına sadiqdir. Nəticəni sınaq bitdikdən dərhal sonra görürsünüz." },
-  { t: "Şəffaf qiymət",    d: "Gizli ödəniş, avtomatik yeniləmə, abunəlik tələsi yoxdur. Ödədiyiniz tam olaraq aldığınızdır." },
-  { t: "Daimi yenilənmə",  d: "Sual bankı hər həftə yenilənir. Rəsmi imtahan formatı dəyişdikdə platforma 30 gün ərzində uyğunlaşır." },
+const NUMBERS = [
+  { figure: "11",  label: "analiz ölçüsü" },
+  { figure: "1:1", label: "format uyğunluğu" },
+  { figure: "7",   label: "günə bir yenilənmə" },
+  { figure: "24s", label: "insan cavabı" },
+];
+
+/** How a question reaches the bank — the four-step pipeline. */
+const PIPELINE = [
+  { n: "01", verb: "Yazılır",     by: "Mövzu mütəxəssisi" },
+  { n: "02", verb: "Yoxlanır",    by: "Dil və UX redaktoru" },
+  { n: "03", verb: "Kalibrlənir", by: "Çətinlik indeksi" },
+  { n: "04", verb: "Sınağa düşür", by: "Həftəlik dövr" },
+];
+
+const POLICIES = [
+  { label: "Məlumat",           value: "Üçüncü tərəflə paylaşılmır" },
+  { label: "Hesab silinməsi",   value: "30 gün ərzində tam məhv" },
+  { label: "Dəstək",            value: "İnsan, 24 saat" },
+  { label: "Qiymət",            value: "Bir ödəniş, gizli ödəniş yox" },
+  { label: "Reklam izləməsi",   value: "Yoxdur" },
+  { label: "Format dəyişikliyi", value: "30 gündə uyğunlaşma" },
 ];
 
 export default function AboutPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-18">
+      <main>
 
-        {/* Hero */}
-        <section className="max-w-310 mx-auto px-8 py-24">
-          <div className="max-w-220">
-            <div className="flex items-center gap-3 mb-8 rise">
-              <span className="dot" />
-              <span className="eyebrow">Haqqımızda</span>
-            </div>
-            <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink rise rise-1">
-              Hazırlıq, <span style={{ color: "var(--color-accent)" }}>ciddiyyətlə.</span>
+        {/* ── Statement ── */}
+        <section className="mx-auto w-full max-w-320 px-6 pt-14 pb-16 lg:px-10 lg:pt-22 lg:pb-24">
+          <div className="grid items-end gap-10 lg:grid-cols-[1fr_380px] lg:gap-20">
+            <h1 className="m-0 text-[52px] font-light leading-[0.94] tracking-[-0.045em] text-ink md:text-[72px] lg:text-[92px]">
+              Vəd yox.<br /><span className="font-medium">Ölçü var.</span>
             </h1>
-            <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mt-8 max-w-180 rise rise-2">
-              Testcentre tələbənin imtahan günündə özünü heç bir sürprizlə qarşılaşmasın deyə qurulmuşdur.
-              Burada oyunlaşdırma və boş vədlər yoxdur — yalnız rəsmi format, ölçülə bilən tərəqqi və
-              hər sualın arxasındakı izahat.
-            </p>
-            <div className="flex gap-3 mt-10 rise rise-3">
-              <Link href="/exams" className="btn-primary">
-                Sınaqlara bax <span className="arrow">→</span>
-              </Link>
-              <Link href="/contact" className="btn-ghost">
-                Bizimlə əlaqə
-              </Link>
-            </div>
-          </div>
-        </section>
 
-        {/* What we do */}
-        <section className="border-t border-b border-rule" style={{ background: "var(--color-surface)" }}>
-          <div className="max-w-310 mx-auto px-8 py-24">
-            <div className="section-head">
-              <div className="eyebrow mb-4">Nə edirik</div>
-              <h2 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink">Üç prinsipdə qurulan bir platforma.</h2>
-              <p className="text-lg leading-relaxed text-ink-soft mt-4">Mürəkkəblik gizlənmiş, mühüm olan üzdə.</p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6">
-              {features.map((v, i) => (
-                <div key={i} className="pt-8 border-t border-rule">
-                  <div className="font-display tabular-nums lining-nums text-lg text-ink mb-6">{v.n}</div>
-                  <h3 className="font-display font-normal text-2xl leading-tight tracking-tight text-ink mb-4">{v.t}</h3>
-                  <p className="text-base leading-relaxed text-ink-soft">{v.d}</p>
+            <div className="lg:pb-3.5">
+              {STANCE.map((item, i) => (
+                <div
+                  key={item.text}
+                  className={`flex items-center gap-3 py-3.5 ${
+                    i === 0 ? "border-t border-ink" : "border-t border-rule"
+                  } ${i === STANCE.length - 1 ? "border-b border-rule" : ""}`}
+                >
+                  <span
+                    className={`w-4 shrink-0 font-mono text-xs ${item.kind === "no" ? "text-error" : "text-correct"}`}
+                    aria-hidden
+                  >
+                    {item.mark}
+                  </span>
+                  <span className={`text-base ${item.kind === "no" ? "text-ink-soft" : "text-ink"}`}>
+                    {item.text}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Principles quote */}
-        <section className="max-w-310 mx-auto px-8 py-24">
-          <div className="bg-surface border border-rule rounded-2xl px-16 py-18 text-center">
-            <div className="eyebrow mb-6" style={{ color: "var(--color-ink)" }}>Bizim prinsiplərimiz</div>
-            <blockquote
-              className="font-display font-normal text-ink text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight max-w-220 mx-auto"
-            >
-              Akademik hazırlıq{" "}
-              <span style={{ color: "var(--color-accent)" }}>oyun mexaniki</span>{" "}
-              deyil. Burada gizli abunəlik, qondarma sertifikat və{" "}
-              <span>&ldquo;qarantili 100 bal&rdquo;</span>{" "}
-              vədi yoxdur — yalnız ciddi iş və ölçülə bilən nəticə.
-            </blockquote>
-          </div>
-        </section>
-
-        {/* Values grid */}
-        <section className="border-t border-b border-rule" style={{ background: "var(--color-surface)" }}>
-          <div className="max-w-310 mx-auto px-8 py-24">
-            <div className="section-head">
-              <div className="eyebrow mb-4">Necə işləyirik</div>
-              <h2 className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight text-ink">Vacib detallar.</h2>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              {values.map((v, i) => (
-                <div key={i} className="card-new">
-                  <h3 className="font-display font-medium text-lg leading-tight tracking-tight text-ink mb-3">{v.t}</h3>
-                  <p className="text-base leading-relaxed text-ink-soft">{v.d}</p>
+        {/* ── Numbers band ── */}
+        <section className="bg-ink text-bg">
+          <div className="mx-auto grid w-full max-w-320 grid-cols-2 gap-y-8 px-6 py-14 sm:grid-cols-4 lg:gap-y-0 lg:px-10 lg:py-18">
+            {NUMBERS.map((item, i) => (
+              <div
+                key={item.label}
+                className={[
+                  i < NUMBERS.length - 1 ? 'sm:border-r sm:border-bg/20' : '',
+                  i === 0 ? 'sm:pr-9' : 'sm:px-9',
+                  i === NUMBERS.length - 1 ? 'sm:pr-0 sm:pl-9' : '',
+                  i % 2 === 0 ? 'border-r border-bg/20 pr-6 sm:pr-0' : 'pl-6 sm:pl-0',
+                ].filter(Boolean).join(' ')}
+              >
+                <div className="font-mono text-[40px] font-light tracking-[-0.04em] tabular-nums lg:text-[52px]">
+                  {item.figure}
                 </div>
-              ))}
-            </div>
+                <div className={`${MONO_LABEL} mt-3 text-bg/50`}>{item.label}</div>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* CTA card */}
-        <section className="max-w-310 mx-auto px-8 py-24">
-          <div className="card-ink text-center rounded-2xl py-16 px-14">
-            <div className="eyebrow mb-5" style={{ color: "var(--color-accent-soft)" }}>Başlayın</div>
-            <h2
-              className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight text-bg mb-6"
-            >
-              Hazırlığa <span>bu gün başlayın.</span>
+        {/* ── §01 Question pipeline ── */}
+        <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
+          <div className="mb-10 grid gap-4 lg:mb-14 lg:grid-cols-[96px_1fr] lg:gap-8">
+            <div className={`${MONO_SECTION} text-ink-mute lg:pt-2.5`}>01</div>
+            <h2 className="m-0 text-[32px] font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-[44px]">
+              Sual bazaya necə düşür.
             </h2>
-            <p
-              className="text-lg leading-[1.55] max-w-135 mx-auto mb-8"
-              style={{ color: "rgba(250,250,246,0.7)" }}
-            >
-              Qeydiyyat 30 saniyə çəkir, nəticə dərhal görünür.
-            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[96px_1fr] lg:gap-8">
+            <div aria-hidden />
+            <div className="grid gap-0.5 sm:grid-cols-2 lg:grid-cols-4">
+              {PIPELINE.map((step, i) => {
+                const last = i === PIPELINE.length - 1;
+                return (
+                  <div
+                    key={step.n}
+                    className={`border-t-2 border-ink px-6 pt-6.5 pb-7 ${
+                      last ? "bg-ink text-bg" : "bg-surface-2"
+                    }`}
+                  >
+                    <div className={`${MONO_SECTION} mb-5 text-[11px] tracking-[0.14em] ${last ? "text-bg/50" : "text-ink-mute"}`}>
+                      {step.n}
+                    </div>
+                    <div className={`mb-2 text-lg font-medium tracking-[-0.015em] ${last ? "text-bg" : "text-ink"}`}>
+                      {step.verb}
+                    </div>
+                    <div className={`text-[15px] ${last ? "text-bg/60" : "text-ink-soft"}`}>{step.by}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── §02 Policies ── */}
+        <section className="border-t border-rule bg-surface-2">
+          <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
+            <div className="mb-10 grid gap-4 lg:mb-12 lg:grid-cols-[96px_1fr] lg:gap-8">
+              <div className={`${MONO_SECTION} text-ink-mute lg:pt-2`}>02</div>
+              <h2 className="m-0 text-[32px] font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-[44px]">
+                Qaydalar.
+              </h2>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[96px_1fr] lg:gap-8">
+              <div aria-hidden />
+              <div className="grid lg:grid-cols-2 lg:gap-x-18">
+                {POLICIES.map((policy, i) => (
+                  <div
+                    key={policy.label}
+                    className={`grid grid-cols-1 items-baseline gap-1.5 py-5 sm:grid-cols-[190px_1fr] sm:gap-6 ${
+                      i < 2 ? "border-t border-ink-faint" : "border-t border-[#E0DDD4]"
+                    } ${i >= POLICIES.length - 2 ? "border-b border-[#E0DDD4]" : ""}`}
+                  >
+                    <span className={`${MONO_SECTION} text-[11px] tracking-[0.14em] text-ink-mute`}>
+                      {policy.label}
+                    </span>
+                    <span className="text-[17px] text-ink">{policy.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
+          <div className="flex flex-col items-start gap-6 border-t border-ink pt-7 sm:flex-row sm:items-baseline sm:justify-between sm:gap-10">
+            <h2 className="m-0 text-[36px] font-light leading-none tracking-[-0.04em] text-ink lg:text-[52px]">
+              Sınaqlara keçin.
+            </h2>
             <Link
               href="/exams"
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full text-sm font-medium transition-colors"
-              style={{ background: "var(--color-bg)", color: "var(--color-ink)", border: "1px solid var(--color-bg)" }}
+              className="inline-flex shrink-0 items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A]"
             >
-              Sınaqları kəşf et →
+              Kataloq <span aria-hidden>→</span>
             </Link>
           </div>
         </section>
-
       </main>
       <Footer />
     </>

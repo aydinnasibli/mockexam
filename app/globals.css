@@ -32,10 +32,15 @@
   --color-accent-deep: #000000;
   --color-accent-soft: #E8E5DC;
 
-  /* Functional */
-  --color-ok:    #2F5C3E;
-  --color-warn:  #B8732B;
-  --color-error: #A23A2E;
+  /* Functional.
+     `correct` / `error` are the redesign's two semantic colours: correct
+     answers, ✓ marks and "open" status dots; wrong answers, weak dimensions
+     and ✗ marks. `ok` is the older alias for the same green and stays so the
+     dashboard and admin keep resolving it. */
+  --color-correct: #2F5C3E;
+  --color-ok:      #2F5C3E;
+  --color-warn:    #B8732B;
+  --color-error:   #8C3A2B;
 
   /* ── Legacy tokens (admin pages) ────────────────────── */
   --color-primary:     #001e40;
@@ -376,10 +381,28 @@
     color: var(--color-accent-deep);
   }
 
-  /* Entrance animation */
+  /* Entrance animations. `wipe` fills a bar from its left edge, `grow` raises
+     a column from its baseline — both used by the home page figures. All three
+     are disabled by the reduced-motion block at the end of this file. */
   @keyframes rise {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes wipe {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @keyframes grow {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+  .wipe {
+    transform-origin: left;
+    animation: wipe 0.9s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .grow {
+    transform-origin: bottom;
+    animation: grow 0.7s cubic-bezier(.2,.7,.2,1) both;
   }
   .rise   { animation: rise 0.6s cubic-bezier(.2,.7,.2,1) both; }
   .rise-1 { animation-delay: 0.05s; }

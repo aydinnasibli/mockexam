@@ -16,7 +16,7 @@ export default function NotFound() {
         wastes the crawl and strands the visitor.
       */}
       <Navbar />
-      <main className="pt-18 min-h-screen bg-bg flex items-center justify-center px-6 py-24">
+      <main className="min-h-screen bg-bg flex items-center justify-center px-6 py-24">
         <div className="text-center max-w-md">
           <p
             className="font-display font-normal text-ink-faint text-8xl md:text-9xl leading-none tracking-tighter select-none"

@@ -54,7 +54,7 @@ export default function CheckoutClient({ exam }: Props) {
   return (
     <>
       <Navbar />
-      <main className="pt-16 min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
+      <main className="min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
           <div className="text-center mb-6">
             <ShoppingBag className="text-secondary mx-auto" size={40} />

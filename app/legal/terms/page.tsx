@@ -150,7 +150,7 @@ export default function TermsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-18">
+      <main>
         <div className="max-w-215 mx-auto px-8 py-24">
 
           <div className="flex items-center gap-3 mb-8 rise">

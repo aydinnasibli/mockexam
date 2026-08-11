@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import { getActiveExams, getExamById, type PublicExam } from '@/lib/db/exams';
 import { BASE_URL, SITE_NAME, clampDescription, pageMetadata } from '@/lib/seo';
 import { examTypeLabel } from '@/lib/exam-types';
+import { SCORE_SCALE, examCodes, pad2, shortTypeLabel, structureOf } from '../structure';
 import PurchaseCard from './PurchaseCard';
 
 /**
@@ -35,6 +36,12 @@ interface Props {
  */
 const MIN_USEFUL_DESCRIPTION = 60;
 
+const MONO_LABEL = 'font-mono text-[10px] tracking-[0.14em] uppercase';
+
+function hasUsefulDescription(exam: PublicExam): boolean {
+  return (exam.description?.trim().length ?? 0) >= MIN_USEFUL_DESCRIPTION;
+}
+
 function examDescription(exam: PublicExam): string {
   const stored = exam.description?.trim() ?? '';
   const generated =
@@ -60,6 +67,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
+/** Minutes per question, the derived column in the module table. */
+function pace(minutes: number, questions: number): string {
+  if (questions <= 0) return '—';
+  return `${(minutes / questions).toFixed(2)}′`;
+}
+
 export default async function ExamDetails({ params }: Props) {
   const { id } = await params;
   const exam = await getExamById(id);
@@ -70,6 +83,23 @@ export default async function ExamDetails({ params }: Props) {
   const examTime = exam.durationMinutes - totalBreak;
   const isAdaptive = exam.modules.some(m => m.isAdaptive);
   const description = examDescription(exam);
+  const structure = structureOf(exam);
+
+  // The code is the one the catalog register prints, so a visitor arriving from
+  // /exams sees the same identifier in the breadcrumb.
+  const allExams = await getActiveExams();
+  const code = examCodes(allExams, (type) => shortTypeLabel(type, examTypeLabel(type))).get(exam.id)
+    ?? shortTypeLabel(exam.type, examTypeLabel(exam.type));
+
+  // Fourth figure: the program's published maximum where there is one,
+  // otherwise the (unlimited) attempt allowance rather than an invented number.
+  const scale = SCORE_SCALE[exam.type];
+  const figures = [
+    { value: `${examTime}′`, label: 'müddət' },
+    { value: String(exam.totalQuestions), label: 'sual' },
+    { value: pad2(exam.modules.length), label: 'modul' },
+    scale ? { value: scale, label: 'maksimum bal' } : { value: '∞', label: 'cəhd' },
+  ];
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -120,154 +150,176 @@ export default async function ExamDetails({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
       />
       <Navbar />
-      <main className="pt-18 min-h-screen bg-bg">
+      <main className="min-h-screen bg-bg">
 
-        {/* Breadcrumb */}
-        <div style={{ borderBottom: '1px solid var(--color-rule)' }}>
-          <div className="max-w-340 mx-auto px-4 sm:px-8 py-4">
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-ink-mute)' }}>
-              <Link href="/" className="hover:text-ink transition-colors">Ana</Link>
-              <span>›</span>
-              <Link href="/exams" className="hover:text-ink transition-colors">Sınaqlar</Link>
-              <span>›</span>
-              <span style={{ color: 'var(--color-ink)' }}>{exam.tag}</span>
-            </div>
+        {/* ── Breadcrumb ── */}
+        <div className="border-b border-rule">
+          <div className={`${MONO_LABEL} mx-auto flex w-full max-w-320 items-center gap-2.5 px-6 py-3.25 text-ink-mute lg:px-10`}>
+            <Link href="/" className="transition-colors hover:text-ink">Ana</Link>
+            <span aria-hidden>/</span>
+            <Link href="/exams" className="transition-colors hover:text-ink">Kataloq</Link>
+            <span aria-hidden>/</span>
+            <span className="text-ink">{code}</span>
           </div>
         </div>
 
-        <div className="max-w-340 mx-auto px-4 sm:px-8 py-10 sm:py-16">
-          {/*
-            Was a hard-coded `gridTemplateColumns: '1.6fr 1fr'` with no
-            breakpoint, which forced a two-column layout onto phones: the page
-            overflowed to 424px at a 375px viewport and the order card — the
-            only conversion element — was clipped off the right edge. Single
-            column below `lg`.
-          */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 lg:gap-12 items-start">
+        <div className="mx-auto w-full max-w-320 px-6 pt-10 pb-24 lg:px-10 lg:pt-16 lg:pb-28">
+          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1fr_360px] lg:gap-18">
 
-            {/* LEFT: Info */}
+            {/* ── Left: the specification ── */}
             <div className="min-w-0">
-              {/* Tag + title + desc */}
-              <span className="tag tag-accent inline-block mb-6">{exam.tag}</span>
-              <h1
-                className="font-display font-normal text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight text-ink m-0 mb-6"
-              >
-                {exam.title}
-              </h1>
-              <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft-soft m-0 mb-10">
-                {exam.description}
-              </p>
-
-              {/* 4-stat card */}
-              <div className="mb-10" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-rule)', borderRadius: 16, overflow: 'hidden' }}>
-                {/*
-                  2×2 on phones, 1×4 from `sm`. Rules are placed per cell for
-                  each layout: on mobile between the two columns and under the
-                  first row, from `sm` only between columns.
-                */}
-                <div className="grid grid-cols-2 sm:grid-cols-4">
-                  {[
-                    { label: 'Müddət', value: `${examTime} dəq` },
-                    { label: 'Suallar', value: String(exam.totalQuestions) },
-                    { label: 'Modullar', value: String(exam.modules.length) },
-                    { label: 'Format', value: isAdaptive ? 'Adaptive' : 'Standart' },
-                  ].map((stat, i) => (
-                    <div
-                      key={stat.label}
-                      className={[
-                        'p-5 sm:p-6 border-rule',
-                        i % 2 === 0 ? 'border-r' : '',
-                        i < 2 ? 'border-b sm:border-b-0' : '',
-                        i < 3 ? 'sm:border-r' : 'sm:border-r-0',
-                      ].filter(Boolean).join(' ')}
-                    >
-                      <div className="eyebrow mb-2">{stat.label}</div>
-                      <div className="font-display tabular-nums lining-nums text-ink text-xl">{stat.value}</div>
-                    </div>
-                  ))}
-                </div>
+              <div className="mb-6 flex items-center gap-3">
+                <span className={`${MONO_LABEL} text-[11px] tracking-[0.16em] text-ink`}>{code}</span>
+                <span className="h-1.25 w-1.25 rounded-full bg-correct" aria-hidden />
+                <span className={`${MONO_LABEL} text-[11px] text-ink-mute`}>açıq</span>
               </div>
 
-              {/* Module structure */}
-              {exam.modules.length > 0 && (
-                <div className="mb-10">
-                  <h2
-                    className="font-display font-normal text-2xl tracking-tight text-ink m-0 mb-8"
+              <h1 className="m-0 max-w-155 text-[36px] leading-[0.98] font-light tracking-[-0.042em] text-ink md:text-5xl lg:text-6xl">
+                {exam.title}
+              </h1>
+
+              {/* The stored description is the only prose a visitor gets about
+                  what this paper covers, so it stays as the lead paragraph —
+                  but only when it is actually a sentence. The live SAT exam
+                  stores the description "SAT", which as a lede reads as a
+                  stray word under the title. */}
+              {hasUsefulDescription(exam) && (
+                <p className="m-0 mt-6 max-w-155 text-lg leading-[1.55] text-ink-soft lg:text-[21px]">
+                  {exam.description}
+                </p>
+              )}
+
+              {/* Key figures */}
+              <div className="mt-10 grid grid-cols-2 border-t border-ink sm:grid-cols-4 lg:mt-12">
+                {figures.map((figure, i) => (
+                  <div
+                    key={figure.label}
+                    className={[
+                      'py-4.5',
+                      i === 0 ? 'pr-4.5' : 'px-4.5',
+                      i < figures.length - 1 ? 'border-r border-rule' : '',
+                      i < 2 ? 'border-b border-rule sm:border-b-0' : '',
+                      i === 1 ? 'sm:border-r' : '',
+                      i === 3 ? 'border-r-0 pr-0' : '',
+                    ].filter(Boolean).join(' ')}
                   >
-                    Sınaq strukturu
-                  </h2>
-                  <div className="space-y-0">
-                    {exam.modules.map((mod, i) => (
-                      <div key={i}>
-                        <div className="flex items-start gap-4 sm:gap-5 pt-4 border-t border-rule">
-                          <span
-                            className="font-display tabular-nums lining-nums text-sm text-ink shrink-0 min-w-7 pt-0.5"
-                          >
-                            {String(i + 1).padStart(2, '0')}
-                          </span>
-                          <div className="flex-1 pb-4 min-w-0">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0">
-                                <p className="font-medium text-base text-ink mb-0.5">{mod.name}</p>
-                                {mod.isAdaptive && (
-                                  <span className="text-xs" style={{ color: 'var(--color-ink-mute)' }}>
-                                    Adaptive
-                                  </span>
-                                )}
-                              </div>
-                              <div
-                                className="flex items-center gap-3 sm:gap-4 text-sm shrink-0"
-                                style={{ color: 'var(--color-ink-mute)' }}
-                              >
-                                {mod.questions > 0 && <span>{mod.questions} sual</span>}
-                                <span className="font-medium text-ink">{mod.durationMinutes} dəq</span>
-                              </div>
-                            </div>
-                            {mod.breakAfterMinutes > 0 && (
-                              <p className="text-sm mt-2 mb-0" style={{ color: 'var(--color-ink-mute)' }}>
-                                {mod.breakAfterMinutes} dəqiqəlik fasilə
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                    <div className="font-mono text-[28px] font-light tracking-[-0.03em] tabular-nums text-ink lg:text-[34px]">
+                      {figure.value}
+                    </div>
+                    <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Timeline ── */}
+              {structure.total > 0 && (
+                <div className="mt-14 lg:mt-18">
+                  <div className="mb-7 flex items-baseline justify-between gap-4">
+                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">
+                      Vaxt xətti
+                    </h2>
                     {totalBreak > 0 && (
-                      <p className="text-sm pt-4 border-t border-rule" style={{ color: 'var(--color-ink-mute)' }}>
-                        Fasilə daxil ümumi müddət: {exam.durationMinutes} dəq
-                      </p>
+                      <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
+                        fasilə daxil {exam.durationMinutes}′
+                      </span>
                     )}
                   </div>
+
+                  <div className="flex h-11 items-stretch gap-0.75 lg:h-14">
+                    {structure.blocks.map((block, i) => (
+                      <div
+                        key={i}
+                        className={`flex min-w-1 items-center justify-center overflow-hidden ${block.fill} ${
+                          block.kind === 'break' ? 'bg-rule' : ''
+                        }`}
+                        style={{ flex: block.minutes }}
+                        title={`${block.label} · ${block.minutes} dəq`}
+                      >
+                        <span
+                          className={`font-mono text-[11px] whitespace-nowrap ${
+                            block.kind === 'break' ? 'text-ink-mute' : `${block.figureClass} w-full px-3.5 text-left`
+                          }`}
+                        >
+                          {block.minutes}′
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Labels track the same flex ratios, so each sits under its
+                      own block. */}
+                  <div className="mt-2.5 flex gap-0.75">
+                    {structure.blocks.map((block, i) => (
+                      <div key={i} className="min-w-1 overflow-hidden" style={{ flex: block.minutes }}>
+                        <span className={`${MONO_LABEL} block truncate text-ink-mute`}>{block.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {isAdaptive && (
+                    <div className="mt-5 flex items-center gap-2">
+                      <span className="font-mono text-[10px] text-ink-mute" aria-hidden>△</span>
+                      <span className="text-sm text-ink-soft">
+                        çətinlik əvvəlki modulun nəticəsinə görə seçilir
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Features / Benefits */}
-              {exam.features.length > 0 && (
-                <div>
-                  <h2
-                    className="font-display font-normal text-2xl tracking-tight text-ink m-0 mb-8"
-                  >
-                    Daxildir
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {exam.features.map((feature, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 p-4 rounded-xl"
-                        style={{ background: 'var(--color-surface-2)' }}
-                      >
-                        <span className="shrink-0 font-medium text-sm text-ink mt-0.5">✓</span>
-                        <span className="text-sm leading-normal text-ink">{feature}</span>
-                      </div>
-                    ))}
+              {/* ── Module table ── */}
+              {exam.modules.length > 0 && (
+                <div className="mt-14 lg:mt-18">
+                  <div className={`${MONO_LABEL} grid grid-cols-[32px_1fr_64px] gap-4 border-t border-ink pt-2.75 pb-2.75 text-[9px] tracking-[0.16em] text-ink-mute sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5`}>
+                    <span>№</span>
+                    <span>Modul</span>
+                    <span className="hidden text-right sm:block">Sual</span>
+                    <span className="text-right">Vaxt</span>
+                    <span className="hidden text-right sm:block">Sual/dəq</span>
                   </div>
+
+                  {exam.modules.map((mod, i) => (
+                    <div key={i}>
+                      <div className="grid grid-cols-[32px_1fr_64px] items-center gap-4 border-b border-rule py-4 sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5">
+                        <span className="font-mono text-xs text-ink-mute">{pad2(i + 1)}</span>
+                        <span className="min-w-0 text-[15px] font-medium text-ink sm:text-base">
+                          {mod.name}
+                          {mod.isAdaptive && (
+                            <span className={`${MONO_LABEL} ml-2 text-[10px] tracking-[0.12em] text-ink-mute`}>
+                              adaptive
+                            </span>
+                          )}
+                        </span>
+                        <span className="hidden text-right font-mono text-sm text-ink-soft sm:block">
+                          {mod.questions > 0 ? mod.questions : '—'}
+                        </span>
+                        <span className="text-right font-mono text-sm text-ink">{mod.durationMinutes}′</span>
+                        <span className="hidden text-right font-mono text-sm text-ink-mute sm:block">
+                          {pace(mod.durationMinutes, mod.questions)}
+                        </span>
+                      </div>
+                      {mod.breakAfterMinutes > 0 && (
+                        <div className="grid grid-cols-[32px_1fr] gap-4 border-b border-rule bg-surface-2 py-2.75 sm:grid-cols-[44px_1fr] sm:gap-5">
+                          <span aria-hidden />
+                          <span className={`${MONO_LABEL} text-ink-mute`}>
+                            {mod.breakAfterMinutes}′ fasilə
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* RIGHT: Order card */}
-            <div className="lg:sticky min-w-0" style={{ top: 96 }}>
-              <PurchaseCard examId={exam.id} tag={exam.tag} price={exam.price} />
+            {/* ── Right: purchase rail ── */}
+            <div className="min-w-0 lg:sticky lg:top-6">
+              <PurchaseCard
+                examId={exam.id}
+                code={code}
+                price={exam.price}
+                features={exam.features}
+              />
             </div>
           </div>
         </div>

@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 
 /**
- * Order card for an exam.
+ * Purchase rail for an exam: the ink price card, the "Daxildir" ledger and the
+ * refund note.
  *
  * The purchase check runs here, on the client, rather than via `auth()` in the
  * page. Reading the session on the server made the whole route dynamic, so
@@ -18,13 +19,23 @@ import { useAuth } from '@clerk/nextjs';
  * which is also the correct default: the buy CTA is the page's primary content.
  */
 
+const MONO_LABEL = 'font-mono text-[9px] tracking-[0.16em] uppercase';
+
+const TERMS = [
+  { label: 'Giriş', value: 'müddətsiz' },
+  { label: 'Cəhd', value: 'limitsiz' },
+  { label: 'ƏDV', value: 'daxil' },
+];
+
 interface Props {
   examId: string;
-  tag: string;
+  /** Register code, e.g. `SAT—01`. */
+  code: string;
   price: number;
+  features: string[];
 }
 
-export default function PurchaseCard({ examId, tag, price }: Props) {
+export default function PurchaseCard({ examId, code, price, features }: Props) {
   const { isSignedIn, isLoaded } = useAuth();
   const [hasPurchased, setHasPurchased] = useState(false);
 
@@ -52,87 +63,92 @@ export default function PurchaseCard({ examId, tag, price }: Props) {
   }, [examId, isLoaded, isSignedIn]);
 
   return (
-    <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-rule)', borderRadius: 16, overflow: 'hidden' }}>
-
-      {/* Dark header */}
-      <div className="px-6 sm:px-7 py-6" style={{ background: 'var(--color-ink)' }}>
-        <div className="eyebrow mb-2" style={{ color: 'rgba(250,250,246,0.45)' }}>Sifariş</div>
-        <p
-          className="text-xs mb-6"
-          style={{ color: 'rgba(250,250,246,0.35)', margin: '4px 0 20px' }}
-        >
-          {tag} · {examId}
-        </p>
-
-        {hasPurchased ? (
-          <div>
-            <p className="text-base font-medium m-0" style={{ color: 'var(--color-bg)' }}>
-              Artıq alınmışdır
-            </p>
-            <p className="text-sm mt-1 m-0" style={{ color: 'rgba(250,250,246,0.45)' }}>
-              Bu sınağa girişiniz var
-            </p>
+    <>
+      <div className="overflow-hidden rounded-[14px] bg-ink text-bg">
+        <div className="px-6.5 pt-6.5 pb-5.5">
+          <div className="flex items-baseline justify-between gap-3 border-b border-bg/18 pb-5.5">
+            {hasPurchased ? (
+              <span className="text-lg font-medium text-bg">Artıq alınmışdır</span>
+            ) : (
+              <span className="flex items-baseline gap-2.5">
+                <span className="font-mono text-[46px] leading-[0.88] font-light tracking-[-0.045em] tabular-nums lg:text-[56px]">
+                  {price}
+                </span>
+                <span className="font-mono text-sm text-bg/50">AZN</span>
+              </span>
+            )}
+            <span className={`${MONO_LABEL} shrink-0 text-bg/40`}>{code}</span>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm" style={{ color: 'rgba(250,250,246,0.5)' }}>Qiymət</span>
-              <span className="text-sm font-medium" style={{ color: 'var(--color-bg)' }}>
-                {price} ₼
-              </span>
-            </div>
-            <div
-              className="flex items-center justify-between"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 16 }}
-            >
-              <span className="text-sm" style={{ color: 'rgba(250,250,246,0.5)' }}>ƏDV daxil</span>
-              <span className="text-sm" style={{ color: 'rgba(250,250,246,0.3)' }}>—</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span
-                className="font-display font-normal text-4xl leading-none tracking-tight text-bg"
-              >
-                {price}
-              </span>
-              <span className="text-base" style={{ color: 'rgba(250,250,246,0.45)' }}>AZN</span>
-            </div>
-          </>
-        )}
-      </div>
 
-      {/* CTA body */}
-      <div className="px-6 sm:px-7 py-6">
-        {hasPurchased ? (
-          <Link href="/dashboard" className="btn-primary w-full justify-center">
-            Paneldən başla <span className="arrow">→</span>
-          </Link>
-        ) : (
-          <>
-            {/*
+          {hasPurchased ? (
+            <p className="mt-5.5 mb-5.5 text-sm text-bg/55">
+              Bu sınağa girişiniz var — kabinetdən istənilən vaxt başlaya bilərsiniz.
+            </p>
+          ) : (
+            <div className="mb-5.5">
+              {TERMS.map((term, i) => (
+                <div
+                  key={term.label}
+                  className={`flex items-center justify-between py-3.25 ${
+                    i < TERMS.length - 1 ? 'border-b border-bg/10' : ''
+                  }`}
+                >
+                  <span className="text-sm text-bg/55">{term.label}</span>
+                  <span className="font-mono text-[13px] text-bg">{term.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {hasPurchased ? (
+            <Link
+              href="/dashboard"
+              className="flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface"
+            >
+              Panelə keç <span aria-hidden>→</span>
+            </Link>
+          ) : (
+            /*
               prefetch={false}: /checkout is auth-gated, so prefetching it for a
               signed-out visitor makes Clerk redirect the RSC request to the
               hosted sign-in on another origin, which fails CORS and logs two
               console errors on every view of this page.
-            */}
+            */
             <Link
               href={`/checkout/${examId}`}
               prefetch={false}
-              className="btn-primary w-full justify-center mb-4"
+              className="flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface"
             >
-              Giriş əldə et <span className="arrow">→</span>
+              Giriş əldə et <span aria-hidden>→</span>
             </Link>
-            <p className="text-center text-sm m-0" style={{ color: 'var(--color-ink-mute)' }}>
-              Güvənli ödəniş · Dərhal giriş
-            </p>
-            <p className="text-center text-sm mt-3 mb-0 leading-[1.6]" style={{ color: 'var(--color-ink-mute)' }}>
-              Rəqəmsal məhsul: ödəniş tamamlandıqda giriş dərhal açılır və geri qaytarılmır.{' '}
-              <Link href="/legal/refund" className="underline hover:text-ink transition-colors">
-                Geri qaytarma siyasəti
-              </Link>
-            </p>
-          </>
-        )}
+          )}
+        </div>
+
+        <div className="border-t border-bg/12 bg-bg/5 px-6.5 pt-4 pb-5">
+          <p className={`${MONO_LABEL} m-0 text-[10px] tracking-[0.12em] text-bg/45`}>
+            güvənli ödəniş · dərhal giriş
+          </p>
+        </div>
       </div>
-    </div>
+
+      {features.length > 0 && (
+        <div className="mt-6">
+          <div className={`${MONO_LABEL} border-b border-ink pb-2.5 text-ink-mute`}>Daxildir</div>
+          {features.map((feature) => (
+            <div key={feature} className="flex items-center gap-2.5 border-b border-rule py-2.75">
+              <span className="font-mono text-xs text-correct" aria-hidden>✓</span>
+              <span className="text-sm text-ink">{feature}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="m-0 mt-5 text-[13px] leading-[1.6] text-ink-mute">
+        Rəqəmsal məhsul — ödəniş tamamlandıqda giriş dərhal açılır və geri qaytarılmır.{' '}
+        <Link href="/legal/refund" className="underline transition-colors hover:text-ink">
+          Şərtlər
+        </Link>
+      </p>
+    </>
   );
 }
