@@ -77,8 +77,14 @@ export default function Navbar({ showBulletin = true }: Props) {
                   }`}
                 >
                   {label}
-                  {/* The active marker is a rule under the label, not a pill. */}
-                  <span className={`block h-px w-full ${isActive ? 'bg-ink' : 'bg-transparent'}`} />
+                  {/* The active marker is a rule under the label, not a pill.
+                      `data-nav-underline` lets the route transition draw it in
+                      from the left on arrival — see `.route-settle` in
+                      globals.css. */}
+                  <span
+                    data-nav-underline={isActive ? '' : undefined}
+                    className={`block h-px w-full ${isActive ? 'bg-ink' : 'bg-transparent'}`}
+                  />
                 </Link>
               );
             })}

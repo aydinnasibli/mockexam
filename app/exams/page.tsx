@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -6,7 +5,6 @@ import { getActiveExams } from '@/lib/db/exams';
 import { examTypeLabel, isExamType } from '@/lib/exam-types';
 import { BASE_URL, pageMetadata } from '@/lib/seo';
 import ExamsCatalog from './ExamsCatalog';
-import ExamsListSkeleton from './ExamsListSkeleton';
 
 interface Props {
   searchParams: Promise<{ type?: string }>;
@@ -81,9 +79,22 @@ export default async function ExamsPage({ searchParams }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(type)) }}
       />
       <Navbar />
-      <Suspense fallback={<ExamsListSkeleton />}>
-        <ExamsList type={type} />
-      </Suspense>
+      {/*
+        No Suspense boundary, and so no loading state.
+
+        The exam query resolves in roughly 300ms, which is too short to justify
+        showing anything: a skeleton for that long registers as a flash, and
+        deferring the skeleton to avoid the flash just left the body empty for
+        the same 300ms. Rendering the page whole means a visitor either sees
+        the previous page (client navigation, where the router holds it until
+        the payload lands) or nothing yet (a fresh load, where the browser has
+        not painted at all) — never a half-built one.
+
+        If this query ever grows slow enough to need feedback, the answer is a
+        navigation progress indicator, not a skeleton of a register whose row
+        count nobody can predict.
+      */}
+      <ExamsList type={type} />
       <Footer />
     </>
   );

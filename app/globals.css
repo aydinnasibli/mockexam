@@ -431,6 +431,27 @@
     animation: route-in 340ms var(--ease-out-soft) both;
   }
 
+  /* The header answers the navigation without re-staging itself: the active
+     link's rule draws in from the left, and the bar itself settles from a
+     fraction under full opacity. Deliberately far quieter than the content —
+     chrome that re-animates in full is what makes a navigation feel like a
+     page reload. The bulletin strip above is left alone entirely. */
+  @keyframes nav-underline-in {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @keyframes nav-settle {
+    from { opacity: 0.82; }
+    to   { opacity: 1; }
+  }
+  .route-settle header [data-nav-underline] {
+    transform-origin: left;
+    animation: nav-underline-in 380ms var(--ease-out-soft) both;
+  }
+  .route-settle header nav {
+    animation: nav-settle 300ms var(--ease-out-soft) both;
+  }
+
   /* Loading UI that waits its turn: invisible for 350ms, so a response that
      arrives before then never flashes a skeleton at the visitor. See
      components/ui/Skeleton.tsx. */
