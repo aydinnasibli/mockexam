@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
+import FadeUp from "@/components/ui/FadeUp";
+import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -59,9 +61,9 @@ export default function AboutPage() {
               Vəd yox.<br /><span className="font-medium">Ölçü var.</span>
             </h1>
 
-            <div className="lg:pb-3.5">
+            <StaggerContainer delay={0.15} className="lg:pb-3.5">
               {STANCE.map((item, i) => (
-                <div
+                <StaggerItem
                   key={item.text}
                   className={`flex items-center gap-3 py-3.5 ${
                     i === 0 ? "border-t border-ink" : "border-t border-rule"
@@ -76,15 +78,15 @@ export default function AboutPage() {
                   <span className={`text-base ${item.kind === "no" ? "text-ink-soft" : "text-ink"}`}>
                     {item.text}
                   </span>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
         {/* ── Numbers band ── */}
         <section className="bg-ink text-bg">
-          <div className="mx-auto grid w-full max-w-320 grid-cols-2 gap-y-8 px-6 py-14 sm:grid-cols-4 lg:gap-y-0 lg:px-10 lg:py-18">
+          <FadeUp y={12} className="mx-auto grid w-full max-w-320 grid-cols-2 gap-y-8 px-6 py-14 sm:grid-cols-4 lg:gap-y-0 lg:px-10 lg:py-18">
             {NUMBERS.map((item, i) => (
               <div
                 key={item.label}
@@ -101,7 +103,7 @@ export default function AboutPage() {
                 <div className={`${MONO_LABEL} mt-3 text-bg/50`}>{item.label}</div>
               </div>
             ))}
-          </div>
+          </FadeUp>
         </section>
 
         {/* ── §01 Question pipeline ── */}
@@ -115,12 +117,14 @@ export default function AboutPage() {
 
           <div className="grid gap-4 lg:grid-cols-[96px_1fr] lg:gap-8">
             <div aria-hidden />
-            <div className="grid gap-0.5 sm:grid-cols-2 lg:grid-cols-4">
+            <StaggerContainer className="grid gap-0.5 sm:grid-cols-2 lg:grid-cols-4">
               {PIPELINE.map((step, i) => {
                 const last = i === PIPELINE.length - 1;
                 return (
-                  <div
+                  <StaggerItem
                     key={step.n}
+                    className="h-full"
+                  ><div
                     className={`border-t-2 border-ink px-6 pt-6.5 pb-7 ${
                       last ? "bg-ink text-bg" : "bg-surface-2"
                     }`}
@@ -132,10 +136,10 @@ export default function AboutPage() {
                       {step.verb}
                     </div>
                     <div className={`text-[15px] ${last ? "text-bg/60" : "text-ink-soft"}`}>{step.by}</div>
-                  </div>
+                  </div></StaggerItem>
                 );
               })}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
@@ -151,9 +155,9 @@ export default function AboutPage() {
 
             <div className="grid gap-4 lg:grid-cols-[96px_1fr] lg:gap-8">
               <div aria-hidden />
-              <div className="grid lg:grid-cols-2 lg:gap-x-18">
+              <StaggerContainer className="grid lg:grid-cols-2 lg:gap-x-18">
                 {POLICIES.map((policy, i) => (
-                  <div
+                  <StaggerItem
                     key={policy.label}
                     className={`grid grid-cols-1 items-baseline gap-1.5 py-5 sm:grid-cols-[190px_1fr] sm:gap-6 ${
                       i < 2 ? "border-t border-ink-faint" : "border-t border-[#E0DDD4]"
@@ -163,26 +167,26 @@ export default function AboutPage() {
                       {policy.label}
                     </span>
                     <span className="text-[17px] text-ink">{policy.value}</span>
-                  </div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerContainer>
             </div>
           </div>
         </section>
 
         {/* ── CTA ── */}
         <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
-          <div className="flex flex-col items-start gap-6 border-t border-ink pt-7 sm:flex-row sm:items-baseline sm:justify-between sm:gap-10">
+          <FadeUp className="flex flex-col items-start gap-6 border-t border-ink pt-7 sm:flex-row sm:items-baseline sm:justify-between sm:gap-10">
             <h2 className="m-0 text-[36px] font-light leading-none tracking-[-0.04em] text-ink lg:text-[52px]">
               Sınaqlara keçin.
             </h2>
             <Link
               href="/exams"
-              className="inline-flex shrink-0 items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A]"
+              className="group inline-flex shrink-0 items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] active:translate-y-px"
             >
-              Kataloq <span aria-hidden>→</span>
+              Kataloq <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
             </Link>
-          </div>
+          </FadeUp>
         </section>
       </main>
       <Footer />

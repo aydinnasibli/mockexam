@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import FadeUp from "@/components/ui/FadeUp";
 import { sendContactMessage } from '@/lib/actions/contact';
 
 const MONO_LABEL = "font-mono text-[9px] tracking-[0.16em] uppercase";
@@ -95,7 +96,7 @@ export default function ContactPage() {
                 <form onSubmit={handleSubmit} noValidate={false}>
                   {/* Name + email share one ruled block. */}
                   <div className="grid gap-x-8 sm:grid-cols-2">
-                    <div className="border-t border-ink py-4.5 focus-within:border-ink">
+                    <div className="border-t border-ink py-4.5 transition-colors focus-within:border-ink">
                       <label htmlFor="contact-name" className={`${MONO_LABEL} mb-2.5 block text-ink-mute`}>
                         Ad Soyad
                       </label>
@@ -108,7 +109,7 @@ export default function ContactPage() {
                         className="w-full border-none bg-transparent p-0 text-lg text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                       />
                     </div>
-                    <div className="border-t border-rule py-4.5 sm:border-ink">
+                    <div className="border-t border-rule py-4.5 transition-colors focus-within:border-ink sm:border-ink">
                       <label htmlFor="contact-email" className={`${MONO_LABEL} mb-2.5 block text-ink-mute`}>
                         E-poçt
                       </label>
@@ -150,7 +151,7 @@ export default function ContactPage() {
                     </div>
                   </fieldset>
 
-                  <div className="border-t border-rule border-b border-b-ink pt-5.5 pb-4.5">
+                  <div className="border-t border-rule border-b border-b-ink pt-5.5 pb-4.5 transition-colors focus-within:border-t-ink">
                     <label htmlFor="contact-message" className={`${MONO_LABEL} mb-2.5 block text-ink-mute`}>
                       Mesaj
                     </label>
@@ -169,9 +170,9 @@ export default function ContactPage() {
                     <button
                       type="submit"
                       disabled={sending}
-                      className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] disabled:opacity-60"
+                      className="group inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] active:translate-y-px disabled:opacity-60"
                     >
-                      {sending ? 'Göndərilir…' : (<>Göndər <span aria-hidden>→</span></>)}
+                      {sending ? 'Göndərilir…' : (<>Göndər <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span></>)}
                     </button>
                     <span className={`${MONO_LABEL} text-[10px] tracking-[0.12em] text-ink-mute`}>
                       məlumat paylaşılmır
@@ -183,6 +184,7 @@ export default function ContactPage() {
 
             {/* ── Right: the rail ── */}
             <div className="min-w-0">
+              <FadeUp>
               <a
                 href={`mailto:${EMAIL}`}
                 className="block rounded-[14px] bg-ink px-7 py-7.5 transition-colors duration-150 hover:bg-[#242424]"
@@ -192,8 +194,9 @@ export default function ContactPage() {
                   {EMAIL}
                 </div>
               </a>
+              </FadeUp>
 
-              <div className="mt-8">
+              <FadeUp delay={0.08} className="mt-8">
                 <div className={`${MONO_LABEL} border-b border-ink pb-3 text-ink-mute`}>Cavab müddəti</div>
                 <div className="flex items-end gap-4 border-b border-rule py-5">
                   <span className="font-mono text-[44px] leading-[0.9] font-light tracking-[-0.04em] tabular-nums text-ink">
@@ -214,9 +217,9 @@ export default function ContactPage() {
                   <span className="text-[15px] text-ink-soft">Bot</span>
                   <span className="font-mono text-[13px] text-ink-mute">yoxdur</span>
                 </div>
-              </div>
+              </FadeUp>
 
-              <div className="mt-8 rounded-xl bg-surface-2 px-6 py-5.5">
+              <FadeUp delay={0.16} className="mt-8 rounded-xl bg-surface-2 px-6 py-5.5">
                 <div className={`${MONO_LABEL} mb-2.5 text-ink-mute`}>Daha tez</div>
                 <p className="m-0 text-[15px] leading-[1.6] text-ink">
                   Ödəniş və nəticə sualları{' '}
@@ -224,7 +227,7 @@ export default function ContactPage() {
                     suallar bölməsində
                   </Link>.
                 </p>
-              </div>
+              </FadeUp>
             </div>
           </div>
         </div>

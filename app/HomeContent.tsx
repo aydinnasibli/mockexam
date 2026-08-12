@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import FadeUp from "@/components/ui/FadeUp";
+import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
+import WipeBar from "@/components/ui/WipeBar";
 
 export interface ProgramData {
   count: number;
@@ -107,7 +110,11 @@ export default function HomeContent({ byType, totalExams }: Props) {
         <section className="overflow-hidden">
           <div className="mx-auto grid w-full max-w-320 grid-cols-1 items-start gap-14 px-6 pt-14 pb-20 lg:grid-cols-[600px_1fr] lg:gap-16 lg:px-10 lg:pt-22 lg:pb-26">
 
-            <div className="rise">
+            {/* Entrance timeline (INTERACTIONS §3): left column 700ms @0,
+                canvas 800ms @120ms, score card a second rise 800ms @300ms on
+                top of the canvas's — the double application is what gives the
+                ink card its delayed settle. */}
+            <div className="anim-rise">
               <div className="mb-8 flex items-center gap-3 lg:mb-10">
                 <span className="h-1.75 w-1.75 rounded-full bg-ink" aria-hidden />
                 <span className={`${MONO_SECTION} text-ink`}>Sessiya 2026 açıqdır</span>
@@ -124,9 +131,9 @@ export default function HomeContent({ byType, totalExams }: Props) {
               <div className="flex flex-wrap items-center gap-3.5">
                 <Link
                   href="/exams"
-                  className="inline-flex items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A]"
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] active:translate-y-px"
                 >
-                  Sınaqlara bax <span aria-hidden>→</span>
+                  Sınaqlara bax <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
                 </Link>
                 <a
                   href="#numune"
@@ -158,7 +165,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
             {/* Overlapping product composition. It only overlaps at lg, where
                 there is room for the canvas; below that the two cards stack in
                 normal flow and the preview is not cropped. */}
-            <div className="rise flex flex-col gap-6 lg:relative lg:block lg:h-150" style={{ animationDelay: "0.12s" }}>
+            <div
+              className="anim-rise flex flex-col gap-6 lg:relative lg:block lg:h-150"
+              style={{ animationDuration: "800ms", animationDelay: "120ms" }}
+            >
 
               {/* Exam UI preview */}
               <div className="overflow-hidden rounded-[14px] border border-rule bg-surface shadow-[0_24px_64px_rgba(26,26,26,0.10),0_2px_6px_rgba(26,26,26,0.04)] lg:absolute lg:top-0 lg:left-26 lg:w-134">
@@ -169,7 +179,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 <div className="flex items-center gap-3.5 border-b border-rule bg-surface-2 px-5 py-2.5">
                   <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>14 / 22</span>
                   <div className="h-0.5 flex-1 overflow-hidden bg-[#E0DDD4]">
-                    <div className="wipe h-full w-[64%] bg-ink" style={{ animationDelay: "0.5s", animationDuration: "1.2s" }} />
+                    <div className="anim-wipe h-full w-[64%] bg-ink" style={{ animationDuration: "1200ms", animationDelay: "500ms" }} />
                   </div>
                 </div>
                 <div className="px-5 pt-7 pb-5.5">
@@ -204,8 +214,8 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
               {/* Score-delta card */}
               <div
-                className="rise rounded-[14px] bg-ink px-7 pt-6.5 pb-5.5 shadow-[0_24px_64px_rgba(26,26,26,0.22)] lg:absolute lg:top-71.5 lg:left-0 lg:w-94"
-                style={{ animationDelay: "0.3s" }}
+                className="anim-rise rounded-[14px] bg-ink px-7 pt-6.5 pb-5.5 shadow-[0_24px_64px_rgba(26,26,26,0.22)] lg:absolute lg:top-71.5 lg:left-0 lg:w-94"
+                style={{ animationDuration: "800ms", animationDelay: "300ms" }}
               >
                 <div className="mb-5.5 flex items-baseline justify-between">
                   <span className={`${MONO_SECTION} text-bg/50`}>Bal tərəqqisi</span>
@@ -220,15 +230,15 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   </div>
                   <div className="flex h-21.5 flex-1 items-end gap-2.25">
                     {[
-                      { score: "1180", height: "h-9",    fill: "bg-bg/22", delay: "0.5s",  dim: true  },
-                      { score: "1272", height: "h-13.5", fill: "bg-bg/45", delay: "0.65s", dim: true  },
-                      { score: "1364", height: "h-19",   fill: "bg-bg",    delay: "0.8s",  dim: false },
+                      { score: "1180", height: "h-9",    fill: "bg-bg/22", delay: "500ms",  dim: true  },
+                      { score: "1272", height: "h-13.5", fill: "bg-bg/45", delay: "650ms", dim: true  },
+                      { score: "1364", height: "h-19",   fill: "bg-bg",    delay: "800ms",  dim: false },
                     ].map((bar) => (
                       <div key={bar.score} className="flex flex-1 flex-col justify-end gap-1.75">
                         <span className={`text-center font-mono text-[10px] ${bar.dim ? "text-bg/45" : "text-bg"}`}>
                           {bar.score}
                         </span>
-                        <div className={`grow ${bar.height} ${bar.fill}`} style={{ animationDelay: bar.delay }} />
+                        <div className={`anim-grow ${bar.height} ${bar.fill}`} style={{ animationDelay: bar.delay }} />
                       </div>
                     ))}
                   </div>
@@ -243,7 +253,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── PROGRAM INDEX ── */}
         <section className="border-t border-b border-ink border-b-rule bg-surface-2">
-          <div className="mx-auto grid w-full max-w-320 grid-cols-2 px-6 sm:grid-cols-3 lg:grid-cols-6 lg:px-10">
+          <FadeUp y={12} className="mx-auto grid w-full max-w-320 grid-cols-2 px-6 sm:grid-cols-3 lg:grid-cols-6 lg:px-10">
             {PROGRAMS.map((program, i) => {
               const data = program.type ? byType[program.type] : undefined;
               const count = data?.count ?? 0;
@@ -278,7 +288,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 <div key={program.code} className={cellClass}>{body}</div>
               );
             })}
-          </div>
+          </FadeUp>
         </section>
 
         {/* ── §01 METOD ── */}
@@ -292,10 +302,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
             <div className="relative">
               {/* The rule the three nodes sit on. */}
               <div className="absolute top-24 right-0 left-0 hidden h-px bg-rule lg:block" aria-hidden />
-              <div className="relative grid gap-12 md:grid-cols-3 lg:gap-10">
+              <StaggerContainer className="relative grid gap-12 md:grid-cols-3 lg:gap-10">
 
                 {STEPS.map((step, i) => (
-                  <div key={step.n}>
+                  <StaggerItem key={step.n}>
                     <div className="flex h-24 items-end pb-3.5" aria-hidden>
                       {i === 0 && (
                         <div className="flex items-end gap-1.5">
@@ -340,9 +350,9 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       </h3>
                       <p className="m-0 max-w-70 text-base leading-[1.55] text-ink-soft">{step.line}</p>
                     </div>
-                  </div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerContainer>
             </div>
           </div>
         </section>
@@ -357,7 +367,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-[14px] border border-rule bg-surface">
+            <FadeUp className="overflow-hidden rounded-[14px] border border-rule bg-surface">
               <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-4.5 lg:px-7">
                 <span className="text-base font-medium tracking-[-0.01em] text-ink">Bölmə üzrə analiz</span>
                 <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>Cəhd 03 · SAT—01</span>
@@ -381,9 +391,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
                         {dimension.label}
                       </span>
                       <div className={`h-2 ${dimension.weak ? "bg-[#E4E0D6]" : "bg-rule-soft"}`}>
-                        <div
-                          className={`wipe h-full ${dimension.weak ? "bg-error" : "bg-ink"}`}
-                          style={{ width: `${dimension.value}%`, animationDelay: `${i * 0.06}s` }}
+                        <WipeBar
+                          percent={dimension.value}
+                          className={dimension.weak ? "bg-error" : "bg-ink"}
+                          delay={i * 0.06}
                         />
                       </div>
                       <span className={`text-right font-mono text-[13px] tabular-nums ${dimension.weak ? "text-error" : "text-ink"}`}>
@@ -429,9 +440,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
                         <div key={module.label} className="flex items-center gap-3">
                           <span className="w-13 shrink-0 font-mono text-[11px] text-ink-mute">{module.label}</span>
                           <div className="h-1.5 flex-1 bg-rule-soft">
-                            <div
-                              className={`h-full ${module.over ? "bg-error" : "bg-ink"}`}
-                              style={{ width: `${module.pct}%` }}
+                            <WipeBar
+                              percent={module.pct}
+                              className={module.over ? "bg-error" : "bg-ink"}
+                              delay={0.2 + MODULE_TIMES.indexOf(module) * 0.06}
                             />
                           </div>
                           <span className={`w-8 shrink-0 text-right font-mono text-[11px] ${module.over ? "text-error" : "text-ink"}`}>
@@ -443,7 +455,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   </div>
                 </div>
               </div>
-            </div>
+            </FadeUp>
 
             <div className={`${MONO_LABEL} mt-3.5 text-ink-mute`}>Şəkil 01 — nəticə hesabatı</div>
           </SectionHead>
@@ -460,7 +472,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 </h2>
 
                 <div className="grid items-start gap-10 lg:grid-cols-[1fr_340px] lg:gap-14">
-                  <div className="overflow-hidden rounded-[14px] bg-bg text-ink">
+                  <FadeUp className="overflow-hidden rounded-[14px] bg-bg text-ink">
                     <div className="flex items-center justify-between gap-4 border-b border-rule bg-surface-2 px-5 py-3.5 lg:px-6">
                       <span className={`${MONO_LABEL} text-ink-mute`}>Sual 14 / 22 · Geometry</span>
                       <span className={`${MONO_LABEL} text-error`}>səhv</span>
@@ -512,9 +524,9 @@ export default function HomeContent({ byType, totalExams }: Props) {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </FadeUp>
 
-                  <div className="lg:pt-2">
+                  <FadeUp delay={0.1} className="lg:pt-2">
                     {[
                       { n: "01", label: "Səhvin növü",       value: "İşarə xətası"       },
                       { n: "02", label: "Təkrarlanma",       value: "3 cəhddə 5 dəfə"    },
@@ -537,7 +549,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       <div className="font-mono text-[32px] font-light tracking-[-0.03em] text-bg">98</div>
                       <div className="mt-1.5 text-sm text-bg/60">sualın hər biri belə açılır</div>
                     </div>
-                  </div>
+                  </FadeUp>
                 </div>
               </div>
             </div>
@@ -549,7 +561,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
           <SectionHead n="04">
             <h2 className={`${H2} mb-10 max-w-130 lg:mb-12`}>Kitabla fərq.</h2>
 
-            <div className="grid grid-cols-[1fr_100px_100px] border-t border-ink sm:grid-cols-[1fr_200px_200px]">
+            <FadeUp className="grid grid-cols-[1fr_100px_100px] border-t border-ink sm:grid-cols-[1fr_200px_200px]">
               <div className="py-3.5" />
               <div className={`${MONO_SECTION} bg-ink px-3 py-3.5 text-[10px] text-bg sm:px-5`}>Testcentre</div>
               <div className={`${MONO_SECTION} px-3 py-3.5 text-[10px] text-ink-mute sm:px-5`}>Sərbəst</div>
@@ -569,7 +581,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   </div>
                 );
               })}
-            </div>
+            </FadeUp>
           </SectionHead>
         </section>
 
@@ -578,7 +590,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
           <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
             <SectionHead n="05">
               <div className="grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-18">
-                <div>
+                <FadeUp>
                   <div className="mb-5 flex items-baseline gap-4">
                     <span className="font-mono text-[56px] leading-[0.85] font-light tracking-[-0.045em] tabular-nums text-ink lg:text-[76px]">
                       {REVIEWS[0].score}
@@ -591,11 +603,11 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   <div className="text-[15px] text-ink">
                     {REVIEWS[0].name} <span className="text-ink-mute">· {REVIEWS[0].place}</span>
                   </div>
-                </div>
+                </FadeUp>
 
-                <div className="flex flex-col justify-end gap-7 lg:pb-1.5">
+                <StaggerContainer delay={0.15} className="flex flex-col justify-end gap-7 lg:pb-1.5">
                   {REVIEWS.slice(1).map((review) => (
-                    <div key={review.name} className="border-t border-ink-faint pt-5">
+                    <StaggerItem key={review.name} className="border-t border-ink-faint pt-5">
                       <div className="mb-2.5 flex items-baseline gap-3">
                         <span className="font-mono text-[34px] font-light tracking-[-0.03em] tabular-nums text-ink">
                           {review.score}
@@ -604,9 +616,9 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       </div>
                       <p className="m-0 mb-2 text-[17px] leading-[1.45] text-ink">“{review.quote}”</p>
                       <div className="text-sm text-ink-mute">{review.name} · {review.place}</div>
-                    </div>
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerContainer>
               </div>
             </SectionHead>
           </div>
@@ -617,10 +629,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
           <SectionHead n="06">
             <div className="grid gap-8 lg:grid-cols-[300px_1fr] lg:gap-18">
               <h2 className={H2}>Suallar.</h2>
-              <div>
+              <StaggerContainer>
                 {FAQ.map((item, i) => (
+                  <StaggerItem key={item.q}>
                   <details
-                    key={item.q}
                     className={`group ${i === 0 ? "border-t border-ink" : "border-t border-rule"} ${
                       i === FAQ.length - 1 ? "border-b border-rule" : ""
                     }`}
@@ -634,8 +646,9 @@ export default function HomeContent({ byType, totalExams }: Props) {
                     </summary>
                     <p className="m-0 mb-6 max-w-140 text-base leading-[1.65] text-ink-soft">{item.a}</p>
                   </details>
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerContainer>
             </div>
           </SectionHead>
         </section>
@@ -650,22 +663,22 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 </h2>
                 <Link
                   href="/exams"
-                  className="inline-flex items-center gap-2.5 rounded-full bg-bg px-7 py-4 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface"
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-bg px-7 py-4 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
                 >
-                  Sınaq seç <span aria-hidden>→</span>
+                  Sınaq seç <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
                 </Link>
               </div>
 
               {/* Price rail — real programs, real prices. `min-w-0` keeps the
                   rail inside its grid column: a grid item defaults to
                   min-width:auto, so a long title would stretch the page. */}
-              <div className="min-w-0">
+              <StaggerContainer className="min-w-0">
                 {openPrograms.map((program, i) => {
                   const data = byType[program.type as string];
                   const href = data.count === 1 ? `/exams/${data.firstId}` : `/exams?type=${program.type}`;
                   return (
+                    <StaggerItem key={program.code}>
                     <Link
-                      key={program.code}
                       href={href}
                       className={`flex items-baseline justify-between gap-5 py-4.5 text-bg transition-opacity duration-150 hover:opacity-70 ${
                         i === 0 ? "border-t border-bg/28" : "border-t border-bg/14"
@@ -680,9 +693,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       </span>
                       <span className="shrink-0 font-mono text-xl tabular-nums">{data.minPrice}₼</span>
                     </Link>
+                    </StaggerItem>
                   );
                 })}
-              </div>
+              </StaggerContainer>
             </div>
           </div>
         </section>

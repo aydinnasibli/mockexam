@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { PublicExam } from '@/lib/db/exams';
 import { EXAM_TYPES, examTypeLabel, isExamType } from '@/lib/exam-types';
+import StructureBar from '@/components/ui/StructureBar';
 import {
   BREAK_FILL,
   SCORE_SCALE,
@@ -169,7 +170,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   type="button"
                   onClick={() => selectType(type)}
                   aria-pressed={isActive}
-                  className={`flex shrink-0 items-baseline gap-2.5 whitespace-nowrap px-6 transition-colors duration-150 ${
+                  className={`flex shrink-0 items-baseline gap-2.5 whitespace-nowrap px-6.5 transition-colors duration-150 ${
                     isActive
                       ? 'rounded-t-btn bg-bg pt-4 pb-3.75 text-ink'
                       : 'pt-3.5 pb-3.25 text-bg/70 hover:text-bg'
@@ -218,6 +219,14 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             </button>
           </div>
         ) : (
+          /*
+           * The rows do NOT reveal on scroll. They are the page's primary
+           * content and they replace a skeleton, so starting them at zero
+           * opacity left an empty register in the frame between the skeleton
+           * being torn down and the animation starting — which read as a
+           * blink. The motion here lives in the timing diagrams, which draw
+           * themselves inside rows that are already solid.
+           */
           listed.map((exam, i) => {
             const structure = structureOf(exam);
             const examMinutes = exam.durationMinutes -
@@ -229,7 +238,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               <Link
                 key={exam.id}
                 href={`/exams/${exam.id}`}
-                className={`grid gap-y-5 border-b py-7 transition-colors duration-150 hover:bg-surface
+                className={`group grid gap-y-5 border-b py-7 transition-colors duration-150 hover:bg-surface
                             xl:grid-cols-[112px_1fr_360px_156px] xl:items-center xl:gap-x-10 xl:gap-y-0 xl:py-9.5
                             ${isLast ? 'border-ink' : 'border-rule'}`}
               >
@@ -268,23 +277,12 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                     across the whole page. */}
                 <div className="max-w-90">
                   {structure.total > 0 && (
-                    <div className="flex h-8.5 items-stretch gap-0.5">
-                      {structure.blocks.map((block, bi) => (
-                        <div
-                          key={bi}
-                          className={`flex min-w-0.5 items-center overflow-hidden ${block.fill}`}
-                          style={{ flex: block.minutes }}
-                          title={`${block.label} · ${block.minutes} dəq`}
-                        >
-                          {block.kind === 'module' &&
-                            block.minutes / structure.total >= MIN_FIGURE_SHARE && (
-                              <span className={`pl-2 font-mono text-[10px] whitespace-nowrap ${block.figureClass}`}>
-                                {block.minutes}′
-                              </span>
-                            )}
-                        </div>
-                      ))}
-                    </div>
+                    <StructureBar
+                      blocks={structure.blocks}
+                      total={structure.total}
+                      heightClass="h-8.5"
+                      minFigureShare={MIN_FIGURE_SHARE}
+                    />
                   )}
                   <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
                     {structure.bands.map((band) => (
@@ -312,9 +310,9 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   </span>
                   <span
                     aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink text-sm text-ink"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink text-sm text-ink transition-colors duration-200 group-hover:bg-ink group-hover:text-bg"
                   >
-                    →
+                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
                   </span>
                 </div>
               </Link>

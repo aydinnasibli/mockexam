@@ -51,7 +51,7 @@ export default function Navbar({ showBulletin = true }: Props) {
       )}
 
       <div className="border-b border-rule">
-        <nav className="mx-auto flex h-18 w-full max-w-320 items-center justify-between px-6 lg:px-10">
+        <nav className="relative mx-auto flex h-18 w-full max-w-320 items-center justify-between px-6 lg:px-10">
 
           {/* ── Logo ── */}
           <Link href="/" className="flex shrink-0 items-center gap-2.25">
@@ -61,15 +61,20 @@ export default function Navbar({ showBulletin = true }: Props) {
             </span>
           </Link>
 
-          {/* ── Centre nav (desktop) ── */}
-          <div className="hidden items-center gap-9 md:flex">
+          {/* ── Centre nav (desktop) ──
+              Absolutely centred rather than a flex sibling: as a sibling its
+              position depended on the auth group's width, so the links slid
+              sideways the moment Clerk resolved. */}
+          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-9 md:flex">
             {navLinks.map(({ href, label }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
               return (
                 <Link
                   key={href}
                   href={href}
-                  className="flex flex-col items-center gap-1.25 text-[13px] font-medium tracking-[0.005em] text-ink transition-colors duration-150 hover:text-accent-deep"
+                  className={`flex flex-col items-center gap-1.25 text-[13px] font-medium tracking-[0.005em] transition-colors duration-150 ${
+                    isActive ? "text-ink" : "text-ink-mute hover:text-ink"
+                  }`}
                 >
                   {label}
                   {/* The active marker is a rule under the label, not a pill. */}
@@ -81,11 +86,14 @@ export default function Navbar({ showBulletin = true }: Props) {
 
           {/* ── Right: auth (desktop) + mobile hamburger ── */}
           <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-4.5 md:flex">
+            {/* The reserved width is the widest of the three states (signed-out
+                is 163px), so the auth area's right edge never moves as Clerk
+                resolves — only the content inside it changes. */}
+            <div className="hidden items-center justify-end gap-4.5 md:flex md:min-w-41">
               {!isLoaded ? (
                 /* Reserve space until Clerk resolves — prevents the signed-out
                    buttons flashing before swapping to the signed-in state. */
-                <div className="h-9 w-44" aria-hidden />
+                <div className="h-9 w-41" aria-hidden />
               ) : !isSignedIn ? (
                 <>
                   <SignInButton mode="modal">

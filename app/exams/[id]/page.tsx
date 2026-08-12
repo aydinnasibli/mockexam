@@ -6,6 +6,9 @@ import Footer from '@/components/layout/Footer';
 import { getActiveExams, getExamById, type PublicExam } from '@/lib/db/exams';
 import { BASE_URL, SITE_NAME, clampDescription, pageMetadata } from '@/lib/seo';
 import { examTypeLabel } from '@/lib/exam-types';
+import FadeUp from '@/components/ui/FadeUp';
+import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
+import StructureBar from '@/components/ui/StructureBar';
 import { SCORE_SCALE, examCodes, pad2, shortTypeLabel, structureOf } from '../structure';
 import PurchaseCard from './PurchaseCard';
 
@@ -37,10 +40,6 @@ interface Props {
 const MIN_USEFUL_DESCRIPTION = 60;
 
 const MONO_LABEL = 'font-mono text-[10px] tracking-[0.14em] uppercase';
-
-function hasUsefulDescription(exam: PublicExam): boolean {
-  return (exam.description?.trim().length ?? 0) >= MIN_USEFUL_DESCRIPTION;
-}
 
 function examDescription(exam: PublicExam): string {
   const stored = exam.description?.trim() ?? '';
@@ -178,17 +177,6 @@ export default async function ExamDetails({ params }: Props) {
                 {exam.title}
               </h1>
 
-              {/* The stored description is the only prose a visitor gets about
-                  what this paper covers, so it stays as the lead paragraph —
-                  but only when it is actually a sentence. The live SAT exam
-                  stores the description "SAT", which as a lede reads as a
-                  stray word under the title. */}
-              {hasUsefulDescription(exam) && (
-                <p className="m-0 mt-6 max-w-155 text-lg leading-[1.55] text-ink-soft lg:text-[21px]">
-                  {exam.description}
-                </p>
-              )}
-
               {/* Key figures */}
               <div className="mt-10 grid grid-cols-2 border-t border-ink sm:grid-cols-4 lg:mt-12">
                 {figures.map((figure, i) => (
@@ -213,7 +201,7 @@ export default async function ExamDetails({ params }: Props) {
 
               {/* ── Timeline ── */}
               {structure.total > 0 && (
-                <div className="mt-14 lg:mt-18">
+                <FadeUp className="mt-14 lg:mt-18">
                   <div className="mb-7 flex items-baseline justify-between gap-4">
                     <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">
                       Vaxt xətti
@@ -225,26 +213,14 @@ export default async function ExamDetails({ params }: Props) {
                     )}
                   </div>
 
-                  <div className="flex h-11 items-stretch gap-0.75 lg:h-14">
-                    {structure.blocks.map((block, i) => (
-                      <div
-                        key={i}
-                        className={`flex min-w-1 items-center justify-center overflow-hidden ${block.fill} ${
-                          block.kind === 'break' ? 'bg-rule' : ''
-                        }`}
-                        style={{ flex: block.minutes }}
-                        title={`${block.label} · ${block.minutes} dəq`}
-                      >
-                        <span
-                          className={`font-mono text-[11px] whitespace-nowrap ${
-                            block.kind === 'break' ? 'text-ink-mute' : `${block.figureClass} w-full px-3.5 text-left`
-                          }`}
-                        >
-                          {block.minutes}′
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <StructureBar
+                    blocks={structure.blocks}
+                    total={structure.total}
+                    heightClass="h-11 lg:h-14"
+                    gapClass="gap-0.75"
+                    labelBreaks
+                    figureClass="px-3.5 font-mono text-[11px]"
+                  />
 
                   {/* Labels track the same flex ratios, so each sits under its
                       own block. */}
@@ -264,7 +240,7 @@ export default async function ExamDetails({ params }: Props) {
                       </span>
                     </div>
                   )}
-                </div>
+                </FadeUp>
               )}
 
               {/* ── Module table ── */}
@@ -278,8 +254,9 @@ export default async function ExamDetails({ params }: Props) {
                     <span className="hidden text-right sm:block">Sual/dəq</span>
                   </div>
 
+                  <StaggerContainer>
                   {exam.modules.map((mod, i) => (
-                    <div key={i}>
+                    <StaggerItem key={i}>
                       <div className="grid grid-cols-[32px_1fr_64px] items-center gap-4 border-b border-rule py-4 sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5">
                         <span className="font-mono text-xs text-ink-mute">{pad2(i + 1)}</span>
                         <span className="min-w-0 text-[15px] font-medium text-ink sm:text-base">
@@ -306,17 +283,81 @@ export default async function ExamDetails({ params }: Props) {
                           </span>
                         </div>
                       )}
-                    </div>
+                    </StaggerItem>
                   ))}
+                  </StaggerContainer>
                 </div>
               )}
+
+              {/* ── Sample question ──
+                  A specimen, not a question from this paper's bank: the bank
+                  is the product, so nothing from it is printed on a public
+                  page. It is the same illustration the home page carries. */}
+              <FadeUp className="mt-14 lg:mt-18">
+                <div className="mb-6 flex items-baseline justify-between gap-4">
+                  <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">Nümunə</h2>
+                  <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
+                    {exam.totalQuestions} sualdan biri
+                  </span>
+                </div>
+
+                <div className="grid overflow-hidden rounded-[14px] border border-rule bg-surface lg:grid-cols-[1fr_260px]">
+                  <div className="border-b border-rule px-5 py-6 lg:border-r lg:border-b-0 lg:px-6">
+                    <p className="m-0 mb-5 text-[18px] leading-[1.45] text-ink">
+                      If <span className="font-mono text-[17px]">ƒ(x) = 3x² − 5x + 2</span>, what is{' '}
+                      <span className="font-mono text-[17px]">ƒ(−1)</span>?
+                    </p>
+                    <div className="grid gap-1.75 sm:grid-cols-2">
+                      {[
+                        { key: 'A', value: '−6', correct: false },
+                        { key: 'B', value: '0',  correct: false },
+                        { key: 'C', value: '10', correct: true  },
+                        { key: 'D', value: '14', correct: false },
+                      ].map((option) => (
+                        <div
+                          key={option.key}
+                          className={`flex items-center gap-3 rounded-[9px] border px-3.5 py-2.75 ${
+                            option.correct ? 'border-correct bg-correct' : 'border-rule'
+                          }`}
+                        >
+                          <span className={`font-mono text-[11px] ${option.correct ? 'text-bg/60' : 'text-ink-mute'}`}>
+                            {option.key}
+                          </span>
+                          <span className={`font-mono text-[15px] ${option.correct ? 'text-bg' : 'text-ink'}`}>
+                            {option.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-surface-2 px-5 py-6 lg:px-5.5">
+                    <div className={`${MONO_LABEL} mb-3.5 text-[9px] tracking-[0.16em] text-ink-mute`}>İzahat</div>
+                    <div className="flex flex-col">
+                      {[
+                        { step: '3(−1)² = 3',  last: false },
+                        { step: '−5(−1) = +5', last: false },
+                        { step: '= 10',        last: true  },
+                      ].map((row) => (
+                        <span
+                          key={row.step}
+                          className={`border-t border-[#E4E0D6] py-2 font-mono text-sm ${
+                            row.last ? 'border-b text-correct' : 'text-ink'
+                          }`}
+                        >
+                          {row.step}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </FadeUp>
             </div>
 
             {/* ── Right: purchase rail ── */}
             <div className="min-w-0 lg:sticky lg:top-6">
               <PurchaseCard
                 examId={exam.id}
-                code={code}
                 price={exam.price}
                 features={exam.features}
               />

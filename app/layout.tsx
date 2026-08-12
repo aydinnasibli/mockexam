@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { PostHogProvider, PostHogPageView } from '@posthog/next';
 import { Toaster } from 'sonner';
 import MotionProvider from "@/components/ui/MotionProvider";
+import RouteTransition from "@/components/ui/RouteTransition";
 import PostHogIdentify from "@/components/PostHogIdentify";
 import CookieNotice from "@/components/ui/CookieNotice";
 import { BASE_URL } from "@/lib/seo";
@@ -151,7 +152,9 @@ export default function RootLayout({
             <PostHogPageView />
             <PostHogIdentify />
             <MotionProvider>
-              {children}
+              {/* Route crossfade. `children` is passed through as a prop, so the
+                  page tree below stays server-rendered. */}
+              <RouteTransition>{children}</RouteTransition>
               <CookieNotice />
             </MotionProvider>
           </PostHogProvider>

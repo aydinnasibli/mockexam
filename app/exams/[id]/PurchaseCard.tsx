@@ -21,21 +21,28 @@ import { useAuth } from '@clerk/nextjs';
 
 const MONO_LABEL = 'font-mono text-[9px] tracking-[0.16em] uppercase';
 
+/**
+ * Both ownership states render the same three rows, and the same price header,
+ * CTA and footer strip. Only the words change.
+ *
+ * The purchase check resolves on the client after first paint, so any
+ * difference in shape between the two states is a layout shift for every owner
+ * of the exam — it was measurably pushing the "Daxildir" ledger and the refund
+ * note down the page. Same geometry, different copy: no shift.
+ */
 const TERMS = [
-  { label: 'Giriş', value: 'müddətsiz' },
-  { label: 'Cəhd', value: 'limitsiz' },
-  { label: 'ƏDV', value: 'daxil' },
+  { label: 'Giriş', value: 'müddətsiz', owned: 'açıqdır' },
+  { label: 'Cəhd', value: 'limitsiz',   owned: 'limitsiz' },
+  { label: 'ƏDV',  value: 'daxil',      owned: 'daxil' },
 ];
 
 interface Props {
   examId: string;
-  /** Register code, e.g. `SAT—01`. */
-  code: string;
   price: number;
   features: string[];
 }
 
-export default function PurchaseCard({ examId, code, price, features }: Props) {
+export default function PurchaseCard({ examId, price, features }: Props) {
   const { isSignedIn, isLoaded } = useAuth();
   const [hasPurchased, setHasPurchased] = useState(false);
 
@@ -67,66 +74,49 @@ export default function PurchaseCard({ examId, code, price, features }: Props) {
       <div className="overflow-hidden rounded-[14px] bg-ink text-bg">
         <div className="px-6.5 pt-6.5 pb-5.5">
           <div className="flex items-baseline justify-between gap-3 border-b border-bg/18 pb-5.5">
-            {hasPurchased ? (
-              <span className="text-lg font-medium text-bg">Artıq alınmışdır</span>
-            ) : (
-              <span className="flex items-baseline gap-2.5">
-                <span className="font-mono text-[46px] leading-[0.88] font-light tracking-[-0.045em] tabular-nums lg:text-[56px]">
-                  {price}
-                </span>
-                <span className="font-mono text-sm text-bg/50">AZN</span>
+            <span className="flex items-baseline gap-2.5">
+              <span className="font-mono text-[46px] leading-[0.88] font-light tracking-[-0.045em] tabular-nums lg:text-[56px]">
+                {price}
               </span>
-            )}
-            <span className={`${MONO_LABEL} shrink-0 text-bg/40`}>{code}</span>
+              <span className="font-mono text-sm text-bg/50">AZN</span>
+            </span>
           </div>
 
-          {hasPurchased ? (
-            <p className="mt-5.5 mb-5.5 text-sm text-bg/55">
-              Bu sınağa girişiniz var — kabinetdən istənilən vaxt başlaya bilərsiniz.
-            </p>
-          ) : (
-            <div className="mb-5.5">
-              {TERMS.map((term, i) => (
-                <div
-                  key={term.label}
-                  className={`flex items-center justify-between py-3.25 ${
-                    i < TERMS.length - 1 ? 'border-b border-bg/10' : ''
-                  }`}
-                >
-                  <span className="text-sm text-bg/55">{term.label}</span>
-                  <span className="font-mono text-[13px] text-bg">{term.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="mb-5.5">
+            {TERMS.map((term, i) => (
+              <div
+                key={term.label}
+                className={`flex items-center justify-between py-3.25 ${
+                  i < TERMS.length - 1 ? 'border-b border-bg/10' : ''
+                }`}
+              >
+                <span className="text-sm text-bg/55">{term.label}</span>
+                <span className="font-mono text-[13px] text-bg">
+                  {hasPurchased ? term.owned : term.value}
+                </span>
+              </div>
+            ))}
+          </div>
 
-          {hasPurchased ? (
-            <Link
-              href="/dashboard"
-              className="flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface"
-            >
-              Panelə keç <span aria-hidden>→</span>
-            </Link>
-          ) : (
-            /*
-              prefetch={false}: /checkout is auth-gated, so prefetching it for a
-              signed-out visitor makes Clerk redirect the RSC request to the
-              hosted sign-in on another origin, which fails CORS and logs two
-              console errors on every view of this page.
-            */
-            <Link
-              href={`/checkout/${examId}`}
-              prefetch={false}
-              className="flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface"
-            >
-              Giriş əldə et <span aria-hidden>→</span>
-            </Link>
-          )}
+          {/*
+            prefetch={false} on checkout: it is auth-gated, so prefetching it for
+            a signed-out visitor makes Clerk redirect the RSC request to the
+            hosted sign-in on another origin, which fails CORS and logs two
+            console errors on every view of this page.
+          */}
+          <Link
+            href={hasPurchased ? '/dashboard' : `/checkout/${examId}`}
+            prefetch={hasPurchased ? undefined : false}
+            className="group flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
+          >
+            {hasPurchased ? 'Panelə keç' : 'Giriş əldə et'}
+            <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+          </Link>
         </div>
 
         <div className="border-t border-bg/12 bg-bg/5 px-6.5 pt-4 pb-5">
           <p className={`${MONO_LABEL} m-0 text-[10px] tracking-[0.12em] text-bg/45`}>
-            güvənli ödəniş · dərhal giriş
+            {hasPurchased ? 'giriş açıqdır · kabinetdə' : 'güvənli ödəniş · dərhal giriş'}
           </p>
         </div>
       </div>
