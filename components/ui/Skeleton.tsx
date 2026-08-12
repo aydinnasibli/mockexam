@@ -43,13 +43,22 @@ interface SkeletonScreenProps {
 
 export function SkeletonScreen({ children, className = '', label = 'Yüklənir' }: SkeletonScreenProps) {
   /*
-   * `skeleton-delayed` holds the whole thing invisible for the first 350ms.
+   * `skeleton-delayed` holds the whole thing invisible for the first 350ms and
+   * then fades it in over 260ms.
    *
    * A skeleton that flashes for a third of a second is worse than no skeleton:
    * the eye registers a loading screen, then an empty frame as it is torn down,
    * then the content — a blink. Waiting first means a fast response never shows
-   * loading UI at all, and a genuinely slow one still gets a skeleton, fading
-   * in rather than snapping.
+   * loading UI at all, and a genuinely slow one still gets a skeleton.
+   *
+   * The usual companion to a delay is a *minimum display time*, so a skeleton
+   * that has appeared cannot vanish a frame later. That is not implementable
+   * for a Suspense fallback: React tears the fallback down the moment the
+   * boundary resolves and nothing in userland can hold it there. The fade-in
+   * ramp is what covers that case instead — a response landing at, say, 420ms
+   * catches the skeleton at roughly a quarter opacity, so it reads as a hint
+   * of movement rather than a screen that appeared and left. Anything
+   * resolving before ~610ms never sees it at full strength at all.
    *
    * The pulse lives on an inner element because both are `animation`
    * declarations and one element cannot carry two independently.
