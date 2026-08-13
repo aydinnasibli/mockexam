@@ -12,6 +12,7 @@ import {
   pad2,
   shortTypeLabel,
   structureOf,
+  upperLabel,
 } from './structure';
 
 /** A block narrower than this share of the bar has no room for its figure. */
@@ -291,7 +292,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                         className="flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-ink-mute"
                       >
                         <span className={`h-2 w-2 shrink-0 ${band.fill}`} />
-                        {band.label}
+                        {upperLabel(band.label)}
                       </span>
                     ))}
                     {structure.hasBreak && (

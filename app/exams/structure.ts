@@ -33,6 +33,38 @@ export function bandName(name: string): string {
   return trimmed || name.trim();
 }
 
+/**
+ * The English module vocabulary this catalog actually stores. A label is
+ * treated as English when one of its words appears here — see `upperLabel`.
+ */
+const EN_MODULE_WORDS = new Set([
+  'reading', 'writing', 'listening', 'speaking', 'grammar', 'vocabulary',
+  'math', 'maths', 'mathematics', 'module', 'section', 'part', 'paper',
+  'task', 'test', 'practice', 'academic', 'general', 'training',
+  'calculator', 'verbal', 'quantitative', 'analytical', 'integrated',
+  'independent', 'essay',
+]);
+
+/** Letters that only an Azerbaijani label carries — never anglicise those. */
+const AZ_LETTERS = /[əğışöüçİ]/i;
+
+/**
+ * Uppercases a module label for the mono micro-labels.
+ *
+ * The document is `lang="az"`, and Azerbaijani casing maps "i" to the dotted
+ * "İ" — which is why the English module names stored on the exams printed as
+ * "LİSTENİNG" and "WRİTİNG". Azerbaijani labels genuinely need that mapping
+ * ("Dinləmə" → "DİNLƏMƏ"), so the locale is picked per label rather than
+ * globally. Casing here rather than leaving it to `text-transform` also makes
+ * the result independent of how a browser implements locale-aware casing;
+ * the utility class stays on the element and is a no-op over this output.
+ */
+export function upperLabel(label: string): string {
+  const words = label.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const isEnglish = !AZ_LETTERS.test(label) && words.some((w) => EN_MODULE_WORDS.has(w));
+  return isEnglish ? label.toUpperCase() : label.toLocaleUpperCase('az');
+}
+
 export interface StructureBlock {
   kind: 'module' | 'break';
   minutes: number;

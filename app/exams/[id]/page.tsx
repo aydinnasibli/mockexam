@@ -1,15 +1,18 @@
 import type { Metadata } from 'next';
+import 'katex/dist/katex.min.css';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { getActiveExams, getExamById, type PublicExam } from '@/lib/db/exams';
+import { getSampleQuestion } from '@/lib/db/questions';
 import { BASE_URL, SITE_NAME, clampDescription, pageMetadata } from '@/lib/seo';
 import { examTypeLabel } from '@/lib/exam-types';
+import { renderMath } from '@/lib/render-math';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import StructureBar from '@/components/ui/StructureBar';
-import { SCORE_SCALE, examCodes, pad2, shortTypeLabel, structureOf } from '../structure';
+import { SCORE_SCALE, examCodes, pad2, shortTypeLabel, structureOf, upperLabel } from '../structure';
 import PurchaseCard from './PurchaseCard';
 
 /**
@@ -72,6 +75,22 @@ function pace(minutes: number, questions: number): string {
   return `${(minutes / questions).toFixed(2)}′`;
 }
 
+const OPTION_KEYS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+/** How much of a reading passage the specimen panel prints before it elides. */
+const PASSAGE_EXCERPT = 320;
+
+/** Cuts at a sentence end where there is one nearby, so the excerpt does not
+ *  stop mid-clause. */
+function passageExcerpt(passage: string): string {
+  const text = passage.trim();
+  if (text.length <= PASSAGE_EXCERPT) return text;
+
+  const window = text.slice(0, PASSAGE_EXCERPT);
+  const stop = Math.max(window.lastIndexOf('. '), window.lastIndexOf('? '), window.lastIndexOf('! '));
+  return stop > PASSAGE_EXCERPT * 0.6 ? `${window.slice(0, stop + 1)} […]` : `${window.trimEnd()}…`;
+}
+
 export default async function ExamDetails({ params }: Props) {
   const { id } = await params;
   const exam = await getExamById(id);
@@ -83,6 +102,11 @@ export default async function ExamDetails({ params }: Props) {
   const isAdaptive = exam.modules.some(m => m.isAdaptive);
   const description = examDescription(exam);
   const structure = structureOf(exam);
+
+  // The specimen comes from this exam's own bank; `moduleIndex` names the
+  // module it sits in, when the exam still declares one at that index.
+  const sample = await getSampleQuestion(exam.id);
+  const sampleModule = sample ? exam.modules[sample.moduleIndex]?.name?.trim() : undefined;
 
   // The code is the one the catalog register prints, so a visitor arriving from
   // /exams sees the same identifier in the breadcrumb.
@@ -227,7 +251,7 @@ export default async function ExamDetails({ params }: Props) {
                   <div className="mt-2.5 flex gap-0.75">
                     {structure.blocks.map((block, i) => (
                       <div key={i} className="min-w-1 overflow-hidden" style={{ flex: block.minutes }}>
-                        <span className={`${MONO_LABEL} block truncate text-ink-mute`}>{block.label}</span>
+                        <span className={`${MONO_LABEL} block truncate text-ink-mute`}>{upperLabel(block.label)}</span>
                       </div>
                     ))}
                   </div>
@@ -290,68 +314,77 @@ export default async function ExamDetails({ params }: Props) {
               )}
 
               {/* ── Sample question ──
-                  A specimen, not a question from this paper's bank: the bank
-                  is the product, so nothing from it is printed on a public
-                  page. It is the same illustration the home page carries. */}
-              <FadeUp className="mt-14 lg:mt-18">
-                <div className="mb-6 flex items-baseline justify-between gap-4">
-                  <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">Nümunə</h2>
-                  <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
-                    {exam.totalQuestions} sualdan biri
-                  </span>
-                </div>
+                  A real question from this exam's own bank — the first scorable
+                  MCQ in module order — so an IELTS page shows an IELTS question.
+                  The panel is omitted rather than filled with an illustration
+                  when the bank holds nothing suitable. */}
+              {sample && (
+                <FadeUp className="mt-14 lg:mt-18">
+                  <div className="mb-6 flex items-baseline justify-between gap-4">
+                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">Nümunə</h2>
+                    <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
+                      {sampleModule ? `${upperLabel(sampleModule)} · ` : ''}
+                      {exam.totalQuestions} sualdan biri
+                    </span>
+                  </div>
 
-                <div className="grid overflow-hidden rounded-[14px] border border-rule bg-surface lg:grid-cols-[1fr_260px]">
-                  <div className="border-b border-rule px-5 py-6 lg:border-r lg:border-b-0 lg:px-6">
-                    <p className="m-0 mb-5 text-[18px] leading-[1.45] text-ink">
-                      If <span className="font-mono text-[17px]">ƒ(x) = 3x² − 5x + 2</span>, what is{' '}
-                      <span className="font-mono text-[17px]">ƒ(−1)</span>?
-                    </p>
-                    <div className="grid gap-1.75 sm:grid-cols-2">
-                      {[
-                        { key: 'A', value: '−6', correct: false },
-                        { key: 'B', value: '0',  correct: false },
-                        { key: 'C', value: '10', correct: true  },
-                        { key: 'D', value: '14', correct: false },
-                      ].map((option) => (
-                        <div
-                          key={option.key}
-                          className={`flex items-center gap-3 rounded-[9px] border px-3.5 py-2.75 ${
-                            option.correct ? 'border-correct bg-correct' : 'border-rule'
-                          }`}
-                        >
-                          <span className={`font-mono text-[11px] ${option.correct ? 'text-bg/60' : 'text-ink-mute'}`}>
-                            {option.key}
-                          </span>
-                          <span className={`font-mono text-[15px] ${option.correct ? 'text-bg' : 'text-ink'}`}>
-                            {option.value}
-                          </span>
+                  <div className={`grid overflow-hidden rounded-[14px] border border-rule bg-surface ${
+                    sample.explanation ? 'lg:grid-cols-[1fr_260px]' : ''
+                  }`}>
+                    <div className="border-b border-rule px-5 py-6 lg:border-r lg:border-b-0 lg:px-6">
+                      {/* Passage-based questions are unreadable without their
+                          text, but the panel is a specimen, not a reading task —
+                          so it carries the opening of the passage only. */}
+                      {sample.passage && (
+                        <div className="mb-5 border-l-2 border-rule pl-4">
+                          <div className={`${MONO_LABEL} mb-2 text-[9px] tracking-[0.16em] text-ink-mute`}>Mətn</div>
+                          <p
+                            className="m-0 text-[15px] leading-[1.6] text-ink-soft"
+                            dangerouslySetInnerHTML={{ __html: renderMath(passageExcerpt(sample.passage)) }}
+                          />
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      )}
 
-                  <div className="bg-surface-2 px-5 py-6 lg:px-5.5">
-                    <div className={`${MONO_LABEL} mb-3.5 text-[9px] tracking-[0.16em] text-ink-mute`}>İzahat</div>
-                    <div className="flex flex-col">
-                      {[
-                        { step: '3(−1)² = 3',  last: false },
-                        { step: '−5(−1) = +5', last: false },
-                        { step: '= 10',        last: true  },
-                      ].map((row) => (
-                        <span
-                          key={row.step}
-                          className={`border-t border-[#E4E0D6] py-2 font-mono text-sm ${
-                            row.last ? 'border-b text-correct' : 'text-ink'
-                          }`}
-                        >
-                          {row.step}
-                        </span>
-                      ))}
+                      <p
+                        className="m-0 mb-5 text-[18px] leading-[1.45] text-ink"
+                        dangerouslySetInnerHTML={{ __html: renderMath(sample.stem) }}
+                      />
+
+                      <div className="grid gap-1.75 sm:grid-cols-2">
+                        {sample.options.map((option, i) => {
+                          const correct = i === sample.correctIndex;
+                          return (
+                            <div
+                              key={i}
+                              className={`flex items-baseline gap-3 rounded-[9px] border px-3.5 py-2.75 ${
+                                correct ? 'border-correct bg-correct' : 'border-rule'
+                              }`}
+                            >
+                              <span className={`font-mono text-[11px] ${correct ? 'text-bg/60' : 'text-ink-mute'}`}>
+                                {OPTION_KEYS[i] ?? i + 1}
+                              </span>
+                              <span
+                                className={`min-w-0 text-[15px] ${correct ? 'text-bg' : 'text-ink'}`}
+                                dangerouslySetInnerHTML={{ __html: renderMath(option) }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+
+                    {sample.explanation && (
+                      <div className="bg-surface-2 px-5 py-6 lg:px-5.5">
+                        <div className={`${MONO_LABEL} mb-3.5 text-[9px] tracking-[0.16em] text-ink-mute`}>İzahat</div>
+                        <p
+                          className="m-0 text-sm leading-[1.65] text-ink"
+                          dangerouslySetInnerHTML={{ __html: renderMath(sample.explanation) }}
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
-              </FadeUp>
+                </FadeUp>
+              )}
             </div>
 
             {/* ── Right: purchase rail ── */}
