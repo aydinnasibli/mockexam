@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { ArrowRight, Users, BookOpen, ShoppingBag, TrendingUp } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamModel from '@/lib/models/Exam';
 import SeedButton from './SeedButton';
+import AdminPageHeader from './PageHeader';
 import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'Admin Paneli' };
@@ -51,100 +52,68 @@ export default async function AdminOverviewPage() {
 
   return (
     <div>
-      <header className="mb-8 flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">
-            Admin Paneli
-          </h1>
-          <p className="text-on-surface-variant font-medium text-sm">
-            Platformanın ümumi vəziyyəti
-          </p>
-        </div>
-        <Link
-          href="/admin/exams/new"
-          className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm"
-        >
-          + Yeni İmtahan
-        </Link>
-      </header>
+      <AdminPageHeader
+        eyebrow="Admin"
+        title="Ümumi baxış."
+        meta="Platformanın ümumi vəziyyəti"
+        action={
+          <Link href="/admin/exams/new" className="btn-primary btn-sm">
+            Yeni imtahan <span className="arrow" aria-hidden>→</span>
+          </Link>
+        }
+      />
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      {/* Figures. One ruled band, the way the home hero states its numbers —
+          not four drop-shadowed tiles with an icon apiece.
+          The 1px gap over a rule-coloured ground draws the dividers, so they
+          land correctly at 1, 2 and 4 columns without any nth-child rules. */}
+      <div className="panel mb-6 grid grid-cols-1 gap-px overflow-hidden bg-rule sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { icon: Users, label: 'Ümumi İstifadəçi', value: stats.totalUsers, accent: true },
-          {
-            icon: ShoppingBag,
-            label: 'Tamamlanmış Satış',
-            value: stats.completedPurchases,
-            sub: `Cəmi: ${stats.totalPurchases}`,
-          },
-          {
-            icon: BookOpen,
-            label: 'Aktiv İmtahan',
-            value: stats.activeExams,
-            sub: `Ümumi: ${stats.totalExams}`,
-          },
-          { icon: TrendingUp, label: 'Ümumi Gəlir', value: `${revenue} ₼`, accent: true },
-        ].map(({ icon: Icon, label, value, sub, accent }) => (
-          <div
-            key={label}
-            className={`bg-white p-6 rounded-2xl border shadow-sm ${
-              accent ? 'border-secondary/30 border-l-4 border-l-secondary' : 'border-outline-variant/40'
-            }`}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-secondary-fixed/60 text-secondary rounded-xl">
-                <Icon size={18} />
-              </div>
-              <span className="text-xs font-black text-on-surface-variant uppercase tracking-widest">
-                {label}
-              </span>
-            </div>
-            <div className="text-3xl font-black text-primary">{value}</div>
-            {sub && <p className="text-sm text-on-surface-variant mt-1 font-medium">{sub}</p>}
+          { label: 'Ümumi istifadəçi',  value: String(stats.totalUsers) },
+          { label: 'Tamamlanmış satış', value: String(stats.completedPurchases), sub: `Cəmi ${stats.totalPurchases}` },
+          { label: 'Aktiv imtahan',     value: String(stats.activeExams),        sub: `Ümumi ${stats.totalExams}` },
+          { label: 'Ümumi gəlir',       value: `${revenue} ₼` },
+        ].map(({ label, value, sub }) => (
+          <div key={label} className="bg-surface px-5 py-5">
+            <div className="figure text-[30px]">{value}</div>
+            <p className="mono-label m-0 mt-2.5">{label}</p>
+            {sub && <p className="m-0 mt-1.5 text-[13px] text-ink-mute">{sub}</p>}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent purchases */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-outline-variant/40 overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-primary font-headline">Son Satışlar</h2>
+        <div className="panel lg:col-span-2">
+          <div className="panel-head">
+            <h2 className="panel-title">Son satışlar</h2>
             <Link
               href="/admin/purchases"
-              className="text-secondary font-bold text-sm hover:underline underline-offset-2 flex items-center gap-1"
+              className="flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
             >
-              Hamısına bax <ArrowRight size={14} />
+              Hamısına bax <ArrowRight size={13} />
             </Link>
           </div>
           {stats.recentPurchases.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-              <ShoppingBag className="text-outline mb-3" size={36} />
-              <p className="text-sm font-semibold text-primary">Hələ satış yoxdur</p>
-            </div>
+            <p className="m-0 px-5 py-14 text-center text-sm text-ink-soft">Hələ satış yoxdur</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="app-table">
                 <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest">
-                    <th className="px-5 py-4 font-black">İstifadəçi</th>
-                    <th className="px-5 py-4 font-black">İmtahan</th>
-                    <th className="px-5 py-4 font-black">Məbləğ</th>
-                    <th className="px-5 py-4 font-black">Tarix</th>
+                  <tr>
+                    <th>İstifadəçi</th>
+                    <th>İmtahan</th>
+                    <th>Məbləğ</th>
+                    <th>Tarix</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/10">
+                <tbody>
                   {stats.recentPurchases.map((p) => (
-                    <tr key={String(p._id)} className="hover:bg-surface-container-low/60 transition-colors">
-                      <td className="px-5 py-3 font-mono text-xs text-on-surface-variant">
-                        ...{p.userId.slice(-8)}
-                      </td>
-                      <td className="px-5 py-3 text-sm font-semibold text-primary">{p.examId}</td>
-                      <td className="px-5 py-3 text-sm font-bold text-primary">
-                        {(p.amountCents / 100).toFixed(2)} {p.currency}
-                      </td>
-                      <td className="px-5 py-3 text-xs text-on-surface-variant">
+                    <tr key={String(p._id)}>
+                      <td className="num text-xs text-ink-mute!">…{p.userId.slice(-8)}</td>
+                      <td className="font-medium text-ink!">{p.examId}</td>
+                      <td className="num">{(p.amountCents / 100).toFixed(2)} {p.currency}</td>
+                      <td className="num text-xs text-ink-mute!">
                         {new Date(p.createdAt).toLocaleDateString('az-AZ')}
                       </td>
                     </tr>
@@ -155,41 +124,44 @@ export default async function AdminOverviewPage() {
           )}
         </div>
 
-        {/* Sidebar panel */}
-        <div className="flex flex-col gap-5">
+        {/* Side rail */}
+        <div className="flex flex-col gap-6">
           {/* Quick links */}
-          <div className="bg-white rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-primary font-headline mb-4">Sürətli Keçidlər</h2>
-            <div className="space-y-1">
+          <div className="panel">
+            <div className="panel-head">
+              <h2 className="panel-title">Sürətli keçidlər</h2>
+            </div>
+            <div className="px-5">
               {[
-                { href: '/admin/exams', label: 'İmtahanları idarə et', icon: BookOpen },
-                { href: '/admin/purchases', label: 'Satışlara bax', icon: ShoppingBag },
-                { href: '/admin/users', label: 'İstifadəçilərə bax', icon: Users },
-              ].map(({ href, label, icon: Icon }) => (
+                { href: '/admin/exams',     label: 'İmtahanları idarə et' },
+                { href: '/admin/purchases', label: 'Satışlara bax' },
+                { href: '/admin/users',     label: 'İstifadəçilərə bax' },
+              ].map(({ href, label }, i) => (
                 <Link
                   key={href}
                   href={href}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-container-low transition-colors group"
+                  className={`group flex items-center justify-between gap-4 py-3.5 ${i > 0 ? 'border-t border-rule-soft' : ''}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon size={16} className="text-secondary" />
-                    <span className="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                      {label}
-                    </span>
-                  </div>
-                  <ArrowRight size={14} className="text-outline group-hover:text-secondary transition-colors" />
+                  <span className="text-sm font-medium text-ink-soft transition-colors group-hover:text-ink">
+                    {label}
+                  </span>
+                  <ArrowRight size={14} className="shrink-0 text-ink-mute transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-ink" />
                 </Link>
               ))}
             </div>
           </div>
 
           {/* Seed */}
-          <div className="bg-white rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-primary font-headline mb-2">Verilənlər Bazası</h2>
-            <p className="text-sm text-on-surface-variant mb-4">
-              Standart imtahan kataloqgunu DB-yə idxal et. Mövcud imtahanlar keçilər.
-            </p>
-            <SeedButton />
+          <div className="panel">
+            <div className="panel-head">
+              <h2 className="panel-title">Verilənlər bazası</h2>
+            </div>
+            <div className="panel-body">
+              <p className="m-0 mb-4 text-sm text-ink-soft">
+                Standart imtahan kataloqgunu DB-yə idxal et. Mövcud imtahanlar keçilər.
+              </p>
+              <SeedButton />
+            </div>
           </div>
         </div>
       </div>

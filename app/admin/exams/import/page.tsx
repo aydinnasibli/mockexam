@@ -64,95 +64,102 @@ export default function ImportExamPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8">
-      <Link href="/admin/exams" className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-primary mb-6">
-        <ArrowLeft size={16} /> İmtahanlara qayıt
+    <div className="mx-auto max-w-2xl">
+      <Link href="/admin/exams" className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+        <ArrowLeft size={15} /> İmtahanlara qayıt
       </Link>
-      
-      <div className="bg-white rounded-3xl border border-outline-variant/40 shadow-sm p-8">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
-            <UploadCloud className="text-secondary" size={28} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-primary font-headline">İmtahan Yüklə (JSON)</h1>
-            <p className="text-on-surface-variant text-sm mt-1">
-              AI tərəfindən yaradılmış məlumat bazasına uyğun `.json` faylını yükləyin.
-            </p>
-          </div>
+
+      <header className="mb-8 border-b border-ink pb-6">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="dot" aria-hidden />
+          <span className="mono-label mono-label-lg text-ink">İdxal</span>
         </div>
+        <h1 className="m-0 text-[30px] leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-[38px]">
+          İmtahan yüklə (JSON).
+        </h1>
+        <p className="m-0 mt-3.5 text-[15px] text-ink-soft">
+          AI tərəfindən yaradılmış məlumat bazasına uyğun <code className="font-mono text-sm">.json</code> faylını yükləyin.
+        </p>
+      </header>
 
-        <div className="space-y-6">
-          {/* File Input */}
-          <div className="relative border-2 border-dashed border-outline-variant/50 rounded-2xl p-10 text-center hover:bg-surface-container-low transition-colors">
-            <input 
-              type="file" 
-              accept="application/json" 
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            
-            {file ? (
-              <div className="flex flex-col items-center">
-                <FileJson size={48} className="text-secondary mb-3" />
-                <h3 className="text-primary font-bold">{file.name}</h3>
-                <p className="text-sm text-on-surface-variant mt-1">
-                  {(file.size / 1024).toFixed(2)} KB
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <UploadCloud size={48} className="text-outline mb-3" />
-                <h3 className="text-primary font-bold mb-1">Faylı seçin və ya bura sürüşdürün</h3>
-                <p className="text-sm text-on-surface-variant">
-                  Yalnız .json formatı qəbul olunur
-                </p>
-              </div>
-            )}
-          </div>
+      <div className="space-y-5">
+        {/* File Input */}
+        <div className="relative rounded-[14px] border border-dashed border-ink-faint bg-surface px-6 py-14 text-center transition-colors hover:border-ink">
+          <input
+            type="file"
+            accept="application/json"
+            onChange={handleFileChange}
+            aria-label="JSON faylı seçin"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 text-red-700 p-4 rounded-xl flex gap-3 items-start text-sm font-medium">
-              <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              <p>{error}</p>
+          {file ? (
+            <div className="flex flex-col items-center">
+              <FileJson size={32} className="mb-4 text-ink" />
+              <p className="m-0 text-base font-medium text-ink">{file.name}</p>
+              <p className="mono-label m-0 mt-2">{(file.size / 1024).toFixed(2)} KB</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <UploadCloud size={32} className="mb-4 text-ink-faint" />
+              <p className="m-0 text-base font-light tracking-tight text-ink">Faylı seçin və ya bura sürüşdürün</p>
+              <p className="mono-label m-0 mt-2">Yalnız .json formatı qəbul olunur</p>
             </div>
           )}
-
-          {/* Success / Preview State */}
-          {parsedData != null && !error && (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
-              <div className="flex items-center gap-2 text-emerald-800 font-bold mb-3">
-                <CheckCircle size={18} />
-                Fayl uğurla oxundu! Təfərrüatlar:
-              </div>
-              <ul className="text-sm text-emerald-700 space-y-1.5 ml-1">
-                <li><strong>İmtahan ID:</strong> {previewOf(parsedData).examId}</li>
-                <li><strong>Başlıq:</strong> {previewOf(parsedData).title}</li>
-                <li><strong>Növ:</strong> {previewOf(parsedData).type}</li>
-                <li><strong>Modul sayı:</strong> {previewOf(parsedData).modules}</li>
-                <li><strong>Sualların sayı:</strong> {previewOf(parsedData).questions}</li>
-              </ul>
-            </div>
-          )}
-
-          {/* Upload Button */}
-          <button
-            onClick={handleUpload}
-            disabled={!parsedData || loading}
-            className="w-full editorial-gradient text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={18} className="animate-spin" /> Yüklənir...
-              </>
-            ) : (
-              <>
-                <UploadCloud size={18} /> İmtahanı Verilənlər Bazasına Yaz
-              </>
-            )}
-          </button>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="flex items-start gap-3 rounded-[14px] border border-error/25 bg-[rgba(140,58,43,0.05)] px-5 py-4 text-sm text-error">
+            <AlertCircle size={17} className="mt-0.5 shrink-0" />
+            <p className="m-0">{error}</p>
+          </div>
+        )}
+
+        {/* Success / Preview State */}
+        {parsedData != null && !error && (
+          <div className="panel overflow-hidden">
+            <div className="panel-head">
+              <h2 className="panel-title flex items-center gap-2">
+                <CheckCircle size={16} className="text-ok" /> Fayl uğurla oxundu
+              </h2>
+            </div>
+            <div className="px-5">
+              {[
+                { label: 'İmtahan ID',      value: previewOf(parsedData).examId },
+                { label: 'Başlıq',          value: previewOf(parsedData).title },
+                { label: 'Növ',             value: previewOf(parsedData).type },
+                { label: 'Modul sayı',      value: previewOf(parsedData).modules },
+                { label: 'Sualların sayı',  value: previewOf(parsedData).questions },
+              ].map(({ label, value }, i) => (
+                <div
+                  key={label}
+                  className={`flex items-baseline justify-between gap-4 py-3 ${i > 0 ? 'border-t border-rule-soft' : ''}`}
+                >
+                  <span className="mono-label">{label}</span>
+                  <span className="truncate font-mono text-[13px] tabular-nums text-ink">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upload Button */}
+        <button
+          onClick={handleUpload}
+          disabled={!parsedData || loading}
+          className="btn-primary w-full cursor-pointer justify-center disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> Yüklənir...
+            </>
+          ) : (
+            <>
+              İmtahanı verilənlər bazasına yaz <span className="arrow" aria-hidden>→</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

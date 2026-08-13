@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import { getExamQuestions } from '@/lib/actions/questions';
 import QuestionManager from './QuestionManager';
+import AdminPageHeader from '../../../PageHeader';
 import { requireAdminPage } from '@/lib/admin';
 
 interface Props {
@@ -35,28 +36,23 @@ export default async function ExamQuestionsPage({ params }: Props) {
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-7 flex items-center gap-2.5 text-[13px] font-medium">
         <Link
           href="/admin/exams"
-          className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 text-ink-soft transition-colors hover:text-ink"
         >
-          <ChevronLeft size={16} /> İmtahanlara qayıt
+          <ChevronLeft size={15} /> İmtahanlara qayıt
         </Link>
-        <span className="text-on-surface-variant">/</span>
+        <span className="text-ink-faint" aria-hidden>/</span>
         <Link
           href={`/admin/exams/${id}/edit`}
-          className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
+          className="truncate text-ink-soft transition-colors hover:text-ink"
         >
           {exam.title}
         </Link>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">
-          Sual Bankı
-        </h1>
-        <p className="text-on-surface-variant text-sm font-mono">{id}</p>
-      </div>
+      <AdminPageHeader eyebrow="Kataloq" title="Sual bankı." meta={id} />
 
       <QuestionManager examId={id} modules={modules} initialQuestions={questions} />
     </div>

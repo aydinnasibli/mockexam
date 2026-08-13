@@ -48,15 +48,19 @@ export default function AnalyticsLoading() {
       </div>
 
       {/* Attempt cards */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-rule bg-surface p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex-1 space-y-2">
-                <Skeleton className="h-5 w-2/3 rounded bg-surface-3" />
-                <Skeleton className="h-3.5 w-40 max-w-full rounded bg-surface-3" />
+          <div key={i} className="panel">
+            <div className="flex items-center justify-between gap-4 p-6">
+              <div className="min-w-0 flex-1 space-y-2.5">
+                <Skeleton className="h-5 w-20 rounded-full bg-surface-3" />
+                <Skeleton className="h-6 w-2/3 rounded bg-surface-3" />
+                <Skeleton className="h-2.5 w-40 max-w-full rounded bg-surface-3" />
               </div>
-              <Skeleton className="h-8 w-16 shrink-0 rounded bg-surface-3" />
+              <Skeleton className="h-9 w-24 shrink-0 rounded-full bg-surface-3" />
+            </div>
+            <div className="border-t border-rule bg-surface-2 px-6 py-2.5">
+              <Skeleton className="h-2.5 w-full rounded bg-surface-3" />
             </div>
           </div>
         ))}

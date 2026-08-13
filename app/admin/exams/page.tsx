@@ -1,20 +1,12 @@
 import Link from 'next/link';
-import { BookOpen, Plus } from 'lucide-react';
 import dbConnect from '@/lib/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import ExamSearch from './ExamSearch';
 import ExamRowActions from './ExamRowActions';
+import AdminPageHeader from '../PageHeader';
 import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'İmtahanlar — Admin' };
-
-const TYPE_COLORS: Record<string, string> = {
-  sat:   'bg-blue-100 text-blue-700',
-  ielts: 'bg-green-100 text-green-700',
-  toefl: 'bg-purple-100 text-purple-700',
-  dim:   'bg-orange-100 text-orange-700',
-  gre:   'bg-rose-100 text-rose-700',
-};
 
 interface Props {
   searchParams: Promise<{ q?: string }>;
@@ -45,87 +37,79 @@ export default async function AdminExamsPage({ searchParams }: Props) {
 
   return (
     <div>
-      <header className="mb-8 flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">
-            İmtahanlar
-          </h1>
-          <p className="text-on-surface-variant font-medium text-sm">
-            {exams.length} imtahan · {activeCount} aktiv
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href="/admin/exams/import"
-            className="px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm border border-outline-variant/40 hover:bg-surface-container-low transition-colors text-sm text-primary"
-          >
-            JSON Yüklə
-          </Link>
-          <Link
-            href="/admin/exams/new"
-            className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-opacity text-sm"
-          >
-            <Plus size={16} /> Yeni İmtahan
-          </Link>
-        </div>
-      </header>
+      <AdminPageHeader
+        eyebrow="Kataloq"
+        title="İmtahanlar."
+        meta={`${exams.length} imtahan · ${activeCount} aktiv`}
+        action={
+          <>
+            <Link href="/admin/exams/import" className="btn-ghost btn-sm">
+              JSON yüklə
+            </Link>
+            <Link href="/admin/exams/new" className="btn-primary btn-sm">
+              Yeni imtahan <span className="arrow" aria-hidden>→</span>
+            </Link>
+          </>
+        }
+      />
 
       {/* Search (client component — updates URL) */}
       <ExamSearch defaultValue={q} />
 
-      <div className="bg-white rounded-2xl border border-outline-variant/40 overflow-hidden shadow-sm">
+      {/* overflow-hidden so the table head's fill is clipped by the panel's
+          14px corners rather than squaring them off. */}
+      <div className="panel overflow-hidden">
         {exams.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <BookOpen className="text-outline mb-3" size={40} />
-            <p className="text-sm font-semibold text-primary mb-1">
+          <div className="px-6 py-20 text-center">
+            <p className="m-0 text-base font-light tracking-tight text-ink">
               {q ? 'Nəticə tapılmadı' : 'İmtahan yoxdur'}
             </p>
             {!q && (
-              <Link href="/admin/exams/new" className="mt-3 text-sm font-bold text-secondary hover:underline">
+              <Link href="/admin/exams/new" className="mt-4 inline-flex border-b border-ink-faint pb-0.5 text-[13px] font-medium text-ink transition-colors hover:border-ink">
                 İlk imtahanı əlavə et →
               </Link>
             )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="app-table">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
-                  <th className="px-6 py-4 font-black">ID</th>
-                  <th className="px-6 py-4 font-black">Başlıq</th>
-                  <th className="px-6 py-4 font-black">Növ</th>
-                  <th className="px-6 py-4 font-black">Qiymət</th>
-                  <th className="px-6 py-4 font-black">Müddət</th>
-                  <th className="px-6 py-4 font-black">Suallar</th>
-                  <th className="px-6 py-4 font-black">Status</th>
-                  <th className="px-6 py-4 font-black">Əməliyyat</th>
+                <tr>
+                  <th>ID</th>
+                  <th>Başlıq</th>
+                  <th>Növ</th>
+                  <th>Qiymət</th>
+                  <th>Müddət</th>
+                  <th>Suallar</th>
+                  <th>Status</th>
+                  <th>Əməliyyat</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/10">
+              <tbody>
                 {exams.map((exam) => (
-                  <tr key={exam.examId} className="hover:bg-surface-container-low/60 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{exam.examId}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-primary">{exam.title}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                          TYPE_COLORS[exam.type] ?? 'bg-surface-container text-on-surface-variant'
-                        }`}
-                      >
-                        {exam.tag}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-primary">{exam.price} ₼</td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{exam.durationMinutes} dəq</td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{exam.totalQuestions}</td>
-                    <td className="px-6 py-4 text-sm">
+                  <tr key={exam.examId}>
+                    <td className="num text-xs text-ink-mute!">{exam.examId}</td>
+                    <td className="font-medium text-ink!">{exam.title}</td>
+                    {/* The five per-type pastels this column used to carry
+                        (blue/green/purple/orange/rose) were the only place in
+                        the product colour was used decoratively rather than
+                        semantically. */}
+                    <td><span className="tag tag-accent">{exam.tag}</span></td>
+                    <td className="num">{exam.price} ₼</td>
+                    <td className="num">{exam.durationMinutes} dəq</td>
+                    <td className="num">{exam.totalQuestions}</td>
+                    <td>
                       {exam.isActive ? (
-                        <span className="text-emerald-700 font-bold">Aktiv</span>
+                        <span className="flex items-center gap-2 text-[13px] text-ok">
+                          <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> Aktiv
+                        </span>
                       ) : (
-                        <span className="text-on-surface-variant">Deaktiv</span>
+                        <span className="flex items-center gap-2 text-[13px] text-ink-mute">
+                          <span className="h-1.5 w-1.5 rounded-full border border-ink-mute" aria-hidden /> Deaktiv
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td>
                       {/* Client component handles toggle + delete */}
                       <ExamRowActions examId={exam.examId} isActive={exam.isActive} />
                     </td>

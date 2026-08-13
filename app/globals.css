@@ -179,41 +179,44 @@
   .tc-gradient-hero { background: linear-gradient(135deg,#001e40 0%,#1f477b 60%,#00629d 100%); }
   .editorial-gradient { background: linear-gradient(135deg,#001e40 0%,#003366 100%); }
 
+  /* Form controls. These predate the redesign but are now used only by the
+     admin exam form, so they carry the new design's ink language rather than
+     the legacy navy: hairline rule, 10px radius, ink focus border. */
   .input-field {
     display: block;
     width: 100%;
     height: 2.75rem;
     padding: 0 0.875rem;
-    background-color: #ffffff;
-    border: 1px solid var(--color-outline-variant);
-    border-radius: 0.75rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-btn);
     /* 16px, not 14px: iOS Safari zooms the viewport when a focused input
        has a font-size below 16px, and the user never gets zoomed back out. */
     font-size: 1rem;
-    color: var(--color-on-surface);
+    color: var(--color-ink);
     outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition: border-color 0.2s;
   }
-  .input-field:focus {
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 15%, transparent);
-  }
+  .input-field:focus { border-color: var(--color-ink); }
+  .input-field::placeholder { color: var(--color-ink-faint); }
   textarea.input-field { height: auto; padding: 0.75rem 0.875rem; }
 
+  /* 11px, not the 10px of `.mono-label`: a form label is text the user has to
+     read to answer correctly, so it stays above the uppercase legibility floor
+     that decorative captions are allowed to sit at. */
   .field-label {
     display: block;
-    /* was 0.65rem = 10.4px — a fractional pixel size, and below the 11px
-       floor for uppercase labels. */
-    font-size: 0.75rem;
-    font-weight: 900;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-on-surface-variant);
-    margin-bottom: 0.375rem;
+    letter-spacing: 0.14em;
+    color: var(--color-ink-mute);
+    margin-bottom: 0.5rem;
   }
   select.input-field {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2343474f' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236E6E66' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.875rem center;
     padding-right: 2.5rem;
@@ -549,6 +552,161 @@
 
   /* Section head */
   .section-head { margin-bottom: 56px; }
+
+  /* ── Signed-in surfaces (dashboard + admin) ───────────────────────────────
+     The kabinet and the admin panel are built from the same vocabulary as the
+     public pages — bone ground, hairline rules, mono micro-labels, mono
+     numerals — rather than the rounded-tile, pastel-pill dialect they used to
+     speak. Everything here is a composition of tokens already defined above;
+     no new colour is introduced.
+
+     These are utilities rather than call-site Tailwind because each one is
+     repeated across a dozen screens, and the point of the exercise is that a
+     panel on /admin/users and a panel on /dashboard are the same object. */
+
+  /* Micro-label — the mono, wide-tracked caption the public pages use for
+     column heads, figure captions and meta. 10px is the size those captions
+     are set at; `.field-label` above stays larger because it is read, not
+     scanned. */
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-mute);
+  }
+  .mono-label-lg {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+  }
+
+  /* Figure — a large numeral. The light weight, tight tracking and tabular
+     figures are what make a number read as a printed measurement instead of a
+     UI counter; it is the same treatment as the home hero's stat row. */
+  .figure {
+    font-family: var(--font-mono);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums lining-nums;
+    line-height: 1;
+    color: var(--color-ink);
+  }
+
+  /* Panel — the framed card. 14px and a hairline rule, deliberately with no
+     shadow: in this design elevation is spent only on the home hero, and a
+     page of drop-shadowed tiles is precisely what made the dashboards read as
+     a different product. */
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: 14px;
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .panel-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+  .panel-body { padding: 20px; }
+
+  /* Compact button. Sits after .btn-primary/.btn-ghost so it wins on source
+     order — it replaces the `py-2! px-4! text-sm!` important-overrides that
+     were being sprinkled at call sites. */
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  /* Table. Rules, not zebra stripes: a ruled table is what the comparison and
+     analysis figures on the home page are made of. */
+  .app-table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+  }
+  .app-table thead th {
+    padding: 11px 20px;
+    background: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-rule);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-mute);
+    white-space: nowrap;
+  }
+  .app-table tbody tr { border-top: 1px solid var(--color-rule-soft); }
+  .app-table tbody tr:first-child { border-top: 0; }
+  .app-table tbody tr:hover { background: var(--color-surface-2); }
+  .app-table td {
+    padding: 13px 20px;
+    font-size: 14px;
+    color: var(--color-ink-soft);
+    vertical-align: middle;
+  }
+  /* Identifiers, amounts and counts — anything that should line up column-wise
+     between rows. */
+  .app-table .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--color-ink);
+  }
+
+  /* Sidebar navigation. Ruled rows with a mono index, echoing the numbered
+     sections on the home page; the active row is marked by an ink rule the
+     way the public navbar marks its active link with an underline. */
+  .side-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+    transition: color var(--duration-hover) ease, background var(--duration-hover) ease;
+  }
+  .side-link:hover { color: var(--color-ink); background: var(--color-surface-2); }
+  .side-link .n {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--color-ink-faint);
+    transition: color var(--duration-hover) ease;
+  }
+  .side-link-active { color: var(--color-ink); background: var(--color-surface-2); }
+  .side-link-active .n { color: var(--color-ink); }
+  /* The marker is inside the row rather than on it so it lands on the panel
+     edge, not on the label. */
+  .side-link-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
+    background: var(--color-ink);
+  }
+
+  /* Track for a score/progress bar. Square, like every bar in the analysis
+     figure — the rounded pill version reads as a different design system. */
+  .meter {
+    background: var(--color-rule-soft);
+    overflow: hidden;
+  }
+  .meter > * { display: block; height: 100%; }
 }
 
 /* ── Accessibility ──────────────────────────────────────────────────────────

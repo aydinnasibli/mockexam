@@ -16,28 +16,20 @@ export default function DashboardError({ error, reset }: Props) {
   }, [error, posthog]);
 
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-20">
-      <div className="text-center max-w-sm">
-        <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-5">
-          <span className="text-xl">⚠</span>
-        </div>
-        <h2 className="text-xl font-extrabold text-primary font-headline mb-2">
+    <div className="flex flex-1 items-center justify-center px-6 py-20">
+      <div className="max-w-sm text-center">
+        <div className="mono-label mono-label-lg mb-5 text-error">Xəta</div>
+        <h2 className="m-0 mb-3 text-[28px] leading-tight font-light tracking-[-0.03em] text-ink">
           Xəta baş verdi
         </h2>
-        <p className="text-sm text-on-surface-variant mb-6">
+        <p className="m-0 mb-7 text-sm text-ink-soft">
           Səhifə yüklənərkən problem yarandı.
         </p>
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={reset}
-            className="editorial-gradient text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity shadow-sm"
-          >
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button onClick={reset} className="btn-primary btn-sm cursor-pointer">
             Yenidən cəhd et
           </button>
-          <Link
-            href="/dashboard"
-            className="px-5 py-2.5 rounded-xl font-bold text-sm text-on-surface-variant bg-white border border-outline-variant/40 hover:bg-surface-container transition-colors"
-          >
+          <Link href="/dashboard" className="btn-ghost btn-sm">
             Panelə qayıt
           </Link>
         </div>

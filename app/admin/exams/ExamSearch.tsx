@@ -21,14 +21,15 @@ export default function ExamSearch({ defaultValue }: { defaultValue: string }) {
   };
 
   return (
-    <div className="relative mb-6">
-      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+    <div className="relative mb-5">
+      <Search size={15} className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-ink-mute" aria-hidden />
       <input
         type="search"
         placeholder="İmtahan axtar (ID, başlıq, növ)..."
         value={value}
         onChange={handleChange}
-        className="w-full pl-11 pr-4 py-3 bg-white border border-outline-variant/40 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-secondary/40 text-on-surface placeholder:text-on-surface-variant"
+        aria-label="İmtahan axtar"
+        className="input-new pl-11!"
       />
     </div>
   );

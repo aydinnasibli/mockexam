@@ -5,14 +5,28 @@ import { SignOutButton } from '@clerk/nextjs';
 import Image from 'next/image';
 import { useState, useEffect, useTransition } from 'react';
 import { toast } from 'sonner';
-import {
-  User, Mail, Shield, ChevronRight, Pencil, CalendarDays,
-  LogOut, Save, Loader2,
-} from 'lucide-react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 import { getUserSettings, saveUserSettings } from '@/lib/actions/settings';
 import { EXAM_TYPES } from '@/lib/exam-types';
 
 const examTypeOptions = EXAM_TYPES;
+
+/**
+ * One row of the ruled action list — the same construction as the "Səhvin növü
+ * / Təkrarlanma" rail in §03 of the home page: a label, a hairline rule, and a
+ * chevron that steps right on hover.
+ */
+function RowLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex w-full cursor-pointer items-center justify-between gap-4 py-3.5 text-left transition-colors"
+    >
+      <span className="text-sm font-medium text-ink-soft transition-colors group-hover:text-ink">{label}</span>
+      <ChevronRight size={15} className="shrink-0 text-ink-mute transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-ink" />
+    </button>
+  );
+}
 
 export default function SettingsClient() {
   const { user }           = useUser();
@@ -55,85 +69,79 @@ export default function SettingsClient() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="min-h-screen bg-surface-2">
-      <div className="max-w-2xl mx-auto px-6 py-10">
-        <header className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-ink mb-1">Parametrlər</h1>
-          <p className="text-ink-soft text-sm">Hesab məlumatlarınızı idarə edin.</p>
+    <main className="min-h-screen bg-bg">
+      <div className="mx-auto max-w-2xl px-6 py-10">
+        <header className="mb-9">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="dot" aria-hidden />
+            <span className="mono-label mono-label-lg text-ink">Hesab</span>
+          </div>
+          <h1 className="m-0 mb-3 text-[32px] leading-[1.04] font-light tracking-[-0.035em] text-ink md:text-[40px]">
+            Parametrlər.
+          </h1>
+          <p className="m-0 text-[17px] leading-[1.55] text-ink-soft">Hesab məlumatlarınızı idarə edin.</p>
         </header>
 
         <div className="space-y-4">
 
           {/* Profile */}
-          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
-            <div className="px-6 py-4 border-b border-rule">
-              <h2 className="eyebrow text-ink-mute">Profil</h2>
+          <div className="panel">
+            <div className="panel-head">
+              <h2 className="mono-label mono-label-lg m-0 text-ink">Profil</h2>
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-5 mb-6 pb-6 border-b border-rule">
+            <div className="panel-body">
+              <div className="mb-5 flex items-center gap-5 border-b border-rule pb-5">
                 {imageUrl ? (
                   <Image
                     src={imageUrl}
-                    alt="Avatar"
-                    width={64}
-                    height={64}
-                    className="rounded-full object-cover ring-4 ring-ink/10 shrink-0"
+                    alt=""
+                    width={60}
+                    height={60}
+                    className="h-15 w-15 shrink-0 rounded-full object-cover ring-1 ring-rule"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-ink flex items-center justify-center ring-4 ring-ink/10 shrink-0">
-                    <span className="text-bg text-xl font-bold">{firstName[0]}</span>
+                  <div className="flex h-15 w-15 shrink-0 items-center justify-center rounded-full bg-ink">
+                    <span className="text-xl font-medium text-bg">{firstName[0]}</span>
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-display font-bold text-ink text-lg leading-tight">{fullName}</p>
-                  <p className="text-sm text-ink-soft mt-0.5">{email}</p>
+                  <p className="m-0 text-lg leading-tight font-medium tracking-[-0.015em] text-ink">{fullName}</p>
+                  <p className="m-0 mt-1 truncate text-sm text-ink-soft">{email}</p>
                   {memberSince && (
-                    <p className="flex items-center gap-1.5 text-sm text-ink-mute mt-1.5">
-                      <CalendarDays size={12} /> Üzv olduğu tarix: {memberSince}
-                    </p>
+                    <p className="mono-label m-0 mt-2">Üzv olduğu tarix: {memberSince}</p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-0 divide-y divide-rule mb-5">
-                <div className="flex items-center justify-between py-3">
-                  <span className="flex items-center gap-2.5 text-sm text-ink-soft">
-                    <User size={15} /> Ad Soyad
-                  </span>
-                  <span className="font-medium text-ink text-sm">{fullName}</span>
+              <div className="mb-1">
+                <div className="flex items-center justify-between gap-4 border-t border-rule-soft py-3.5">
+                  <span className="mono-label">Ad Soyad</span>
+                  <span className="truncate text-sm font-medium text-ink">{fullName}</span>
                 </div>
-                <div className="flex items-center justify-between py-3">
-                  <span className="flex items-center gap-2.5 text-sm text-ink-soft">
-                    <Mail size={15} /> E-poçt
-                  </span>
-                  <span className="font-medium text-ink text-sm truncate max-w-55">{email}</span>
+                <div className="flex items-center justify-between gap-4 border-t border-rule-soft py-3.5">
+                  <span className="mono-label">E-poçt</span>
+                  <span className="max-w-55 truncate text-sm font-medium text-ink">{email}</span>
+                </div>
+                <div className="border-t border-rule-soft">
+                  <RowLink label="Profili düzənlə — ad, şəkil, e-poçt" onClick={() => openUserProfile()} />
                 </div>
               </div>
-
-              <button
-                onClick={() => openUserProfile()}
-                className="w-full flex items-center justify-between px-4 py-3 bg-surface-2 hover:bg-surface-3 rounded-xl transition-colors group"
-              >
-                <span className="flex items-center gap-2.5 text-sm font-medium text-ink-soft group-hover:text-ink">
-                  <Pencil size={15} /> Profili düzənlə — ad, şəkil, e-poçt
-                </span>
-                <ChevronRight size={15} className="text-ink-mute group-hover:text-ink group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
           </div>
 
           {/* Target exam goal */}
-          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
-            <div className="px-6 py-4 border-b border-rule">
-              <h2 className="eyebrow text-ink-mute">İmtahan Hədəfi</h2>
+          <div className="panel">
+            <div className="panel-head">
+              <h2 className="mono-label mono-label-lg m-0 text-ink">İmtahan Hədəfi</h2>
             </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-ink-soft">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
+            <div className="panel-body space-y-5">
+              <p className="m-0 text-sm text-ink-soft">Hədəf tarixinizi təyin edin — paneldə geri sayım görünəcək.</p>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-medium text-ink-soft block mb-1.5">İmtahan növü</label>
+                  <label className="field-label" htmlFor="target-type">İmtahan növü</label>
                   <select
+                    id="target-type"
                     value={targetType}
                     onChange={e => setTargetType(e.target.value)}
                     className="input-new w-full"
@@ -145,8 +153,9 @@ export default function SettingsClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-soft block mb-1.5">İmtahan tarixi</label>
+                  <label className="field-label" htmlFor="target-date">İmtahan tarixi</label>
                   <input
+                    id="target-date"
                     type="date"
                     value={targetDate}
                     min={today}
@@ -160,15 +169,15 @@ export default function SettingsClient() {
                 <button
                   onClick={handleSaveGoal}
                   disabled={isPending}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-ink text-bg rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-60"
+                  className="btn-primary btn-sm disabled:opacity-60"
                 >
-                  {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {isPending && <Loader2 size={14} className="animate-spin" />}
                   Yadda saxla
                 </button>
                 {(targetDate || targetType) && (
                   <button
                     onClick={() => { setTargetDate(''); setTargetType(''); }}
-                    className="text-xs text-ink-mute hover:text-ink font-medium ml-auto transition-colors"
+                    className="ml-auto cursor-pointer text-[13px] font-medium text-ink-mute transition-colors hover:text-ink"
                   >
                     Sıfırla
                   </button>
@@ -178,35 +187,26 @@ export default function SettingsClient() {
           </div>
 
           {/* Security */}
-          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
-            <div className="px-6 py-4 border-b border-rule">
-              <h2 className="eyebrow text-ink-mute">Təhlükəsizlik</h2>
+          <div className="panel">
+            <div className="panel-head">
+              <h2 className="mono-label mono-label-lg m-0 text-ink">Təhlükəsizlik</h2>
             </div>
-            <div className="p-6">
-              <button
-                onClick={() => openUserProfile()}
-                className="w-full flex items-center justify-between px-4 py-3 bg-surface-2 hover:bg-surface-3 rounded-xl transition-colors group"
-              >
-                <span className="flex items-center gap-2.5 text-sm font-medium text-ink-soft group-hover:text-ink">
-                  <Shield size={15} /> Şifrəni dəyiş
-                </span>
-                <ChevronRight size={15} className="text-ink-mute group-hover:text-ink group-hover:translate-x-0.5 transition-transform" />
-              </button>
+            <div className="px-5 py-1">
+              <RowLink label="Şifrəni dəyiş" onClick={() => openUserProfile()} />
             </div>
           </div>
 
-          {/* Account */}
-          <div className="bg-surface rounded-2xl border border-rule overflow-hidden">
-            <div className="px-6 py-4 border-b border-rule">
-              <h2 className="eyebrow text-ink-mute">Hesab</h2>
+          {/* Account. Signing out is not a destructive action and no longer
+              wears a red alert box; the rust semantic stays reserved for wrong
+              answers and failed states. */}
+          <div className="panel">
+            <div className="panel-head">
+              <h2 className="mono-label mono-label-lg m-0 text-ink">Hesab</h2>
             </div>
-            <div className="p-6">
+            <div className="panel-body">
               <SignOutButton>
-                <button className="w-full flex items-center justify-between px-4 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-xl transition-colors group">
-                  <span className="flex items-center gap-2.5 text-sm font-medium">
-                    <LogOut size={15} /> Hesabdan çıx
-                  </span>
-                  <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                <button className="btn-ghost btn-sm cursor-pointer hover:border-error hover:text-error">
+                  Hesabdan çıx
                 </button>
               </SignOutButton>
             </div>

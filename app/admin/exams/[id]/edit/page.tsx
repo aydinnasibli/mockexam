@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, BookOpen, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ArrowRight } from 'lucide-react';
 import dbConnect from '@/lib/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
 import ExamForm from '../../ExamForm';
+import AdminPageHeader from '../../../PageHeader';
 import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'İmtahanı Düzəlt — Admin' };
@@ -28,39 +29,29 @@ export default async function EditExamPage({ params }: Props) {
 
   return (
     <div>
-      <div className="mb-6">
-        <Link href="/admin/exams" className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors">
-          <ChevronLeft size={16} /> İmtahanlara qayıt
-        </Link>
-      </div>
-      <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-2">
-        İmtahanı Düzəlt
-      </h1>
-      <p className="text-on-surface-variant text-sm mb-6 font-mono">{id}</p>
+      <Link href="/admin/exams" className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+        <ChevronLeft size={15} /> İmtahanlara qayıt
+      </Link>
+      <AdminPageHeader eyebrow="Kataloq" title="İmtahanı düzəlt." meta={id} />
 
       {/* Question bank CTA */}
       <Link
         href={`/admin/exams/${id}/questions`}
-        className="flex items-center justify-between gap-4 mb-8 p-5 bg-white border-2 border-secondary/30 hover:border-secondary rounded-2xl shadow-sm group transition-all"
+        className="panel card-new-hover group mb-6 flex items-center justify-between gap-4 px-5 py-4.5"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-secondary-fixed/60 flex items-center justify-center shrink-0">
-            <BookOpen size={20} className="text-secondary" />
-          </div>
-          <div>
-            <p className="font-bold text-primary text-sm">Sual Bankı</p>
-            <p className="text-sm text-on-surface-variant mt-0.5">
-              {questionCount} / {totalExpected} sual əlavə edilib
-              {questionCount < totalExpected && (
-                <span className="ml-1 text-amber-600 font-semibold">· {totalExpected - questionCount} çatışmır</span>
-              )}
-              {totalExpected > 0 && questionCount >= totalExpected && (
-                <span className="ml-1 text-emerald-600 font-semibold">· Tam</span>
-              )}
-            </p>
-          </div>
+        <div className="min-w-0">
+          <p className="m-0 text-[15px] font-medium tracking-[-0.01em] text-ink">Sual bankı</p>
+          <p className="m-0 mt-1 text-sm text-ink-soft">
+            <span className="font-mono tabular-nums text-ink">{questionCount} / {totalExpected}</span> sual əlavə edilib
+            {questionCount < totalExpected && (
+              <span className="ml-1.5 text-warn">· {totalExpected - questionCount} çatışmır</span>
+            )}
+            {totalExpected > 0 && questionCount >= totalExpected && (
+              <span className="ml-1.5 text-ok">· Tam</span>
+            )}
+          </p>
         </div>
-        <ArrowRight size={18} className="text-secondary group-hover:translate-x-1 transition-transform shrink-0" />
+        <ArrowRight size={17} className="shrink-0 text-ink-mute transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-ink" />
       </Link>
       <ExamForm
         mode="edit"

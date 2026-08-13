@@ -7,9 +7,7 @@ import { formatOverallScore } from '@/lib/scoring';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { reconcilePurchase } from '@/lib/reconcile';
-import {
-  BarChart2, ShoppingBag, Timer, HelpCircle, ArrowRight, TrendingUp, TrendingDown, BookOpen,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import MyExamsList, { type MyExamRow } from './MyExamsList';
@@ -50,10 +48,16 @@ function scoreBarColor(score: number) {
   return 'bg-error';
 }
 
-function scoreBg(score: number) {
-  if (score >= 80) return 'bg-green-50 text-green-700 border-green-200';
-  if (score >= 60) return 'bg-amber-50 text-amber-700 border-amber-200';
-  return 'bg-red-50 text-red-700 border-red-200';
+/*
+ * The three semantic tints already defined in globals — 10%/8% washes of the
+ * same green/amber/rust the public pages mark correct and wrong answers with.
+ * This used to return raw Tailwind pastels (`bg-green-50 text-green-700
+ * border-green-200`), which belonged to no palette in the design.
+ */
+function scoreTag(score: number) {
+  if (score >= 80) return 'tag-ok';
+  if (score >= 60) return 'tag-warn';
+  return 'tag-error';
 }
 
 export const metadata = { title: 'Panel' };
@@ -199,115 +203,91 @@ export default async function DashboardPage({
 
   return (
     <>
-      {/* Welcome banner */}
-      <FadeUp y={10} className="px-8 py-10 relative overflow-hidden shrink-0 bg-ink">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', filter: 'blur(40px)' }} />
-          <div className="absolute -bottom-10 left-1/3 w-56 h-56 rounded-full" style={{ background: 'rgba(255,255,255,0.03)', filter: 'blur(32px)' }} />
+      {/* Masthead. Flat ink, exactly like the §03 and CTA bands on the home
+          page — the two blurred white blobs that used to float behind it were
+          the only gradient artefact anywhere in the product. */}
+      <FadeUp y={10} className="shrink-0 bg-ink px-8 py-11">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="h-1.75 w-1.75 rounded-full bg-bg/70" aria-hidden />
+          <span className="mono-label mono-label-lg text-bg/55 capitalize">{todayString()}</span>
         </div>
-        <div className="relative z-10">
-          <p className="eyebrow mb-4 capitalize" style={{ color: 'rgba(250,250,246,0.4)' }}>{todayString()}</p>
-          <h1
-            className="font-display font-normal text-3xl md:text-4xl leading-tight tracking-tight text-bg m-0"
-          >
-            Xoş gəlmisiniz, {firstName}.
-          </h1>
-          <p className="text-sm mt-3 mb-0" style={{ color: 'rgba(250,250,246,0.4)' }}>
-            {purchasedExams.length === 0
-              ? 'Başlamaq üçün bir sınaq əldə edin.'
-              : `${purchasedExams.length} aktiv sınaq · ${results.length} tamamlanan cəhd`}
-          </p>
-        </div>
+        <h1 className="m-0 text-[32px] leading-[1.04] font-light tracking-[-0.035em] text-bg md:text-[40px]">
+          Xoş gəlmisiniz, <span className="font-medium">{firstName}.</span>
+        </h1>
+        <p className="mt-3.5 mb-0 text-[15px] text-bg/55">
+          {purchasedExams.length === 0
+            ? 'Başlamaq üçün bir sınaq əldə edin.'
+            : `${purchasedExams.length} aktiv sınaq · ${results.length} tamamlanan cəhd`}
+        </p>
       </FadeUp>
 
-      <div className="p-6 flex-1">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
+      <div className="flex-1 px-8 py-8">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
 
           {/* ── Left column ── */}
-          <div className="space-y-6 min-w-0">
+          <div className="min-w-0 space-y-6">
 
-            {/* Next step card */}
-            <FadeUp delay={0.05} className="bg-surface rounded-2xl border border-rule p-5 flex items-center gap-4">
-              <div
-                className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
-                style={{ background: 'var(--color-accent-soft)' }}
-              >
-                <ArrowRight size={18} style={{ color: 'var(--color-ink)' }} />
+            {/* Next step */}
+            {/* Stacks below sm: side by side, the button squeezed the sentence
+                down to "IELTS Academi…" on a phone. */}
+            <FadeUp delay={0.05} className="panel flex flex-col items-start gap-4 px-5 py-4.5 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="m-0 text-[15px] font-medium tracking-[-0.01em] text-ink">{nextStep.label}</p>
+                <p className="m-0 mt-1 text-sm text-ink-soft sm:line-clamp-1">{nextStep.desc}</p>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-ink m-0">{nextStep.label}</p>
-                <p className="text-sm text-ink-soft mt-0.5 line-clamp-1 m-0">{nextStep.desc}</p>
-              </div>
-              <Link href={nextStep.href} className="btn-primary shrink-0 py-2! px-4! text-sm!">
-                {nextStep.cta}
+              <Link href={nextStep.href} className="btn-primary btn-sm shrink-0">
+                {nextStep.cta} <span className="arrow" aria-hidden>→</span>
               </Link>
             </FadeUp>
 
-            {/* Stats */}
-            <StaggerContainer className="grid grid-cols-3 gap-4" delay={0.08}>
-              <StaggerItem className="bg-surface rounded-2xl border border-rule p-5">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center mb-3"
-                  style={{ background: 'var(--color-surface-2)' }}
-                >
-                  <ShoppingBag size={15} />
-                </div>
-                <div className="font-display text-3xl font-normal text-ink leading-none">{purchasedExams.length}</div>
-                <p className="text-sm text-ink-mute mt-1 m-0">Sınaqlarım</p>
+            {/* Stats. The home hero's figure row: mono numerals over mono
+                captions, divided by rules rather than boxed into three tiles
+                with an icon chip apiece. */}
+            <StaggerContainer className="panel grid grid-cols-1 sm:grid-cols-3" delay={0.08}>
+              <StaggerItem className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
+                <div className="figure text-[30px]">{purchasedExams.length}</div>
+                <p className="mono-label m-0 mt-2.5">Sınaqlarım</p>
                 {exploreExams.length > 0
-                  ? <p className="text-sm text-ink-soft font-medium mt-1 m-0">+{exploreExams.length} kataloqda</p>
-                  : <p className="text-sm text-ink-mute mt-1 m-0">hamısı əldə edilib</p>
+                  ? <p className="m-0 mt-1.5 text-[13px] text-ink-soft">+{exploreExams.length} kataloqda</p>
+                  : <p className="m-0 mt-1.5 text-[13px] text-ink-mute">hamısı əldə edilib</p>
                 }
               </StaggerItem>
 
-              <StaggerItem className="bg-surface rounded-2xl border border-rule p-5">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center mb-3"
-                  style={{ background: 'var(--color-surface-2)' }}
-                >
-                  <TrendingUp size={15} />
-                </div>
-                <div className="font-display text-3xl font-normal text-ink leading-none">{results.length}</div>
-                <p className="text-sm text-ink-mute mt-1 m-0">Cəhdlər</p>
+              <StaggerItem className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
+                <div className="figure text-[30px]">{results.length}</div>
+                <p className="mono-label m-0 mt-2.5">Cəhdlər</p>
                 {weeklyAttempts > 0
-                  ? <p className="text-sm text-ok font-medium mt-1 m-0">+{weeklyAttempts} bu həftə</p>
-                  : <p className="text-sm text-ink-mute mt-1 m-0">bu həftə yoxdur</p>
+                  ? <p className="m-0 mt-1.5 text-[13px] text-ok">+{weeklyAttempts} bu həftə</p>
+                  : <p className="m-0 mt-1.5 text-[13px] text-ink-mute">bu həftə yoxdur</p>
                 }
               </StaggerItem>
 
-              <StaggerItem className="bg-surface rounded-2xl border border-rule p-5">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center mb-3"
-                  style={{ background: 'var(--color-surface-2)' }}
-                >
-                  <BarChart2 size={15} />
-                </div>
+              <StaggerItem className="px-5 py-5">
                 {typeAvgs.length === 0 ? (
                   <>
-                    <div className="font-display text-3xl font-normal text-ink-mute leading-none">—</div>
-                    <p className="text-sm text-ink-mute mt-1 m-0">Ortalama</p>
+                    <div className="figure text-[30px] text-ink-faint">—</div>
+                    <p className="mono-label m-0 mt-2.5">Ortalama</p>
                   </>
                 ) : typeAvgs.length === 1 ? (
                   <>
-                    <div className={`font-display text-3xl font-normal leading-none ${scoreColor(typeAvgs[0].avg)}`}>
+                    <div className={`figure text-[30px] ${scoreColor(typeAvgs[0].avg)}`}>
                       {typeAvgs[0].avg}%
                     </div>
-                    <p className="text-sm text-ink-mute mt-1 m-0">{typeAvgs[0].label} ortalama</p>
+                    <p className="mono-label m-0 mt-2.5">{typeAvgs[0].label} ortalama</p>
                     {scoreTrend != null && (
-                      <p className={`text-sm font-medium mt-1 m-0 flex items-center gap-0.5 ${scoreTrend > 0 ? 'text-ok' : scoreTrend < 0 ? 'text-error' : 'text-ink-mute'}`}>
-                        {scoreTrend > 0 ? <TrendingUp size={10} /> : scoreTrend < 0 ? <TrendingDown size={10} /> : null}
-                        {scoreTrend > 0 ? `+${scoreTrend}` : scoreTrend}% son 3 cəhd
+                      <p className={`m-0 mt-1.5 font-mono text-[13px] tabular-nums ${scoreTrend > 0 ? 'text-ok' : scoreTrend < 0 ? 'text-error' : 'text-ink-mute'}`}>
+                        {scoreTrend > 0 ? '▲' : scoreTrend < 0 ? '▼' : '·'} {Math.abs(scoreTrend)}% son 3 cəhd
                       </p>
                     )}
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-ink-mute mb-2 m-0">Növ üzrə ortalama</p>
-                    <div className="space-y-1">
+                    <p className="mono-label m-0 mb-3">Növ üzrə ortalama</p>
+                    <div>
                       {typeAvgs.map(t => (
-                        <div key={t.type} className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-ink-soft">{t.label}</span>
-                          <span className={`text-xs font-bold ${scoreColor(t.avg)}`}>{t.avg}%</span>
+                        <div key={t.type} className="flex items-baseline justify-between gap-3 border-t border-rule-soft py-1.5 first:border-t-0 first:pt-0">
+                          <span className="truncate text-[13px] text-ink-soft">{t.label}</span>
+                          <span className={`font-mono text-[13px] tabular-nums ${scoreColor(t.avg)}`}>{t.avg}%</span>
                         </div>
                       ))}
                     </div>
@@ -318,25 +298,19 @@ export default async function DashboardPage({
 
             {/* My exams */}
             <section>
-              <FadeUp delay={0.1} className="flex items-center justify-between mb-4">
-                <h2 className="eyebrow">Mənim Sınaqlarım</h2>
+              <FadeUp delay={0.1} className="mb-4 flex items-center justify-between gap-4 border-b border-ink pb-3">
+                <h2 className="mono-label mono-label-lg m-0 text-ink">Mənim Sınaqlarım</h2>
                 {results.length > 0 && (
-                  <Link href="/dashboard/analytics" className="text-xs font-medium text-ink-soft hover:text-ink flex items-center gap-1">
+                  <Link href="/dashboard/analytics" className="flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
                     Nəticələr <ArrowRight size={12} />
                   </Link>
                 )}
               </FadeUp>
 
               {purchasedExams.length === 0 ? (
-                <FadeUp delay={0.15} className="bg-surface rounded-2xl border border-rule p-8 text-center">
-                  <div
-                    className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                    style={{ background: 'var(--color-ink)' }}
-                  >
-                    <ShoppingBag size={20} style={{ color: 'var(--color-bg)' }} />
-                  </div>
-                  <h3 className="font-display text-base font-normal text-ink mb-2">Hələ sınaq yoxdur</h3>
-                  <p className="text-sm text-ink-soft mb-6 max-w-xs mx-auto m-0">
+                <FadeUp delay={0.15} className="panel px-8 py-12 text-center">
+                  <h3 className="m-0 mb-2.5 text-xl font-light tracking-tight text-ink">Hələ sınaq yoxdur</h3>
+                  <p className="m-0 mx-auto mb-7 max-w-xs text-sm text-ink-soft">
                     Mövcud sınaq paketlərini kəşf edin və hazırlığa başlayın.
                   </p>
                   <Link href="/exams" className="btn-primary">
@@ -351,30 +325,30 @@ export default async function DashboardPage({
             {/* Explore */}
             {exploreExams.length > 0 && (
               <section>
-                <FadeUp delay={0.05} className="flex items-center justify-between mb-4">
-                  <h2 className="eyebrow">Kəşf et</h2>
-                  <Link href="/exams" className="text-xs font-medium text-ink-soft hover:text-ink flex items-center gap-1">
+                <FadeUp delay={0.05} className="mb-4 flex items-center justify-between gap-4 border-b border-ink pb-3">
+                  <h2 className="mono-label mono-label-lg m-0 text-ink">Kəşf et</h2>
+                  <Link href="/exams" className="flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
                     Hamısı <ArrowRight size={12} />
                   </Link>
                 </FadeUp>
-                <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-3" delay={0.08}>
+                <StaggerContainer className="grid grid-cols-1 gap-3 sm:grid-cols-3" delay={0.08}>
                   {exploreExams.map(exam => {
                     const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
                     return (
                       <StaggerItem key={exam.id}>
                         <Link href={`/exams/${exam.id}`}
-                          className="bg-surface rounded-2xl border border-rule p-4 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
-                          <div className="flex items-start justify-between mb-3">
+                          className="panel card-new-hover group flex h-full flex-col p-4.5">
+                          <div className="mb-3.5 flex items-start justify-between gap-3">
                             <span className="tag tag-accent">{exam.tag}</span>
-                            <span className="font-display text-base font-normal text-ink">{exam.price} ₼</span>
+                            <span className="font-mono text-[15px] tabular-nums text-ink">{exam.price} ₼</span>
                           </div>
-                          <h3 className="font-display font-normal text-ink text-sm leading-snug mb-auto group-hover:text-ink-soft transition-colors m-0">
+                          <h3 className="m-0 mb-auto text-sm leading-snug font-medium text-ink">
                             {exam.title}
                           </h3>
-                          <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-rule text-xs text-ink-mute">
-                            <span className="flex items-center gap-0.5"><Timer size={10} />{examMinutes}d</span>
-                            <span className="flex items-center gap-0.5"><HelpCircle size={10} />{exam.totalQuestions}s</span>
-                            <span className="ml-auto text-ink font-medium">Bax →</span>
+                          <div className="mono-label mt-3.5 flex items-center gap-3 border-t border-rule-soft pt-3">
+                            <span>{examMinutes} dəq</span>
+                            <span>{exam.totalQuestions} sual</span>
+                            <span className="ml-auto text-ink transition-transform duration-150 group-hover:translate-x-0.5">Bax →</span>
                           </div>
                         </Link>
                       </StaggerItem>
@@ -388,29 +362,29 @@ export default async function DashboardPage({
           {/* ── Right column ── */}
           <StaggerContainer className="space-y-4" delay={0.15}>
 
-            {/* Countdown card */}
+            {/* Countdown. An ink card carrying one big mono numeral — the same
+                object as the home hero's score-delta card. */}
             {countdown && (
-              <StaggerItem className="rounded-2xl border border-rule bg-surface-2 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="eyebrow m-0">İmtahan geri sayımı</p>
-                  <Link href="/dashboard/settings" className="text-xs font-medium text-ink-mute hover:text-ink transition-colors">
+              <StaggerItem className="rounded-[14px] bg-ink px-6 pt-5.5 pb-6">
+                <div className="mb-5 flex items-baseline justify-between gap-3">
+                  <p className="mono-label mono-label-lg m-0 text-bg/50">İmtahan geri sayımı</p>
+                  <Link href="/dashboard/settings" className="shrink-0 text-xs font-medium text-bg/50 transition-colors hover:text-bg">
                     Dəyişdir
                   </Link>
                 </div>
-                <p className="text-sm text-ink-soft mb-4 m-0">{countdown.dateStr}</p>
-                <div className="text-center py-3">
-                  <p
-                    className="font-display font-normal text-ink text-5xl leading-none tracking-tight"
-                  >
-                    {countdown.days}
-                  </p>
-                  <p className="text-sm font-medium text-ink-soft mt-1 m-0">
+                <div className="flex items-baseline gap-3.5">
+                  <span className="figure text-[56px] text-bg">{countdown.days}</span>
+                  <span className="text-sm text-bg/55">
                     {countdown.days === 0 ? 'Bugün!' : countdown.days === 1 ? 'gün qalıb' : 'gün qalır'}
-                  </p>
+                  </span>
                 </div>
+                <p className="mono-label mt-5 m-0 border-t border-bg/16 pt-3 text-bg/45">{countdown.dateStr}</p>
                 {countdown.days <= 14 && (
-                  <Link href={`/exams?type=${countdown.type}`} className="btn-primary w-full justify-center mt-4">
-                    Sınaqlara bax <span className="arrow">→</span>
+                  <Link
+                    href={`/exams?type=${countdown.type}`}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-bg px-5 py-3 text-[13px] font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
+                  >
+                    Sınaqlara bax <span aria-hidden>→</span>
                   </Link>
                 )}
               </StaggerItem>
@@ -418,10 +392,10 @@ export default async function DashboardPage({
 
             {/* Recent activity */}
             {recentResults.length > 0 ? (
-              <StaggerItem className="bg-surface rounded-2xl border border-rule overflow-hidden">
-                <div className="px-5 py-4 border-b border-rule flex items-center justify-between">
-                  <h2 className="eyebrow">Son Fəaliyyət</h2>
-                  <Link href="/dashboard/analytics" className="text-xs font-medium text-ink-soft hover:text-ink">Hamısı</Link>
+              <StaggerItem className="panel">
+                <div className="panel-head">
+                  <h2 className="mono-label mono-label-lg m-0 text-ink">Son Fəaliyyət</h2>
+                  <Link href="/dashboard/analytics" className="text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">Hamısı</Link>
                 </div>
                 {/*
                   Each row links straight to that attempt's answer-by-answer
@@ -429,48 +403,39 @@ export default async function DashboardPage({
                   the thing students actually want after a test — was reachable
                   only via a small link two pages deep.
                 */}
-                <div className="divide-y divide-rule">
+                <div>
                   {recentResults.map(r => (
                     <Link
                       key={r.id}
                       href={`/dashboard/analytics/${r.examId}/${r.attemptNumber}/review`}
-                      className="px-4 py-3 flex items-center gap-3 hover:bg-surface-2 transition-colors group"
+                      className="flex items-center gap-3 border-b border-rule-soft px-5 py-3.5 transition-colors hover:bg-surface-2"
                     >
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${scoreBarColor(r.score)}`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink truncate m-0">{r.examTitle}</p>
-                        <p className="text-sm text-ink-mute mt-0.5 m-0">
+                      {/* Square, not a dot: the status marks on the public
+                          pages are rules and squares, never bubbles. */}
+                      <span className={`h-2 w-2 shrink-0 ${scoreBarColor(r.score)}`} aria-hidden />
+                      <div className="min-w-0 flex-1">
+                        <p className="m-0 truncate text-sm font-medium text-ink">{r.examTitle}</p>
+                        <p className="mono-label m-0 mt-1">
                           {shortDate(r.completedAt)} · {formatDuration(r.durationSeconds)}
                         </p>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${scoreBg(r.score)}`}>
+                      <span className={`tag shrink-0 font-mono tabular-nums ${scoreTag(r.score)}`}>
                         {(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}
                       </span>
-                      <BookOpen size={13} className="shrink-0 text-ink-mute opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   ))}
                 </div>
-                <div className="px-4 py-2.5 border-t border-rule">
-                  <p className="text-sm text-ink-mute m-0">
-                    Cavablarınızı görmək üçün bir cəhdə toxunun.
-                  </p>
-                </div>
+                <p className="m-0 px-5 py-3 text-[13px] text-ink-mute">
+                  Cavablarınızı görmək üçün bir cəhdə toxunun.
+                </p>
               </StaggerItem>
             ) : (
-              <StaggerItem className="bg-surface rounded-2xl border border-rule p-5 text-center">
-                <div
-                  className="w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center"
-                  style={{ background: 'var(--color-surface-2)' }}
-                >
-                  <BarChart2 size={18} style={{ color: 'var(--color-ink-mute)' }} />
-                </div>
-                <p className="text-sm font-semibold text-ink mb-1 m-0">Fəaliyyət yoxdur</p>
-                <p className="text-sm text-ink-soft mb-4 m-0">
+              <StaggerItem className="panel px-5 py-8 text-center">
+                <p className="m-0 mb-2 text-base font-light tracking-tight text-ink">Fəaliyyət yoxdur</p>
+                <p className="m-0 mb-5 text-sm text-ink-soft">
                   İmtahan bitirdikdən sonra nəticələriniz burada görünəcək.
                 </p>
-                <Link href="/exams" className="text-xs font-medium text-ink-soft hover:text-ink inline-flex items-center gap-1">
+                <Link href="/exams" className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
                   Sınaqlara bax <ArrowRight size={12} />
                 </Link>
               </StaggerItem>

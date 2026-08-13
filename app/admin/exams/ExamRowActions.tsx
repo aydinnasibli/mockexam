@@ -32,36 +32,34 @@ export default function ExamRowActions({ examId, isActive }: Props) {
     });
   };
 
+  /* Neutral ink icons on a soft hover, rather than one colour per action
+     (emerald / navy / red). The only coloured one left is delete, because that
+     is the only one that is actually destructive. */
+  const iconButton =
+    'flex cursor-pointer items-center rounded-btn p-2 text-ink-mute transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40';
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       <button
         onClick={handleToggle}
         disabled={toggling}
-        className="flex items-center gap-1 p-2 rounded-lg hover:bg-surface-container-low transition-colors disabled:opacity-50"
+        className={iconButton}
         title={isActive ? 'Deaktiv et' : 'Aktiv et'}
       >
         {isActive
-          ? <ToggleRight size={18} className="text-emerald-600" />
-          : <ToggleLeft size={18} className="text-on-surface-variant" />}
+          ? <ToggleRight size={17} className="text-ok" />
+          : <ToggleLeft size={17} />}
       </button>
-      <Link
-        href={`/admin/exams/${examId}/questions`}
-        className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors"
-        title="Suallar"
-      >
+      <Link href={`/admin/exams/${examId}/questions`} className={iconButton} title="Suallar">
         <BookOpen size={15} />
       </Link>
-      <Link
-        href={`/admin/exams/${examId}/edit`}
-        className="p-2 rounded-lg hover:bg-secondary/10 text-secondary transition-colors"
-        title="Düzəliş et"
-      >
+      <Link href={`/admin/exams/${examId}/edit`} className={iconButton} title="Düzəliş et">
         <Pencil size={15} />
       </Link>
       <button
         onClick={handleDelete}
         disabled={deleting}
-        className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50"
+        className={`${iconButton} hover:text-error!`}
         title="Sil"
       >
         <Trash2 size={15} />

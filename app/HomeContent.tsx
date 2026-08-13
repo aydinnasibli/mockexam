@@ -115,17 +115,16 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 top of the canvas's — the double application is what gives the
                 ink card its delayed settle. */}
             <div className="anim-rise">
-              <div className="mb-8 flex items-center gap-3 lg:mb-10">
-                <span className="h-1.75 w-1.75 rounded-full bg-ink" aria-hidden />
-                <span className={`${MONO_SECTION} text-ink`}>Sessiya 2026 açıqdır</span>
-              </div>
-
               <h1 className="m-0 mb-7 text-[52px] font-light leading-[0.94] tracking-[-0.042em] text-ink md:text-[72px] lg:text-[88px]">
                 Rəsmi<br />formatda<br /><span className="font-medium">sınaq.</span>
               </h1>
 
+              {/* Deliberately names no programme. There are six exam types, so
+                  listing three undersold the catalogue — and the programme
+                  strip immediately below this section already enumerates them
+                  with live counts, which is the honest place for the list. */}
               <p className="m-0 mb-10 max-w-100 text-lg leading-[1.5] text-ink-soft lg:text-[21px]">
-                SAT, DİM və IELTS — imtahan gününün eyni interfeysi.
+                İmtahan gününü əvvəlcədən yaşayın.
               </p>
 
               <div className="flex flex-wrap items-center gap-3.5">

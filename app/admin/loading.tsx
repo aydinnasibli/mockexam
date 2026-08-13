@@ -7,7 +7,7 @@ export default function AdminLoading() {
   return (
     <div role="status" aria-live="polite" className="flex min-h-[60vh] items-center justify-center">
       <span className="sr-only">Yüklənir…</span>
-      <div aria-hidden className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      <div aria-hidden className="h-7 w-7 animate-spin rounded-full border-2 border-rule border-t-ink" />
     </div>
   );
 }

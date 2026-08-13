@@ -15,9 +15,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!(await checkRole('admin'))) redirect('/dashboard');
 
   return (
-    <div className="min-h-screen bg-surface flex">
+    /* Bone ground and a 60px-narrower rail, so the admin shell is dimensionally
+       the same object as the kabinet shell rather than a near-miss. */
+    <div className="flex min-h-screen bg-bg">
       <AdminSidebar />
-      <main className="flex-1 ml-64 p-8 min-h-screen">
+      <main className="ml-60 min-h-screen flex-1 px-8 py-8">
         {children}
       </main>
     </div>

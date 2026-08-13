@@ -1,5 +1,6 @@
 import { getWritingEvalProblems } from '@/lib/actions/results';
 import WritingProblemsClient from './WritingProblemsClient';
+import AdminPageHeader from '../PageHeader';
 import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'Yazı Qiymətləndirmə — Admin' };
@@ -14,24 +15,21 @@ export default async function AdminWritingPage() {
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-3xl font-extrabold text-primary tracking-tight font-headline mb-1">
-          Yazı Qiymətləndirmə
-        </h1>
-        <p className="text-on-surface-variant font-medium text-sm">
-          AI qiymətləndirə bilmədiyi (gözləyən) yazı tapşırıqlarını burada görüb yenidən işə sala bilərsiniz.
-        </p>
-      </header>
+      <AdminPageHeader
+        eyebrow="Qiymətləndirmə"
+        title="Yazı qiymətləndirmə."
+        meta="AI qiymətləndirə bilmədiyi (gözləyən) yazı tapşırıqlarını burada görüb yenidən işə sala bilərsiniz."
+      />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+      <div className="panel mb-6 grid grid-cols-1 gap-px overflow-hidden bg-rule sm:grid-cols-3">
         {[
-          { label: 'Problemli nəticə', value: problems.length },
-          { label: 'Gözləyən esse', value: pendingEssays },
-          { label: 'Status', value: problems.length === 0 ? 'Təmiz' : 'Diqqət' },
-        ].map(({ label, value }) => (
-          <div key={label} className="bg-white rounded-2xl border border-outline-variant/40 p-4 shadow-sm">
-            <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest mb-1">{label}</p>
-            <p className={`text-2xl font-black ${label === 'Status' && problems.length > 0 ? 'text-amber-600' : 'text-primary'}`}>{value}</p>
+          { label: 'Problemli nəticə', value: String(problems.length) },
+          { label: 'Gözləyən esse',    value: String(pendingEssays) },
+          { label: 'Status',           value: problems.length === 0 ? 'Təmiz' : 'Diqqət', warn: problems.length > 0 },
+        ].map(({ label, value, warn }) => (
+          <div key={label} className="bg-surface px-5 py-5">
+            <div className={`figure text-[30px] ${warn ? 'text-warn' : ''}`}>{value}</div>
+            <p className="mono-label m-0 mt-2.5">{label}</p>
           </div>
         ))}
       </div>

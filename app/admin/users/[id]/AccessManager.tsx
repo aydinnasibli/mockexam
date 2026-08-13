@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Gift, Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { grantExamAccess, revokeExamAccess } from '@/lib/actions/admin-users';
 
@@ -20,7 +20,7 @@ export function GrantAccessForm({ userId, exams }: { userId: string; exams: Gran
 
   if (exams.length === 0) {
     return (
-      <p className="text-sm text-on-surface-variant font-medium">
+      <p className="m-0 text-sm text-ink-soft">
         Bu istifadəçinin bütün imtahanlara girişi var.
       </p>
     );
@@ -41,12 +41,13 @@ export function GrantAccessForm({ userId, exams }: { userId: string; exams: Gran
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
+    <div className="flex flex-col gap-3 sm:flex-row">
       <select
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
         disabled={pending}
-        className="flex-1 px-4 py-3 rounded-xl border border-outline-variant/40 bg-white text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-secondary/40"
+        aria-label="İmtahan seçin"
+        className="input-new flex-1"
       >
         <option value="">İmtahan seçin...</option>
         {exams.map((e) => (
@@ -58,10 +59,10 @@ export function GrantAccessForm({ userId, exams }: { userId: string; exams: Gran
       <button
         onClick={handleGrant}
         disabled={!selected || pending}
-        className="editorial-gradient text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shrink-0"
+        className="btn-primary btn-sm shrink-0 justify-center disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {pending ? <Loader2 size={16} className="animate-spin" /> : <Gift size={16} />}
-        Ödənişsiz Giriş Ver
+        {pending && <Loader2 size={15} className="animate-spin" />}
+        Ödənişsiz giriş ver
       </button>
     </div>
   );
@@ -88,7 +89,7 @@ export function RevokeAccessButton({ userId, examId }: { userId: string; examId:
       onClick={handleRevoke}
       disabled={pending}
       title="Admin qrantını sil"
-      className="flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
+      className="ml-auto flex cursor-pointer items-center gap-1.5 text-[13px] font-medium text-error transition-opacity hover:opacity-75 disabled:opacity-50"
     >
       {pending ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
       Geri al

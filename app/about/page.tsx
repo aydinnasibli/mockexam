@@ -30,6 +30,19 @@ const COMMIT = [
   { title: "İnsan cavabı", line: "Yazdığınız sualı 24 saat ərzində insan oxuyur və cavablayır." },
 ];
 
+/*
+ * The hero's figure row. Deliberately NOT the product figures the home hero
+ * states (05 açıq sınaq / 11 analiz ölçüsü / 1:1 format) — repeating two of
+ * those three here is what made this page read as a restatement of the home
+ * page. These are the commitments instead, so the row previews §03 and gives
+ * "Nə etmirik" a number. Every value is already asserted further down the page.
+ */
+const HERO_FIGURES = [
+  { value: "24s", label: "İnsan cavabı" },
+  { value: "30",  label: "Gün, tam silinmə" },
+  { value: "0",   label: "Reklam izləməsi" },
+];
+
 const POLICIES = [
   { label: "Məlumat",            value: "Üçüncü tərəflə paylaşılmır" },
   { label: "Hesab silinməsi",    value: "30 gün ərzində tam məhv" },
@@ -56,19 +69,46 @@ export default function AboutPage() {
       <main>
 
         {/* ── Statement ──
-            Three elements and nothing else: label, what it is, why it is.
-            The headline states the product rather than sloganeering about it. */}
-        <section className="mx-auto w-full max-w-320 px-6 pt-14 pb-18 lg:px-10 lg:pt-24 lg:pb-28">
-          <div className={`${MONO_SECTION} mb-8 text-ink-mute lg:mb-10`}>Haqqımızda</div>
+            Two columns and a floor. The statement used to sit alone in the left
+            45% of the viewport with nothing opposite it and nothing under it,
+            which read as an unfinished page rather than as restraint: the
+            principle carries the right column, and the figure row lands the
+            whole thing on a rule the way the home hero does. */}
+        <section className="mx-auto w-full max-w-320 px-6 pt-14 pb-18 lg:px-10 lg:pt-22 lg:pb-24">
+          <div className="anim-rise">
+            <div className="mb-8 flex items-center gap-3 lg:mb-10">
+              {/* Every other eyebrow in the product is dot + mono label; this
+                  one was the lone exception and read as a caption. */}
+              <span className="h-1.75 w-1.75 rounded-full bg-ink" aria-hidden />
+              <span className={`${MONO_SECTION} text-ink`}>Haqqımızda</span>
+            </div>
 
-          <h1 className="m-0 text-[44px] font-light leading-[0.98] tracking-[-0.042em] text-ink md:text-[64px] lg:text-[80px]">
-            Rəsmi formatda<br /><span className="font-medium">sınaq platforması.</span>
-          </h1>
+            <h1 className="m-0 text-[44px] font-light leading-[0.98] tracking-[-0.042em] text-ink md:text-[64px] lg:text-[80px]">
+              Rəsmi formatda<br /><span className="font-medium">sınaq platforması.</span>
+            </h1>
 
-          <p className="m-0 mt-9 max-w-130 text-[19px] leading-[1.6] text-ink-soft lg:mt-11">
-            Hər sınaq rəsmi qaydalarla keçir — eyni vaxt limiti, eyni quruluş,
-            eyni interfeys. İmtahan günü heç nə yeni görünməsin deyə.
-          </p>
+            <p className="m-0 mt-9 max-w-130 text-[19px] leading-[1.6] text-ink-soft lg:mt-11">
+              Hər sınaq rəsmi qaydalarla keçir — eyni vaxt limiti, eyni quruluş,
+              eyni interfeys. İmtahan günü heç nə yeni görünməsin deyə.
+            </p>
+          </div>
+
+          {/* Figure row — the same object that closes the home hero. */}
+          <FadeUp delay={0.2} className="mt-14 flex items-end border-t border-ink lg:mt-20">
+            {HERO_FIGURES.map((figure, i) => (
+              <div
+                key={figure.label}
+                className={`flex-1 pt-4.5 ${i === 0 ? "pr-4.5" : "px-4.5"} ${
+                  i < HERO_FIGURES.length - 1 ? "border-r border-rule" : ""
+                }`}
+              >
+                <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-[32px]">
+                  {figure.value}
+                </div>
+                <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</div>
+              </div>
+            ))}
+          </FadeUp>
         </section>
 
         {/* ── §01 Niyə ── */}

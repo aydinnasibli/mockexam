@@ -6,7 +6,7 @@ import { formatOverallScore } from '@/lib/scoring';
 import { examTypeLabel } from '@/lib/exam-types';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import { ChevronRight, Timer, BookOpen } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 export const metadata = { title: 'Nəticələr' };
 
@@ -120,51 +120,49 @@ export default async function AnalyticsPage() {
 
       {/* Header */}
       <div className="mb-10">
-        <div className="flex items-center gap-3 mb-5">
-          <span className="dot" />
-          <span className="eyebrow" style={{ color: 'var(--color-ink)' }}>Nəticələr</span>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="dot" aria-hidden />
+          <span className="mono-label mono-label-lg text-ink">Nəticələr</span>
         </div>
-        <h1
-          className="font-display font-normal text-ink text-3xl md:text-4xl leading-tight tracking-tight m-0 mb-3"
-        >
-          Sınaq <span>analitikası.</span>
+        <h1 className="m-0 mb-3 text-[32px] leading-[1.04] font-light tracking-[-0.035em] text-ink md:text-[44px]">
+          Sınaq <span className="font-medium">analitikası.</span>
         </h1>
-        <p className="text-base leading-[1.55] text-ink-soft m-0">Bütün imtahan cəhdlərinin tarixi və statistikası.</p>
+        <p className="m-0 text-[17px] leading-[1.55] text-ink-soft">Bütün imtahan cəhdlərinin tarixi və statistikası.</p>
       </div>
 
       {/* Summary — one row per exam type, never one figure across all of them */}
       {totalAttempts > 0 && (
-        <div className="border-y border-rule py-8 mb-10">
-          <div className="flex items-baseline gap-3 mb-7">
-            <div className="font-display tabular-nums lining-nums text-ink text-3xl md:text-4xl leading-none tracking-tight">
-              {totalAttempts}
-            </div>
-            <div className="eyebrow">ümumi cəhd</div>
+        <div className="mb-10 border-y border-rule py-8">
+          <div className="mb-8 flex items-baseline gap-3.5">
+            <div className="figure text-[38px] md:text-[46px]">{totalAttempts}</div>
+            <div className="mono-label mono-label-lg">ümumi cəhd</div>
           </div>
 
-          <div className="eyebrow mb-4">Növ üzrə nəticə</div>
-          <div className="space-y-px">
+          <div className="mono-label mono-label-lg mb-4 text-ink">Növ üzrə nəticə</div>
+          <div>
             {/* Column headers — hidden on narrow screens where rows stack */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_90px_120px_120px] px-1 pb-2 text-xs font-medium text-ink-mute">
+            <div className="mono-label hidden pb-2.5 sm:grid sm:grid-cols-[1fr_90px_120px_120px]">
               <span>İmtahan növü</span>
               <span className="text-right">Cəhd</span>
               <span className="text-right">Ortalama</span>
               <span className="text-right">Ən yaxşı</span>
             </div>
-            {typeGroups.map(g => (
+            {typeGroups.map((g, i) => (
               <div
                 key={g.type}
-                className="grid grid-cols-2 sm:grid-cols-[1fr_90px_120px_120px] gap-y-1.5 items-center px-1 py-3 border-t border-rule"
+                className={`grid grid-cols-2 items-center gap-y-1.5 py-3.5 sm:grid-cols-[1fr_90px_120px_120px] ${
+                  i === 0 ? 'border-t border-ink' : 'border-t border-rule'
+                }`}
               >
-                <span className="col-span-2 sm:col-span-1 text-sm font-medium text-ink">{g.label}</span>
-                <span className="text-sm text-ink-mute sm:text-right">
+                <span className="col-span-2 text-[15px] font-medium text-ink sm:col-span-1">{g.label}</span>
+                <span className="font-mono text-[13px] tabular-nums text-ink-mute sm:text-right">
                   <span className="sm:hidden">Cəhd: </span>{g.count}
                 </span>
-                <span className={`text-sm font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
-                  <span className="sm:hidden text-sm font-normal text-ink-mute">Ortalama: </span>{g.avg}
+                <span className={`font-mono text-[13px] tabular-nums sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
+                  <span className="font-sans text-ink-mute sm:hidden">Ortalama: </span>{g.avg}
                 </span>
-                <span className={`text-sm font-bold sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
-                  <span className="sm:hidden text-sm font-normal text-ink-mute">Ən yaxşı: </span>{g.best}
+                <span className={`font-mono text-[13px] tabular-nums sm:text-right ${g.isPercent ? scoreColor(g.avgPercent) : 'text-ink'}`}>
+                  <span className="font-sans text-ink-mute sm:hidden">Ən yaxşı: </span>{g.best}
                 </span>
               </div>
             ))}
@@ -174,9 +172,9 @@ export default async function AnalyticsPage() {
 
       {/* No attempts */}
       {totalAttempts === 0 && (
-        <div className="card-new text-center py-20">
-          <h3 className="font-display font-medium text-xl leading-tight tracking-tight text-ink m-0 mb-3">Hələ nəticə yoxdur</h3>
-          <p className="text-sm text-ink-soft mb-6 max-w-xs mx-auto m-0">
+        <div className="panel px-8 py-20 text-center">
+          <h3 className="m-0 mb-3 text-2xl leading-tight font-light tracking-tight text-ink">Hələ nəticə yoxdur</h3>
+          <p className="m-0 mx-auto mb-7 max-w-xs text-sm text-ink-soft">
             {purchasedExams.length > 0
               ? 'Sınaq başlatdıqdan sonra nəticələriniz burada görünəcək.'
               : 'Sınaq aldıqdan sonra nəticələriniz burada görünəcək.'}
@@ -202,45 +200,47 @@ export default async function AnalyticsPage() {
             const lastDisp = formatOverallScore(last);
             const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
 
+            // The score column has to hold a meter plus a two-token label
+            // ("6.0 Band", "1210 / 1600") on one line — at 92px it wrapped.
+            const COLS = 'grid-cols-[36px_1fr_84px_130px_70px]';
+
             return (
-              <div key={exam.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-rule)', borderRadius: 16, overflow: 'hidden' }}>
+              <div key={exam.id} className="panel">
 
                 {/* Exam header */}
-                <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex items-center gap-2">
                       <span className="tag tag-accent">{exam.tag}</span>
                       <span className="tag">{examResults.length} cəhd</span>
                     </div>
-                    <h3 className="font-display font-normal text-ink text-lg m-0 mb-1">
+                    <h3 className="m-0 mb-2 text-lg font-medium tracking-[-0.015em] text-ink">
                       {exam.title}
                     </h3>
-                    <div className="flex items-center gap-4 text-xs text-ink-mute">
-                      <span className="flex items-center gap-1"><Timer size={11} />{examMinutes} dəq</span>
-                      <span>Ən yaxşı: <span className={`font-bold ${scoreColor(best)}`}>{bestDisp.value}{bestDisp.unit !== '%' ? ` ${bestDisp.unit}` : '%'}</span></span>
+                    <div className="mono-label flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span>{examMinutes} dəq</span>
+                      <span>
+                        Ən yaxşı <span className={scoreColor(best)}>{bestDisp.value}{bestDisp.unit !== '%' ? ` ${bestDisp.unit}` : '%'}</span>
+                      </span>
                       {examResults.length > 1 && (
-                        <span>Son: <span className={`font-bold ${scoreColor(last.score)}`}>{lastDisp.value}{lastDisp.unit !== '%' ? ` ${lastDisp.unit}` : '%'}</span></span>
+                        <span>
+                          Son <span className={scoreColor(last.score)}>{lastDisp.value}{lastDisp.unit !== '%' ? ` ${lastDisp.unit}` : '%'}</span>
+                        </span>
                       )}
                     </div>
                   </div>
                   <Link
                     href={`/dashboard/analytics/${exam.id}`}
-                    className="btn-ghost py-2! px-4! text-sm! shrink-0"
+                    className="btn-ghost btn-sm shrink-0"
                   >
                     Ətraflı <span className="arrow">→</span>
                   </Link>
                 </div>
 
                 {/* Attempts table */}
-                <div style={{ borderTop: '1px solid var(--color-rule)' }}>
+                <div className="border-t border-rule">
                   {/* Table header */}
-                  <div
-                    className="grid px-6 py-2 text-xs font-medium text-ink-mute"
-                    style={{
-                      background: 'var(--color-surface-2)',
-                      gridTemplateColumns: '40px 1fr 100px 80px 80px',
-                    }}
-                  >
+                  <div className={`mono-label grid ${COLS} gap-3 border-b border-rule bg-surface-2 px-6 py-2.5`}>
                     <span>#</span>
                     <span>Tarix</span>
                     <span className="text-right">Müddət</span>
@@ -248,30 +248,29 @@ export default async function AnalyticsPage() {
                     <span className="text-right">Cavablar</span>
                   </div>
 
-                  <div className="divide-y divide-rule">
-                    {examResults.slice(0, 3).map(r => (
+                  <div>
+                    {examResults.slice(0, 3).map((r, i) => (
                       <div
                         key={r.id}
-                        className="grid px-6 py-3 items-center text-sm"
-                        style={{ gridTemplateColumns: '40px 1fr 100px 80px 80px' }}
+                        className={`grid ${COLS} items-center gap-3 px-6 py-3.5 text-sm ${i > 0 ? 'border-t border-rule-soft' : ''}`}
                       >
-                        <span className="text-ink-mute font-medium">#{r.attemptNumber}</span>
-                        <span className="text-ink-soft truncate">{formatDate(r.completedAt)}</span>
-                        <span className="text-right text-ink-mute">{formatDuration(r.durationSeconds)}</span>
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-1 bg-surface-2 rounded-full overflow-hidden hidden sm:block">
-                            <div className={`h-full rounded-full ${scoreBarColor(r.score)}`} style={{ width: `${r.score}%` }} />
+                        <span className="font-mono text-[13px] tabular-nums text-ink-mute">{r.attemptNumber}</span>
+                        <span className="truncate text-ink-soft">{formatDate(r.completedAt)}</span>
+                        <span className="text-right font-mono text-[13px] tabular-nums text-ink-mute">{formatDuration(r.durationSeconds)}</span>
+                        <div className="flex items-center justify-end gap-2.5">
+                          <div className="meter hidden h-1 w-10 sm:block">
+                            <span className={scoreBarColor(r.score)} style={{ width: `${r.score}%` }} />
                           </div>
-                          <span className={`font-bold text-right min-w-10 ${scoreColor(r.score)}`}>{(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}</span>
+                          <span className={`text-right font-mono text-[13px] whitespace-nowrap tabular-nums ${scoreColor(r.score)}`}>{(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}</span>
                         </div>
                         {/* The answer-by-answer review had no entry point on this
                             page at all — students had to guess it lived a level
                             deeper, under "Ətraflı". */}
                         <Link
                           href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
-                          className="justify-self-end flex items-center gap-1 px-2.5 py-1 border border-rule rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors"
+                          className="justify-self-end border-b border-ink-faint pb-0.5 text-[13px] font-medium text-ink transition-colors hover:border-ink"
                         >
-                          <BookOpen size={11} /> İcmal
+                          İcmal
                         </Link>
                       </div>
                     ))}
@@ -280,10 +279,9 @@ export default async function AnalyticsPage() {
                   {examResults.length > 3 && (
                     <Link
                       href={`/dashboard/analytics/${exam.id}`}
-                      className="flex items-center justify-center gap-1 py-3 text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors"
-                      style={{ borderTop: '1px solid var(--color-rule)' }}
+                      className="flex items-center justify-center gap-1 border-t border-rule py-3.5 text-[13px] font-medium text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink"
                     >
-                      Bütün cəhdlərə bax <ChevronRight size={12} />
+                      Bütün cəhdlərə bax <ChevronRight size={13} />
                     </Link>
                   )}
                 </div>
@@ -295,11 +293,11 @@ export default async function AnalyticsPage() {
 
       {/* Not attempted note */}
       {notAttemptedCount > 0 && totalAttempts > 0 && (
-        <div className="mt-6 px-5 py-4 bg-surface rounded-2xl border border-rule flex items-center justify-between">
-          <p className="text-sm text-ink-soft m-0">
-            <span className="font-semibold text-ink">{notAttemptedCount}</span> sınağa hələ başlamadınız.
+        <div className="panel mt-6 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="m-0 text-sm text-ink-soft">
+            <span className="font-mono tabular-nums text-ink">{notAttemptedCount}</span> sınağa hələ başlamadınız.
           </p>
-          <Link href="/dashboard" className="text-sm font-medium text-ink-soft hover:text-ink">
+          <Link href="/dashboard" className="text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
             Panelə get →
           </Link>
         </div>

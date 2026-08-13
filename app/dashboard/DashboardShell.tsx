@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MotionConfig } from 'framer-motion';
 import DashboardSidebar, { type ViewerSummary } from './DashboardSidebar';
 import PageTransition from '@/components/ui/PageTransition';
@@ -17,33 +18,35 @@ export default function DashboardShell({ viewer, children }: Props) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="bg-surface-2 text-ink min-h-screen">
+      {/* Bone, not the darker surface-2: the signed-in pages stand on the same
+          ground as every public page, and the white panels read as paper on it. */}
+      <div className="min-h-screen bg-bg text-ink">
         {/* Mobile backdrop */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+            className="fixed inset-0 z-30 bg-ink/35 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         <DashboardSidebar viewer={viewer} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <div className="md:ml-60 min-h-screen flex flex-col">
-          {/* Mobile top bar */}
-          <div className="md:hidden sticky top-0 z-20 bg-surface border-b border-rule px-4 h-14 flex items-center gap-3 shrink-0">
+        <div className="flex min-h-screen flex-col md:ml-60">
+          {/* Mobile top bar — the public navbar's 1px rule and real logo, at
+              the shorter height a content bar wants. */}
+          <div className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-rule bg-bg px-4 md:hidden">
             <button
               onClick={() => setSidebarOpen(o => !o)}
-              className="p-2 rounded-lg hover:bg-surface-2 transition-colors text-ink"
-              aria-label="Menyu"
+              className="-ml-2 p-2 text-ink-soft transition-colors hover:text-ink"
+              aria-label={sidebarOpen ? 'Menyu bağla' : 'Menyu aç'}
+              aria-expanded={sidebarOpen}
             >
-              <Menu size={20} />
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-ink flex items-center justify-center shrink-0">
-                <span className="text-bg text-xs font-black">TC</span>
-              </div>
-              <span className="font-display text-base font-black text-ink tracking-tight">
-                Test<span className="font-light">centre</span>
+            <Link href="/" className="flex items-center gap-2.25">
+              <Image src="/logo.svg" alt="Testcentre" width={20} height={18} className="shrink-0" />
+              <span className="text-[18px] leading-none font-medium tracking-tight text-ink">
+                Test<span className="font-light text-ink-soft">centre</span>
               </span>
             </Link>
           </div>

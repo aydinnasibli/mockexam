@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BarChart2, BookOpen, HelpCircle, Play, Search, Timer, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 
 /** One purchased exam, flattened by the server so nothing Mongoose-shaped crosses over. */
@@ -119,12 +119,11 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
     <>
       {showControls && (
         <div className="mb-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: 'var(--color-ink-mute)' }}
+                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-mute"
                 aria-hidden="true"
               />
               <input
@@ -133,25 +132,26 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Sınaq axtar…"
                 aria-label="Sınaqlarım arasında axtar"
-                className="input-new pl-9 pr-9 py-2! text-sm!"
+                /* All four sides need `!`: `.input-new` sets `padding` as a
+                   shorthand, which otherwise wins over a longhand utility. */
+                className="input-new py-2.5! pr-9! pl-9.5!"
               />
               {query && (
                 <button
                   onClick={() => setQuery('')}
                   aria-label="Axtarışı təmizlə"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-surface-2 transition-colors"
-                  style={{ color: 'var(--color-ink-mute)' }}
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 p-1 text-ink-mute transition-colors hover:text-ink"
                 >
                   <X size={13} />
                 </button>
               )}
             </div>
-            <label className="flex items-center gap-2 shrink-0">
+            <label className="flex shrink-0 items-center gap-2">
               <span className="sr-only">Sıralama</span>
               <select
                 value={sort}
                 onChange={e => setSort(e.target.value as SortKey)}
-                className="input-new py-2! text-sm! w-auto"
+                className="input-new w-auto py-2.5! text-sm!"
               >
                 {(Object.keys(SORT_LABELS) as SortKey[]).map(k => (
                   <option key={k} value={k}>{SORT_LABELS[k]}</option>
@@ -169,15 +169,14 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                     key={t.value}
                     onClick={() => setType(t.value)}
                     aria-pressed={active}
-                    className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                    style={{
-                      background: active ? 'var(--color-ink)' : 'var(--color-surface)',
-                      color:      active ? 'var(--color-bg)'  : 'var(--color-ink-soft)',
-                      border:     `1px solid ${active ? 'var(--color-ink)' : 'var(--color-rule)'}`,
-                    }}
+                    className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                      active
+                        ? 'border-ink bg-ink text-bg'
+                        : 'border-rule bg-surface text-ink-soft hover:border-ink-faint hover:text-ink'
+                    }`}
                   >
                     {t.label}
-                    <span className="ml-1.5 opacity-60">
+                    <span className="ml-1.5 font-mono tabular-nums opacity-55">
                       {t.value === 'all' ? exams.length : exams.filter(e => e.type === t.value).length}
                     </span>
                   </button>
@@ -189,13 +188,13 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
       )}
 
       {visible.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-rule p-8 text-center">
-          <p className="text-sm text-ink-soft m-0">
+        <div className="panel px-8 py-10 text-center">
+          <p className="m-0 text-sm text-ink-soft">
             &ldquo;{query}&rdquo; üçün sınaq tapılmadı.
           </p>
           <button
             onClick={() => { setQuery(''); setType('all'); }}
-            className="text-xs font-medium text-ink-soft hover:text-ink mt-3"
+            className="mt-3 cursor-pointer text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
           >
             Filtrləri sıfırla
           </button>
@@ -203,62 +202,55 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
       ) : (
         <StaggerContainer className="space-y-3" delay={0.12}>
           {visible.map(exam => (
-            <StaggerItem key={exam.id} className="bg-surface rounded-2xl border border-rule overflow-hidden">
-              <div className="p-4 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                    <span className="tag tag-accent">{exam.tag}</span>
-                    {exam.attemptCount > 0
-                      ? <span className="tag">{exam.attemptCount} cəhd</span>
-                      : <span className="text-xs font-medium text-warn bg-amber-50 px-2 py-0.5 rounded-full">Başlanmayıb</span>
-                    }
-                  </div>
-                  <h3 className="font-display text-base font-normal text-ink leading-snug m-0">{exam.title}</h3>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-ink-mute">
-                    <span className="flex items-center gap-1"><Timer size={11} />{exam.minutes} dəq</span>
-                    <span className="flex items-center gap-1"><HelpCircle size={11} />{exam.totalQuestions} sual</span>
-                  </div>
-                </div>
+            <StaggerItem key={exam.id} className="panel px-5 py-4.5">
+              <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                <span className="tag tag-accent">{exam.tag}</span>
+                {exam.attemptCount > 0
+                  ? <span className="tag">{exam.attemptCount} cəhd</span>
+                  : <span className="tag tag-warn">Başlanmayıb</span>
+                }
+              </div>
+              <h3 className="m-0 text-base leading-snug font-medium tracking-[-0.01em] text-ink">{exam.title}</h3>
+              <div className="mono-label mt-2 flex items-center gap-3.5">
+                <span>{exam.minutes} dəq</span>
+                <span>{exam.totalQuestions} sual</span>
               </div>
 
-              <div className="px-4 pb-4 flex items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-end gap-x-5 gap-y-3.5 border-t border-rule-soft pt-4">
                 {exam.lastScore != null ? (
                   <>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-ink-mute">Son nəticə</span>
-                        <span className={`text-xs font-bold ${scoreColor(exam.lastScore)}`}>
+                    <div className="min-w-45 flex-1">
+                      <div className="mb-2 flex items-baseline justify-between gap-3">
+                        <span className="mono-label">Son nəticə</span>
+                        <span className={`font-mono text-[13px] tabular-nums ${scoreColor(exam.lastScore)}`}>
                           {exam.lastScoreLabel}
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-surface-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${scoreBarColor(exam.lastScore)}`}
-                          style={{ width: `${exam.lastScore}%` }}
-                        />
+                      {/* Square track, like every bar in the analysis figure on
+                          the home page. */}
+                      <div className="meter h-1.5">
+                        <span className={scoreBarColor(exam.lastScore)} style={{ width: `${exam.lastScore}%` }} />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                       <Link href={`/dashboard/analytics/${exam.id}/${exam.lastAttemptNumber}/review`}
-                        className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors">
-                        <BookOpen size={12} /> İcmal
+                        className="btn-ghost btn-sm text-xs!">
+                        İcmal
                       </Link>
                       <Link href={`/dashboard/analytics/${exam.id}`}
-                        className="flex items-center gap-1 px-3 py-1.5 border border-rule rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-2 transition-colors">
-                        <BarChart2 size={12} /> Analiz
+                        className="btn-ghost btn-sm text-xs!">
+                        Analiz
                       </Link>
-                      <Link href={`/exam-session/${exam.id}`}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-ink text-bg rounded-lg text-xs font-medium hover:opacity-90 transition-opacity">
-                        <Play size={12} /> Yenidən
+                      <Link href={`/exam-session/${exam.id}`} className="btn-primary btn-sm text-xs!">
+                        Yenidən <span className="arrow" aria-hidden>→</span>
                       </Link>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p className="flex-1 text-sm text-ink-soft m-0">İlk cəhdinizi başladın!</p>
-                    <Link href={`/exam-session/${exam.id}`}
-                      className="flex items-center gap-1.5 px-4 py-1.5 bg-ink text-bg rounded-lg text-xs font-medium hover:opacity-90 transition-opacity">
-                      <Play size={13} /> Başla
+                    <p className="m-0 flex-1 text-sm text-ink-soft">İlk cəhdinizi başladın!</p>
+                    <Link href={`/exam-session/${exam.id}`} className="btn-primary btn-sm shrink-0 text-xs!">
+                      Başla <span className="arrow" aria-hidden>→</span>
                     </Link>
                   </>
                 )}

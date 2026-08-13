@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { SignOutButton } from '@clerk/nextjs';
-import { LayoutDashboard, BarChart2, Settings, PlusCircle, LogOut } from 'lucide-react';
 
 /** User data resolved server-side in the dashboard layout — avoids client-side pop-in. */
 export interface ViewerSummary {
@@ -23,85 +22,87 @@ interface Props {
 export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Props) {
   const pathname = usePathname();
 
+  /*
+   * The icons that used to sit on these rows are gone, replaced by the mono
+   * index the public pages number their sections with. Nothing on the front
+   * end is labelled by a glyph — it is labelled by a number and a rule — and
+   * a column of lucide icons was the single loudest tell that the kabinet
+   * belonged to a different product.
+   */
   const navItems = [
-    { href: '/dashboard',           icon: LayoutDashboard, label: 'Panel',       active: pathname === '/dashboard' },
-    { href: '/dashboard/analytics', icon: BarChart2,       label: 'Nəticələr',   active: pathname === '/dashboard/analytics' || pathname.startsWith('/dashboard/analytics/') },
-    { href: '/dashboard/settings',  icon: Settings,        label: 'Parametrlər', active: pathname === '/dashboard/settings' },
+    { href: '/dashboard',           n: '01', label: 'Panel',       active: pathname === '/dashboard' },
+    { href: '/dashboard/analytics', n: '02', label: 'Nəticələr',   active: pathname === '/dashboard/analytics' || pathname.startsWith('/dashboard/analytics/') },
+    { href: '/dashboard/settings',  n: '03', label: 'Parametrlər', active: pathname === '/dashboard/settings' },
   ];
 
   return (
     <aside
-      className={`h-screen w-60 fixed left-0 top-0 flex flex-col bg-surface border-r border-rule z-40 transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 z-40 flex h-screen w-60 flex-col border-r border-rule bg-bg transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}
     >
-      {/* Brand */}
-      <div className="px-5 py-5 border-b border-rule">
-        <Link href="/" onClick={onClose} className="flex items-center gap-2">
+      {/* Brand — the public navbar's lockup at the public navbar's size. */}
+      <div className="border-b border-rule px-5 py-5">
+        <Link href="/" onClick={onClose} className="flex items-center gap-2.25">
           <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
-          <span className="text-base font-black text-ink tracking-tight font-display">
-            Test<span className="font-light">centre</span>
+          <span className="text-[19px] leading-none font-medium tracking-tight text-ink">
+            Test<span className="font-light text-ink-soft">centre</span>
           </span>
         </Link>
       </div>
 
-      {/* Eyebrow */}
-      <div className="px-5 pt-5 pb-1">
-        <p className="eyebrow">Kabinet</p>
+      <div className="px-5 pt-6 pb-3">
+        <span className="mono-label mono-label-lg text-ink">Kabinet</span>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 pt-2 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, icon: Icon, label, active: isActive }) => (
+      <nav className="flex-1 overflow-y-auto border-t border-rule-soft">
+        {navItems.map(({ href, n, label, active }) => (
           <Link
             key={href}
             href={href}
             onClick={onClose}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              isActive
-                ? 'bg-surface-2 text-ink'
-                : 'text-ink-soft hover:bg-surface-2 hover:text-ink'
-            }`}
+            aria-current={active ? 'page' : undefined}
+            className={`side-link border-b border-rule-soft ${active ? 'side-link-active' : ''}`}
           >
-            {isActive && (
-              <span className="w-1.5 h-1.5 rounded-full bg-ink shrink-0" />
-            )}
-            <Icon size={15} className={isActive ? 'text-ink opacity-70' : 'opacity-40'} />
+            <span className="n">{n}</span>
             {label}
           </Link>
         ))}
       </nav>
 
-      {/* Bottom actions */}
-      <div className="px-3 py-4 border-t border-rule space-y-1">
+      <div className="space-y-3 border-t border-rule px-5 py-5">
         <Link
           href="/exams"
           onClick={onClose}
-          className="w-full bg-ink text-bg py-2.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-ink/90 transition-colors text-sm"
+          className="btn-primary btn-sm w-full justify-center"
         >
-          <PlusCircle size={14} /> Sınaq əldə et
+          Sınaq əldə et <span className="arrow" aria-hidden>→</span>
         </Link>
         <SignOutButton>
-          <button className="w-full text-ink-soft py-2 px-4 flex items-center gap-2.5 hover:text-error transition-colors text-sm font-medium rounded-xl hover:bg-surface-2">
-            <LogOut size={14} /> Çıxış
+          <button className="w-full cursor-pointer text-left text-[13px] font-medium text-ink-mute transition-colors duration-150 hover:text-ink">
+            Çıxış
           </button>
         </SignOutButton>
       </div>
 
-      {/* Avatar */}
-      <div className="px-4 py-4 border-t border-rule">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-2">
-          {viewer.imageUrl ? (
-            <Image src={viewer.imageUrl} alt="Avatar" width={30} height={30} className="rounded-full object-cover shrink-0 ring-2 ring-rule" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-ink flex items-center justify-center shrink-0">
-              <span className="text-bg text-xs font-bold">{viewer.firstName[0]}</span>
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="font-medium text-ink text-sm leading-tight truncate">{viewer.fullName}</p>
-            <p className="text-sm text-ink-mute truncate">{viewer.email}</p>
+      {/* Viewer */}
+      <div className="flex items-center gap-3 border-t border-rule px-5 py-4">
+        {viewer.imageUrl ? (
+          <Image
+            src={viewer.imageUrl}
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-rule"
+          />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink">
+            <span className="text-xs font-bold text-bg">{viewer.firstName[0]}</span>
           </div>
+        )}
+        <div className="min-w-0">
+          <p className="m-0 truncate text-[13px] leading-tight font-medium text-ink">{viewer.fullName}</p>
+          <p className="m-0 truncate text-xs text-ink-mute">{viewer.email}</p>
         </div>
       </div>
     </aside>

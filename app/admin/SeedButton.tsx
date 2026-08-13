@@ -23,16 +23,16 @@ export default function SeedButton() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full py-2.5 border-2 border-secondary text-secondary font-bold rounded-xl hover:bg-secondary hover:text-white transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+        className="btn-ghost btn-sm w-full cursor-pointer justify-center disabled:opacity-50"
       >
         {pending ? (
           <>
-            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
             Yüklənir...
           </>
         ) : (
           <>
-            <Clock size={15} />
+            <Clock size={14} />
             Standart imtahanları idxal et
           </>
         )}

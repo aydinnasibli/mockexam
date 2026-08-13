@@ -1,10 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import {
-  ArrowLeft, Gift, CreditCard, CheckCircle, XCircle, Clock,
-  BookOpen, Trophy, Timer, PlayCircle, Shield,
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
@@ -33,10 +30,11 @@ function formatDuration(totalSeconds: number): string {
   return m > 0 ? `${m} dəq ${s} san` : `${s} san`;
 }
 
-function scoreColor(score: number): string {
-  if (score >= 70) return 'text-emerald-700 bg-emerald-50';
-  if (score >= 40) return 'text-amber-700 bg-amber-50';
-  return 'text-red-600 bg-red-50';
+/** The three semantic tints from globals, not raw Tailwind pastels. */
+function scoreTag(score: number): string {
+  if (score >= 70) return 'tag-ok';
+  if (score >= 40) return 'tag-warn';
+  return 'tag-error';
 }
 
 /** Snapshot elapsed time per session at request time (server component renders once per request). */
@@ -106,99 +104,89 @@ export default async function AdminUserDetailPage({ params }: Props) {
   const totalTimeSeconds = totals.totalSeconds;
 
   const stats = [
-    { label: 'İmtahan Girişi', value: String(ownedExamIds.size), icon: BookOpen },
-    { label: 'Cəhdlər', value: String(totals.count), icon: PlayCircle },
-    { label: 'Orta Bal', value: avgScore !== null ? `${avgScore}%` : '—', icon: Trophy },
-    { label: 'Ümumi Vaxt', value: totalTimeSeconds > 0 ? formatDuration(totalTimeSeconds) : '—', icon: Timer },
+    { label: 'İmtahan girişi', value: String(ownedExamIds.size) },
+    { label: 'Cəhdlər',        value: String(totals.count) },
+    { label: 'Orta bal',       value: avgScore !== null ? `${avgScore}%` : '—' },
+    { label: 'Ümumi vaxt',     value: totalTimeSeconds > 0 ? formatDuration(totalTimeSeconds) : '—' },
   ];
 
   return (
     <div>
       <Link
         href="/admin/users"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-primary mb-6"
+        className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
       >
-        <ArrowLeft size={16} /> İstifadəçilərə qayıt
+        <ArrowLeft size={15} /> İstifadəçilərə qayıt
       </Link>
 
       {/* ── Profile header ── */}
-      <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          {user.imageUrl ? (
-            <Image
-              src={user.imageUrl}
-              alt={fullName}
-              width={64}
-              height={64}
-              className="rounded-full object-cover ring-2 ring-outline-variant/30 shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full editorial-gradient flex items-center justify-center shrink-0">
-              <span className="text-white text-xl font-black">{initial}</span>
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-extrabold text-primary tracking-tight font-headline">
-                {fullName}
-              </h1>
-              {isAdmin && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary-fixed/60 rounded-md text-xs font-black text-secondary uppercase tracking-widest">
-                  <Shield size={10} /> Admin
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-on-surface-variant font-medium mt-0.5">{email}</p>
-            <p className="font-mono text-sm text-on-surface-variant mt-1">{user.id}</p>
+      <header className="mb-6 flex flex-col gap-5 border-b border-ink pb-6 sm:flex-row sm:items-end">
+        {user.imageUrl ? (
+          <Image
+            src={user.imageUrl}
+            alt=""
+            width={60}
+            height={60}
+            className="h-15 w-15 shrink-0 rounded-full object-cover ring-1 ring-rule"
+          />
+        ) : (
+          <div className="flex h-15 w-15 shrink-0 items-center justify-center rounded-full bg-ink">
+            <span className="text-xl font-medium text-bg">{initial}</span>
           </div>
-          <div className="text-xs text-on-surface-variant space-y-1 sm:text-right shrink-0">
-            <p>
-              <span className="font-bold">Qeydiyyat:</span>{' '}
-              {new Date(user.createdAt).toLocaleString('az-AZ')}
-            </p>
-            <p>
-              <span className="font-bold">Son giriş:</span>{' '}
-              {user.lastSignInAt ? new Date(user.lastSignInAt).toLocaleString('az-AZ') : '—'}
-            </p>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="m-0 text-[28px] leading-tight font-light tracking-[-0.03em] text-ink">
+              {fullName}
+            </h1>
+            {isAdmin && (
+              <span className="inline-flex items-center rounded-full bg-ink px-2.5 py-1 font-mono text-[10px] tracking-[0.16em] text-bg uppercase">
+                Admin
+              </span>
+            )}
           </div>
+          <p className="m-0 mt-1.5 text-sm text-ink-soft">{email}</p>
+          <p className="m-0 mt-1 font-mono text-xs text-ink-mute">{user.id}</p>
         </div>
-      </div>
+        <div className="mono-label shrink-0 space-y-1 sm:text-right">
+          <p className="m-0">Qeydiyyat: {new Date(user.createdAt).toLocaleString('az-AZ')}</p>
+          <p className="m-0">
+            Son giriş: {user.lastSignInAt ? new Date(user.lastSignInAt).toLocaleString('az-AZ') : '—'}
+          </p>
+        </div>
+      </header>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        {stats.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="bg-white rounded-2xl border border-outline-variant/40 p-4 shadow-sm">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Icon size={12} className="text-on-surface-variant" />
-              <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest">{label}</p>
-            </div>
-            <p className="text-2xl font-black text-primary">{value}</p>
+      <div className="panel mb-6 grid grid-cols-1 gap-px overflow-hidden bg-rule sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map(({ label, value }) => (
+          <div key={label} className="bg-surface px-5 py-5">
+            <div className="figure text-[26px]">{value}</div>
+            <p className="mono-label m-0 mt-2.5">{label}</p>
           </div>
         ))}
       </div>
 
       {/* ── Active exam sessions ── */}
       {sessions.length > 0 && (
-        <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-extrabold text-primary font-headline mb-4 flex items-center gap-2">
-            <PlayCircle size={18} className="text-secondary" /> Aktiv Sessiyalar
-          </h2>
-          <div className="space-y-2">
-            {sessionViews.map((s) => (
+        <div className="panel mb-6">
+          <div className="panel-head">
+            <h2 className="panel-title">Aktiv sessiyalar</h2>
+          </div>
+          <div className="px-5">
+            {sessionViews.map((s, i) => (
               <div
                 key={s.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low border border-outline-variant/20"
+                className={`flex flex-wrap items-center justify-between gap-3 py-3.5 ${i > 0 ? 'border-t border-rule-soft' : ''}`}
               >
-                <div>
-                  <p className="text-sm font-bold text-primary">
+                <div className="min-w-0">
+                  <p className="m-0 text-sm font-medium text-ink">
                     {examTitles.get(s.examId) ?? s.examId}
                   </p>
-                  <p className="text-sm text-on-surface-variant">
+                  <p className="mono-label m-0 mt-1">
                     Başlanıb: {new Date(s.startedAt).toLocaleString('az-AZ')}
                   </p>
                 </div>
-                <span className={`flex items-center gap-1 text-xs font-bold ${s.overtime ? 'text-red-600' : 'text-emerald-700'}`}>
-                  <Clock size={13} />
+                <span className={`shrink-0 font-mono text-[13px] tabular-nums ${s.overtime ? 'text-error' : 'text-ok'}`}>
                   {formatDuration(Math.min(s.elapsed, s.totalSeconds))} / {formatDuration(s.totalSeconds)}
                   {s.overtime && ' (vaxt bitib)'}
                 </span>
@@ -209,76 +197,72 @@ export default async function AdminUserDetailPage({ params }: Props) {
       )}
 
       {/* ── Grant access ── */}
-      <div className="bg-white rounded-2xl border border-outline-variant/40 shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-extrabold text-primary font-headline mb-1 flex items-center gap-2">
-          <Gift size={18} className="text-secondary" /> Ödənişsiz Giriş Ver
-        </h2>
-        <p className="text-sm text-on-surface-variant font-medium mb-4">
-          Seçilmiş imtahana ödəniş olmadan tam giriş verilir. Qrant istənilən vaxt geri alına bilər.
-        </p>
-        <GrantAccessForm userId={user.id} exams={grantableExams} />
+      <div className="panel mb-6">
+        <div className="panel-head">
+          <h2 className="panel-title">Ödənişsiz giriş ver</h2>
+        </div>
+        <div className="panel-body">
+          <p className="m-0 mb-4 text-sm text-ink-soft">
+            Seçilmiş imtahana ödəniş olmadan tam giriş verilir. Qrant istənilən vaxt geri alına bilər.
+          </p>
+          <GrantAccessForm userId={user.id} exams={grantableExams} />
+        </div>
       </div>
 
       {/* ── Purchases / access ── */}
-      <div className="bg-white rounded-2xl border border-outline-variant/40 overflow-hidden shadow-sm mb-6">
-        <div className="px-6 pt-6 pb-2">
-          <h2 className="text-lg font-extrabold text-primary font-headline flex items-center gap-2">
-            <CreditCard size={18} className="text-secondary" /> İmtahan Girişləri
-          </h2>
+      <div className="panel mb-6 overflow-hidden">
+        <div className="panel-head">
+          <h2 className="panel-title">İmtahan girişləri</h2>
         </div>
         {purchases.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-on-surface-variant font-medium">
+          <p className="m-0 px-5 py-8 text-sm text-ink-soft">
             Hələ heç bir alış və ya qrant yoxdur.
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="app-table">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
-                  <th className="px-5 py-3 font-black">İmtahan</th>
-                  <th className="px-5 py-3 font-black">Mənbə</th>
-                  <th className="px-5 py-3 font-black">Status</th>
-                  <th className="px-5 py-3 font-black">Cəhd sayı</th>
-                  <th className="px-5 py-3 font-black">Tarix</th>
-                  <th className="px-5 py-3 font-black"></th>
+                <tr>
+                  <th>İmtahan</th>
+                  <th>Mənbə</th>
+                  <th>Status</th>
+                  <th>Cəhd sayı</th>
+                  <th>Tarix</th>
+                  <th></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/10">
+              <tbody>
                 {purchases.map((p) => {
                   // Legacy purchase docs may lack transactionId
                   const isGrant = (p.transactionId ?? '').startsWith(ADMIN_GRANT_PREFIX);
                   return (
-                    <tr key={String(p._id)} className="hover:bg-surface-container-low/60 transition-colors">
-                      <td className="px-5 py-3 text-sm font-semibold text-primary">
+                    <tr key={String(p._id)}>
+                      <td className="font-medium text-ink!">
                         {examTitles.get(p.examId) ?? p.examId}
                       </td>
-                      <td className="px-5 py-3">
+                      <td>
                         {isGrant ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary-fixed/60 rounded-md text-xs font-black text-secondary uppercase tracking-widest">
-                            <Gift size={10} /> Admin Qrantı
-                          </span>
+                          <span className="tag tag-accent whitespace-nowrap">Admin qrantı</span>
                         ) : (
-                          <span className="text-sm font-bold text-primary">
-                            {(p.amountCents / 100).toFixed(2)} {p.currency}
-                          </span>
+                          <span className="num">{(p.amountCents / 100).toFixed(2)} {p.currency}</span>
                         )}
                       </td>
-                      <td className="px-5 py-3">
+                      <td>
                         {p.status === 'COMPLETED' ? (
-                          <span className="flex items-center gap-1 text-xs font-bold text-emerald-700">
-                            <CheckCircle size={13} /> Aktiv
+                          <span className="flex items-center gap-2 text-[13px] whitespace-nowrap text-ok">
+                            <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> Aktiv
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-xs font-bold text-red-600">
-                            <XCircle size={13} /> {p.status}
+                          <span className="flex items-center gap-2 text-[13px] whitespace-nowrap text-error">
+                            <span className="h-1.5 w-1.5 rounded-full bg-error" aria-hidden /> {p.status}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-sm text-on-surface-variant">{p.attemptCount}</td>
-                      <td className="px-5 py-3 text-xs text-on-surface-variant">
+                      <td className="num">{p.attemptCount}</td>
+                      <td className="num text-xs whitespace-nowrap text-ink-mute!">
                         {new Date(p.createdAt).toLocaleString('az-AZ')}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="text-right">
                         {isGrant && p.status === 'COMPLETED' && (
                           <RevokeAccessButton userId={user.id} examId={p.examId} />
                         )}
@@ -293,58 +277,53 @@ export default async function AdminUserDetailPage({ params }: Props) {
       </div>
 
       {/* ── Exam history ── */}
-      <div className="bg-white rounded-2xl border border-outline-variant/40 overflow-hidden shadow-sm">
-        <div className="px-6 pt-6 pb-2">
-          <h2 className="text-lg font-extrabold text-primary font-headline flex items-center gap-2">
-            <Trophy size={18} className="text-secondary" /> İmtahan Tarixçəsi
-          </h2>
+      <div className="panel overflow-hidden">
+        <div className="panel-head">
+          <h2 className="panel-title">İmtahan tarixçəsi</h2>
         </div>
         {results.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-on-surface-variant font-medium">
+          <p className="m-0 px-5 py-8 text-sm text-ink-soft">
             Hələ tamamlanmış imtahan yoxdur.
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="app-table">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest border-b border-outline-variant/20">
-                  <th className="px-5 py-3 font-black">İmtahan</th>
-                  <th className="px-5 py-3 font-black">Cəhd</th>
-                  <th className="px-5 py-3 font-black">Bal</th>
-                  <th className="px-5 py-3 font-black">Modullar</th>
-                  <th className="px-5 py-3 font-black">Müddət</th>
-                  <th className="px-5 py-3 font-black">Tamamlanma</th>
+                <tr>
+                  <th>İmtahan</th>
+                  <th>Cəhd</th>
+                  <th>Bal</th>
+                  <th>Modullar</th>
+                  <th>Müddət</th>
+                  <th>Tamamlanma</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/10">
+              <tbody>
                 {results.map((r) => (
-                  <tr key={String(r._id)} className="hover:bg-surface-container-low/60 transition-colors">
-                    <td className="px-5 py-3">
-                      <p className="text-sm font-semibold text-primary">{r.examTitle}</p>
-                      <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest">{r.examTag}</p>
+                  <tr key={String(r._id)}>
+                    <td>
+                      <p className="m-0 font-medium text-ink">{r.examTitle}</p>
+                      <p className="mono-label m-0 mt-1">{r.examTag}</p>
                     </td>
-                    <td className="px-5 py-3 text-sm text-on-surface-variant">#{r.attemptNumber}</td>
-                    <td className="px-5 py-3">
-                      <span className={`inline-block px-2 py-1 rounded-lg text-sm font-black ${scoreColor(r.score)}`}>
+                    <td className="num">{r.attemptNumber}</td>
+                    <td>
+                      <span className={`tag font-mono tabular-nums ${scoreTag(r.score)}`}>
                         {r.score}%
                       </span>
                     </td>
-                    <td className="px-5 py-3">
+                    <td>
                       <div className="flex flex-wrap gap-1.5">
                         {(r.moduleScores ?? []).map((m) => (
-                          <span
-                            key={m.moduleIndex}
-                            className="px-2 py-0.5 rounded-md bg-surface-container-low border border-outline-variant/20 text-xs font-bold text-on-surface-variant"
-                          >
+                          <span key={m.moduleIndex} className="tag whitespace-nowrap">
                             {m.moduleName}: {m.scorePercent}%
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-xs text-on-surface-variant whitespace-nowrap">
+                    <td className="num text-xs whitespace-nowrap text-ink-mute!">
                       {formatDuration(r.durationSeconds)}
                     </td>
-                    <td className="px-5 py-3 text-xs text-on-surface-variant whitespace-nowrap">
+                    <td className="num text-xs whitespace-nowrap text-ink-mute!">
                       {new Date(r.completedAt).toLocaleString('az-AZ')}
                     </td>
                   </tr>
