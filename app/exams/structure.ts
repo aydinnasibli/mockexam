@@ -9,12 +9,17 @@ import type { PublicExam } from '@/lib/db/exams';
  *
  * Fills are in the order the design assigns them: ink, then the two secondary
  * greys. `figureClass` is the colour of the minute figure printed inside the
- * block — the fourth fill is pale enough that its figure flips to ink.
+ * block — past a point the fill is pale enough that its figure flips to ink.
+ *
+ * That flip belongs on the THIRD fill, not the fourth. Bone #FAFAF6 on #8A8A82
+ * measures 3.32:1, under the 4.5:1 floor for the 10px figure printed in the
+ * block; ink on the same fill measures 5.07:1. #55554F is the last fill that
+ * carries bone text (6.87:1).
  */
 const BAND_FILLS = [
   { fill: 'bg-[#1A1A1A]', figureClass: 'text-bg' },
   { fill: 'bg-[#55554F]', figureClass: 'text-bg' },
-  { fill: 'bg-[#8A8A82]', figureClass: 'text-bg' },
+  { fill: 'bg-[#8A8A82]', figureClass: 'text-ink' },
   { fill: 'bg-[#C8C5BC]', figureClass: 'text-ink' },
 ];
 

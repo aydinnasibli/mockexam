@@ -108,7 +108,21 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── HERO ── */}
         <section className="overflow-hidden">
-          <div className="mx-auto grid w-full max-w-320 grid-cols-1 items-start gap-14 px-6 pt-14 pb-20 lg:grid-cols-[600px_1fr] lg:gap-16 lg:px-10 lg:pt-22 lg:pb-26">
+          {/* Two even columns, not a fixed 600px left track. A fixed left
+              column starves the canvas: it only had room for the full
+              composition above ~1400px, so from 1024 to 1400 this section's
+              `overflow-hidden` amputated it — at 1024 the exam card lost 335 of
+              its 536px, cutting the question mid-formula. `grid-cols-2` is
+              `repeat(2, minmax(0, 1fr))`, so both tracks shrink together and
+              the 88px headline can't force a min-content floor back in.
+
+              `lg:pb-14` rather than `pb-26`: the hero used to run 108–900px at
+              1440x900, putting the programme strip's first pixel at exactly
+              901. A visitor searching for "IELTS sınaq" got a headline naming
+              no exam and never saw the list that answers them. The subhead
+              withholding programme names is a sound decision, but it only works
+              if the honest list is in the fold rather than one pixel under it. */}
+          <div className="mx-auto grid w-full max-w-320 grid-cols-1 items-start gap-14 px-6 pt-14 pb-20 lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pt-22 lg:pb-14">
 
             {/* Entrance timeline (INTERACTIONS §3): left column 700ms @0,
                 canvas 800ms @120ms, score card a second rise 800ms @300ms on
@@ -116,13 +130,20 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 ink card its delayed settle. */}
             <div className="anim-rise">
               <h1 className="m-0 mb-7 text-[52px] font-light leading-[0.94] tracking-[-0.042em] text-ink md:text-[72px] lg:text-[88px]">
-                Rəsmi<br />formatda<br /><span className="font-medium">sınaq.</span>
+                {/* The spaces before each <br /> are load-bearing. `<br>`
+                    contributes nothing to textContent, so without them the
+                    accessible name and the SEO-visible string both collapse to
+                    "Rəsmiformatdasınaq.". A trailing space before a forced
+                    break collapses visually, so the three lines are unchanged. */}
+                Rəsmi <br />formatda <br /><span className="font-medium">sınaq.</span>
               </h1>
 
               {/* Deliberately names no programme. There are six exam types, so
                   listing three undersold the catalogue — and the programme
                   strip immediately below this section already enumerates them
-                  with live counts, which is the honest place for the list. */}
+                  with live counts, which is the honest place for the list.
+                  That reasoning holds; what was wrong was the strip's position,
+                  not this sentence. See the hero's bottom padding below. */}
               <p className="m-0 mb-10 max-w-100 text-lg leading-[1.5] text-ink-soft lg:text-[21px]">
                 İmtahan gününü əvvəlcədən yaşayın.
               </p>
@@ -142,8 +163,15 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 </a>
               </div>
 
-              {/* Figure row */}
-              <div className="mt-14 flex items-end border-t border-ink lg:mt-18">
+              {/* Figure row. Cells stretch rather than bottom-align: the three
+                  labels don't wrap to the same number of lines ("Açıq sınaq"
+                  fits on one at 390px, "Analiz ölçüsü" and "Format uyğunluğu"
+                  take two), so `items-end` bottom-aligned the short cell and
+                  dropped its numeral 15px below the other two, with the hairline
+                  dividers ending at different heights. Stretching aligns the
+                  numerals, which is the row a page about precision has to get
+                  right. */}
+              <div className="mt-14 flex items-stretch border-t border-ink lg:mt-18">
                 <div className="flex-1 border-r border-rule pt-4.5 pr-4.5">
                   <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-[32px]">
                     {String(totalExams).padStart(2, "0")}
@@ -161,16 +189,36 @@ export default function HomeContent({ byType, totalExams }: Props) {
               </div>
             </div>
 
-            {/* Overlapping product composition. It only overlaps at lg, where
-                there is room for the canvas; below that the two cards stack in
-                normal flow and the preview is not cropped. */}
+            {/* Interlocking product composition: the two cards overlap on the
+                horizontal axis, the ink card jutting out to the left of the
+                inset preview. They are vertically adjacent, not stacked on top
+                of each other — the ink card must not cover the answer options.
+                Held in normal flow rather than by absolute offsets against a
+                fixed column height: the card heights are content-driven, so
+                absolute `top` values silently drift the moment the question
+                text wraps to another line or the column narrows. */}
+            {/* role="img" + a label, rather than leaving the mock UI as bare
+                text: none of it is real. A screen reader was reading all 25
+                fragments out as page content — an unanswerable maths question
+                and an invented score history, announced as fact. One accessible
+                name describes the picture instead. */}
             <div
-              className="anim-rise flex flex-col gap-6 lg:relative lg:block lg:h-150"
+              role="img"
+              aria-label="Sınaq ekranının nümunəsi: SAT riyaziyyat modulu, vaxt sayğacı və üç cəhd üzrə bal tərəqqisi qrafiki."
+              className="anim-rise flex flex-col gap-6 lg:relative lg:block"
               style={{ animationDuration: "800ms", animationDelay: "120ms" }}
             >
 
               {/* Exam UI preview */}
-              <div className="overflow-hidden rounded-[14px] border border-rule bg-surface shadow-[0_24px_64px_rgba(26,26,26,0.10),0_2px_6px_rgba(26,26,26,0.04)] lg:absolute lg:top-0 lg:left-26 lg:w-134">
+              {/* `w-full max-w-134` keeps the card at its 536px design width
+                  wherever there is room and lets it shrink where there isn't,
+                  instead of demanding 536px unconditionally. `ml-auto` spends
+                  whatever slack is left on the inset that steps this card right
+                  of the ink one. What is deliberately not reproduced is the old
+                  104px overhang past the container edge: that bleed is why this
+                  section needs `overflow-hidden`, and it is what became a 335px
+                  amputation once the viewport was too narrow to bleed into. */}
+              <div className="overflow-hidden rounded-[14px] border border-rule bg-surface shadow-[0_24px_64px_rgba(26,26,26,0.10),0_2px_6px_rgba(26,26,26,0.04)] lg:ml-auto lg:w-full lg:max-w-134">
                 <div className="flex items-center justify-between gap-4 bg-ink px-5 py-3.25">
                   <span className={`${MONO_LABEL} truncate text-bg/55`}>SAT · Math · Module II</span>
                   <span className="font-mono text-[13px] tabular-nums text-bg">32:14</span>
@@ -213,12 +261,16 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
               {/* Score-delta card */}
               <div
-                className="anim-rise rounded-[14px] bg-ink px-7 pt-6.5 pb-5.5 shadow-[0_24px_64px_rgba(26,26,26,0.22)] lg:absolute lg:top-71.5 lg:left-0 lg:w-94"
+                className="anim-rise rounded-[14px] bg-ink px-7 pt-6.5 pb-5.5 shadow-[0_24px_64px_rgba(26,26,26,0.22)] lg:relative lg:z-10 lg:mt-2 lg:w-full lg:max-w-94"
                 style={{ animationDuration: "800ms", animationDelay: "300ms" }}
               >
                 <div className="mb-5.5 flex items-baseline justify-between">
                   <span className={`${MONO_SECTION} text-bg/50`}>Bal tərəqqisi</span>
-                  <span className="font-mono text-[10px] tracking-[0.1em] text-bg/35">SAT</span>
+                  {/* /55 is the floor for 10px text on ink. globals.css raised
+                      `ink-mute` to #6E6E66 to clear 4.5:1 on the three page
+                      backgrounds; the ink surfaces were missed. /35 measured
+                      3.12, /40 measured 3.71, /45 measured 4.33 — all below AA. */}
+                  <span className="font-mono text-[10px] tracking-[0.1em] text-bg/55">SAT</span>
                 </div>
                 <div className="flex items-end gap-5">
                   <div>
@@ -234,7 +286,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       { score: "1364", height: "h-19",   fill: "bg-bg",    delay: "800ms",  dim: false },
                     ].map((bar) => (
                       <div key={bar.score} className="flex flex-1 flex-col justify-end gap-1.75">
-                        <span className={`text-center font-mono text-[10px] ${bar.dim ? "text-bg/45" : "text-bg"}`}>
+                        {/* `dim` now only holds back the BAR fill, not the
+                            numeral: a score a visitor is meant to read has to
+                            clear AA whether or not it is the latest attempt. */}
+                        <span className={`text-center font-mono text-[10px] ${bar.dim ? "text-bg/55" : "text-bg"}`}>
                           {bar.score}
                         </span>
                         <div className={`anim-grow ${bar.height} ${bar.fill}`} style={{ animationDelay: bar.delay }} />
@@ -242,7 +297,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                     ))}
                   </div>
                 </div>
-                <div className={`${MONO_LABEL} mt-3 flex justify-between border-t border-bg/16 pt-3 tracking-[0.12em] text-bg/40`}>
+                <div className={`${MONO_LABEL} mt-3 flex justify-between border-t border-bg/16 pt-3 tracking-[0.12em] text-bg/55`}>
                   <span>cəhd 01</span><span>02</span><span>03</span>
                 </div>
               </div>
@@ -464,7 +519,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
         <section id="numune" className="scroll-mt-5 bg-ink text-bg">
           <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
             <div className="grid gap-4 lg:grid-cols-[96px_1fr] lg:gap-8">
-              <div className={`${MONO_SECTION} text-bg/45 lg:pt-2.5`}>03</div>
+              {/* /55, matching the ink card's labels: this is the §03
+                  counterpart of the `text-ink-mute` section numbers on the bone
+                  sections, so it clears the same 4.5:1 bar they were raised to. */}
+              <div className={`${MONO_SECTION} text-bg/55 lg:pt-2.5`}>03</div>
               <div className="min-w-0">
                 <h2 className="m-0 mb-10 max-w-140 text-[32px] font-light leading-[1.04] tracking-[-0.035em] text-bg md:text-[44px] lg:mb-14">
                   Səhv → izahat.
@@ -537,7 +595,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                           i === 0 ? "border-t border-bg/25" : "border-t border-bg/14"
                         } ${i === rows.length - 1 ? "border-b border-bg/14" : ""}`}
                       >
-                        <span className="font-mono text-[11px] text-bg/45">{row.n}</span>
+                        <span className="font-mono text-[11px] text-bg/55">{row.n}</span>
                         <div>
                           <div className="mb-1 text-[17px] font-medium text-bg">{row.label}</div>
                           <div className="text-[15px] text-bg/60">{row.value}</div>

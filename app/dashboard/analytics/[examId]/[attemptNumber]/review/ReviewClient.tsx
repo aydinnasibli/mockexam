@@ -160,11 +160,11 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                 <span className="tag-ink text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-bg/10 text-bg/70 border-0">
                   {exam.tag}
                 </span>
-                <span className="text-bg/40 text-xs">·</span>
+                <span className="text-bg/55 text-xs">·</span>
                 <span className="text-bg/50 text-xs font-semibold">Cəhd #{result.attemptNumber}</span>
               </div>
               <h1 className="font-display text-xl font-bold text-bg">{exam.title}</h1>
-              <p className="text-bg/40 text-sm mt-1.5">
+              <p className="text-bg/55 text-sm mt-1.5">
                 {formatAzDate(result.completedAt)}
                 {' · '}{Math.floor(result.durationSeconds / 60)}:{String(result.durationSeconds % 60).padStart(2, '0')} dəq
               </p>

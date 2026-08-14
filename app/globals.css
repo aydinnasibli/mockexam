@@ -89,18 +89,19 @@
   --color-on-background:               #191c1e;
 
   /* ── Fonts ───────────────────────────────────────────────
-     Roboto serves both the display and body roles. The two tokens stay
-     separate so a display face can be reintroduced by editing this block
+     Archivo serves both the display and body roles. The two tokens stay
+     separate so a distinct display face can be introduced by editing this block
      alone — every component already asks for `font-display` or `font-sans`
-     rather than naming a family. */
-  --font-display: var(--font-roboto), system-ui, -apple-system, sans-serif;
-  --font-sans:    var(--font-roboto), system-ui, -apple-system, sans-serif;
+     rather than naming a family. See app/layout.tsx for why Archivo, and for
+     the Azerbaijani schwa coverage that ruled out the alternatives. */
+  --font-display: var(--font-archivo), system-ui, -apple-system, sans-serif;
+  --font-sans:    var(--font-archivo), system-ui, -apple-system, sans-serif;
   --font-mono:    var(--font-jetbrains-mono), ui-monospace, monospace;
 
   /* Legacy font aliases */
-  --font-body:     var(--font-roboto), system-ui, -apple-system, sans-serif;
-  --font-headline: var(--font-roboto), system-ui, -apple-system, sans-serif;
-  --font-label:    var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-body:     var(--font-archivo), system-ui, -apple-system, sans-serif;
+  --font-headline: var(--font-archivo), system-ui, -apple-system, sans-serif;
+  --font-label:    var(--font-archivo), system-ui, -apple-system, sans-serif;
 
   /* ── Sizing ──────────────────────────────────────────── */
   --radius-card: 16px;
@@ -198,7 +199,12 @@
     transition: border-color 0.2s;
   }
   .input-field:focus { border-color: var(--color-ink); }
-  .input-field::placeholder { color: var(--color-ink-faint); }
+  /* `ink-mute`, not `ink-faint`: placeholder text is read, and #C8C5BC measures
+     1.72:1 on white. #6E6E66 clears 4.5:1 and still reads clearly lighter than
+     the entered value (`--color-ink`), which is the distinction a placeholder
+     has to carry. Automated contrast checkers do not test ::placeholder, so
+     this one never shows up in an axe run. */
+  .input-field::placeholder { color: var(--color-ink-mute); }
   textarea.input-field { height: auto; padding: 0.75rem 0.875rem; }
 
   /* 11px, not the 10px of `.mono-label`: a form label is text the user has to
@@ -313,7 +319,8 @@
     transition: border-color 0.2s;
   }
   .input-new:focus { border-color: var(--color-ink); }
-  .input-new::placeholder { color: var(--color-ink-faint); }
+  /* See .input-field::placeholder above. */
+  .input-new::placeholder { color: var(--color-ink-mute); }
 
   /* Eyebrow text */
   .eyebrow {

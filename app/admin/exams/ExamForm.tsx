@@ -516,7 +516,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
             onChange={e => onUpdate({ name: e.target.value })}
             placeholder={`Modul ${index + 1} adı`}
             aria-label={`Modul ${index + 1} adı`}
-            className="w-full border-b border-transparent bg-transparent pb-1 text-sm font-medium text-ink transition-colors placeholder:font-normal placeholder:text-ink-faint focus:border-ink focus:outline-none"
+            className="w-full border-b border-transparent bg-transparent pb-1 text-sm font-medium text-ink transition-colors placeholder:font-normal placeholder:text-ink-mute focus:border-ink focus:outline-none"
           />
         </div>
 

@@ -141,7 +141,10 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
 
             {planned.length > 0 && (
               <div className="lg:pb-2.5">
-                <div className={`${MONO_LABEL} mb-3.5 text-bg/40`}>Hazırlanır</div>
+                {/* /55 is the floor for 10px bone text on ink: /40 measured
+                    3.71:1, under the 4.5:1 minimum this design already holds
+                    `ink-mute` to on the bone surfaces. */}
+                <div className={`${MONO_LABEL} mb-3.5 text-bg/55`}>Hazırlanır</div>
                 <div className="flex flex-wrap gap-1.5">
                   {planned.map((label) => (
                     <span
@@ -180,7 +183,10 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   <span className={`text-[15px] ${isActive ? 'font-medium' : ''}`}>
                     {type === 'all' ? 'Hamısı' : shortLabel(type)}
                   </span>
-                  <span className={`font-mono text-xs tabular-nums ${isActive ? 'text-ink-mute' : 'text-bg/45'}`}>
+                  {/* The inactive count sits on ink; /45 measured 4.33:1 at
+                      12px, just under AA. A count the visitor is meant to read
+                      before choosing a filter has to clear it. */}
+                  <span className={`font-mono text-xs tabular-nums ${isActive ? 'text-ink-mute' : 'text-bg/55'}`}>
                     {pad2(count)}
                   </span>
                 </button>

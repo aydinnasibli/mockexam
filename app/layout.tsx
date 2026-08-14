@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto, JetBrains_Mono } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import { PostHogProvider, PostHogPageView } from '@posthog/next';
 import { Toaster } from 'sonner';
@@ -27,15 +27,28 @@ import "./globals.css";
  */
 /*
  * One family for both headings and body. The site previously paired a display
- * serif (Newsreader) with a separate body sans (Geist); Roboto now serves both
- * roles, so `--font-display` and `--font-sans` resolve to the same face.
- * The two tokens are kept distinct anyway — every call site already targets one
- * or the other, so reintroducing a display face later is a one-line change here
- * rather than an edit across every component.
+ * serif (Newsreader) with a body sans (Geist), then collapsed both roles onto
+ * Roboto. Roboto is Android's system UI font: on a page carrying no imagery,
+ * where an 88px headline is the entire visual argument, it reads as the absence
+ * of a choice rather than a choice.
+ *
+ * Archivo is drawn by Omnibus-Type for print and high-performance display work,
+ * so it holds its shape at Light 88px where Roboto goes slack, and still sets
+ * as a text face at 16px. That matches the brief this page is making: an
+ * official examination document, reproduced exactly.
+ *
+ * Azerbaijani coverage was verified against the rendered font rather than
+ * assumed from Google's subset metadata — Archivo carries Ə (U+018F) and
+ * ə (U+0259), which the schwa-less candidates (Sora has neither, Manrope has no
+ * uppercase Ə) silently substitute from a fallback face mid-word. ə appears 110
+ * times in the homepage alone, including in the first word of the headline.
+ *
+ * Archivo also exposes a `wdth` axis; it is deliberately NOT requested. Only
+ * `wght` is fetched by default, and nothing in this design varies width.
  */
-const roboto = Roboto({
+const archivo = Archivo({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-roboto",
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -125,7 +138,7 @@ export default function RootLayout({
   // egress destination for analytics we don't use.
   return (
     <ClerkProvider telemetry={false}>
-      <html lang="az" className={`${roboto.variable} ${mono.variable}`}>
+      <html lang="az" className={`${archivo.variable} ${mono.variable}`}>
         <head>
           {/*
             Kept in <head> rather than as a child of <body>: Clerk and PostHog

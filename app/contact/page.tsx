@@ -204,7 +204,7 @@ export default function ContactPage() {
                             required
                             autoComplete="name"
                             placeholder="Aysel Məmmədova"
-                            className="w-full border-none bg-transparent p-0 text-[17px] text-ink placeholder:text-ink-faint focus:ring-0 focus:outline-none"
+                            className="w-full border-none bg-transparent p-0 text-[17px] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                           />
                         </div>
 
@@ -220,7 +220,7 @@ export default function ContactPage() {
                             required
                             autoComplete="email"
                             placeholder="ad@nümunə.az"
-                            className="w-full border-none bg-transparent p-0 text-[17px] text-ink placeholder:text-ink-faint focus:ring-0 focus:outline-none"
+                            className="w-full border-none bg-transparent p-0 text-[17px] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -265,7 +265,7 @@ export default function ContactPage() {
                           required
                           onChange={(e) => setMessageLength(e.currentTarget.value.length)}
                           placeholder="Nə baş verdi? Hansı imtahan?"
-                          className="w-full resize-y border-none bg-transparent p-0 text-[17px] leading-[1.6] text-ink placeholder:text-ink-faint focus:ring-0 focus:outline-none"
+                          className="w-full resize-y border-none bg-transparent p-0 text-[17px] leading-[1.6] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                         />
                         {/* Only worth a line once the limit is actually in reach. */}
                         {messageLength > MESSAGE_MAX - 500 && (

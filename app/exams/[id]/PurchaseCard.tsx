@@ -115,7 +115,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
         </div>
 
         <div className="border-t border-bg/12 bg-bg/5 px-6.5 pt-4 pb-5">
-          <p className={`${MONO_LABEL} m-0 text-[10px] tracking-[0.12em] text-bg/45`}>
+          <p className={`${MONO_LABEL} m-0 text-[10px] tracking-[0.12em] text-bg/55`}>
             {hasPurchased ? 'giriş açıqdır · kabinetdə' : 'güvənli ödəniş · dərhal giriş'}
           </p>
         </div>

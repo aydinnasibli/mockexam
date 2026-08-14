@@ -378,7 +378,7 @@ export default async function DashboardPage({
                     {countdown.days === 0 ? 'Bugün!' : countdown.days === 1 ? 'gün qalıb' : 'gün qalır'}
                   </span>
                 </div>
-                <p className="mono-label mt-5 m-0 border-t border-bg/16 pt-3 text-bg/45">{countdown.dateStr}</p>
+                <p className="mono-label mt-5 m-0 border-t border-bg/16 pt-3 text-bg/55">{countdown.dateStr}</p>
                 {countdown.days <= 14 && (
                   <Link
                     href={`/exams?type=${countdown.type}`}
