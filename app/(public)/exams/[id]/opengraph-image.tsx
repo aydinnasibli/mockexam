@@ -8,8 +8,13 @@ export const contentType = 'image/png';
 
 // Prebuild one card per active exam rather than rendering on the first share.
 export async function generateStaticParams() {
-  const exams = await getActiveExams();
-  return exams.map((exam) => ({ id: exam.id }));
+  try {
+    const exams = await getActiveExams();
+    return exams.map((exam) => ({ id: exam.id }));
+  } catch {
+    // No database at build time (CI): render each card on first share.
+    return [];
+  }
 }
 
 /**

@@ -1,3 +1,4 @@
+import 'server-only';
 import dbConnect from '@/lib/mongodb';
 import QuestionModel from '@/lib/models/Question';
 

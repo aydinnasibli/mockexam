@@ -1,3 +1,5 @@
+import 'server-only';
+import { cache } from 'react';
 import dbConnect from '@/lib/mongodb';
 import ExamModel, { IModule } from '@/lib/models/Exam';
 
@@ -36,8 +38,19 @@ function serialize(m: IModule) {
   };
 }
 
+/*
+ * All three readers are wrapped in React's `cache()`, which memoises per
+ * request (or per prerender).
+ *
+ * Every one of them is called more than once while rendering a single page:
+ * `generateMetadata` and the page body both resolve the same exam, and /exams
+ * queries the catalog once for its canonical-URL decision and again for the
+ * list itself. Next dedupes `fetch`, but these go through Mongoose, so without
+ * this each duplicate was a second round-trip to the database.
+ */
+
 /** Returns all active exams, newest first. */
-export async function getActiveExams(): Promise<PublicExam[]> {
+export const getActiveExams = cache(async function getActiveExams(): Promise<PublicExam[]> {
   await dbConnect();
   const exams = await ExamModel.find({ isActive: true }).sort({ createdAt: -1 }).lean();
   return exams.map((e) => ({
@@ -53,10 +66,10 @@ export async function getActiveExams(): Promise<PublicExam[]> {
     updatedAt:      e.updatedAt,
     modules:        e.modules.map(serialize),
   }));
-}
+});
 
 /** Returns a single active exam by its examId, or null. */
-export async function getExamById(examId: string): Promise<PublicExam | null> {
+export const getExamById = cache(async function getExamById(examId: string): Promise<PublicExam | null> {
   await dbConnect();
   const e = await ExamModel.findOne({ examId, isActive: true }).lean();
   if (!e) return null;
@@ -73,10 +86,10 @@ export async function getExamById(examId: string): Promise<PublicExam | null> {
     updatedAt:      e.updatedAt,
     modules:        e.modules.map(serialize),
   };
-}
+});
 
 /** Returns any exam (including inactive) — used for checkout access checks etc. */
-export async function getExamByIdAdmin(examId: string): Promise<PublicExam | null> {
+export const getExamByIdAdmin = cache(async function getExamByIdAdmin(examId: string): Promise<PublicExam | null> {
   await dbConnect();
   const e = await ExamModel.findOne({ examId }).lean();
   if (!e) return null;
@@ -93,4 +106,4 @@ export async function getExamByIdAdmin(examId: string): Promise<PublicExam | nul
     updatedAt:      e.updatedAt,
     modules:        e.modules.map(serialize),
   };
-}
+});

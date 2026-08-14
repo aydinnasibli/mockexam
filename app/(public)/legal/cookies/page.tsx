@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
@@ -12,9 +10,7 @@ export const metadata: Metadata = pageMetadata({
 export default function CookiesPage() {
   return (
     <>
-      <Navbar />
-      <main>
-        <div className="max-w-215 mx-auto px-8 py-24">
+        <div className="shell-prose py-24">
 
           <div className="flex items-center gap-3 mb-8 rise">
             <span className="dot" />
@@ -24,7 +20,7 @@ export default function CookiesPage() {
           <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-4 rise rise-2">
             Son yenilənmə: 26 may 2026
           </p>
-          <p className="text-base leading-[1.7] mb-16 rise rise-2" style={{ color: 'var(--color-ink-soft)', maxWidth: '640px' }}>
+          <p className="mb-16 max-w-160 text-base leading-[1.7] text-ink-soft rise rise-2">
             Bu siyasət platformanın cookie fayllarından necə istifadə etdiyini izah edir.
           </p>
 
@@ -32,7 +28,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>01</span>
+                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">01</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Cookie nədir?</h2>
               </div>
               <div className="pl-13">
@@ -45,15 +41,14 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>02</span>
+                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">02</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">İstifadə etdiyimiz cookie-lər</h2>
               </div>
               <div className="pl-13 flex flex-col gap-6">
-                <div className="card-new" style={{ padding: '20px 24px' }}>
+                <div className="card-new px-6 py-5">
                   <div className="flex items-center gap-3 mb-3">
                     <span
-                      className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded"
-                      style={{ background: 'var(--color-accent-soft)', color: 'var(--color-ink)' }}
+                      className="rounded bg-accent-soft px-2 py-0.5 text-xs font-semibold tracking-wide uppercase text-ink"
                     >
                       Zəruri
                     </span>
@@ -63,19 +58,15 @@ export default function CookiesPage() {
                     Clerk autentifikasiya xidməti tərəfindən yerləşdirilir. Hesabınıza daxil olduğunuzu yadda saxlayır
                     və sessiya boyunca girişinizi qoruyur. Bu cookie-lər olmadan platforma işləmir — deaktiv edilə bilmir.
                   </p>
-                  <p className="text-sm mt-3" style={{ color: 'var(--color-ink-mute)' }}>
+                  <p className="mt-3 text-sm text-ink-mute">
                     Müddət: sessiya müddəti və ya çıxış edənə qədər.
                   </p>
                 </div>
 
-                <div
-                  className="card-new"
-                  style={{ padding: '20px 24px', opacity: 0.6 }}
-                >
+                <div className="card-new px-6 py-5 opacity-60">
                   <div className="flex items-center gap-3 mb-3">
                     <span
-                      className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded"
-                      style={{ background: 'var(--color-surface-3)', color: 'var(--color-ink-soft)' }}
+                      className="rounded bg-surface-3 px-2 py-0.5 text-xs font-semibold tracking-wide uppercase text-ink-soft"
                     >
                       Yoxdur
                     </span>
@@ -83,7 +74,7 @@ export default function CookiesPage() {
                       Analitik / reklam cookie-ləri
                     </span>
                   </div>
-                  <p className="text-sm leading-[1.7]" style={{ color: 'var(--color-ink-mute)' }}>
+                  <p className="text-sm leading-[1.7] text-ink-mute">
                     Platformada Google Analytics, Meta Pixel, reklam izləmə və ya istifadəçi davranışını
                     üçüncü tərəflərlə paylaşan heç bir cookie mövcud deyil.
                   </p>
@@ -93,7 +84,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>03</span>
+                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">03</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Cookie-ləri idarə etmək</h2>
               </div>
               <div className="pl-13">
@@ -109,7 +100,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>04</span>
+                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">04</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Üçüncü tərəf cookie-ləri</h2>
               </div>
               <div className="pl-13">
@@ -122,7 +113,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>05</span>
+                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">05</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Lokal yaddaş (localStorage / sessionStorage)</h2>
               </div>
               <div className="pl-13">
@@ -130,17 +121,17 @@ export default function CookiesPage() {
                   Cookie-lərlə yanaşı, platforma brauzer lokal yaddaşından da istifadə edir:
                 </p>
                 <p className="text-base leading-[1.75] mb-4">
-                  <strong style={{ color: 'var(--color-ink)' }}>sessionStorage</strong> — aktiv imtahan sessiyasının vəziyyəti (cari sual, vaxt qalığı). Brauzer nişanı bağlandıqda avtomatik silinir.
+                  <strong className="text-ink">sessionStorage</strong> — aktiv imtahan sessiyasının vəziyyəti (cari sual, vaxt qalığı). Brauzer nişanı bağlandıqda avtomatik silinir.
                 </p>
                 <p className="text-base leading-[1.75]">
-                  <strong style={{ color: 'var(--color-ink)' }}>localStorage və cookie</strong> — PostHog analitika və xəta izləyicisi anonim cihaz identifikatorunu saxlayır. Texniki xətaların diaqnostikası və istifadə statistikası üçün PostHog həmçinin sessiyaların maskalanmış təkrarını (session replay — bütün görünən mətn gizlədilir, reklam və ya profilləşdirmə üçün istifadə edilmir) qeydə alıb Avropa İttifaqındakı serverlərinə göndərə bilər. Brauzerinizdə “Do Not Track” aktivdirsə, bu izləmə tamamilə söndürülür.
+                  <strong className="text-ink">localStorage və cookie</strong> — PostHog analitika və xəta izləyicisi anonim cihaz identifikatorunu saxlayır. Texniki xətaların diaqnostikası və istifadə statistikası üçün PostHog həmçinin sessiyaların maskalanmış təkrarını (session replay — bütün görünən mətn gizlədilir, reklam və ya profilləşdirmə üçün istifadə edilmir) qeydə alıb Avropa İttifaqındakı serverlərinə göndərə bilər. Brauzerinizdə “Do Not Track” aktivdirsə, bu izləmə tamamilə söndürülür.
                 </p>
               </div>
             </div>
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>06</span>
+                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">06</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Əlaqə</h2>
               </div>
               <div className="pl-13">
@@ -152,8 +143,6 @@ export default function CookiesPage() {
 
           </div>
         </div>
-      </main>
-      <Footer />
     </>
   );
 }

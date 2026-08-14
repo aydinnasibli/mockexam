@@ -43,7 +43,7 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
     >
       {/* Brand — the public navbar's lockup at the public navbar's size. */}
       <div className="border-b border-rule px-5 py-5">
-        <Link href="/" onClick={onClose} className="flex items-center gap-2.25">
+        <Link href="/" onClick={onClose} className="-my-1 flex items-center gap-2.25 py-1">
           <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
           <span className="text-[19px] leading-none font-medium tracking-tight text-ink">
             Test<span className="font-light text-ink-soft">centre</span>
@@ -79,7 +79,7 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
           Sınaq əldə et <span className="arrow" aria-hidden>→</span>
         </Link>
         <SignOutButton>
-          <button className="w-full cursor-pointer text-left text-[13px] font-medium text-ink-mute transition-colors duration-150 hover:text-ink">
+          <button className="-my-1 w-full cursor-pointer py-1 text-left text-[13px] font-medium text-ink-mute transition-colors duration-150 hover:text-ink">
             Çıxış
           </button>
         </SignOutButton>

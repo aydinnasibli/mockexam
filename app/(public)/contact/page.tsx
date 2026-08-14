@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 import { sendContactMessage } from '@/lib/actions/contact';
@@ -77,15 +75,13 @@ export default function ContactPage() {
 
   return (
     <>
-      <Navbar />
-      <main>
 
         {/* ── Statement ── */}
-        <section className="mx-auto w-full max-w-320 px-6 pt-14 pb-12 lg:px-10 lg:pt-22 lg:pb-16">
+        <section className="shell pt-14 pb-12 lg:pt-22 lg:pb-16">
           <div className="grid items-end gap-8 lg:grid-cols-[1fr_400px] lg:gap-20">
             <div>
               <div className={`${MONO_SECTION} mb-6 text-ink-mute lg:mb-8`}>Əlaqə</div>
-              <h1 className="m-0 text-[52px] font-light leading-[0.94] tracking-[-0.045em] text-ink md:text-[72px] lg:text-[88px]">
+              <h1 className="m-0 text-[52px] font-light leading-[0.94] tracking-[-0.045em] text-ink md:text-7xl lg:text-[88px]">
                 Yazın.<br />
                 <span className="text-ink-soft">Oxuyan bir insandır.</span>
               </h1>
@@ -99,7 +95,7 @@ export default function ContactPage() {
         </section>
 
         {/* ── Channels ── */}
-        <section className="mx-auto w-full max-w-320 px-6 pb-16 lg:px-10 lg:pb-22">
+        <section className="shell pb-16 lg:pb-22">
           <StaggerContainer className="grid gap-x-12 sm:grid-cols-3">
             <StaggerItem className="border-t border-ink pt-5 pb-6">
               <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>E-poçt</div>
@@ -112,7 +108,10 @@ export default function ContactPage() {
               <button
                 type="button"
                 onClick={copyEmail}
-                className={`${MONO_LABEL} mt-3.5 cursor-pointer text-ink-mute transition-colors duration-150 hover:text-ink`}
+                /* mt-2 + py-1.5 reproduces the old 14px gap while lifting the
+                   hit box from 15px to 27px (WCAG 2.5.8); -mb-1.5 keeps the
+                   space below unchanged. */
+                className={`${MONO_LABEL} mt-2 -mb-1.5 cursor-pointer py-1.5 text-ink-mute transition-colors duration-150 hover:text-ink`}
               >
                 {copied ? '✓ Kopyalandı' : 'Ünvanı kopyala'}
               </button>
@@ -139,12 +138,12 @@ export default function ContactPage() {
 
         {/* ── The form ── */}
         <section className="border-t border-rule bg-surface-2">
-          <div className="mx-auto w-full max-w-320 px-6 py-16 lg:px-10 lg:py-24">
+          <div className="shell py-16 lg:py-24">
             <div className="grid gap-10 lg:grid-cols-[340px_1fr] lg:gap-20">
 
               <aside className="lg:sticky lg:top-28 lg:self-start">
                 <div className={`${MONO_SECTION} mb-5 text-ink-mute`}>Forma</div>
-                <h2 className="m-0 mb-4 text-[30px] font-light leading-[1.05] tracking-[-0.035em] text-ink md:text-[38px]">
+                <h2 className="m-0 mb-4 text-3xl font-light leading-[1.05] tracking-[-0.035em] text-ink md:text-[38px]">
                   Bir neçə sətir kifayətdir.
                 </h2>
                 <p className="m-0 mb-8 max-w-100 text-[15px] leading-[1.65] text-ink-soft">
@@ -157,8 +156,8 @@ export default function ContactPage() {
                     <div
                       key={item.label}
                       className={`flex items-baseline justify-between gap-4 py-3.5 ${
-                        i === 0 ? "border-t border-ink-faint" : "border-t border-[#E0DDD4]"
-                      } ${i === ASSURANCES.length - 1 ? "border-b border-[#E0DDD4]" : ""}`}
+                        i === 0 ? "border-t border-ink-faint" : "border-t border-rule-strong"
+                      } ${i === ASSURANCES.length - 1 ? "border-b border-rule-strong" : ""}`}
                     >
                       <dt className={`${MONO_LABEL} shrink-0 text-ink-mute`}>{item.label}</dt>
                       <dd className="m-0 text-right text-[15px] text-ink">{item.value}</dd>
@@ -168,7 +167,7 @@ export default function ContactPage() {
               </aside>
 
               <FadeUp y={12} className="min-w-0">
-                <div className="rounded-[16px] border border-rule bg-surface px-6 py-8 shadow-sm sm:px-9 sm:py-10 lg:px-11">
+                <div className="rounded-card border border-rule bg-surface px-6 py-8 shadow-sm sm:px-9 sm:py-10 lg:px-11">
                   {submitted ? (
                     <div className="py-6 sm:py-10">
                       <div className="mb-6 flex items-center gap-2.5">
@@ -243,7 +242,7 @@ export default function ContactPage() {
                                 className={`cursor-pointer rounded-full px-4 py-2.25 text-[13px] transition-colors duration-150 ${
                                   active
                                     ? "bg-ink font-medium text-bg"
-                                    : "border border-[#E0DDD4] text-ink-soft hover:border-ink hover:text-ink"
+                                    : "border border-rule-strong text-ink-soft hover:border-ink hover:text-ink"
                                 }`}
                               >
                                 {option}
@@ -279,7 +278,7 @@ export default function ContactPage() {
                         <button
                           type="submit"
                           disabled={sending}
-                          className="group inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] active:translate-y-px disabled:opacity-60"
+                          className="group inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-ink-hover active:translate-y-px disabled:opacity-60"
                         >
                           {sending ? 'Göndərilir…' : (<>Göndər <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span></>)}
                         </button>
@@ -300,8 +299,6 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
-      </main>
-      <Footer />
     </>
   );
 }

@@ -123,11 +123,10 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
       };
 
   return (
-    <main className="min-h-screen bg-bg">
-
+    <>
       {/* ── Ink masthead ── */}
       <div className="bg-ink text-bg">
-        <div className="mx-auto w-full max-w-320 px-6 pt-14 lg:px-10 lg:pt-19">
+        <div className="shell pt-14 lg:pt-19">
 
           <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:gap-20 lg:items-end">
             <div>
@@ -197,7 +196,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
       </div>
 
       {/* ── Register ── */}
-      <div className="mx-auto w-full max-w-320 px-6 pb-24 lg:px-10 lg:pb-32">
+      <div className="shell pb-24 lg:pb-32">
 
         {/* The register's four columns need the full 1280 container to keep
             their designed widths, so they arrive at xl; below that the row
@@ -267,12 +266,12 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                       <span className="font-mono text-[19px] tabular-nums text-ink">{examMinutes}</span>
                       <span className="font-mono text-[11px] tracking-[0.12em] uppercase text-ink-mute">dəq</span>
                     </span>
-                    <span className="h-4 w-px bg-[#E0DDD4]" />
+                    <span className="h-4 w-px bg-rule-strong" />
                     <span className="flex items-baseline gap-1.5">
                       <span className="font-mono text-[19px] tabular-nums text-ink">{exam.totalQuestions}</span>
                       <span className="font-mono text-[11px] tracking-[0.12em] uppercase text-ink-mute">sual</span>
                     </span>
-                    <span className="h-4 w-px bg-[#E0DDD4]" />
+                    <span className="h-4 w-px bg-rule-strong" />
                     <span className="font-mono text-[11px] tracking-[0.12em] uppercase text-ink-mute">
                       {exam.modules.length} {sectionNoun}
                     </span>
@@ -348,6 +347,6 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           </div>
         </div>
       </div>
-    </main>
+    </>
   );
 }

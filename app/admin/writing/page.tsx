@@ -28,7 +28,7 @@ export default async function AdminWritingPage() {
           { label: 'Status',           value: problems.length === 0 ? 'Təmiz' : 'Diqqət', warn: problems.length > 0 },
         ].map(({ label, value, warn }) => (
           <div key={label} className="bg-surface px-5 py-5">
-            <div className={`figure text-[30px] ${warn ? 'text-warn' : ''}`}>{value}</div>
+            <div className={`figure text-3xl ${warn ? 'text-warn' : ''}`}>{value}</div>
             <p className="mono-label m-0 mt-2.5">{label}</p>
           </div>
         ))}

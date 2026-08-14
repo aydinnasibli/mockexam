@@ -82,6 +82,26 @@ function loadSavedSession(examId: string): SavedSession | null {
   }
 }
 
+/**
+ * Matching answers are persisted as a JSON string per question. A corrupt entry
+ * must not take the whole restore — and with it the running exam — down, so
+ * each one is parsed defensively and a bad row is simply dropped.
+ */
+function parseMatchingAnswers(saved: [string, string][]): Array<[string, number[]]> {
+  const out: Array<[string, number[]]> = [];
+  for (const [id, raw] of saved) {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every(n => typeof n === 'number')) {
+        out.push([id, parsed]);
+      }
+    } catch {
+      // Drop this question's saved matching; it re-answers as unanswered.
+    }
+  }
+  return out;
+}
+
 function persistSession(examId: string, data: SavedSession) {
   try {
     localStorage.setItem(storageKey(examId), JSON.stringify(data));
@@ -133,7 +153,32 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   const [seenModules, setSeenModules] = useState<Set<number>>(new Set());
   const [moduleIntro, setModuleIntro] = useState<{ to: number; from: number | null } | null>(null);
 
-  const totalSeconds = exam.durationMinutes * 60;
+  /*
+   * The clock is derived from the last server sync, not counted up tick by tick.
+   *
+   * `setInterval(… s + 1 …)` loses time on two counts: browsers throttle timers
+   * in a background tab to about one firing a minute, and every firing is late
+   * by the amount of work on the main thread. A student who switched tabs for
+   * ten minutes came back to a clock that had advanced by ten *seconds* — free
+   * exam time, and an auto-submit that never fired on schedule. Anchoring to
+   * `Date.now()` against the server's own elapsed count means a tick can be
+   * skipped without any time being lost, and the value re-converges the moment
+   * the tab is foregrounded again.
+   */
+  const syncedAtRef    = useRef(0);   // Date.now() when the server reading was taken
+  const elapsedBaseRef = useRef(0);   // server-reported elapsed seconds at that moment
+
+  /** Records a server clock reading and shows it immediately. */
+  const syncClock = useCallback((serverElapsed: number) => {
+    elapsedBaseRef.current = Math.max(0, serverElapsed);
+    syncedAtRef.current = Date.now();
+    setElapsed(Math.max(0, serverElapsed));
+  }, []);
+
+  // The server stores the allowance when the session is created, so an exam
+  // edited mid-attempt cannot change the clock the submission is judged against.
+  const [serverTotalSeconds, setServerTotalSeconds] = useState<number | null>(null);
+  const totalSeconds = serverTotalSeconds ?? exam.durationMinutes * 60;
   const remaining    = Math.max(0, totalSeconds - elapsed);
 
   // Restores answers/flags/position saved by a previous visit, and reports the
@@ -144,7 +189,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     if (saved) {
       if (saved.answers?.length)     setAnswers(new Map(saved.answers));
       if (saved.openAnswers?.length) setOpenAnswers(new Map(saved.openAnswers));
-      if (saved.matchingAnswers?.length) setMatchingAnswers(new Map(saved.matchingAnswers.map(([k, v]) => [k, JSON.parse(v)])));
+      if (saved.matchingAnswers?.length) setMatchingAnswers(new Map(parseMatchingAnswers(saved.matchingAnswers)));
       if (saved.flagged?.length)     setFlagged(new Set(saved.flagged));
       if (
         typeof saved.currentIdx === 'number' &&
@@ -185,13 +230,14 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       // Reload mid-exam — resume straight into the running clock.
       startedAtRef.current  = new Date(peek.startedAt);
       qEnterTimeRef.current = Date.now();
-      setElapsed(peek.elapsed);
+      setServerTotalSeconds(peek.totalSeconds);
+      syncClock(peek.elapsed);
       restoreSavedAnswers();
       setSessionReady(true);
       setPhase('running');
     }
     void init();
-  }, [exam.id, router, restoreSavedAnswers]);
+  }, [exam.id, router, restoreSavedAnswers, syncClock]);
 
   // ── Start: the button on the briefing screen is what starts the clock ──────
   const startExam = useCallback(async () => {
@@ -205,18 +251,28 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     }
     startedAtRef.current  = new Date(result.startedAt);
     qEnterTimeRef.current = Date.now();
-    setElapsed(result.elapsed);
+    setServerTotalSeconds(result.totalSeconds);
+    syncClock(result.elapsed);
     setSeenModules(new Set([questions[0]?.moduleIndex ?? 0]));
     setSessionReady(true);
     setPhase('running');
     setStarting(false);
-  }, [exam.id, questions, starting]);
+  }, [exam.id, questions, starting, syncClock]);
 
   // ── Timer — only after server session is confirmed ────────────────────────
   useEffect(() => {
     if (!sessionReady) return;
-    const id = setInterval(() => setElapsed(s => s + 1), 1000);
-    return () => clearInterval(id);
+    const tick = () => setElapsed(
+      elapsedBaseRef.current + Math.floor((Date.now() - syncedAtRef.current) / 1000),
+    );
+    const id = setInterval(tick, 1000);
+    // A throttled background tab can be many minutes behind; recompute the
+    // moment it is looked at again rather than waiting for the next firing.
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
   }, [sessionReady]);
 
   // ── Persist answers to localStorage after every change ───────────────────
@@ -280,8 +336,17 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   }, [exam, router, answers, openAnswers, matchingAnswers, questions, recordCurrentQuestionTime]);
 
   // ── Auto-submit when time runs out ────────────────────────────────────────
+  /*
+   * Fires at most once. `handleSubmit` clears `submitting` on failure so the
+   * student can retry by hand, and without this guard that immediately
+   * re-satisfied the effect's condition — a submit/fail/submit loop that hammers
+   * the server, trips the rate limiter, and buries the screen in error toasts.
+   */
+  const autoSubmitted = useRef(false);
   useEffect(() => {
+    if (autoSubmitted.current) return;
     if (remaining <= 0 && !submitting && !submitted && sessionReady) {
+      autoSubmitted.current = true;
       const id = setTimeout(() => void handleSubmit(), 0);
       return () => clearTimeout(id);
     }
@@ -377,6 +442,18 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     qs: questions.filter(q => q.moduleIndex === modIdx),
   }));
 
+  /*
+   * Position of each question in the flat list. Both navigation grids render a
+   * button per question and previously called `questions.indexOf(q)` inside the
+   * loop, which is a full scan per button — quadratic in the question count, on
+   * every keystroke in an essay, for a 100+ question paper.
+   */
+  const indexById = useMemo(() => {
+    const map = new Map<string, number>();
+    questions.forEach((q, i) => map.set(q.id, i));
+    return map;
+  }, [questions]);
+
   function selectAnswer(questionId: string, optionIdx: number) {
     setAnswers(prev => new Map(prev).set(questionId, optionIdx));
   }
@@ -417,6 +494,24 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     }
   }
 
+  /*
+   * Escape closes the two dismissible overlays — the question navigator and the
+   * submit confirmation. Both were mouse-only: a keyboard user who opened the
+   * navigator mid-exam had no way back to the paper except tabbing to the close
+   * button. The module hand-over card is deliberately excluded; it is an
+   * acknowledgement, not something to dismiss by reflex.
+   */
+  useEffect(() => {
+    if (!showGrid && !showConfirm) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      setShowGrid(false);
+      setShowConfirm(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showGrid, showConfirm]);
+
   function dismissModuleIntro() {
     if (moduleIntro == null) return;
     setSeenModules(prev => new Set(prev).add(moduleIntro.to));
@@ -429,8 +524,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
   // there is no clock and no session — nothing to show a question against.
   if (phase !== 'running') {
     return (
-      <div className="min-h-dvh flex flex-col" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
-        <header className="h-14 md:h-16 px-4 md:px-8 flex items-center shrink-0" style={{ borderBottom: "1px solid var(--color-rule)" }}>
+      <div className="min-h-dvh flex flex-col bg-bg text-ink">
+        <header className="h-14 md:h-16 px-4 md:px-8 flex items-center shrink-0 border-b border-rule">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="dot" />
             <span className="font-display text-lg font-normal text-ink">Test<span>centre</span></span>
@@ -440,9 +535,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         {phase === 'loading' ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <span
-              className="w-9 h-9 rounded-full animate-spin"
-              style={{ border: "3px solid var(--color-rule)", borderTopColor: "var(--color-ink)" }}
-            />
+              className="w-9 h-9 rounded-full animate-spin border-[3px] border-rule border-t-ink" />
             <p className="text-sm">Hazırlanır…</p>
           </div>
         ) : (
@@ -465,20 +558,20 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               </p>
 
               {/* Headline numbers */}
-              <div className="grid grid-cols-3 gap-4 border-y py-6 mb-8" style={{ borderColor: "var(--color-rule)" }}>
+              <div className="grid grid-cols-3 gap-4 border-y py-6 mb-8 border-rule">
                 <div>
                   <div className="eyebrow mb-2">Müddət</div>
                   <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
-                    {exam.durationMinutes}<span className="text-sm ml-1" style={{ color: "var(--color-ink-mute)" }}>dəq</span>
+                    {exam.durationMinutes}<span className="text-sm ml-1 text-ink-mute">dəq</span>
                   </div>
                 </div>
-                <div className="border-l pl-5" style={{ borderColor: "var(--color-rule)" }}>
+                <div className="border-l pl-5 border-rule">
                   <div className="eyebrow mb-2">Sual</div>
                   <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
                     {questions.length}
                   </div>
                 </div>
-                <div className="border-l pl-5" style={{ borderColor: "var(--color-rule)" }}>
+                <div className="border-l pl-5 border-rule">
                   <div className="eyebrow mb-2">Bölmə</div>
                   <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
                     {exam.modules.length}
@@ -494,23 +587,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   return (
                     <li
                       key={modIdx}
-                      className="flex items-start gap-4 p-4 rounded-2xl"
-                      style={{ background: "var(--color-surface)", border: "1px solid var(--color-rule)" }}
-                    >
+                      className="flex items-start gap-4 p-4 rounded-2xl border border-rule bg-surface">
                       <span
-                        className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
-                        style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}
-                      >
+                        className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-surface-2 text-ink-soft">
                         <Icon size={16} />
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="font-mono text-xs" style={{ color: "var(--color-ink-mute)" }}>
+                          <span className="font-mono text-xs text-ink-mute">
                             {String(modIdx + 1).padStart(2, '0')}
                           </span>
                           <span className="text-sm font-medium text-ink">{mod.name}</span>
                         </div>
-                        <p className="text-sm mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                        <p className="text-sm mt-1 m-0 text-ink-mute">
                           {qs.length > 0 ? `${qs.length} sual` : 'Açıq tapşırıq'}
                           {mod.durationMinutes > 0 && ` · təxminən ${mod.durationMinutes} dəq`}
                         </p>
@@ -527,11 +616,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
               {/* Rules */}
               <div
-                className="rounded-2xl p-5 mb-8"
-                style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}
-              >
+                className="rounded-2xl p-5 mb-8 border border-rule bg-surface-2">
                 <div className="flex items-center gap-2 mb-3">
-                  <TriangleAlert size={14} style={{ color: "var(--color-warn)" }} />
+                  <TriangleAlert size={14} className="text-warn" />
                   <span className="eyebrow">Başlamazdan əvvəl</span>
                 </div>
                 <ul className="list-none p-0 m-0 space-y-2 text-xs leading-relaxed">
@@ -561,7 +648,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 </Link>
               </div>
               {hasNoQuestions && (
-                <p className="text-sm mt-3 m-0" style={{ color: "var(--color-warn)" }}>
+                <p className="text-sm mt-3 m-0 text-warn">
                   Bu imtahan üçün sual bankı hələ hazırlanır.
                 </p>
               )}
@@ -580,15 +667,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     // exam session is the boundary rather than individual question nodes:
     // paid question banks, passages and student answers all live in here, and a
     // per-element list would silently miss whatever gets added next.
-    <div data-ph-mask className="select-none min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
+    <div data-ph-mask className="select-none min-h-screen bg-bg text-ink">
 
       {/* ── Submitting overlay — instant feedback while the result saves + results page loads ── */}
       {submitting && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 px-6" style={{ background: "var(--color-bg)" }}>
+        <div className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-5 px-6 bg-bg">
           <span
-            className="w-11 h-11 rounded-full animate-spin"
-            style={{ border: "3px solid var(--color-rule)", borderTopColor: "var(--color-ink)" }}
-          />
+            className="w-11 h-11 rounded-full animate-spin border-[3px] border-rule border-t-ink" />
           <div className="text-center">
             <p className="font-display text-lg font-medium text-ink mb-1">İmtahan tamamlandı</p>
             <p className="text-sm">Nəticələr hazırlanır…</p>
@@ -622,9 +707,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-90 flex items-center justify-center p-5 overflow-y-auto"
-              style={{ background: "var(--color-bg)" }}
-              role="dialog"
+              className="fixed inset-0 z-90 flex items-center justify-center p-5 overflow-y-auto bg-bg" 
+role="dialog"
               aria-modal="true"
               aria-label={`${to.name} bölməsi başlayır`}
             >
@@ -635,11 +719,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 className="w-full max-w-lg text-center"
               >
                 {from && (
-                  <div className="mb-8 pb-8" style={{ borderBottom: "1px solid var(--color-rule)" }}>
-                    <CheckCircle2 size={20} className="mx-auto mb-3" style={{ color: "var(--color-ok)" }} />
+                  <div className="mb-8 pb-8 border-b border-rule">
+                    <CheckCircle2 size={20} className="mx-auto mb-3 text-ok"  />
                     <p className="text-sm font-medium text-ink m-0">{from.name} bölməsi bitdi</p>
                     {fromQs.length > 0 && (
-                      <p className="text-sm mt-1 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                      <p className="text-sm mt-1 m-0 text-ink-mute">
                         {fromQs.length} sualdan {fromDone}-i cavablandırıldı
                       </p>
                     )}
@@ -647,9 +731,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 )}
 
                 <span
-                  className="inline-flex w-14 h-14 rounded-2xl items-center justify-center mb-5"
-                  style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
-                >
+                  className="inline-flex w-14 h-14 rounded-2xl items-center justify-center mb-5 bg-ink text-bg">
                   <Icon size={22} />
                 </span>
 
@@ -668,9 +750,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
                 {to.instructions && (
                   <div
-                    className="rounded-2xl p-4 mb-7 text-left"
-                    style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}
-                  >
+                    className="rounded-2xl p-4 mb-7 text-left border border-rule bg-surface-2">
                     <p className="eyebrow mb-2">Təlimat</p>
                     <p className="text-sm leading-relaxed m-0">
                       {to.instructions}
@@ -681,7 +761,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 <button onClick={dismissModuleIntro} className="btn-primary justify-center py-3.5 px-8 text-base">
                   Davam et <ArrowRight size={17} />
                 </button>
-                <p className="text-sm mt-4 m-0" style={{ color: "var(--color-ink-mute)" }}>
+                <p className="text-sm mt-4 m-0 text-ink-mute">
                   Vaxt işləməyə davam edir.
                 </p>
               </motion.div>
@@ -691,7 +771,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       </AnimatePresence>
 
       {/* ── Top bar ── */}
-      <header className="fixed top-0 w-full z-50 nav-frosted" style={{ borderBottom: "1px solid var(--color-rule)" }}>
+      <header className="fixed top-0 w-full z-50 nav-frosted border-b border-rule">
         <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-6">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
             <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
@@ -700,7 +780,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                 Test<span>centre</span>
               </span>
             </Link>
-            <div className="h-5 w-px shrink-0 hidden sm:block" style={{ background: "var(--color-rule)" }} />
+            <div className="h-5 w-px shrink-0 hidden sm:block bg-rule"  />
             <div className="flex flex-col min-w-0">
               <span className="eyebrow hidden sm:block">İmtahan Rejimi</span>
               <span className="text-sm font-medium text-ink leading-tight max-w-30 md:max-w-50 truncate">
@@ -739,22 +819,23 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             <div
               role="timer"
               aria-label="Qalan vaxt"
+              /* The urgent tint is `rgba(162,58,46,.08)` verbatim, not `bg-error/8`:
+                 --color-error is #8C3A2B (140,58,43), a different red, so a token
+                 swap here would silently restyle the last five minutes of an exam. */
               className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-full transition-all ${
-                remaining < 300 ? 'animate-pulse' : ''
+                remaining < 300
+                  ? 'animate-pulse border-error bg-[rgba(162,58,46,0.08)]'
+                  : 'border-rule bg-surface'
               }`}
-              style={{
-                background: remaining < 300 ? "rgba(162,58,46,0.08)" : "var(--color-surface)",
-                borderColor: remaining < 300 ? "var(--color-error)" : "var(--color-rule)",
-              }}
             >
               <Timer
                 size={14}
                 aria-hidden="true"
-                style={{ color: remaining < 300 ? "var(--color-error)" : "var(--color-ink-soft)" }}
+                className={remaining < 300 ? 'text-error' : 'text-ink-soft'}
               />
-              <span className="font-mono tabular-nums text-xs md:text-sm" style={{
-                color: remaining < 300 ? "var(--color-error)" : "var(--color-ink)",
-              }}>
+              <span className={`font-mono tabular-nums text-xs md:text-sm ${
+                remaining < 300 ? 'text-error' : 'text-ink'
+              }`}>
                 {sessionReady ? formatTime(remaining) : '--:--'}
               </span>
             </div>
@@ -772,10 +853,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
         </div>
 
         {!hasNoQuestions && (
-          <div className="h-0.5 w-full" style={{ background: "var(--color-rule-soft)" }}>
+          <div className="h-0.5 w-full bg-rule-soft">
             <div
-              className="h-full transition-all duration-500 ease-out"
-              style={{ width: `${(answeredCount / questions.length) * 100}%`, background: "var(--color-ink)" }}
+              // A computed percentage cannot be a utility class; the colour can.
+              className="h-full bg-ink transition-all duration-500 ease-out"
+              style={{ width: `${(answeredCount / questions.length) * 100}%` }}
             />
           </div>
         )}
@@ -784,18 +866,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       {/* ── Question grid overlay ── */}
       {showGrid && (
         <div
-          className="fixed inset-0 z-40 pt-14 md:pt-16"
-          style={{ background: "rgba(26,26,26,0.2)" }}
-          onClick={() => setShowGrid(false)}
+          className="fixed inset-0 z-40 pt-14 md:pt-16 bg-ink/20" 
+onClick={() => setShowGrid(false)}
         >
           <div
-            className="absolute right-0 top-14 md:top-16 bottom-0 w-full max-w-xs overflow-y-auto"
-            style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-lg)" }}
-            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="question-nav-title"
+            className="absolute right-0 top-14 md:top-16 bottom-0 w-full max-w-xs overflow-y-auto bg-surface shadow-lg" 
+onClick={e => e.stopPropagation()}
           >
-            <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-rule)" }}>
+            <div className="p-4 flex items-center justify-between border-b border-rule">
               <div>
-                <p className="text-sm font-medium text-ink">Sual navigasiyası</p>
+                <p id="question-nav-title" className="text-sm font-medium text-ink">Sual navigasiyası</p>
                 <p className="text-sm mt-0.5">
                   {answeredCount}/{questions.length} cavablandı
                   {flagged.size > 0 && ` · ${flagged.size} işarəli`}
@@ -815,7 +898,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   <p className="eyebrow mb-2">{mod.name}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {qs.map(q => {
-                      const globalIdx  = questions.indexOf(q);
+                      const globalIdx  = indexById.get(q.id) ?? 0;
                       const isAnswered = q.type === 'mcq' ? answers.has(q.id)
                         : (q.type === 'open' || q.type === 'writing') ? !!(openAnswers.get(q.id)?.trim())
                         : q.type === 'matching' ? matchingAnswers.has(q.id)
@@ -828,36 +911,36 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                           onClick={() => goTo(globalIdx)}
                           aria-current={isCurrent ? 'true' : undefined}
                           aria-label={`Sual ${globalIdx + 1}${isAnswered ? ' — cavablandırılıb' : ' — cavablandırılmayıb'}${isFlagged ? ', işarələnib' : ''}`}
-                          className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${isCurrent ? 'ring-2 ring-offset-1' : ''}`}
-                          style={{
-                            background: isAnswered
-                              ? isFlagged ? "var(--color-warn)" : "var(--color-ink)"
-                              : isFlagged ? "rgba(184,115,43,0.1)" : "var(--color-surface-2)",
-                            color: isAnswered ? "var(--color-bg)"
-                              : isFlagged ? "var(--color-warn)" : "var(--color-ink-soft)",
-                            border: isFlagged && !isAnswered ? "1px solid var(--color-warn)" : "none",
-                          }}
+                          className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                            isCurrent ? 'ring-2 ring-offset-1' : ''
+                          } ${
+                            isAnswered
+                              ? isFlagged ? 'bg-warn text-bg' : 'bg-ink text-bg'
+                              : isFlagged
+                                ? 'border border-warn bg-warn/10 text-warn'
+                                : 'bg-surface-2 text-ink-soft'
+                          }`}
                         >
                           {globalIdx + 1}
                         </button>
                       );
                     })}
                     {qs.length === 0 && (
-                      <p className="text-sm" style={{ color: "var(--color-ink-mute)" }}>Bu modulda sual yoxdur</p>
+                      <p className="text-sm text-ink-mute">Bu modulda sual yoxdur</p>
                     )}
                   </div>
                 </div>
               ))}
             </div>
-            <div className="p-4 flex flex-wrap gap-3 text-xs" style={{ borderTop: "1px solid var(--color-rule)", color: "var(--color-ink-soft)" }}>
+            <div className="p-4 flex flex-wrap gap-3 text-xs border-t border-rule text-ink-soft">
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded inline-block" style={{ background: "var(--color-ink)" }} /> Cavablandı
+                <span className="w-3 h-3 rounded inline-block bg-ink"  /> Cavablandı
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded inline-block" style={{ background: "var(--color-warn)" }} /> İşarəli
+                <span className="w-3 h-3 rounded inline-block bg-warn"  /> İşarəli
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded inline-block" style={{ background: "var(--color-surface-2)" }} /> Cavabsız
+                <span className="w-3 h-3 rounded inline-block bg-surface-2"  /> Cavabsız
               </span>
             </div>
           </div>
@@ -866,31 +949,33 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
       {/* ── Confirm submit dialog ── */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(26,26,26,0.4)" }}>
-          <div className="rounded-2xl p-6 md:p-8 max-w-sm w-full text-center" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-lg)" }}>
-            <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "var(--color-accent-soft)" }}>
-              <CheckCircle2 style={{ color: "var(--color-ink)" }} size={24} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submit-confirm-title"
+            className="rounded-2xl p-6 md:p-8 max-w-sm w-full text-center bg-surface shadow-lg">
+            <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center bg-accent-soft">
+              <CheckCircle2 className="text-ink" size={24} />
             </div>
-            <h3 className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-3">İmtahanı bitirirsiniz?</h3>
+            <h3 id="submit-confirm-title" className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-3">İmtahanı bitirirsiniz?</h3>
             <div className="text-sm mb-2">
               <p>
                 <span className="font-medium text-ink">{answeredCount}</span> / {questions.length} sual cavablandı.
               </p>
               {questions.length - answeredCount > 0 && (
-                <p className="mt-1 font-medium" style={{ color: "var(--color-warn)" }}>
+                <p className="mt-1 font-medium text-warn">
                   {questions.length - answeredCount} sual cavabsız qalır.
                 </p>
               )}
             </div>
-            <p className="text-sm mb-6" style={{ color: "var(--color-ink-mute)" }}>
+            <p className="text-sm mb-6 text-ink-mute">
               Bu əməliyyat geri qaytarıla bilməz.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors"
-                style={{ border: "1px solid var(--color-rule)", color: "var(--color-ink-soft)" }}
-              >
+                className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors border border-rule text-ink-soft">
                 Davam et
               </button>
               <button
@@ -909,7 +994,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
       {hasNoQuestions ? (
         <main className="pt-14 md:pt-16 min-h-screen flex items-center justify-center">
           <div className="text-center max-w-sm px-6">
-            <BookOpen className="mx-auto mb-4" style={{ color: "var(--color-ink-mute)" }} size={48} />
+            <BookOpen className="mx-auto mb-4 text-ink-mute"  size={48} />
             <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-2">Suallar hələ əlavə edilməyib</h2>
             <p className="text-sm mb-6 leading-relaxed">
               Bu imtahan üçün sual bankı hazırlanır. Tezliklə əlçatan olacaq.
@@ -929,14 +1014,12 @@ export default function ExamSessionClient({ exam, questions }: Props) {
             split view left a permanently empty half-screen next to them.
           */}
           <section
-            className={`${hasSidePanel ? 'hidden md:flex' : 'hidden'} md:w-[45%] flex-col overflow-hidden`}
-            style={{ borderRight: "1px solid var(--color-rule)", background: "var(--color-surface)" }}
-          >
-            <div className="px-6 py-3 flex justify-between items-center shrink-0" style={{ borderBottom: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}>
+            className={`border-r border-rule bg-surface ${hasSidePanel ? 'hidden md:flex' : 'hidden'} md:w-[45%] flex-col overflow-hidden`}>
+            <div className="px-6 py-3 flex justify-between items-center shrink-0 border-b border-rule bg-surface-2">
               <div className="flex items-center gap-2">
                 <span className="eyebrow">{currentModule?.name ?? 'Modul'}</span>
                 {exam.modules.length > 1 && current && (
-                  <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-surface-3)", color: "var(--color-ink-soft)" }}>
+                  <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-surface-3 text-ink-soft">
                     {current.moduleIndex + 1}/{exam.modules.length}
                   </span>
                 )}
@@ -964,9 +1047,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   */}
                   {passageGroup && passageGroup.size > 1 && (
                     <div
-                      className="flex items-center justify-between gap-3 mb-5 pb-4"
-                      style={{ borderBottom: "1px solid var(--color-rule)" }}
-                    >
+                      className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-rule">
                       <span className="eyebrow">Bu mətnə aid {passageGroup.size} sual</span>
                       <span className="font-mono tabular-nums text-xs">
                         {passageGroup.position} / {passageGroup.size}
@@ -992,9 +1073,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         width={0}
                         height={0}
                         sizes="(max-width: 768px) 100vw, 50vw"
-                        className="w-full h-auto rounded-xl shadow-sm"
-                        style={{ border: "1px solid var(--color-rule)" }}
-                      />
+                        className="w-full h-auto rounded-xl shadow-sm border border-rule" />
                     </div>
                   )}
                   {currentPassage && (
@@ -1020,7 +1099,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       {questions
                         .filter(q => q.moduleIndex === current?.moduleIndex)
                         .map(q => {
-                          const idx        = questions.indexOf(q);
+                          const idx        = indexById.get(q.id) ?? 0;
                           const isAnswered = q.type === 'mcq' ? answers.has(q.id)
                             : (q.type === 'open' || q.type === 'writing') ? !!(openAnswers.get(q.id)?.trim())
                             : q.type === 'matching' ? matchingAnswers.has(q.id)
@@ -1031,14 +1110,13 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                             <button
                               key={q.id}
                               onClick={() => goTo(idx)}
-                              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${isCurrent ? 'ring-2 ring-offset-1' : ''}`}
-                              style={{
-                                background: isAnswered
-                                  ? isFlagged ? "var(--color-warn)" : "var(--color-ink)"
-                                  : isFlagged ? "rgba(184,115,43,0.1)" : "var(--color-surface-2)",
-                                color: isAnswered ? "var(--color-bg)"
-                                  : isFlagged ? "var(--color-warn)" : "var(--color-ink-soft)",
-                              }}
+                              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                                isCurrent ? 'ring-2 ring-offset-1' : ''
+                              } ${
+                                isAnswered
+                                  ? isFlagged ? 'bg-warn text-bg' : 'bg-ink text-bg'
+                                  : isFlagged ? 'bg-warn/10 text-warn' : 'bg-surface-2 text-ink-soft'
+                              }`}
                             >
                               {idx + 1}
                             </button>
@@ -1052,42 +1130,38 @@ export default function ExamSessionClient({ exam, questions }: Props) {
           </section>
 
           {/* ── Right panel — question ── */}
-          <section className="flex-1 flex flex-col overflow-hidden" style={{ background: "var(--color-surface)" }}>
+          <section className="flex-1 flex flex-col overflow-hidden bg-surface">
 
             {/* Mobile audio player */}
             {moduleAudioUrl && (
-              <div className="md:hidden p-4 shrink-0 z-10" style={{ background: "var(--color-surface-2)", borderBottom: "1px solid var(--color-rule)" }}>
+              <div className="md:hidden p-4 shrink-0 z-10 border-b border-rule bg-surface-2">
                 <StrictAudioPlayer src={moduleAudioUrl} examId={exam.id} />
               </div>
             )}
 
             {/* Mobile: tab switcher between passage and question */}
             {currentPassage && (
-              <div className="md:hidden shrink-0" style={{ borderBottom: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}>
+              <div className="md:hidden shrink-0 border-b border-rule bg-surface-2">
                 <div className="flex">
                   <button
                     onClick={() => setShowPassage(false)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-b-2 transition-colors"
-                    style={{
-                      borderColor: !showPassage ? "var(--color-ink)" : "transparent",
-                      color: !showPassage ? "var(--color-ink)" : "var(--color-ink-soft)",
-                    }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+                      !showPassage ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
+                    }`}
                   >
                     <CheckCircle2 size={13} /> Sual
                   </button>
                   <button
                     onClick={() => setShowPassage(true)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-b-2 transition-colors"
-                    style={{
-                      borderColor: showPassage ? "var(--color-ink)" : "transparent",
-                      color: showPassage ? "var(--color-ink)" : "var(--color-ink-soft)",
-                    }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+                      showPassage ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
+                    }`}
                   >
                     <FileText size={13} /> Mətn
                   </button>
                 </div>
                 {showPassage && (
-                  <div className="overflow-y-auto px-4 py-4 max-h-[50vh]" style={{ borderTop: "1px solid var(--color-rule)" }}>
+                  <div className="overflow-y-auto px-4 py-4 max-h-[50vh] border-t border-rule">
                     <div className="passage-body text-ink max-w-none">
                       <PassageText text={currentPassage} />
                     </div>
@@ -1136,7 +1210,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   <div className="flex items-center gap-2 mb-3 md:hidden">
                     <span className="eyebrow">{currentModule.name}</span>
                     {exam.modules.length > 1 && (
-                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}>
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-surface-2 text-ink-soft">
                         {(current?.moduleIndex ?? 0) + 1}/{exam.modules.length}
                       </span>
                     )}
@@ -1145,7 +1219,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
                 <div className="flex items-center justify-between mb-4 md:mb-5 gap-2">
                   <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                    <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center font-medium text-xs md:text-sm shrink-0" style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}>
+                    <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center font-medium text-xs md:text-sm shrink-0 bg-ink text-bg">
                       {currentIdx + 1}
                     </span>
                     <span className="text-xs md:text-sm truncate">
@@ -1157,9 +1231,8 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                     {/* Position within the shared-text group, visible from the question side too. */}
                     {passageGroup && passageGroup.size > 1 && (
                       <span
-                        className="shrink-0 font-mono text-xs px-2 py-0.5 rounded-full"
-                        style={{ background: "var(--color-surface-2)", color: "var(--color-ink-soft)" }}
-                        title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cisi`}
+                        className="shrink-0 font-mono text-xs px-2 py-0.5 rounded-full bg-surface-2 text-ink-soft" 
+title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cisi`}
                       >
                         Mətn {passageGroup.position}/{passageGroup.size}
                       </span>
@@ -1170,12 +1243,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       onClick={() => toggleFlag(current.id)}
                       aria-pressed={flagged.has(current.id)}
                       aria-label="Bu sualı sonra baxmaq üçün işarələ"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors"
-                      style={{
-                        background: flagged.has(current.id) ? "rgba(184,115,43,0.1)" : "transparent",
-                        color: flagged.has(current.id) ? "var(--color-warn)" : "var(--color-ink-soft)",
-                        border: `1px solid ${flagged.has(current.id) ? "var(--color-warn)" : "transparent"}`,
-                      }}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-medium transition-colors ${
+                        flagged.has(current.id)
+                          ? 'border-warn bg-warn/10 text-warn'
+                          : 'border-transparent bg-transparent text-ink-soft'
+                      }`}
                     >
                       <Flag size={12} /> {flagged.has(current.id) ? 'İşarəli' : 'İşarələ'}
                     </button>
@@ -1190,7 +1262,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   instruction they qualify.
                 */}
                 {current && (
-                  <div className="text-sm md:text-base leading-relaxed mb-5 md:mb-7 whitespace-pre-line" style={{ color: "var(--color-ink)" }}>
+                  <div className="text-sm md:text-base leading-relaxed mb-5 md:mb-7 whitespace-pre-line text-ink">
                     <MathText text={current.stem} block />
                   </div>
                 )}
@@ -1203,25 +1275,21 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         <button
                           key={i}
                           onClick={() => selectAnswer(current.id, i)}
-                          className="w-full flex items-start gap-3 md:gap-4 p-3 md:p-4 rounded-xl transition-all text-left"
-                          style={{
-                            border: `1.5px solid ${selected ? "var(--color-ink)" : "var(--color-rule)"}`,
-                            background: selected ? "rgba(26,26,26,0.04)" : "var(--color-surface)",
-                          }}
+                          className={`w-full flex items-start gap-3 md:gap-4 p-3 md:p-4 rounded-xl border-[1.5px] transition-all text-left ${
+                            selected ? 'border-ink bg-ink/4' : 'border-rule bg-surface'
+                          }`}
                         >
                           <span
-                            className="shrink-0 w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-xs font-medium mt-0.5 transition-all"
-                            style={{
-                              background: selected ? "var(--color-ink)" : "var(--color-surface-2)",
-                              color: selected ? "var(--color-bg)" : "var(--color-ink-soft)",
-                            }}
+                            className={`shrink-0 w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-xs font-medium mt-0.5 transition-all ${
+                              selected ? 'bg-ink text-bg' : 'bg-surface-2 text-ink-soft'
+                            }`}
                           >
                             {OPTION_LABELS[i]}
                           </span>
-                          <div className="text-sm leading-relaxed flex-1 pt-0.5" style={{ color: "var(--color-ink)" }}>
+                          <div className="text-sm leading-relaxed flex-1 pt-0.5 text-ink">
                             <MathText text={opt} />
                           </div>
-                          {selected && <CheckCircle2 size={15} className="shrink-0 mt-0.5" style={{ color: "var(--color-ink)" }} />}
+                          {selected && <CheckCircle2 size={15} className="shrink-0 mt-0.5 text-ink"  />}
                         </button>
                       );
                     })}
@@ -1230,7 +1298,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
 
                 {current?.type === 'open' && (
                   <div className="space-y-3">
-                    <div className="p-3 rounded-xl flex items-center gap-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
+                    <div className="p-3 rounded-xl flex items-center gap-2 border border-rule bg-surface-2">
                       <Pencil size={13} className="shrink-0" />
                       <p className="text-sm leading-relaxed">Bu açıq tapşırıqdır. Cavabınızı daxil edin. Cavab avtomatik qiymətləndiriləcək.</p>
                     </div>
@@ -1239,16 +1307,14 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       value={openAnswers.get(current.id) ?? ''}
                       onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
                       placeholder="Cavabınızı burada yazın..."
-                      className="input-new resize-none"
-                      style={{ fontFamily: "var(--font-sans)" }}
-                    />
+                      className="input-new resize-none font-sans" />
                   </div>
                 )}
 
                 {/* ── Matching question ── */}
                 {current?.type === 'matching' && current.matchItems && current.matchItems.length > 0 && (
                   <div className="space-y-3">
-                    <div className="p-3 rounded-xl flex items-center gap-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
+                    <div className="p-3 rounded-xl flex items-center gap-2 border border-rule bg-surface-2">
                       <Grid3X3 size={13} className="shrink-0" />
                       <p className="text-sm leading-relaxed">Hər element üçün uyğun cavabı seçin.</p>
                     </div>
@@ -1257,12 +1323,12 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         const currentMatchAnswers = matchingAnswers.get(current.id) ?? [];
                         const selectedValue = currentMatchAnswers[itemIdx] ?? -1;
                         return (
-                          <div key={itemIdx} className="flex items-start gap-3 p-3 rounded-xl" style={{ border: "1px solid var(--color-rule)", background: "var(--color-surface-2)" }}>
-                            <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium mt-0.5" style={{ background: "var(--color-surface-3)", color: "var(--color-ink-soft)" }}>
+                          <div key={itemIdx} className="flex items-start gap-3 p-3 rounded-xl border border-rule bg-surface-2">
+                            <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium mt-0.5 bg-surface-3 text-ink-soft">
                               {itemIdx + 1}
                             </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm mb-2 leading-relaxed" style={{ color: "var(--color-ink)" }}>
+                              <p className="text-sm mb-2 leading-relaxed text-ink">
                                 <MathText text={item} />
                               </p>
                               <select
@@ -1277,8 +1343,9 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                                     return next;
                                   });
                                 }}
-                                className="input-new text-sm"
-                                style={{ borderColor: selectedValue >= 0 ? "var(--color-ink)" : "var(--color-rule)" }}
+                                className={`input-new text-sm ${
+                                  selectedValue >= 0 ? 'border-ink' : 'border-rule'
+                                }`}
                               >
                                 <option value={-1}>— Seçin —</option>
                                 {current.options.map((opt, optIdx) => (
@@ -1303,7 +1370,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                   const aboveMax = maxW > 0 && words > maxW;
                   return (
                     <div className="space-y-3">
-                      <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
+                      <div className="p-3 rounded-xl flex items-start gap-2 border border-rule bg-surface-2">
                         <Pencil size={13} className="shrink-0 mt-0.5" />
                         <p className="text-sm leading-relaxed">
                           Bu yazı tapşırığıdır. Cavabınız tamamlandıqdan sonra AI tərəfindən qiymətləndiriləcəkdir.
@@ -1312,7 +1379,7 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         </p>
                       </div>
                       {current.rubric && (
-                        <div className="p-3 rounded-xl" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
+                        <div className="p-3 rounded-xl border border-rule bg-surface-2">
                           <p className="eyebrow mb-1">Qiymətləndirmə meyarları</p>
                           <p className="text-sm leading-relaxed">{current.rubric}</p>
                         </div>
@@ -1322,12 +1389,11 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                         value={essay}
                         onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
                         placeholder="Cavabınızı burada yazın..."
-                        className="input-new resize-y leading-relaxed"
-                        style={{ fontFamily: "var(--font-sans)" }}
-                      />
+                        className="input-new resize-y leading-relaxed font-sans" />
                       <div
-                        className="flex items-center justify-between text-xs font-medium px-1"
-                        style={{ color: belowMin ? "var(--color-warn)" : aboveMax ? "var(--color-error)" : "var(--color-ink-mute)" }}
+                        className={`flex items-center justify-between text-xs font-medium px-1 ${
+                          belowMin ? 'text-warn' : aboveMax ? 'text-error' : 'text-ink-mute'
+                        }`}
                       >
                         <span>{words} söz</span>
                         {minW > 0 && maxW > 0 && <span>{minW}–{maxW} söz tövsiyə olunur</span>}
@@ -1346,23 +1412,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
                       width={0}
                       height={0}
                       sizes="100vw"
-                      className="w-full h-auto rounded-xl shadow-sm"
-                      style={{ border: "1px solid var(--color-rule)" }}
-                    />
+                      className="w-full h-auto rounded-xl shadow-sm border border-rule" />
                   </div>
                 )}
               </motion.div>
             </div>
 
             {/* ── Footer navigation ── */}
-            <footer className="shrink-0 h-16 px-4 md:px-8 flex items-center justify-between" style={{ background: "var(--color-surface-2)", borderTop: "1px solid var(--color-rule)" }}>
+            <footer className="shrink-0 h-16 px-4 md:px-8 flex items-center justify-between border-t border-rule bg-surface-2">
               <button
                 onClick={() => goTo(currentIdx - 1)}
                 disabled={currentIdx === 0}
                 aria-label="Əvvəlki sual"
-                className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium"
-                style={{ color: "var(--color-ink)" }}
-              >
+                className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium text-ink">
                 <ChevronLeft size={18} aria-hidden="true" />
                 <span className="hidden sm:inline">Əvvəlki</span>
               </button>
@@ -1393,15 +1455,25 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // On mount: check (read-only) whether this audio has already been played
+  // On mount: check (read-only) whether this audio has already been played.
+  // `cancelled` covers the student navigating out of the module before the
+  // check resolves; the catch covers a transport failure, which must leave the
+  // player usable rather than stuck on "Yüklənir…" for the rest of the exam.
   useEffect(() => {
-    checkAudioPlayed(examId, src).then(result => {
-      if ('error' in result) {
-        setStatus('ready'); // fail open so the exam is not blocked
-        return;
-      }
-      setStatus(result.alreadyPlayed ? 'finished' : 'ready');
-    });
+    let cancelled = false;
+    checkAudioPlayed(examId, src)
+      .then(result => {
+        if (cancelled) return;
+        if ('error' in result) {
+          setStatus('ready'); // fail open so the exam is not blocked
+          return;
+        }
+        setStatus(result.alreadyPlayed ? 'finished' : 'ready');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('ready');
+      });
+    return () => { cancelled = true; };
   }, [src, examId]);
 
   const handlePlay = async () => {
@@ -1421,8 +1493,10 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
       return;
     }
 
-    // Mark as played server-side after playback has started
-    const result = await markAudioPlayed(examId, src);
+    // Mark as played server-side after playback has started. A failure here is
+    // deliberately silent: the audio is already running and stopping it over a
+    // bookkeeping error would cost the student the recording.
+    const result = await markAudioPlayed(examId, src).catch(() => ({ error: 'network' as const }));
     if ('error' in result) return; // fail open — audio is already playing
     if (result.alreadyPlayed) {
       // Race condition: was already played in another tab — stop it
@@ -1470,8 +1544,8 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
 
       {/* Checking state */}
       {status === 'checking' && (
-        <div className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)", color: "var(--color-ink-soft)" }}>
-          <span className="w-4 h-4 border-2 border-t-ink rounded-full animate-spin" style={{ borderColor: "var(--color-rule)", borderTopColor: "var(--color-ink)" }} />
+        <div className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm border border-rule bg-surface-2 text-ink-soft">
+          <span className="w-4 h-4 border-2 border-t-ink rounded-full animate-spin border-rule border-t-ink"  />
           Yüklənir...
         </div>
       )}
@@ -1485,7 +1559,7 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
           >
             <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
           </button>
-          <p className="text-sm text-center px-2 leading-tight font-medium" style={{ color: "var(--color-warn)" }}>
+          <p className="text-sm text-center px-2 leading-tight font-medium text-warn">
             ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.
           </p>
         </>
@@ -1493,9 +1567,9 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
 
       {/* Playing state */}
       {status === 'playing' && (
-        <div className="w-full rounded-2xl px-4 py-3 space-y-2.5" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
+        <div className="w-full rounded-2xl px-4 py-3 space-y-2.5 border border-rule bg-surface-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--color-ink)" }}>
+            <div className="flex items-center gap-2 text-sm font-medium text-ink">
               <Volume2 size={16} className="animate-pulse shrink-0" />
               <span>Səs oxunur...</span>
             </div>
@@ -1506,11 +1580,12 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
           </div>
           <div className="score-bar">
             <div
-              className="absolute left-0 top-0 h-full rounded-full transition-all duration-300 ease-linear"
-              style={{ width: `${progress}%`, background: "var(--color-ink)" }}
+              className="absolute left-0 top-0 h-full rounded-full bg-ink transition-all duration-300 ease-linear"
+              // A computed percentage cannot be a utility class; the colour can.
+              style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="flex justify-between font-mono tabular-nums text-xs" style={{ color: "var(--color-ink-mute)" }}>
+          <div className="flex justify-between font-mono tabular-nums text-xs text-ink-mute">
             <span>{fmtTime(currentTime)}</span>
             <span>{fmtTime(duration)}</span>
           </div>
@@ -1519,16 +1594,16 @@ function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
 
       {/* Finished state */}
       {status === 'finished' && (
-        <div className="w-full rounded-2xl px-4 py-3 space-y-2" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-rule)" }}>
+        <div className="w-full rounded-2xl px-4 py-3 space-y-2 border border-rule bg-surface-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <CheckCircle2 size={16} className="shrink-0" style={{ color: "var(--color-ok)" }} />
+              <CheckCircle2 size={16} className="shrink-0 text-ok"  />
               <span>Audio bitdi</span>
             </div>
             {duration > 0 && <span className="font-mono text-sm">{fmtTime(duration)}</span>}
           </div>
           <div className="score-bar">
-            <div className="absolute inset-0 rounded-full" style={{ background: "rgba(47,92,62,0.3)" }} />
+            <div className="absolute inset-0 rounded-full bg-ok/30"  />
           </div>
         </div>
       )}

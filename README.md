@@ -45,11 +45,12 @@ app/
 lib/
   models/               # Mongoose schemas (Exam, Question, ExamSession, ExamResult, Purchase, UserSettings)
   actions/              # Server actions (session, questions, results, checkout, AI eval, audio, import)
-  db/                   # DB query helpers
-  mongodb.ts            # Mongoose connection singleton
+  db/                   # server-only Data Access Layer (incl. entitlements.ts)
+  mongodb.ts            # Mongoose connection singleton (server-only)
 components/
   layout/               # Navbar, Footer, Sidebar
   ui/                   # Animation wrappers (FadeUp, StaggerChildren, PageTransition)
+proxy.ts                # Route auth gating — Next.js 16 renamed Middleware to Proxy
 ```
 
 ## Node version
@@ -179,7 +180,7 @@ copy (via `eslint`/`eslint-plugin-import` → `minimatch@3`) and a 5.x copy (via
 `typescript-eslint` → `minimatch@10`). A bare `"brace-expansion"` override
 would force the 5.x consumer down to v1.
 
-`npm audit` currently reports **0 vulnerabilities**.
+Run `npm audit` before a release; it is expected to report zero vulnerabilities.
 
 ## Scoring integrity
 

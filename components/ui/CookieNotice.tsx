@@ -98,35 +98,24 @@ export default function CookieNotice() {
           // not a decision, so it must not trap focus or block the page.
           role="region"
           aria-label="Cookie bildirişi"
-          className="fixed z-[90] bottom-4 right-4 left-4 sm:left-auto sm:max-w-sm"
+          className="fixed z-90 bottom-4 right-4 left-4 sm:left-auto sm:max-w-sm"
         >
-          <div
-            className="rounded-2xl p-4 pr-10 shadow-lg relative"
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-rule)',
-            }}
-          >
+          <div className="relative rounded-2xl border border-rule bg-surface p-4 pr-10 shadow-lg">
             <button
               onClick={dismiss}
               aria-label="Bildirişi bağla"
-              className="absolute top-3 right-3 p-1 rounded-lg transition-colors hover:bg-surface-2"
-              style={{ color: 'var(--color-ink-mute)' }}
+              /* p-1.5, not p-1: the 15px glyph plus 4px padding gave a 23px
+                 target, 1px under the WCAG 2.5.8 minimum. The inset drops by
+                 the same 2px, so the ✕ sits exactly where it did. */
+              className="absolute top-2.5 right-2.5 rounded-lg p-1.5 text-ink-mute transition-colors hover:bg-surface-2"
             >
               <X size={15} aria-hidden="true" />
             </button>
 
-            <p
-              className="text-sm leading-relaxed m-0 mb-3"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
+            <p className="m-0 mb-3 text-sm leading-relaxed text-ink-soft">
               Saytın işləməsi, təhlükəsizlik və istifadə statistikası üçün cookie və
               lokal yaddaşdan istifadə edirik.{' '}
-              <Link
-                href="/legal/cookies"
-                className="underline"
-                style={{ color: 'var(--color-ink)', textUnderlineOffset: 3 }}
-              >
+              <Link href="/legal/cookies" className="text-ink underline underline-offset-[3px]">
                 Ətraflı
               </Link>
               .

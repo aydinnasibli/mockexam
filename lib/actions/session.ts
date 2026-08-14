@@ -2,12 +2,12 @@
 
 import { auth } from '@clerk/nextjs/server';
 import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
 import ExamSessionModel from '@/lib/models/ExamSession';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import { isRateLimited } from '@/lib/rate-limit';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
 import { captureException } from '@/lib/observability';
+import { hasExamAccess } from '@/lib/db/entitlements';
 
 export interface SessionInfo {
   startedAt: string;
@@ -37,8 +37,7 @@ export async function peekExamSession(examId: string): Promise<SessionPeek | { e
   try {
     await dbConnect();
 
-    const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-    if (!purchase) return { error: 'Not purchased' };
+    if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
     const session = await ExamSessionModel.findOne({ userId, examId }).lean();
     if (!session) return { exists: false };
@@ -74,8 +73,7 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
   try {
     await dbConnect();
 
-    const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-    if (!purchase) return { error: 'Not purchased' };
+    if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
     const exam = await getExamByIdAdmin(examId);
     if (!exam) return { error: 'Exam not found' };

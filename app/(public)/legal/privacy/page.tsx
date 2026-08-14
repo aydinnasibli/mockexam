@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
@@ -141,9 +139,7 @@ Bu hüquqları həyata keçirmək üçün testcentreaz@proton.me ünvanına mür
 export default function PrivacyPage() {
   return (
     <>
-      <Navbar />
-      <main>
-        <div className="max-w-215 mx-auto px-8 py-24">
+        <div className="shell-prose py-24">
 
           <div className="flex items-center gap-3 mb-8 rise">
             <span className="dot" />
@@ -153,7 +149,7 @@ export default function PrivacyPage() {
           <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-4 rise rise-2">
             Son yenilənmə: 26 may 2026
           </p>
-          <p className="text-base leading-[1.7] mb-16 rise rise-2" style={{ color: 'var(--color-ink-soft)', maxWidth: '640px' }}>
+          <p className="mb-16 max-w-160 text-base leading-[1.7] text-ink-soft rise rise-2">
             Bu siyasət hansı fərdi məlumatları topladığımızı, nə məqsədlə emal etdiyimizi və məlumat subyekti kimi
             hansı hüquqlara malik olduğunuzu izah edir. Platformadan istifadə etməklə bu siyasəti qəbul etmiş sayılırsınız.
           </p>
@@ -162,7 +158,7 @@ export default function PrivacyPage() {
             {sections.map((s, i) => (
               <div key={s.id} id={s.id} className="border-t border-rule pt-10">
                 <div className="flex items-baseline gap-5 mb-4">
-                  <span className="eyebrow tabular-nums" style={{ color: 'var(--color-ink-mute)', minWidth: '2rem' }}>
+                  <span className="eyebrow min-w-8 tabular-nums text-ink-mute">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">{s.title}</h2>
@@ -171,8 +167,7 @@ export default function PrivacyPage() {
                   {s.content.split('\n\n').map((para, j) => (
                     <p
                       key={j}
-                      className="text-base leading-[1.75] mb-4 last:mb-0"
-                      style={{ color: 'var(--color-ink-soft)', whiteSpace: 'pre-line' }}
+                      className="mb-4 text-base leading-[1.75] whitespace-pre-line text-ink-soft last:mb-0"
                     >
                       {para}
                     </p>
@@ -182,8 +177,6 @@ export default function PrivacyPage() {
             ))}
           </div>
         </div>
-      </main>
-      <Footer />
     </>
   );
 }

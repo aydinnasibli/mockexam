@@ -59,7 +59,7 @@ export default function DashboardLoading() {
 
           {/* Right rail */}
           <div className="space-y-4">
-            <div className="rounded-[14px] bg-ink px-6 pt-5.5 pb-6">
+            <div className="rounded-panel bg-ink px-6 pt-5.5 pb-6">
               <Skeleton tone="ink" className="mb-5 h-3 w-32 rounded" />
               <Skeleton tone="ink" className="h-12 w-24 rounded" />
             </div>

@@ -71,7 +71,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-[14px] bg-ink text-bg">
+      <div className="overflow-hidden rounded-panel bg-ink text-bg">
         <div className="px-6.5 pt-6.5 pb-5.5">
           <div className="flex items-baseline justify-between gap-3 border-b border-bg/18 pb-5.5">
             <span className="flex items-baseline gap-2.5">

@@ -21,6 +21,17 @@ function clientIp(h: Headers): string {
   return h.get('x-real-ip') ?? 'unknown';
 }
 
+/**
+ * Makes a visitor-supplied string safe to interpolate into a mail header.
+ *
+ * `name` and `subject` go into `Reply-To` and `Subject`. Zod's `.trim()` only
+ * strips the ends, so a CR/LF (or a bare quote in the display name) inside the
+ * value would otherwise be handed to the header builder verbatim.
+ */
+function headerSafe(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').replace(/["\\]/g, '').trim();
+}
+
 export async function sendContactMessage(input: {
   name: string;
   email: string;
@@ -55,13 +66,14 @@ export async function sendContactMessage(input: {
       auth: { user, pass },
     });
 
+    const headerName = headerSafe(name);
     await transporter.sendMail({
       // Gmail forces From to the authenticated account; the visitor's address
       // goes in Reply-To so a reply reaches them directly.
       from: `"Testcentre əlaqə" <${user}>`,
       to,
-      replyTo: `"${name}" <${email}>`,
-      subject: `[Əlaqə: ${subject}] ${name}`,
+      replyTo: { name: headerName, address: email },
+      subject: headerSafe(`[Əlaqə: ${subject}] ${headerName}`),
       text: `Ad: ${name}\nE-poçt: ${email}\nMövzu: ${subject}\n\n${message}`,
     });
 

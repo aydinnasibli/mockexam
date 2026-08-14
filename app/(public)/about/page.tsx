@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
@@ -65,8 +63,6 @@ function SectionHead({ n, children, className = "" }: { n: string; children: Rea
 export default function AboutPage() {
   return (
     <>
-      <Navbar />
-      <main>
 
         {/* ── Statement ──
             Two columns and a floor. The statement used to sit alone in the left
@@ -74,7 +70,7 @@ export default function AboutPage() {
             which read as an unfinished page rather than as restraint: the
             principle carries the right column, and the figure row lands the
             whole thing on a rule the way the home hero does. */}
-        <section className="mx-auto w-full max-w-320 px-6 pt-14 pb-18 lg:px-10 lg:pt-22 lg:pb-24">
+        <section className="shell pt-14 pb-18 lg:pt-22 lg:pb-24">
           <div className="anim-rise">
             <div className="mb-8 flex items-center gap-3 lg:mb-10">
               {/* Every other eyebrow in the product is dot + mono label; this
@@ -113,7 +109,7 @@ export default function AboutPage() {
 
         {/* ── §01 Niyə ── */}
         <section className="border-t border-rule bg-surface-2">
-          <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
+          <div className="shell py-20 lg:py-28">
             <SectionHead n="01">
               <h2 className={`${H2} mb-10 lg:mb-14`}>Niyə belə qurulub.</h2>
 
@@ -133,7 +129,7 @@ export default function AboutPage() {
 
                 <FadeUp delay={0.1}>
                   <blockquote className="m-0 border-t border-ink pt-7">
-                    <p className="m-0 mb-6 max-w-120 text-[26px] leading-[1.3] font-light tracking-[-0.03em] text-ink lg:text-[30px]">
+                    <p className="m-0 mb-6 max-w-120 text-[26px] leading-[1.3] font-light tracking-[-0.03em] text-ink lg:text-3xl">
                       “Sınaq imtahandan asan olanda, imtahan sınaqdan çətin olur.”
                     </p>
                     <footer className={`${MONO_LABEL} text-ink-mute`}>Prinsip</footer>
@@ -145,7 +141,7 @@ export default function AboutPage() {
         </section>
 
         {/* ── §02 Stance ── */}
-        <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
+        <section className="shell py-20 lg:py-28">
             <SectionHead n="02">
               <h2 className={`${H2} mb-10 lg:mb-14`}>Nə etmirik.<br />Nə edirik.</h2>
 
@@ -198,7 +194,7 @@ export default function AboutPage() {
 
         {/* ── §03 Policies ── */}
         <section className="border-t border-rule bg-surface-2">
-          <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
+          <div className="shell py-20 lg:py-24">
             <SectionHead n="03">
               <div className="mb-10 grid gap-6 lg:mb-12 lg:grid-cols-[1fr_1fr] lg:items-end lg:gap-18">
                 <h2 className={H2}>Qaydalar.</h2>
@@ -216,8 +212,8 @@ export default function AboutPage() {
                   <StaggerItem
                     key={policy.label}
                     className={`grid grid-cols-1 items-baseline gap-1.5 py-5 sm:grid-cols-[190px_1fr] sm:gap-6 ${
-                      i < 2 ? "border-t border-ink-faint" : "border-t border-[#E0DDD4]"
-                    } ${i >= POLICIES.length - 2 ? "border-b border-[#E0DDD4]" : ""}`}
+                      i < 2 ? "border-t border-ink-faint" : "border-t border-rule-strong"
+                    } ${i >= POLICIES.length - 2 ? "border-b border-rule-strong" : ""}`}
                   >
                     <span className={`${MONO_SECTION} text-[11px] tracking-[0.14em] text-ink-mute`}>
                       {policy.label}
@@ -231,10 +227,10 @@ export default function AboutPage() {
         </section>
 
         {/* ── CTA ── */}
-        <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
+        <section className="shell py-20 lg:py-24">
           <FadeUp className="flex flex-col items-start gap-6 border-t border-ink pt-7 sm:flex-row sm:items-baseline sm:justify-between sm:gap-10">
             <div>
-              <h2 className="m-0 text-[36px] font-light leading-none tracking-[-0.04em] text-ink lg:text-[52px]">
+              <h2 className="m-0 text-4xl font-light leading-none tracking-[-0.04em] text-ink lg:text-[52px]">
                 Sınaqlara keçin.
               </h2>
               <p className="m-0 mt-4 max-w-100 text-[15px] leading-[1.6] text-ink-soft">
@@ -247,14 +243,12 @@ export default function AboutPage() {
             </div>
             <Link
               href="/exams"
-              className="group inline-flex shrink-0 items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] active:translate-y-px"
+              className="group inline-flex shrink-0 items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-ink-hover active:translate-y-px"
             >
               Kataloq <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
             </Link>
           </FadeUp>
         </section>
-      </main>
-      <Footer />
     </>
   );
 }

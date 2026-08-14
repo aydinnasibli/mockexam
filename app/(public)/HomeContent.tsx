@@ -1,6 +1,4 @@
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 import WipeBar from "@/components/ui/WipeBar";
@@ -103,8 +101,6 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
   return (
     <>
-      <Navbar />
-      <main>
 
         {/* ── HERO ── */}
         <section className="overflow-hidden">
@@ -122,14 +118,14 @@ export default function HomeContent({ byType, totalExams }: Props) {
               no exam and never saw the list that answers them. The subhead
               withholding programme names is a sound decision, but it only works
               if the honest list is in the fold rather than one pixel under it. */}
-          <div className="mx-auto grid w-full max-w-320 grid-cols-1 items-start gap-14 px-6 pt-14 pb-20 lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pt-22 lg:pb-14">
+          <div className="shell grid grid-cols-1 items-start gap-14 pt-14 pb-20 lg:grid-cols-2 lg:gap-16 lg:pt-22 lg:pb-14">
 
             {/* Entrance timeline (INTERACTIONS §3): left column 700ms @0,
                 canvas 800ms @120ms, score card a second rise 800ms @300ms on
                 top of the canvas's — the double application is what gives the
                 ink card its delayed settle. */}
             <div className="anim-rise">
-              <h1 className="m-0 mb-7 text-[52px] font-light leading-[0.94] tracking-[-0.042em] text-ink md:text-[72px] lg:text-[88px]">
+              <h1 className="m-0 mb-7 text-[52px] font-light leading-[0.94] tracking-[-0.042em] text-ink md:text-7xl lg:text-[88px]">
                 {/* The spaces before each <br /> are load-bearing. `<br>`
                     contributes nothing to textContent, so without them the
                     accessible name and the SEO-visible string both collapse to
@@ -151,7 +147,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               <div className="flex flex-wrap items-center gap-3.5">
                 <Link
                   href="/exams"
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A] active:translate-y-px"
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-ink px-6.5 py-3.75 text-sm font-medium text-bg transition-colors duration-150 hover:bg-ink-hover active:translate-y-px"
                 >
                   Sınaqlara bax <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
                 </Link>
@@ -218,14 +214,14 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   104px overhang past the container edge: that bleed is why this
                   section needs `overflow-hidden`, and it is what became a 335px
                   amputation once the viewport was too narrow to bleed into. */}
-              <div className="overflow-hidden rounded-[14px] border border-rule bg-surface shadow-[0_24px_64px_rgba(26,26,26,0.10),0_2px_6px_rgba(26,26,26,0.04)] lg:ml-auto lg:w-full lg:max-w-134">
+              <div className="overflow-hidden rounded-panel border border-rule bg-surface shadow-[0_24px_64px_rgba(26,26,26,0.10),0_2px_6px_rgba(26,26,26,0.04)] lg:ml-auto lg:w-full lg:max-w-134">
                 <div className="flex items-center justify-between gap-4 bg-ink px-5 py-3.25">
                   <span className={`${MONO_LABEL} truncate text-bg/55`}>SAT · Math · Module II</span>
                   <span className="font-mono text-[13px] tabular-nums text-bg">32:14</span>
                 </div>
                 <div className="flex items-center gap-3.5 border-b border-rule bg-surface-2 px-5 py-2.5">
                   <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>14 / 22</span>
-                  <div className="h-0.5 flex-1 overflow-hidden bg-[#E0DDD4]">
+                  <div className="h-0.5 flex-1 overflow-hidden bg-rule-strong">
                     <div className="anim-wipe h-full w-[64%] bg-ink" style={{ animationDuration: "1200ms", animationDelay: "500ms" }} />
                   </div>
                 </div>
@@ -243,7 +239,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                     ].map((option) => (
                       <div
                         key={option.key}
-                        className={`flex items-center gap-3 rounded-[9px] border px-3.5 py-2.75 ${
+                        className={`flex items-center gap-3 rounded-btn border px-3.5 py-2.75 ${
                           option.correct ? "border-ink bg-ink" : "border-rule"
                         }`}
                       >
@@ -261,7 +257,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
               {/* Score-delta card */}
               <div
-                className="anim-rise rounded-[14px] bg-ink px-7 pt-6.5 pb-5.5 shadow-[0_24px_64px_rgba(26,26,26,0.22)] lg:relative lg:z-10 lg:mt-2 lg:w-full lg:max-w-94"
+                className="anim-rise rounded-panel bg-ink px-7 pt-6.5 pb-5.5 shadow-[0_24px_64px_rgba(26,26,26,0.22)] lg:relative lg:z-10 lg:mt-2 lg:w-full lg:max-w-94"
                 style={{ animationDuration: "800ms", animationDelay: "300ms" }}
               >
                 <div className="mb-5.5 flex items-baseline justify-between">
@@ -307,7 +303,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── PROGRAM INDEX ── */}
         <section className="border-t border-b border-ink border-b-rule bg-surface-2">
-          <FadeUp y={12} className="mx-auto grid w-full max-w-320 grid-cols-2 px-6 sm:grid-cols-3 lg:grid-cols-6 lg:px-10">
+          <FadeUp y={12} className="shell grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
             {PROGRAMS.map((program, i) => {
               const data = program.type ? byType[program.type] : undefined;
               const count = data?.count ?? 0;
@@ -326,7 +322,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 </>
               );
 
-              const cellClass = `flex flex-col gap-2.5 border-r border-[#E0DDD4] py-5.5 last:border-r-0 ${
+              const cellClass = `flex flex-col gap-2.5 border-r border-rule-strong py-5.5 last:border-r-0 ${
                 i === 0 ? "pr-5.5" : "px-5.5"
               }`;
 
@@ -346,7 +342,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
         </section>
 
         {/* ── §01 METOD ── */}
-        <section className="mx-auto w-full max-w-320 px-6 pt-20 lg:px-10 lg:pt-28">
+        <section className="shell pt-20 lg:pt-28">
           <SectionHead n="01" className="mb-12 lg:mb-16">
             <h2 className={H2}>Üç mərhələ.</h2>
           </SectionHead>
@@ -412,7 +408,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
         </section>
 
         {/* ── §02 ANALİZ ── */}
-        <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
+        <section className="shell py-20 lg:py-28">
           <SectionHead n="02">
             <div className="mb-10 grid gap-6 lg:mb-14 lg:grid-cols-[1fr_1.35fr] lg:items-end lg:gap-18">
               <h2 className={H2}>Nəticə<br />11 ölçüdə.</h2>
@@ -421,7 +417,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               </p>
             </div>
 
-            <FadeUp className="overflow-hidden rounded-[14px] border border-rule bg-surface">
+            <FadeUp className="overflow-hidden rounded-panel border border-rule bg-surface">
               <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-4.5 lg:px-7">
                 <span className="text-base font-medium tracking-[-0.01em] text-ink">Bölmə üzrə analiz</span>
                 <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>Cəhd 03 · SAT—01</span>
@@ -444,7 +440,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       <span className={`truncate text-sm text-ink ${dimension.weak ? "font-medium" : ""}`}>
                         {dimension.label}
                       </span>
-                      <div className={`h-2 ${dimension.weak ? "bg-[#E4E0D6]" : "bg-rule-soft"}`}>
+                      <div className={`h-2 ${dimension.weak ? "bg-rule-strong" : "bg-rule-soft"}`}>
                         <WipeBar
                           percent={dimension.value}
                           className={dimension.weak ? "bg-error" : "bg-ink"}
@@ -477,9 +473,9 @@ export default function HomeContent({ byType, totalExams }: Props) {
                     <div className="mt-5 flex h-6.5 gap-px">
                       <div className="flex-1 bg-rule-soft" />
                       <div className="flex-1 bg-rule-soft" />
-                      <div className="flex-1 bg-[#E0DDD4]" />
+                      <div className="flex-1 bg-rule-strong" />
                       <div className="flex-2 bg-ink" />
-                      <div className="flex-1 bg-[#E0DDD4]" />
+                      <div className="flex-1 bg-rule-strong" />
                       <div className="flex-1 bg-rule-soft" />
                     </div>
                     <div className="mt-2 flex justify-between font-mono text-[10px] text-ink-mute">
@@ -517,7 +513,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── §03 NÜMUNƏ ── */}
         <section id="numune" className="scroll-mt-5 bg-ink text-bg">
-          <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
+          <div className="shell py-20 lg:py-28">
             <div className="grid gap-4 lg:grid-cols-[96px_1fr] lg:gap-8">
               {/* /55, matching the ink card's labels: this is the §03
                   counterpart of the `text-ink-mute` section numbers on the bone
@@ -529,32 +525,32 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 </h2>
 
                 <div className="grid items-start gap-10 lg:grid-cols-[1fr_340px] lg:gap-14">
-                  <FadeUp className="overflow-hidden rounded-[14px] bg-bg text-ink">
+                  <FadeUp className="overflow-hidden rounded-panel bg-bg text-ink">
                     <div className="flex items-center justify-between gap-4 border-b border-rule bg-surface-2 px-5 py-3.5 lg:px-6">
                       <span className={`${MONO_LABEL} text-ink-mute`}>Sual 14 / 22 · Geometry</span>
                       <span className={`${MONO_LABEL} text-error`}>səhv</span>
                     </div>
                     <div className="px-5 pt-7 pb-6 lg:px-6">
                       <p className="m-0 mb-6 text-lg leading-[1.45]">
-                        If <span className="font-mono text-[18px]">ƒ(x) = 3x² − 5x + 2</span>, what is{" "}
-                        <span className="font-mono text-[18px]">ƒ(−1)</span>?
+                        If <span className="font-mono text-lg">ƒ(x) = 3x² − 5x + 2</span>, what is{" "}
+                        <span className="font-mono text-lg">ƒ(−1)</span>?
                       </p>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="flex items-center gap-3.5 rounded-[10px] border border-rule px-4 py-3.25">
+                        <div className="flex items-center gap-3.5 rounded-btn border border-rule px-4 py-3.25">
                           <span className="font-mono text-[11px] text-ink-mute">A</span>
                           <span className="font-mono text-base">−6</span>
                         </div>
-                        <div className="flex items-center gap-3.5 rounded-[10px] border border-error px-4 py-3.25">
+                        <div className="flex items-center gap-3.5 rounded-btn border border-error px-4 py-3.25">
                           <span className="font-mono text-[11px] text-error">B</span>
                           <span className="font-mono text-base text-error">0</span>
                           <span className={`${MONO_LABEL} ml-auto tracking-[0.12em] text-error`}>sizin</span>
                         </div>
-                        <div className="flex items-center gap-3.5 rounded-[10px] border border-correct bg-correct px-4 py-3.25">
+                        <div className="flex items-center gap-3.5 rounded-btn border border-correct bg-correct px-4 py-3.25">
                           <span className="font-mono text-[11px] text-bg/60">C</span>
                           <span className="font-mono text-base text-bg">10</span>
                           <span className={`${MONO_LABEL} ml-auto tracking-[0.12em] text-bg/75`}>doğru</span>
                         </div>
-                        <div className="flex items-center gap-3.5 rounded-[10px] border border-rule px-4 py-3.25">
+                        <div className="flex items-center gap-3.5 rounded-btn border border-rule px-4 py-3.25">
                           <span className="font-mono text-[11px] text-ink-mute">D</span>
                           <span className="font-mono text-base">14</span>
                         </div>
@@ -569,7 +565,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       ].map((row, i, rows) => (
                         <div
                           key={row.n}
-                          className={`grid grid-cols-[26px_1fr] items-baseline gap-3.5 border-t border-[#E4E0D6] py-2.5 ${
+                          className={`grid grid-cols-[26px_1fr] items-baseline gap-3.5 border-t border-rule-strong py-2.5 ${
                             i === rows.length - 1 ? "border-b" : ""
                           }`}
                         >
@@ -614,7 +610,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
         </section>
 
         {/* ── §04 MÜQAYİSƏ ── */}
-        <section className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-28">
+        <section className="shell py-20 lg:py-28">
           <SectionHead n="04">
             <h2 className={`${H2} mb-10 max-w-130 lg:mb-12`}>Kitabla fərq.</h2>
 
@@ -644,7 +640,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── §05 RƏYLƏR ── */}
         <section className="border-t border-rule bg-surface-2">
-          <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:py-24">
+          <div className="shell py-20 lg:py-24">
             <SectionHead n="05">
               <div className="grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-18">
                 <FadeUp>
@@ -682,7 +678,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
         </section>
 
         {/* ── §06 FAQ ── */}
-        <section id="suallar" className="mx-auto w-full max-w-320 scroll-mt-5 px-6 py-20 lg:px-10 lg:py-28">
+        <section id="suallar" className="shell scroll-mt-5 py-20 lg:py-28">
           <SectionHead n="06">
             <div className="grid gap-8 lg:grid-cols-[300px_1fr] lg:gap-18">
               <h2 className={H2}>Suallar.</h2>
@@ -712,7 +708,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── CTA ── */}
         <section className="bg-ink text-bg">
-          <div className="mx-auto w-full max-w-320 px-6 py-20 lg:px-10 lg:pt-24 lg:pb-22">
+          <div className="shell py-20 lg:pt-24 lg:pb-22">
             <div className="grid items-end gap-12 lg:grid-cols-[1fr_480px] lg:gap-20">
               <div>
                 <h2 className="m-0 mb-8 text-[44px] font-light leading-[0.98] tracking-[-0.042em] text-bg lg:text-[64px]">
@@ -757,8 +753,6 @@ export default function HomeContent({ byType, totalExams }: Props) {
             </div>
           </div>
         </section>
-      </main>
-      <Footer />
     </>
   );
 }

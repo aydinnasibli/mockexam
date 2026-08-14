@@ -39,7 +39,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
           { label: `Səhifə ${page} / ${totalPages}`, value: PAGE_SIZE },
         ].map(({ label, value }) => (
           <div key={label} className="bg-surface px-5 py-5">
-            <div className="figure text-[30px]">{value}</div>
+            <div className="figure text-3xl">{value}</div>
             <p className="mono-label m-0 mt-2.5">{label}</p>
           </div>
         ))}

@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import 'katex/dist/katex.min.css';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { getActiveExams, getExamById, type PublicExam } from '@/lib/db/exams';
 import { getSampleQuestion } from '@/lib/db/questions';
-import { BASE_URL, SITE_NAME, clampDescription, pageMetadata } from '@/lib/seo';
+import { BASE_URL, SITE_NAME, clampDescription, jsonLd, pageMetadata } from '@/lib/seo';
 import { examTypeLabel } from '@/lib/exam-types';
 import { renderMath } from '@/lib/render-math';
 import FadeUp from '@/components/ui/FadeUp';
@@ -22,8 +20,13 @@ import PurchaseCard from './PurchaseCard';
  * the "uncacheable, two Mongo queries per request" path it was on.
  */
 export async function generateStaticParams() {
-  const exams = await getActiveExams();
-  return exams.map((exam) => ({ id: exam.id }));
+  try {
+    const exams = await getActiveExams();
+    return exams.map((exam) => ({ id: exam.id }));
+  } catch {
+    // No database at build time (CI): defer every path to first request.
+    return [];
+  }
 }
 
 export const revalidate = 3600;
@@ -104,13 +107,17 @@ export default async function ExamDetails({ params }: Props) {
   const structure = structureOf(exam);
 
   // The specimen comes from this exam's own bank; `moduleIndex` names the
-  // module it sits in, when the exam still declares one at that index.
-  const sample = await getSampleQuestion(exam.id);
+  // module it sits in, when the exam still declares one at that index. The
+  // catalog is read alongside it — neither query depends on the other, and in
+  // sequence they were two round-trips where one wait would do.
+  const [sample, allExams] = await Promise.all([
+    getSampleQuestion(exam.id),
+    getActiveExams(),
+  ]);
   const sampleModule = sample ? exam.modules[sample.moduleIndex]?.name?.trim() : undefined;
 
   // The code is the one the catalog register prints, so a visitor arriving from
   // /exams sees the same identifier in the breadcrumb.
-  const allExams = await getActiveExams();
   const code = examCodes(allExams, (type) => shortTypeLabel(type, examTypeLabel(type))).get(exam.id)
     ?? shortTypeLabel(exam.type, examTypeLabel(exam.type));
 
@@ -166,27 +173,31 @@ export default async function ExamDetails({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(productSchema) }}
       />
-      <Navbar />
-      <main className="min-h-screen bg-bg">
 
         {/* ── Breadcrumb ── */}
         <div className="border-b border-rule">
-          <div className={`${MONO_LABEL} mx-auto flex w-full max-w-320 items-center gap-2.5 px-6 py-3.25 text-ink-mute lg:px-10`}>
-            <Link href="/" className="transition-colors hover:text-ink">Ana</Link>
+          {/* `py-2 -my-2` on the links, not on the bar: 10px mono type gives a
+              15px-tall hit box, under the 24px WCAG 2.5.8 minimum. The padding
+              raises it to 31px and the negative margin cancels the padding in
+              the flex row, so the bar's height is unchanged. */}
+          <div className={`${MONO_LABEL} shell flex items-center gap-2.5 py-3.25 text-ink-mute`}>
+            {/* Also -mx-1 px-1 here: "Ana" is only 22px WIDE, so this link
+                failed the target minimum on width rather than height. */}
+            <Link href="/" className="-mx-1 -my-2 px-1 py-2 transition-colors hover:text-ink">Ana</Link>
             <span aria-hidden>/</span>
-            <Link href="/exams" className="transition-colors hover:text-ink">Kataloq</Link>
+            <Link href="/exams" className="-my-2 py-2 transition-colors hover:text-ink">Kataloq</Link>
             <span aria-hidden>/</span>
             <span className="text-ink">{code}</span>
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-320 px-6 pt-10 pb-24 lg:px-10 lg:pt-16 lg:pb-28">
+        <div className="shell pt-10 pb-24 lg:pt-16 lg:pb-28">
           <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1fr_360px] lg:gap-18">
 
             {/* ── Left: the specification ── */}
@@ -197,7 +208,7 @@ export default async function ExamDetails({ params }: Props) {
                 <span className={`${MONO_LABEL} text-[11px] text-ink-mute`}>açıq</span>
               </div>
 
-              <h1 className="m-0 max-w-155 text-[36px] leading-[0.98] font-light tracking-[-0.042em] text-ink md:text-5xl lg:text-6xl">
+              <h1 className="m-0 max-w-155 text-4xl leading-[0.98] font-light tracking-[-0.042em] text-ink md:text-5xl lg:text-6xl">
                 {exam.title}
               </h1>
 
@@ -226,12 +237,14 @@ export default async function ExamDetails({ params }: Props) {
               {/* ── Timeline ── */}
               {structure.total > 0 && (
                 <FadeUp className="mt-14 lg:mt-18">
-                  <div className="mb-7 flex items-baseline justify-between gap-4">
+                  {/* Same wrap rule as the Nümunə heading below — this label is
+                      short today, but it is built from exam data too. */}
+                  <div className="mb-7 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                     <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">
                       Vaxt xətti
                     </h2>
                     {totalBreak > 0 && (
-                      <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
+                      <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
                         fasilə daxil {exam.durationMinutes}′
                       </span>
                     )}
@@ -320,15 +333,20 @@ export default async function ExamDetails({ params }: Props) {
                   when the bank holds nothing suitable. */}
               {sample && (
                 <FadeUp className="mt-14 lg:mt-18">
-                  <div className="mb-6 flex items-baseline justify-between gap-4">
+                  {/* `flex-wrap` + a shrinkable label, not `shrink-0`: the module
+                      name is exam data, and a long one ("READING & WRITING —
+                      MODULE 1") measured 340px against the 327px mobile content
+                      column, pushing the whole document 92px wide at 390px. It
+                      still sits on the headline's baseline wherever it fits. */}
+                  <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                     <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">Nümunə</h2>
-                    <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
+                    <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
                       {sampleModule ? `${upperLabel(sampleModule)} · ` : ''}
                       {exam.totalQuestions} sualdan biri
                     </span>
                   </div>
 
-                  <div className={`grid overflow-hidden rounded-[14px] border border-rule bg-surface ${
+                  <div className={`grid overflow-hidden rounded-panel border border-rule bg-surface ${
                     sample.explanation ? 'lg:grid-cols-[1fr_260px]' : ''
                   }`}>
                     <div className="border-b border-rule px-5 py-6 lg:border-r lg:border-b-0 lg:px-6">
@@ -346,7 +364,7 @@ export default async function ExamDetails({ params }: Props) {
                       )}
 
                       <p
-                        className="m-0 mb-5 text-[18px] leading-[1.45] text-ink"
+                        className="m-0 mb-5 text-lg leading-[1.45] text-ink"
                         dangerouslySetInnerHTML={{ __html: renderMath(sample.stem) }}
                       />
 
@@ -356,7 +374,7 @@ export default async function ExamDetails({ params }: Props) {
                           return (
                             <div
                               key={i}
-                              className={`flex items-baseline gap-3 rounded-[9px] border px-3.5 py-2.75 ${
+                              className={`flex items-baseline gap-3 rounded-btn border px-3.5 py-2.75 ${
                                 correct ? 'border-correct bg-correct' : 'border-rule'
                               }`}
                             >
@@ -397,8 +415,6 @@ export default async function ExamDetails({ params }: Props) {
             </div>
           </div>
         </div>
-      </main>
-      <Footer />
     </>
   );
 }

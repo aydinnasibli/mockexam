@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import type { StructureBlock } from '@/app/exams/structure';
+import type { StructureBlock } from '@/app/(public)/exams/structure';
 
 /**
  * The proportional timing diagram, drawn block by block as it scrolls into

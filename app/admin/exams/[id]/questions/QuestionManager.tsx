@@ -324,7 +324,7 @@ function QuestionForm({
   }
 
   return (
-    <div className="space-y-5 rounded-[14px] border border-ink-faint bg-surface-2 p-6">
+    <div className="space-y-5 rounded-panel border border-ink-faint bg-surface-2 p-6">
       {/* Type toggle */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="mono-label mr-1">Sual növü</span>
@@ -609,7 +609,7 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
   if (editing) return <QuestionForm examId={examId} moduleIndex={q.moduleIndex} initial={q} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />;
 
   return (
-    <div className="flex gap-4 rounded-[14px] border border-rule bg-surface p-5">
+    <div className="flex gap-4 rounded-panel border border-rule bg-surface p-5">
       <div className="w-6 shrink-0 pt-0.5 text-center font-mono text-[13px] tabular-nums text-ink-mute">
         {String(index + 1).padStart(2, '0')}
       </div>
@@ -645,7 +645,7 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
             {q.options.map((opt, i) => (
               <div key={i} className={`flex items-center gap-2 rounded-btn border px-3 py-1.5 text-xs ${
                 i === q.correctIndex
-                  ? 'border-correct bg-[rgba(47,92,62,0.07)] text-correct'
+                  ? 'border-correct bg-correct/7 text-correct'
                   : 'border-transparent bg-surface-2 text-ink-soft'
               }`}>
                 <span className="shrink-0 font-mono">{OPTION_LABELS[i]}.</span>
@@ -789,7 +789,7 @@ export default function QuestionManager({ examId, modules, initialQuestions }: P
                 {isAdding && <QuestionForm examId={examId} moduleIndex={mod.index} onDone={() => setAddingTo(null)} onCancel={() => setAddingTo(null)} />}
                 {!isAdding && (
                   <button type="button" onClick={() => setAddingTo(mod.index)}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-ink-faint py-3.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink hover:text-ink">
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-panel border border-dashed border-ink-faint py-3.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink hover:text-ink">
                     <Plus size={15} /> Sual əlavə et
                   </button>
                 )}

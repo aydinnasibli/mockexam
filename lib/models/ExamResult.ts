@@ -86,8 +86,10 @@ const ModuleScoreSchema = new Schema<IModuleScore>({
 
 const ExamResultSchema = new Schema<IExamResult>(
   {
-    userId:          { type: String, required: true, index: true },
-    examId:          { type: String, required: true, index: true },
+    // No field-level `index: true` on either: both are covered as prefixes of
+    // the compound indexes declared below. See the note there.
+    userId:          { type: String, required: true },
+    examId:          { type: String, required: true },
     examTitle:       { type: String, required: true },
     examTag:         { type: String, required: true },
     examType:        { type: String },
@@ -107,7 +109,29 @@ const ExamResultSchema = new Schema<IExamResult>(
   { timestamps: true }
 );
 
-ExamResultSchema.index({ userId: 1, examId: 1 });
+/*
+ * Two indexes, not four.
+ *
+ * A compound index serves any prefix of its own key, so `{userId}` and
+ * `{userId, examId}` were both already answered by the unique index below —
+ * they only cost write amplification and storage on every attempt saved.
+ *
+ *   {userId, completedAt:-1}
+ *     getUserResults() and the admin user page: find({userId}) sorted by
+ *     completedAt. The sort is served by the index rather than in memory.
+ *
+ *   {userId, examId, attemptNumber} unique
+ *     Enforces one row per attempt, and its prefixes answer
+ *     getExamResults({userId, examId}), getResultDetail(+attemptNumber),
+ *     ExamResult.exists({userId, examId}) and the reverse scan that
+ *     createResultWithNextAttempt() uses to find the current max attempt.
+ *
+ * NOTE: Mongoose creates indexes but never drops them. Removing these two
+ * declarations stops them being created on a fresh database; an existing
+ * deployment keeps them until they are dropped by hand:
+ *   db.examresults.dropIndex('userId_1')
+ *   db.examresults.dropIndex('userId_1_examId_1')
+ */
 ExamResultSchema.index({ userId: 1, completedAt: -1 });
 ExamResultSchema.index({ userId: 1, examId: 1, attemptNumber: 1 }, { unique: true });
 

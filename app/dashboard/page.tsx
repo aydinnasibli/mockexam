@@ -4,9 +4,9 @@ import { getActiveExams } from '@/lib/db/exams';
 import { getUserResults } from '@/lib/db/results';
 import { getUserSettings } from '@/lib/actions/settings';
 import { formatOverallScore } from '@/lib/scoring';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { ownedExamIds } from '@/lib/db/entitlements';
 import { reconcilePurchase } from '@/lib/reconcile';
+import { captureException } from '@/lib/observability';
 import { ArrowRight } from 'lucide-react';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
@@ -70,27 +70,31 @@ export default async function DashboardPage({
   const user = await currentUser();
   if (!user) return (await auth()).redirectToSignIn();
 
-  await dbConnect();
-
   // The bank redirects here on success (?purchased=<examId>). If the webhook
   // hasn't landed yet, reconcile against Epoint's get-status so the buyer gets
   // access immediately instead of staring at a page that doesn't show the exam.
   const { purchased } = await searchParams;
   if (purchased) {
-    // Never let a reconcile hiccup break the dashboard render.
+    // Never let a reconcile hiccup break the dashboard render — but report it.
+    // A buyer who lands here without access is a support ticket, and swallowing
+    // the cause silently is how it stays unexplained.
     try {
       await reconcilePurchase(user.id, purchased);
-    } catch {}
+    } catch (err) {
+      void captureException(err, {
+        tags: { page: 'dashboard', step: 'reconcilePurchase' },
+        extra: { userId: user.id, examId: purchased },
+      });
+    }
   }
 
-  const [allExams, results, purchases, userSettings] = await Promise.all([
+  const [allExams, results, purchasedIds, userSettings] = await Promise.all([
     getActiveExams(),
     getUserResults(user.id),
-    Purchase.find({ userId: user.id, status: 'COMPLETED' }, { examId: 1 }).lean(),
+    ownedExamIds(user.id),
     getUserSettings(),
   ]);
 
-  const purchasedIds   = purchases.map(p => p.examId as string);
   const purchasedExams = allExams.filter(e => purchasedIds.includes(e.id));
   const exploreExams   = allExams.filter(e => !purchasedIds.includes(e.id)).slice(0, 3);
 
@@ -245,7 +249,7 @@ export default async function DashboardPage({
                 with an icon chip apiece. */}
             <StaggerContainer className="panel grid grid-cols-1 sm:grid-cols-3" delay={0.08}>
               <StaggerItem className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className="figure text-[30px]">{purchasedExams.length}</div>
+                <div className="figure text-3xl">{purchasedExams.length}</div>
                 <p className="mono-label m-0 mt-2.5">Sınaqlarım</p>
                 {exploreExams.length > 0
                   ? <p className="m-0 mt-1.5 text-[13px] text-ink-soft">+{exploreExams.length} kataloqda</p>
@@ -254,7 +258,7 @@ export default async function DashboardPage({
               </StaggerItem>
 
               <StaggerItem className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className="figure text-[30px]">{results.length}</div>
+                <div className="figure text-3xl">{results.length}</div>
                 <p className="mono-label m-0 mt-2.5">Cəhdlər</p>
                 {weeklyAttempts > 0
                   ? <p className="m-0 mt-1.5 text-[13px] text-ok">+{weeklyAttempts} bu həftə</p>
@@ -265,12 +269,12 @@ export default async function DashboardPage({
               <StaggerItem className="px-5 py-5">
                 {typeAvgs.length === 0 ? (
                   <>
-                    <div className="figure text-[30px] text-ink-faint">—</div>
+                    <div className="figure text-3xl text-ink-faint">—</div>
                     <p className="mono-label m-0 mt-2.5">Ortalama</p>
                   </>
                 ) : typeAvgs.length === 1 ? (
                   <>
-                    <div className={`figure text-[30px] ${scoreColor(typeAvgs[0].avg)}`}>
+                    <div className={`figure text-3xl ${scoreColor(typeAvgs[0].avg)}`}>
                       {typeAvgs[0].avg}%
                     </div>
                     <p className="mono-label m-0 mt-2.5">{typeAvgs[0].label} ortalama</p>
@@ -301,7 +305,7 @@ export default async function DashboardPage({
               <FadeUp delay={0.1} className="mb-4 flex items-center justify-between gap-4 border-b border-ink pb-3">
                 <h2 className="mono-label mono-label-lg m-0 text-ink">Mənim Sınaqlarım</h2>
                 {results.length > 0 && (
-                  <Link href="/dashboard/analytics" className="flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+                  <Link href="/dashboard/analytics" className="-my-1 flex items-center gap-1 py-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
                     Nəticələr <ArrowRight size={12} />
                   </Link>
                 )}
@@ -327,7 +331,7 @@ export default async function DashboardPage({
               <section>
                 <FadeUp delay={0.05} className="mb-4 flex items-center justify-between gap-4 border-b border-ink pb-3">
                   <h2 className="mono-label mono-label-lg m-0 text-ink">Kəşf et</h2>
-                  <Link href="/exams" className="flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+                  <Link href="/exams" className="-my-1 flex items-center gap-1 py-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
                     Hamısı <ArrowRight size={12} />
                   </Link>
                 </FadeUp>
@@ -365,7 +369,7 @@ export default async function DashboardPage({
             {/* Countdown. An ink card carrying one big mono numeral — the same
                 object as the home hero's score-delta card. */}
             {countdown && (
-              <StaggerItem className="rounded-[14px] bg-ink px-6 pt-5.5 pb-6">
+              <StaggerItem className="rounded-panel bg-ink px-6 pt-5.5 pb-6">
                 <div className="mb-5 flex items-baseline justify-between gap-3">
                   <p className="mono-label mono-label-lg m-0 text-bg/50">İmtahan geri sayımı</p>
                   <Link href="/dashboard/settings" className="shrink-0 text-xs font-medium text-bg/50 transition-colors hover:text-bg">
@@ -395,7 +399,7 @@ export default async function DashboardPage({
               <StaggerItem className="panel">
                 <div className="panel-head">
                   <h2 className="mono-label mono-label-lg m-0 text-ink">Son Fəaliyyət</h2>
-                  <Link href="/dashboard/analytics" className="text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">Hamısı</Link>
+                  <Link href="/dashboard/analytics" className="-my-1 py-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">Hamısı</Link>
                 </div>
                 {/*
                   Each row links straight to that attempt's answer-by-answer

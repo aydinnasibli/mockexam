@@ -1,3 +1,5 @@
+// Holds the Upstash REST token; a client-side import must fail the build.
+import 'server-only';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { captureException } from '@/lib/observability';

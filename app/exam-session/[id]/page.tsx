@@ -2,8 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import { getExamQuestionsForSession } from '@/lib/actions/questions';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { hasExamAccess } from '@/lib/db/entitlements';
 import ExamSessionClient from './ExamSessionClient';
 
 interface Props {
@@ -23,14 +22,13 @@ export default async function ExamSessionPage({ params }: Props) {
 
   if (!userId) redirect(`/checkout/${id}`);
 
-  await dbConnect();
-  const [exam, purchase] = await Promise.all([
+  const [exam, hasAccess] = await Promise.all([
     getExamByIdAdmin(id),
-    Purchase.findOne({ userId, examId: id, status: 'COMPLETED' }).lean(),
+    hasExamAccess(userId, id),
   ]);
 
   if (!exam) notFound();
-  if (!purchase) redirect(`/checkout/${id}`);
+  if (!hasAccess) redirect(`/checkout/${id}`);
 
   const questions = await getExamQuestionsForSession(id);
 

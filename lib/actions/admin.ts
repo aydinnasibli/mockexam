@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
-import ExamModel, { computeExamTotals, MODULE_TYPES, type ModuleType } from '@/lib/models/Exam';
+import ExamModel, { computeExamTotals } from '@/lib/models/Exam';
 import { checkRole } from '@/lib/admin';
 import { isExamType, type ExamType } from '@/lib/exam-types';
+import { validateModules, type ParsedModule } from '@/lib/exam-modules';
 import { captureException } from '@/lib/observability';
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
@@ -30,64 +31,12 @@ async function requireAdmin() {
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
-const EXAM_ID_RE    = /^[a-z0-9-]{1,64}$/;
-const VALID_MOD_TYPES: Set<string> = new Set(MODULE_TYPES.map(t => t.value));
+const EXAM_ID_RE = /^[a-z0-9-]{1,64}$/;
 
 function validateExamId(raw: string): string | { error: string } {
   if (!EXAM_ID_RE.test(raw))
     return { error: 'ID yalnız kiçik hərf, rəqəm və tire (-) içərə bilər (maks. 64 simvol).' };
   return raw;
-}
-
-export interface ParsedModule {
-  name: string;
-  type: ModuleType;
-  durationMinutes: number;
-  questions: number;
-  breakAfterMinutes: number;
-  isAdaptive: boolean;
-  instructions: string;
-}
-
-export async function validateModules(raw: unknown): Promise<ParsedModule[] | { error: string }> {
-  if (!Array.isArray(raw) || raw.length === 0)
-    return { error: 'Ən azı bir modul əlavə edin.' };
-
-  const modules: ParsedModule[] = [];
-  for (const [i, m] of raw.entries()) {
-    if (!m || typeof m !== 'object') return { error: `Modul ${i + 1}: yanlış format.` };
-
-    const name = String(m.name ?? '').trim();
-    if (!name) return { error: `Modul ${i + 1}: ad tələb olunur.` };
-    if (name.length > 100) return { error: `Modul ${i + 1}: ad çox uzundur.` };
-
-    const rawType = String(m.type ?? '');
-    if (!VALID_MOD_TYPES.has(rawType)) return { error: `Modul ${i + 1}: yanlış modul növü.` };
-    const type = rawType as ModuleType;
-
-    const durationMinutes = Number(m.durationMinutes);
-    if (!Number.isFinite(durationMinutes) || durationMinutes < 1 || durationMinutes > 480)
-      return { error: `Modul ${i + 1}: müddət 1–480 dəqiqə arasında olmalıdır.` };
-
-    const questions = Number(m.questions ?? 0);
-    if (!Number.isFinite(questions) || questions < 0 || questions > 1000)
-      return { error: `Modul ${i + 1}: sual sayı 0–1000 arasında olmalıdır.` };
-
-    const breakAfterMinutes = Number(m.breakAfterMinutes ?? 0);
-    if (!Number.isFinite(breakAfterMinutes) || breakAfterMinutes < 0 || breakAfterMinutes > 120)
-      return { error: `Modul ${i + 1}: fasilə 0–120 dəqiqə arasında olmalıdır.` };
-
-    modules.push({
-      name,
-      type,
-      durationMinutes,
-      questions,
-      breakAfterMinutes,
-      isAdaptive:   !!m.isAdaptive,
-      instructions: String(m.instructions ?? '').slice(0, 1000),
-    });
-  }
-  return modules;
 }
 
 // ─── Base field parsing ───────────────────────────────────────────────────────
@@ -141,7 +90,7 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
   let modules: ParsedModule[];
   try {
     const parsed = JSON.parse(fields.modulesJson || '[]');
-    const result = await validateModules(parsed);
+    const result = validateModules(parsed);
     if ('error' in result) return result;
     modules = result;
   } catch (err) {
@@ -188,7 +137,7 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
   let modules: ParsedModule[];
   try {
     const parsed = JSON.parse(fields.modulesJson || '[]');
-    const result = await validateModules(parsed);
+    const result = validateModules(parsed);
     if ('error' in result) return result;
     modules = result;
   } catch (err) {

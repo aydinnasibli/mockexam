@@ -1,7 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { hasExamAccess } from '@/lib/db/entitlements';
 import { getResultDetail } from '@/lib/db/results';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import { getExamQuestionsForReview } from '@/lib/actions/questions';
@@ -26,9 +25,7 @@ export default async function ReviewPage({ params }: Props) {
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
 
-  await dbConnect();
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-  if (!purchase) redirect(`/exams/${examId}`);
+  if (!(await hasExamAccess(userId, examId))) redirect(`/exams/${examId}`);
 
   const [exam, result, questions] = await Promise.all([
     getExamByIdAdmin(examId),

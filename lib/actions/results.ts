@@ -16,6 +16,7 @@ import { computeAuthenticScores } from '@/lib/scoring';
 import { gradeAnswers } from '@/lib/grading';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
 import { captureException, captureMessage } from '@/lib/observability';
+import { hasExamAccess } from '@/lib/db/entitlements';
 
 type AnswerRecord = {
   questionId: string;
@@ -196,15 +197,29 @@ export async function saveExamResult(data: {
 
     // Validate the purchase before consuming an attempt number, so a failed
     // submission can't permanently burn one.
-    const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-    if (!purchase) return { error: 'Exam not purchased' };
+    if (!(await hasExamAccess(userId, examId))) return { error: 'Exam not purchased' };
 
-    const exam = await getExamByIdAdmin(examId);
+    // Three independent reads, issued together: the exam definition, the
+    // session clock, and the authoritative question set. In sequence they were
+    // three round-trips stacked in front of the student's submission.
+    //
+    // Only the fields grading and score aggregation need are selected —
+    // notably NOT `passage`/`stem`/`rubric`, which can run to tens of KB per
+    // question and are re-queried by the writing grader when an essay is
+    // actually assessed.
+    const [exam, session, questionDocs] = await Promise.all([
+      getExamByIdAdmin(examId),
+      ExamSessionModel.findOne({ userId, examId }).lean(),
+      QuestionModel.find({ examId })
+        .select('_id correctIndex moduleIndex order type openAnswers correctMatching writingTaskType')
+        .sort({ moduleIndex: 1, order: 1 })
+        .lean(),
+    ]);
+
     if (!exam) return { error: 'Exam not found' };
 
     // Validate against server-side session. Log overtime but still accept the submission
     // (this is a practice platform — we never discard a student's work).
-    const session = await ExamSessionModel.findOne({ userId, examId }).lean();
     let serverElapsed: number | null = null;
     if (session) {
       serverElapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
@@ -227,15 +242,6 @@ export async function saveExamResult(data: {
       ? serverElapsed + 300
       : exam.durationMinutes * 60 + 300;
     const safeDurationSeconds = Math.min(Math.round(durationSeconds), Math.max(0, durationCeiling));
-
-    // Fetch the authoritative question set. Only the fields grading and score
-    // aggregation need — notably NOT `passage`/`stem`/`rubric`, which can run to
-    // tens of KB per question and are re-queried by the writing grader when an
-    // essay is actually assessed.
-    const questionDocs = await QuestionModel.find({ examId })
-      .select('_id correctIndex moduleIndex order type openAnswers correctMatching writingTaskType')
-      .sort({ moduleIndex: 1, order: 1 })
-      .lean();
 
     if (questionDocs.length === 0) return { error: 'Bu imtahanda sual yoxdur.' };
 
@@ -417,7 +423,9 @@ async function gradePendingWritingOnResult(
   const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf, writingTaskTypeOf);
 
   result.score = averageOfPresent([nonWritingScore, writingScorePercent(records)]);
-  result.moduleScores = modScores as never;
+  // Plain objects into a Mongoose DocumentArray field: the cast names the target
+  // type rather than reaching for `as never`, which suppressed every check here.
+  result.moduleScores = modScores as unknown as IExamResult['moduleScores'];
   result.examType = result.examType ?? exam.type;
   result.overallBand = auth.overallBand;
   result.totalScaled = auth.totalScaled;

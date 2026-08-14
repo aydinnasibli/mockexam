@@ -39,7 +39,7 @@ export default function Navbar({ showBulletin = true }: Props) {
     <header className="w-full bg-bg">
       {showBulletin && (
         <div className="border-b border-rule bg-surface-2">
-          <div className="mx-auto flex h-8.5 w-full max-w-320 items-center justify-between gap-4 px-6 lg:px-10">
+          <div className="shell flex h-8.5 items-center justify-between gap-4">
             <span className={`${MONO_LABEL} truncate text-ink-mute`}>
               Akademik sınaq mərkəzi · Bakı
             </span>
@@ -51,10 +51,13 @@ export default function Navbar({ showBulletin = true }: Props) {
       )}
 
       <div className="border-b border-rule">
-        <nav className="relative mx-auto flex h-18 w-full max-w-320 items-center justify-between px-6 lg:px-10">
+        <nav className="shell relative flex h-18 items-center justify-between">
 
           {/* ── Logo ── */}
-          <Link href="/" className="flex shrink-0 items-center gap-2.25">
+          {/* -my-1 py-1: the lockup is 22px tall, 2px under the WCAG 2.5.8
+              target minimum. The nav bar has a fixed height, so the padding
+              cannot move anything. */}
+          <Link href="/" className="-my-1 flex shrink-0 items-center gap-2.25 py-1">
             <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
             <span className="text-[22px] leading-none font-medium tracking-tight text-ink">
               Test<span className="font-light text-ink-soft">centre</span>
@@ -108,7 +111,7 @@ export default function Navbar({ showBulletin = true }: Props) {
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className="cursor-pointer rounded-full bg-ink px-5 py-2.25 text-[13px] font-medium text-bg transition-colors duration-150 hover:bg-[#2A2A2A]">
+                    <button className="cursor-pointer rounded-full bg-ink px-5 py-2.25 text-[13px] font-medium text-bg transition-colors duration-150 hover:bg-ink-hover">
                       Qeydiyyat
                     </button>
                   </SignUpButton>
@@ -117,7 +120,7 @@ export default function Navbar({ showBulletin = true }: Props) {
                 <>
                   <Link
                     href="/dashboard"
-                    className={`flex items-center gap-1.5 text-[13px] font-medium transition-colors duration-150 ${
+                    className={`-my-1 flex items-center gap-1.5 py-1 text-[13px] font-medium transition-colors duration-150 ${
                       pathname.startsWith("/dashboard") ? "text-ink" : "text-ink-soft hover:text-ink"
                     }`}
                   >
@@ -159,7 +162,7 @@ export default function Navbar({ showBulletin = true }: Props) {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden border-b border-rule bg-bg md:hidden"
           >
-            <div className="mx-auto w-full max-w-320 px-6 py-2">
+            <div className="shell py-2">
               {navLinks.map(({ href, label }) => {
                 const isActive = pathname === href || pathname.startsWith(href + '/');
                 return (
@@ -176,8 +179,13 @@ export default function Navbar({ showBulletin = true }: Props) {
                 );
               })}
 
+              {/* Same `isLoaded` gate as the desktop group: without it the
+                  mobile menu shows "Daxil ol / Qeydiyyat" to a signed-in user
+                  for the moment before Clerk resolves. */}
               <div className="border-t border-rule py-4">
-                {!isSignedIn ? (
+                {!isLoaded ? (
+                  <div className="h-10" aria-hidden />
+                ) : !isSignedIn ? (
                   <div className="flex gap-2">
                     <SignInButton mode="modal">
                       <button
@@ -190,7 +198,7 @@ export default function Navbar({ showBulletin = true }: Props) {
                     <SignUpButton mode="modal">
                       <button
                         onClick={() => setMobileOpen(false)}
-                        className="flex-1 cursor-pointer rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg transition-colors hover:bg-[#2A2A2A]"
+                        className="flex-1 cursor-pointer rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg transition-colors hover:bg-ink-hover"
                       >
                         Qeydiyyat
                       </button>

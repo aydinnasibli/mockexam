@@ -5,11 +5,11 @@ import { auth } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/models/Question';
-import Purchase from '@/lib/models/Purchase';
 import ExamResult from '@/lib/models/ExamResult';
 import { checkRole } from '@/lib/admin';
 import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
 import { captureException } from '@/lib/observability';
+import { hasExamAccess } from '@/lib/db/entitlements';
 
 export interface QuestionData {
   id: string;
@@ -66,8 +66,7 @@ export async function getExamQuestionsForSession(examId: string): Promise<Sessio
   if (!userId) throw new Error('Unauthorized');
 
   await dbConnect();
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-  if (!purchase) throw new Error('Exam not purchased');
+  if (!(await hasExamAccess(userId, examId))) throw new Error('Exam not purchased');
 
   const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
   return docs.map(d => ({
@@ -95,8 +94,7 @@ export async function getExamQuestionsForReview(examId: string): Promise<Questio
   if (!userId) throw new Error('Unauthorized');
 
   await dbConnect();
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-  if (!purchase) throw new Error('Exam not purchased');
+  if (!(await hasExamAccess(userId, examId))) throw new Error('Exam not purchased');
 
   const hasCompletedAttempt = await ExamResult.exists({ userId, examId });
   if (!hasCompletedAttempt) throw new Error('No completed attempt');
@@ -182,7 +180,7 @@ export async function addQuestion(data: {
     return { id: String(doc._id) };
   } catch (err) {
     void captureException(err, { tags: { action: 'addQuestion' } });
-    return { error: err instanceof Error ? err.message : 'Server error' };
+    return { error: 'Server xətası.' };
   }
 }
 
@@ -211,13 +209,16 @@ export async function updateQuestion(
     await requireAdmin();
     if (!isAllowedImageUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
     await dbConnect();
-    const doc = await QuestionModel.findByIdAndUpdate(id, data, { new: true });
+    // `runValidators` so a partial update is held to the same schema rules as a
+    // create — without it, an edit could write a question `type` or
+    // `writingTaskType` the enum does not allow.
+    const doc = await QuestionModel.findByIdAndUpdate(id, data, { new: true, runValidators: true });
     if (!doc) return { error: 'Not found' };
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'updateQuestion' } });
-    return { error: err instanceof Error ? err.message : 'Server error' };
+    return { error: 'Server xətası.' };
   }
 }
 
@@ -234,7 +235,7 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'deleteQuestion' } });
-    return { error: err instanceof Error ? err.message : 'Server error' };
+    return { error: 'Server xətası.' };
   }
 }
 
@@ -247,11 +248,15 @@ export async function reorderQuestions(
   try {
     await requireAdmin();
     await dbConnect();
-    await Promise.all(orderedIds.map((id, i) => QuestionModel.updateOne({ _id: id }, { order: i })));
+    // Scoped to the exam and module being reordered, so an id belonging to a
+    // different exam cannot have its `order` rewritten by passing it in here.
+    await Promise.all(orderedIds.map((id, i) =>
+      QuestionModel.updateOne({ _id: id, examId, moduleIndex }, { order: i }),
+    ));
     revalidatePath(`/admin/exams/${examId}/questions`);
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'reorderQuestions' } });
-    return { error: err instanceof Error ? err.message : 'Server error' };
+    return { error: 'Server xətası.' };
   }
 }

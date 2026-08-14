@@ -1,3 +1,5 @@
+// Reads the Epoint merchant keys and calls the payment API.
+import 'server-only';
 import dbConnect from '@/lib/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';

@@ -48,3 +48,9 @@ next-env.d.ts
 
 # playwright
 .playwright-mcp/
+
+# impeccable design-critique artifacts
+.impeccable/
+
+# local screenshots / debug captures
+/*.png

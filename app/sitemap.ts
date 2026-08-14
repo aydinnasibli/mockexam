@@ -12,7 +12,8 @@ import { BASE_URL } from '@/lib/seo';
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const exams = await getActiveExams();
+  // Static pages must still ship if Mongo is unreachable (e.g. CI builds).
+  const exams = await getActiveExams().catch(() => []);
 
   const examUrls: MetadataRoute.Sitemap = exams.map((exam) => ({
     url: `${BASE_URL}/exams/${exam.id}`,

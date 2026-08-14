@@ -16,7 +16,7 @@ export default function GlobalError({ error, reset }: Props) {
   }, [error]);
 
   return (
-    <html>
+    <html lang="az">
       <body>
         <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backgroundColor: '#f0f2f5' }}>
           <div style={{ textAlign: 'center', maxWidth: '28rem' }}>

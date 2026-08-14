@@ -8,7 +8,7 @@ import RouteTransition from "@/components/ui/RouteTransition";
 import NavProgress from "@/components/ui/NavProgress";
 import PostHogIdentify from "@/components/PostHogIdentify";
 import CookieNotice from "@/components/ui/CookieNotice";
-import { BASE_URL } from "@/lib/seo";
+import { BASE_URL, jsonLd } from "@/lib/seo";
 import "./globals.css";
 
 /*
@@ -138,7 +138,8 @@ export default function RootLayout({
   // egress destination for analytics we don't use.
   return (
     <ClerkProvider telemetry={false}>
-      <html lang="az" className={`${archivo.variable} ${mono.variable}`}>
+      {/* Next 16 only overrides scroll-behavior on navigation when this attribute is set. */}
+      <html lang="az" data-scroll-behavior="smooth" className={`${archivo.variable} ${mono.variable}`}>
         <head>
           {/*
             Kept in <head> rather than as a child of <body>: Clerk and PostHog
@@ -149,9 +150,7 @@ export default function RootLayout({
           */}
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(organizationSchema).replace(/</g, '\\u003c'),
-            }}
+            dangerouslySetInnerHTML={{ __html: jsonLd(organizationSchema) }}
           />
         </head>
         <body className="antialiased">

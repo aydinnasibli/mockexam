@@ -8,6 +8,20 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    # `/` and the admin pages prerender content read from Mongo, so the build
+    # genuinely needs a reachable database. An empty one is enough.
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,9 +43,9 @@ jobs:
         run: npm test
 
       - name: Build
-        # The build only needs these to be present and well-formed, not valid:
-        # nothing is contacted at build time. Real values live in the host's
-        # environment settings.
+        # MONGODB_URI points at the service container above — the build queries
+        # it. The Clerk keys only need to be well-formed; the CSP is derived
+        # from the publishable key at build time. Real values live in the host.
         env:
           MONGODB_URI: mongodb://localhost:27017/ci
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA

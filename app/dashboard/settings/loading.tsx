@@ -7,7 +7,7 @@ import { Skeleton, SkeletonScreen } from '@/components/ui/Skeleton';
  */
 export default function SettingsLoading() {
   return (
-    <main className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg">
       <SkeletonScreen className="mx-auto max-w-2xl px-6 py-10" label="Parametrlər yüklənir">
 
         <header className="mb-9">
@@ -56,6 +56,6 @@ export default function SettingsLoading() {
           ))}
         </div>
       </SkeletonScreen>
-    </main>
+    </div>
   );
 }

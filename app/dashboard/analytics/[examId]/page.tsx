@@ -4,8 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getExamResults } from '@/lib/db/results';
 import { getExamById } from '@/lib/db/exams';
 import { formatOverallScore, formatModuleScore, roundHalfBand } from '@/lib/scoring';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { hasExamAccess } from '@/lib/db/entitlements';
 import { ArrowLeft } from 'lucide-react';
 import type { ResultSummary } from '@/lib/db/results';
 
@@ -79,9 +78,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
 
-  await dbConnect();
-  const purchase = await Purchase.findOne({ userId, examId, status: 'COMPLETED' }).lean();
-  if (!purchase) redirect(`/exams/${examId}`);
+  if (!(await hasExamAccess(userId, examId))) redirect(`/exams/${examId}`);
 
   const [exam, results] = await Promise.all([
     getExamById(examId),
@@ -113,7 +110,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
   const expectedSecPerQ = exam.totalQuestions > 0 ? (examNetMin * 60) / exam.totalQuestions : 0;
 
   return (
-    <main className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg">
       <div className="mx-auto max-w-4xl px-6 py-10">
 
         <Link href="/dashboard/analytics" className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
@@ -124,7 +121,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
         <div className="mb-6 flex flex-col items-start justify-between gap-5 border-b border-ink pb-6 sm:flex-row sm:items-end">
           <div className="min-w-0">
             <span className="tag tag-accent mb-3.5">{exam.tag}</span>
-            <h1 className="m-0 text-[28px] leading-[1.06] font-light tracking-[-0.03em] text-ink md:text-[36px]">{exam.title}</h1>
+            <h1 className="m-0 text-[28px] leading-[1.06] font-light tracking-[-0.03em] text-ink md:text-4xl">{exam.title}</h1>
             <div className="mono-label mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>{examNetMin} dəq</span>
               <span>{exam.totalQuestions} sual</span>
@@ -149,19 +146,19 @@ export default async function ExamAnalyticsPage({ params }: Props) {
             {/* Stats — the home hero's figure row */}
             <div className="panel mb-6 grid grid-cols-1 sm:grid-cols-3">
               <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className={`figure text-[30px] ${scoreColor(best!)}`}>
+                <div className={`figure text-3xl ${scoreColor(best!)}`}>
                   {bestDisp?.value}{bestDisp && bestDisp.unit !== '%' && <span className="ml-1.5 text-sm text-ink-mute">{bestDisp.unit}</span>}{bestDisp?.unit === '%' && '%'}
                 </div>
                 <p className="mono-label m-0 mt-2.5">Ən yaxşı bal</p>
               </div>
               <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className={`figure text-[30px] ${scoreColor(avg!)}`}>
+                <div className={`figure text-3xl ${scoreColor(avg!)}`}>
                   {avgDisp?.value}{avgDisp && avgDisp.unit !== '%' && <span className="ml-1.5 text-sm text-ink-mute">{avgDisp.unit}</span>}{avgDisp?.unit === '%' && '%'}
                 </div>
                 <p className="mono-label m-0 mt-2.5">Ortalama bal</p>
               </div>
               <div className="px-5 py-5">
-                <div className="figure text-[30px]">{attempts}</div>
+                <div className="figure text-3xl">{attempts}</div>
                 <p className="mono-label m-0 mt-2.5">Ümumi cəhd</p>
               </div>
             </div>
@@ -187,8 +184,11 @@ export default async function ExamAnalyticsPage({ params }: Props) {
               </div>
             )}
 
-            {/* Time efficiency */}
-            {last && exam.totalQuestions > 0 && (
+            {/* Time efficiency.
+                `last.totalQuestions` is the attempt's own graded count, which
+                can be 0 (an exam whose bank was emptied after the attempt) even
+                when the exam declares questions — dividing by it printed NaN. */}
+            {last && exam.totalQuestions > 0 && last.totalQuestions > 0 && expectedSecPerQ > 0 && (
               <div className="panel mb-6">
                 <div className="panel-head">
                   <h2 className="mono-label mono-label-lg m-0 text-ink">Vaxt effektivliyi</h2>
@@ -327,6 +327,6 @@ export default async function ExamAnalyticsPage({ params }: Props) {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }

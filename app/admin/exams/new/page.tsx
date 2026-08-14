@@ -2,10 +2,15 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import ExamForm from '../ExamForm';
 import AdminPageHeader from '../../PageHeader';
+import { requireAdminPage } from '@/lib/admin';
 
 export const metadata = { title: 'Yeni İmtahan — Admin' };
 
-export default function NewExamPage() {
+export default async function NewExamPage() {
+  // Third, independent guard, the same as every other admin page — see
+  // `requireAdminPage`. This was the one admin route relying on the layout alone.
+  await requireAdminPage();
+
   return (
     <div>
       <Link

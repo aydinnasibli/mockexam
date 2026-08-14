@@ -1,3 +1,4 @@
+import 'server-only';
 import dbConnect from '@/lib/mongodb';
 import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
 

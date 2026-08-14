@@ -1,3 +1,6 @@
+// Signs payloads with EPOINT_PRIVATE_KEY; never allowed into a client bundle.
+// (vitest aliases `server-only` to a stub, so lib/epoint.test.ts still runs.)
+import 'server-only';
 import crypto from 'crypto';
 
 const EPOINT_BASE = 'https://epoint.az/api/1';
@@ -31,6 +34,25 @@ export function encodeOrderId(userId: string, examId: string): string {
   return Buffer.from(JSON.stringify({ u: userId, e: examId, t: Date.now() })).toString('base64url');
 }
 
+/**
+ * Reverses `encodeOrderId`.
+ *
+ * Throws on anything that is not a well-formed order id. The caller writes the
+ * decoded `u`/`e` straight into a purchase upsert, so a payload that decodes to
+ * a number, `null`, or an object missing those keys must not slip through as
+ * `undefined` and mint a purchase row keyed on nothing.
+ */
 export function decodeOrderId(orderId: string): { u: string; e: string } {
-  return JSON.parse(Buffer.from(orderId, 'base64url').toString('utf8'));
+  const decoded: unknown = JSON.parse(Buffer.from(orderId, 'base64url').toString('utf8'));
+  if (
+    !decoded || typeof decoded !== 'object' ||
+    typeof (decoded as { u?: unknown }).u !== 'string' ||
+    typeof (decoded as { e?: unknown }).e !== 'string' ||
+    !(decoded as { u: string }).u ||
+    !(decoded as { e: string }).e
+  ) {
+    throw new Error('Malformed order_id payload');
+  }
+  const { u, e } = decoded as { u: string; e: string };
+  return { u, e };
 }

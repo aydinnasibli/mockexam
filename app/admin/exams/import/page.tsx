@@ -74,7 +74,7 @@ export default function ImportExamPage() {
           <span className="dot" aria-hidden />
           <span className="mono-label mono-label-lg text-ink">İdxal</span>
         </div>
-        <h1 className="m-0 text-[30px] leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-[38px]">
+        <h1 className="m-0 text-3xl leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-[38px]">
           İmtahan yüklə (JSON).
         </h1>
         <p className="m-0 mt-3.5 text-[15px] text-ink-soft">
@@ -84,7 +84,7 @@ export default function ImportExamPage() {
 
       <div className="space-y-5">
         {/* File Input */}
-        <div className="relative rounded-[14px] border border-dashed border-ink-faint bg-surface px-6 py-14 text-center transition-colors hover:border-ink">
+        <div className="relative rounded-panel border border-dashed border-ink-faint bg-surface px-6 py-14 text-center transition-colors hover:border-ink">
           <input
             type="file"
             accept="application/json"
@@ -110,7 +110,7 @@ export default function ImportExamPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="flex items-start gap-3 rounded-[14px] border border-error/25 bg-[rgba(140,58,43,0.05)] px-5 py-4 text-sm text-error">
+          <div className="flex items-start gap-3 rounded-panel border border-error/25 bg-error/5 px-5 py-4 text-sm text-error">
             <AlertCircle size={17} className="mt-0.5 shrink-0" />
             <p className="m-0">{error}</p>
           </div>

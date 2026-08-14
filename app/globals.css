@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 @plugin "@tailwindcss/forms";
-@plugin "@tailwindcss/container-queries";
 
 @theme {
   /* ── New design system (user-facing pages) ──────────── */
@@ -18,14 +17,18 @@
      #6E6E66 is the lightest value that clears 4.5:1 on all of
      bg #FAFAF6, white, and surface-2 #F4F2EC. */
   --color-ink:       #1A1A1A;
+  /* Hover lift for ink-filled buttons; was 5× `hover:bg-[#2A2A2A]` at call sites. */
+  --color-ink-hover: #2A2A2A;
   --color-ink-soft:  #5A5A5A;
   --color-ink-mute:  #6E6E66;
   /* Decorative only — never use for text that must be read. */
   --color-ink-faint: #C8C5BC;
 
-  /* Borders */
-  --color-rule:      #E8E5DC;
-  --color-rule-soft: #F0EDE4;
+  /* Borders. `rule-strong` is the darker hairline the home figures and the
+     about/contact list rules use; it was 9× `border-[#E0DDD4]` at call sites. */
+  --color-rule:        #E8E5DC;
+  --color-rule-soft:   #F0EDE4;
+  --color-rule-strong: #E0DDD4;
 
   /* Accent — ink black palette */
   --color-accent:      #1A1A1A;
@@ -42,51 +45,16 @@
   --color-warn:    #B8732B;
   --color-error:   #8C3A2B;
 
-  /* ── Legacy tokens (admin pages) ────────────────────── */
-  --color-primary:     #001e40;
-  --color-primary-mid: #1d4ed8;
-  --color-secondary:   #00629d;
-  --color-secondary-container: #cfe5ff;
-  --color-tertiary:    #7c3aed;
-
-  --color-surface-bright:              #f7f9fb;
-  --color-surface-subtle:              #f2f4f6;
-  --color-surface-muted:               #eceef0;
-  --color-background:                  #f7f9fb;
-  --color-surface-container-lowest:    #ffffff;
-  --color-surface-container-low:       #f2f4f6;
-  --color-surface-container:           #eceef0;
-  --color-surface-container-high:      #e6e8ea;
-  --color-surface-container-highest:   #e0e3e5;
-  --color-surface-dim:                 #d8dadc;
-  --color-surface-variant:             #e0e3e5;
-  --color-on-surface:                  #191c1e;
-  --color-on-surface-variant:          #43474f;
-  --color-on-primary:                  #ffffff;
-  --color-on-secondary:                #ffffff;
-  --color-on-accent-legacy:            #ffffff;
-  --color-on-primary-container:        #799dd6;
-  --color-on-secondary-container:      #003558;
-  --color-outline:                     #737780;
-  --color-outline-variant:             #c3c6d1;
-  --color-error-legacy:                #ba1a1a;
-  --color-error-container:             #ffdad6;
-  --color-on-error:                    #ffffff;
-  --color-on-error-container:          #93000a;
-  --color-primary-container:           #003366;
-  --color-primary-fixed:               #d5e3ff;
-  --color-primary-fixed-dim:           #a7c8ff;
-  --color-on-primary-fixed:            #001b3c;
-  --color-on-primary-fixed-variant:    #1f477b;
-  --color-secondary-fixed:             #cfe5ff;
-  --color-secondary-fixed-dim:         #98cbff;
-  --color-on-secondary-fixed:          #001d33;
-  --color-on-secondary-fixed-variant:  #004a77;
-  --color-inverse-surface:             #1e293b;
-  --color-inverse-on-surface:          #f2f4f6;
-  --color-inverse-primary:             #a7c8ff;
-  --color-surface-tint:                #3a5f94;
-  --color-on-background:               #191c1e;
+  /* ── Legacy tokens (admin pages) ──────────────────────
+     Only the eight still referenced; 35 unused Material-derived tokens removed. */
+  --color-primary:               #001e40;
+  --color-secondary:             #00629d;
+  --color-secondary-fixed:       #cfe5ff;
+  --color-surface-subtle:        #f2f4f6;
+  --color-surface-container:     #eceef0;
+  --color-surface-container-low: #f2f4f6;
+  --color-on-surface-variant:    #43474f;
+  --color-outline-variant:       #c3c6d1;
 
   /* ── Fonts ───────────────────────────────────────────────
      Archivo serves both the display and body roles. The two tokens stay
@@ -99,13 +67,14 @@
   --font-mono:    var(--font-jetbrains-mono), ui-monospace, monospace;
 
   /* Legacy font aliases */
-  --font-body:     var(--font-archivo), system-ui, -apple-system, sans-serif;
   --font-headline: var(--font-archivo), system-ui, -apple-system, sans-serif;
-  --font-label:    var(--font-archivo), system-ui, -apple-system, sans-serif;
 
   /* ── Sizing ──────────────────────────────────────────── */
-  --radius-card: 16px;
-  --radius-btn:  10px;
+  /* Three steps, one per surface: control, panel, card. Anything reaching for a
+     fourth value (the old rounded-[9px]/[14px]/[16px]) belongs on one of these. */
+  --radius-btn:   10px;
+  --radius-panel: 14px;
+  --radius-card:  16px;
 
   /* ── Motion ──────────────────────────────────────────────
      `--ease-out-soft` is the only easing curve in the design; every entrance
@@ -118,6 +87,32 @@
   --shadow-sm: 0 1px 2px rgba(26,26,26,0.04);
   --shadow-md: 0 2px 8px rgba(26,26,26,0.05), 0 1px 2px rgba(26,26,26,0.04);
   --shadow-lg: 0 8px 32px rgba(26,26,26,0.06), 0 2px 6px rgba(26,26,26,0.04);
+}
+
+/* ── Page shells ──────────────────────────────────────────────────────────────
+   `@utility`, not `@layer utilities`: only the former registers a real utility
+   in v4, so `md:shell` works and Tailwind sorts it by property count.
+
+   Applied at the inner element, never on <main>: full-bleed sections carry the
+   background and rules, and the shell centres the content inside them. */
+
+/* The 80rem column every public page centres on. Was `mx-auto w-full max-w-320
+   px-6 lg:px-10` repeated at 25 call sites; max-w-320 resolved to the same
+   80rem as the stock max-w-7xl. */
+@utility shell {
+  width: 100%;
+  max-width: var(--container-7xl);
+  margin-inline: auto;
+  padding-inline: --spacing(6);
+  @media (width >= 64rem) { padding-inline: --spacing(10); }
+}
+
+/* Narrower reading column for the legal pages. */
+@utility shell-prose {
+  width: 100%;
+  max-width: --spacing(215);
+  margin-inline: auto;
+  padding-inline: --spacing(8);
 }
 
 @layer base {
@@ -147,37 +142,16 @@
 
 @layer utilities {
   /* ── Legacy admin utilities ── */
-  .glass-nav {
-    background: rgba(247,249,251,0.85);
-    backdrop-filter: blur(20px);
-  }
-
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
   .tc-card {
-    background-color: #ffffff;
+    background-color: var(--color-surface);
     border-radius: 1rem;
-    border: 1px solid #c3c6d1;
+    border: 1px solid var(--color-outline-variant);
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
   }
 
-  .tc-btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem 1.75rem;
-    background: linear-gradient(135deg,#001e40 0%,#003366 100%);
-    color: #ffffff;
-    border-radius: 9999px;
-    font-weight: 700;
-    font-size: 0.875rem;
-    transition: opacity 0.15s, transform 0.15s;
-  }
-  .tc-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-
-  .tc-gradient { background: linear-gradient(135deg,#001e40 0%,#003366 100%); }
-  .tc-gradient-hero { background: linear-gradient(135deg,#001e40 0%,#1f477b 60%,#00629d 100%); }
   .editorial-gradient { background: linear-gradient(135deg,#001e40 0%,#003366 100%); }
 
   /* Form controls. These predate the redesign but are now used only by the
@@ -248,7 +222,7 @@
     transition: background 0.2s, transform 0.15s;
     text-decoration: none;
   }
-  .btn-primary:hover { background: #2A2A2A; }
+  .btn-primary:hover { background: var(--color-ink-hover); }
   .btn-primary:active { transform: translateY(1px); }
   .btn-primary .arrow { display: inline-block; transition: transform 0.2s; }
   .btn-primary:hover .arrow { transform: translateX(3px); }
@@ -284,15 +258,16 @@
   }
   .tag-accent { background: var(--color-accent-soft); color: var(--color-accent); }
   .tag-ink    { background: var(--color-ink); color: var(--color-bg); }
-  .tag-ok     { background: rgba(47,92,62,0.1); color: var(--color-ok); }
-  .tag-warn   { background: rgba(184,115,43,0.1); color: var(--color-warn); }
-  .tag-error  { background: rgba(162,58,46,0.08); color: var(--color-error); }
+  /* Tints derived from their own token, so a token change cannot drift from the fill. */
+  .tag-ok     { background: color-mix(in srgb, var(--color-ok) 10%, transparent); color: var(--color-ok); }
+  .tag-warn   { background: color-mix(in srgb, var(--color-warn) 10%, transparent); color: var(--color-warn); }
+  .tag-error  { background: color-mix(in srgb, var(--color-error) 8%, transparent); color: var(--color-error); }
 
   /* Cards */
   .card-new {
     background: var(--color-surface);
     border: 1px solid var(--color-rule);
-    border-radius: 16px;
+    border-radius: var(--radius-card);
     padding: 28px;
   }
   .card-new-hover {
@@ -309,7 +284,7 @@
     width: 100%;
     background: var(--color-surface);
     border: 1px solid var(--color-rule);
-    border-radius: 10px;
+    border-radius: var(--radius-btn);
     padding: 14px 16px;
     font-family: var(--font-sans);
     /* 16px — see .input-field: anything smaller triggers iOS focus zoom. */
@@ -371,35 +346,11 @@
     position: relative;
   }
 
-  /* Dot accent */
-  .accent-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-accent);
-    display: inline-block;
-    flex-shrink: 0;
-  }
-
-  /* Navbar frosted */
+  /* Navbar frosted. `--color-bg` at partial alpha; color-mix keeps it tied to the token. */
   .nav-frosted {
-    background: rgba(250,250,246,0.88);
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-  }
-
-  /* Navbar floating pill */
-  .nav-frosted-pill {
-    background: rgba(250,250,246,0.92);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  }
-
-  /* Navbar premium full-width */
-  .nav-premium {
-    background: rgba(250,250,246,0.96);
-    backdrop-filter: blur(28px) saturate(1.8);
-    -webkit-backdrop-filter: blur(28px) saturate(1.8);
   }
 
   /* Selection */
@@ -522,8 +473,6 @@
   .rise   { animation: rise 0.6s var(--ease-out-soft) both; }
   .rise-1 { animation-delay: 0.05s; }
   .rise-2 { animation-delay: 0.10s; }
-  .rise-3 { animation-delay: 0.15s; }
-  .rise-4 { animation-delay: 0.22s; }
 
   /* Type is expressed with stock Tailwind utilities at the call site
      (font-display / text-3xl md:text-4xl / leading-tight / tracking-tight).
@@ -541,24 +490,6 @@
     display: inline-block;
     flex-shrink: 0;
   }
-
-  /* Dark card */
-  .card-ink {
-    background: var(--color-ink);
-    color: var(--color-bg);
-    padding: 28px;
-    border-radius: 16px;
-  }
-
-  /* Soft card */
-  .card-soft {
-    background: var(--color-surface-2);
-    padding: 28px;
-    border-radius: 16px;
-  }
-
-  /* Section head */
-  .section-head { margin-bottom: 56px; }
 
   /* ── Signed-in surfaces (dashboard + admin) ───────────────────────────────
      The kabinet and the admin panel are built from the same vocabulary as the
@@ -607,7 +538,7 @@
   .panel {
     background: var(--color-surface);
     border: 1px solid var(--color-rule);
-    border-radius: 14px;
+    border-radius: var(--radius-panel);
   }
   .panel-head {
     display: flex;
@@ -731,8 +662,7 @@
 /* An ink ring is invisible on an ink band, so anything focusable inside one
    switches to bone. Keyed off the background utility itself, which is the only
    thing that marks those sections. */
-.bg-ink :focus-visible,
-.card-ink :focus-visible {
+.bg-ink :focus-visible {
   outline-color: var(--color-bg);
 }
 

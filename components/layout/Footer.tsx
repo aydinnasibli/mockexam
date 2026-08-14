@@ -41,7 +41,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string
 export default function Footer() {
   return (
     <footer className="w-full border-t border-ink bg-bg">
-      <div className="mx-auto w-full max-w-320 px-6 lg:px-10">
+      <div className="shell">
 
         {/* Tier 1 — wordmark and contact */}
         <div className="flex flex-col gap-8 pt-12 pb-10 sm:flex-row sm:items-end sm:justify-between lg:pt-14">
@@ -80,7 +80,7 @@ export default function Footer() {
                     <Link
                       key={link.label}
                       href={link.href}
-                      className="text-[15px] text-ink-soft transition-colors duration-150 hover:text-ink"
+                      className="-my-1 py-1 text-[15px] text-ink-soft transition-colors duration-150 hover:text-ink"
                     >
                       {link.label}
                     </Link>

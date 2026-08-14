@@ -4,8 +4,7 @@ import { getUserResults } from '@/lib/db/results';
 import { getActiveExams } from '@/lib/db/exams';
 import { formatOverallScore } from '@/lib/scoring';
 import { examTypeLabel } from '@/lib/exam-types';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { ownedExamIds } from '@/lib/db/entitlements';
 import { ChevronRight } from 'lucide-react';
 
 export const metadata = { title: 'Nəticələr' };
@@ -73,14 +72,13 @@ export default async function AnalyticsPage() {
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
 
-  const [results, allExams] = await Promise.all([
+  const [results, allExams, owned] = await Promise.all([
     getUserResults(userId),
     getActiveExams(),
+    ownedExamIds(userId),
   ]);
 
-  await dbConnect();
-  const purchases = await Purchase.find({ userId, status: 'COMPLETED' }, { examId: 1 }).lean();
-  const purchasedIds = new Set(purchases.map(p => p.examId));
+  const purchasedIds = new Set(owned);
   const purchasedExams = allExams.filter(e => purchasedIds.has(e.id));
 
   const byExam = new Map<string, typeof results>();
@@ -202,7 +200,15 @@ export default async function AnalyticsPage() {
 
             // The score column has to hold a meter plus a two-token label
             // ("6.0 Band", "1210 / 1600") on one line — at 92px it wrapped.
-            const COLS = 'grid-cols-[36px_1fr_84px_130px_70px]';
+            //
+            // The five fixed tracks plus gaps and padding need 416px, so at
+            // 390px this grid pushed the whole document to 462px wide. Below
+            // `sm` it drops to four narrower tracks and the duration column is
+            // hidden (it is the one value also shown on the attempt detail
+            // page), which keeps the date column readable instead of crushing
+            // every track to fit.
+            const COLS =
+              'grid-cols-[28px_1fr_92px_54px] sm:grid-cols-[36px_1fr_84px_130px_70px]';
 
             return (
               <div key={exam.id} className="panel">
@@ -214,9 +220,13 @@ export default async function AnalyticsPage() {
                       <span className="tag tag-accent">{exam.tag}</span>
                       <span className="tag">{examResults.length} cəhd</span>
                     </div>
-                    <h3 className="m-0 mb-2 text-lg font-medium tracking-[-0.015em] text-ink">
+                    {/* h2, not h3: this is the only heading level under the
+                        page's h1, and jumping straight to h3 breaks the outline
+                        a screen-reader user navigates by. Size is set by the
+                        utility, not the tag. */}
+                    <h2 className="m-0 mb-2 text-lg font-medium tracking-[-0.015em] text-ink">
                       {exam.title}
-                    </h3>
+                    </h2>
                     <div className="mono-label flex flex-wrap items-center gap-x-4 gap-y-1">
                       <span>{examMinutes} dəq</span>
                       <span>
@@ -240,10 +250,10 @@ export default async function AnalyticsPage() {
                 {/* Attempts table */}
                 <div className="border-t border-rule">
                   {/* Table header */}
-                  <div className={`mono-label grid ${COLS} gap-3 border-b border-rule bg-surface-2 px-6 py-2.5`}>
+                  <div className={`mono-label grid ${COLS} gap-3 border-b border-rule bg-surface-2 px-4 py-2.5 sm:px-6`}>
                     <span>#</span>
                     <span>Tarix</span>
-                    <span className="text-right">Müddət</span>
+                    <span className="hidden text-right sm:block">Müddət</span>
                     <span className="text-right">Nəticə</span>
                     <span className="text-right">Cavablar</span>
                   </div>
@@ -252,11 +262,11 @@ export default async function AnalyticsPage() {
                     {examResults.slice(0, 3).map((r, i) => (
                       <div
                         key={r.id}
-                        className={`grid ${COLS} items-center gap-3 px-6 py-3.5 text-sm ${i > 0 ? 'border-t border-rule-soft' : ''}`}
+                        className={`grid ${COLS} items-center gap-3 px-4 py-3.5 text-sm sm:px-6 ${i > 0 ? 'border-t border-rule-soft' : ''}`}
                       >
                         <span className="font-mono text-[13px] tabular-nums text-ink-mute">{r.attemptNumber}</span>
                         <span className="truncate text-ink-soft">{formatDate(r.completedAt)}</span>
-                        <span className="text-right font-mono text-[13px] tabular-nums text-ink-mute">{formatDuration(r.durationSeconds)}</span>
+                        <span className="hidden text-right font-mono text-[13px] tabular-nums text-ink-mute sm:block">{formatDuration(r.durationSeconds)}</span>
                         <div className="flex items-center justify-end gap-2.5">
                           <div className="meter hidden h-1 w-10 sm:block">
                             <span className={scoreBarColor(r.score)} style={{ width: `${r.score}%` }} />
@@ -268,7 +278,7 @@ export default async function AnalyticsPage() {
                             deeper, under "Ətraflı". */}
                         <Link
                           href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
-                          className="justify-self-end border-b border-ink-faint pb-0.5 text-[13px] font-medium text-ink transition-colors hover:border-ink"
+                          className="-my-1 justify-self-end border-b border-ink-faint pt-1 pb-0.5 text-[13px] font-medium text-ink transition-colors hover:border-ink"
                         >
                           İcmal
                         </Link>

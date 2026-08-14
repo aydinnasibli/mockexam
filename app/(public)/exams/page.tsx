@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { getActiveExams } from '@/lib/db/exams';
 import { examTypeLabel, isExamType } from '@/lib/exam-types';
-import { BASE_URL, pageMetadata } from '@/lib/seo';
+import { BASE_URL, jsonLd, pageMetadata } from '@/lib/seo';
 import ExamsCatalog from './ExamsCatalog';
 
 interface Props {
@@ -76,9 +74,8 @@ export default async function ExamsPage({ searchParams }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(type)) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbSchema(type)) }}
       />
-      <Navbar />
       {/*
         No Suspense boundary, and so no loading state.
 
@@ -95,7 +92,6 @@ export default async function ExamsPage({ searchParams }: Props) {
         count nobody can predict.
       */}
       <ExamsList type={type} />
-      <Footer />
     </>
   );
 }

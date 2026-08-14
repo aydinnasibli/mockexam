@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { MotionConfig } from 'framer-motion';
 import DashboardSidebar, { type ViewerSummary } from './DashboardSidebar';
 import PageTransition from '@/components/ui/PageTransition';
+import SkipLink from '@/components/ui/SkipLink';
 
 interface Props {
   viewer: ViewerSummary;
@@ -21,6 +22,7 @@ export default function DashboardShell({ viewer, children }: Props) {
       {/* Bone, not the darker surface-2: the signed-in pages stand on the same
           ground as every public page, and the white panels read as paper on it. */}
       <div className="min-h-screen bg-bg text-ink">
+        <SkipLink />
         {/* Mobile backdrop */}
         {sidebarOpen && (
           <div
@@ -43,15 +45,19 @@ export default function DashboardShell({ viewer, children }: Props) {
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <Link href="/" className="flex items-center gap-2.25">
+            <Link href="/" className="-my-1 flex items-center gap-2.25 py-1">
               <Image src="/logo.svg" alt="Testcentre" width={20} height={18} className="shrink-0" />
-              <span className="text-[18px] leading-none font-medium tracking-tight text-ink">
+              <span className="text-lg leading-none font-medium tracking-tight text-ink">
                 Test<span className="font-light text-ink-soft">centre</span>
               </span>
             </Link>
           </div>
 
-          <PageTransition>{children}</PageTransition>
+          {/* One landmark for the whole section, as app/admin/layout.tsx does —
+              pages render plain content so they can never nest a second <main>. */}
+          <main id="content" tabIndex={-1} className="flex-1">
+            <PageTransition>{children}</PageTransition>
+          </main>
         </div>
       </div>
     </MotionConfig>

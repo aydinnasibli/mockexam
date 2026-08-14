@@ -26,7 +26,7 @@ export default function AdminPageHeader({
           <span className="dot" aria-hidden />
           <span className="mono-label mono-label-lg text-ink">{eyebrow}</span>
         </div>
-        <h1 className="m-0 text-[30px] leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-[38px]">
+        <h1 className="m-0 text-3xl leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-[38px]">
           {title}
         </h1>
         {meta && <p className="mono-label m-0 mt-3.5">{meta}</p>}

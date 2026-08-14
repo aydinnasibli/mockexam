@@ -84,3 +84,8 @@ export function clampDescription(text: string, max = 155): string {
   const lastSpace = cut.lastIndexOf(' ');
   return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
+
+/** Serialises JSON-LD for dangerouslySetInnerHTML, escaping `<` so DB text cannot close the script tag. */
+export function jsonLd(schema: unknown): string {
+  return JSON.stringify(schema).replace(/</g, '\\u003c');
+}

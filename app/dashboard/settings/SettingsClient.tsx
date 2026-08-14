@@ -3,10 +3,10 @@
 import { useClerk, useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
 import Image from 'next/image';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { ChevronRight, Loader2 } from 'lucide-react';
-import { getUserSettings, saveUserSettings } from '@/lib/actions/settings';
+import { saveUserSettings } from '@/lib/actions/settings';
 import { EXAM_TYPES } from '@/lib/exam-types';
 
 const examTypeOptions = EXAM_TYPES;
@@ -28,7 +28,13 @@ function RowLink({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
-export default function SettingsClient() {
+interface Props {
+  /** Read server-side in page.tsx — see the note there. '' means "not set". */
+  initialTargetDate: string;
+  initialTargetType: string;
+}
+
+export default function SettingsClient({ initialTargetDate, initialTargetType }: Props) {
   const { user }           = useUser();
   const { openUserProfile } = useClerk();
 
@@ -40,17 +46,9 @@ export default function SettingsClient() {
     ? new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
 
-  const [targetDate, setTargetDate]  = useState('');
-  const [targetType, setTargetType]  = useState('');
+  const [targetDate, setTargetDate]  = useState(initialTargetDate);
+  const [targetType, setTargetType]  = useState(initialTargetType);
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    getUserSettings().then(s => {
-      if (!s) return;
-      setTargetDate(s.targetExamDate ?? '');
-      setTargetType(s.targetExamType ?? '');
-    });
-  }, []);
 
   function handleSaveGoal() {
     startTransition(async () => {
@@ -69,7 +67,7 @@ export default function SettingsClient() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg">
       <div className="mx-auto max-w-2xl px-6 py-10">
         <header className="mb-9">
           <div className="mb-5 flex items-center gap-3">
@@ -214,6 +212,6 @@ export default function SettingsClient() {
 
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import dbConnect from '@/lib/mongodb';
 import ExamModel, { computeExamTotals } from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
 import { checkRole } from '@/lib/admin';
-import { validateModules } from '@/lib/actions/admin';
+import { validateModules } from '@/lib/exam-modules';
 import { isExamType } from '@/lib/exam-types';
 import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
 import { captureException } from '@/lib/observability';
@@ -78,7 +78,7 @@ export async function importExamFromJson(
     examId = data.examId;
 
     // 2. Validate modules through the same validator used by createExam.
-    const modulesResult = await validateModules(data.modules);
+    const modulesResult = validateModules(data.modules);
     if ('error' in modulesResult) return modulesResult;
 
     // 3. Per-question checks that depend on the module list or on other fields.

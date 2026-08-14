@@ -1,3 +1,5 @@
+// Resolves the caller's admin role from the Clerk session.
+import 'server-only';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import type { Roles } from '@/types/globals';

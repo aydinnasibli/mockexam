@@ -1,8 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { getExamById } from '@/lib/db/exams';
-import dbConnect from '@/lib/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { hasExamAccess } from '@/lib/db/entitlements';
 import CheckoutClient from './CheckoutClient';
 
 interface Props {
@@ -23,11 +22,7 @@ export default async function CheckoutPage({ params }: Props) {
   const { id } = await params;
   const { userId } = await auth();
 
-  if (userId) {
-    await dbConnect();
-    const existing = await Purchase.findOne({ userId, examId: id, status: 'COMPLETED' }).lean();
-    if (existing) redirect('/dashboard');
-  }
+  if (userId && await hasExamAccess(userId, id)) redirect('/dashboard');
 
   const exam = await getExamById(id);
   if (!exam) notFound();

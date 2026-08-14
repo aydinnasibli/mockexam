@@ -7,7 +7,8 @@ import {
   Plus, X, Save, Loader2, ArrowUp, ArrowDown,
   ChevronDown, ChevronRight, RefreshCw,
 } from 'lucide-react';
-import { createExam, updateExam, type ActionResult, type ParsedModule } from '@/lib/actions/admin';
+import { createExam, updateExam, type ActionResult } from '@/lib/actions/admin';
+import type { ParsedModule } from '@/lib/exam-modules';
 import { MODULE_TYPES, EXAM_TYPES } from '@/lib/exam-types';
 
 // Module types allowed per exam type. Types absent here fall back to the full
@@ -365,7 +366,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
           </Field>
           <Field label="Status" className="sm:col-span-2">
             <label className="flex h-11 cursor-pointer items-center gap-3 select-none">
-              <input type="checkbox" name="isActive" value="true" defaultChecked={defaultValues?.isActive !== false} className="h-4 w-4 accent-[#1A1A1A]" />
+              <input type="checkbox" name="isActive" value="true" defaultChecked={defaultValues?.isActive !== false} className="h-4 w-4 accent-ink" />
               <span className="text-sm font-medium text-ink">Aktiv (istifadəçilərə görünür)</span>
             </label>
           </Field>
@@ -581,7 +582,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
               <input
                 type="checkbox" checked={mod.isAdaptive}
                 onChange={e => onUpdate({ isAdaptive: e.target.checked })}
-                className="h-4 w-4 accent-[#1A1A1A]"
+                className="h-4 w-4 accent-ink"
               />
               <span className="text-sm font-medium text-ink">Adaptiv modul</span>
               <span className="text-[13px] text-ink-mute">(nəticəyə əsasən çətinlik dəyişir)</span>

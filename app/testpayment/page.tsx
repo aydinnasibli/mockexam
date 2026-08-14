@@ -20,10 +20,15 @@ export default async function TestPaymentPage({ searchParams }: Props) {
   const { result, order } = await searchParams;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const publicKey = process.env.EPOINT_PUBLIC_KEY;
   const config = {
-    hasPublicKey: Boolean(process.env.EPOINT_PUBLIC_KEY),
+    hasPublicKey: Boolean(publicKey),
     hasPrivateKey: Boolean(process.env.EPOINT_PRIVATE_KEY),
-    publicKeyPreview: process.env.EPOINT_PUBLIC_KEY ?? null,
+    // A preview, as the name says — enough to tell which merchant account is
+    // wired up, not the whole credential. `createTestPayment` already redacts
+    // this same value out of the request-payload view it returns; the page was
+    // shipping it in full two panels above.
+    publicKeyPreview: publicKey ? `${publicKey.slice(0, 4)}…` : null,
     appUrl,
     webhookUrl: appUrl ? `${appUrl}/api/webhooks/epoint` : '/api/webhooks/epoint',
   };
