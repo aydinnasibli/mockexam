@@ -3,10 +3,12 @@ import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { getExamResults } from '@/lib/db/results';
 import { getExamById } from '@/lib/db/exams';
-import { formatOverallScore, formatModuleScore, roundHalfBand } from '@/lib/scoring';
+import { formatOverallScore, formatModuleScore, roundHalfBand } from '@/lib/domain/scoring';
 import { hasExamAccess } from '@/lib/db/entitlements';
 import { ArrowLeft } from 'lucide-react';
 import type { ResultSummary } from '@/lib/db/results';
+import Button, { ButtonArrow } from '@/components/ui/Button';
+import Tag, { scoreTone } from '@/components/ui/Tag';
 
 interface Props {
   params: Promise<{ examId: string }>;
@@ -113,70 +115,70 @@ export default async function ExamAnalyticsPage({ params }: Props) {
     <div className="min-h-screen bg-bg">
       <div className="mx-auto max-w-4xl px-6 py-10">
 
-        <Link href="/dashboard/analytics" className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+        <Link href="/dashboard/analytics" className="mb-7 inline-flex items-center gap-1.5 text-note font-medium text-ink-soft transition-colors hover:text-ink">
           <ArrowLeft size={15} /> Bütün nəticələrə qayıt
         </Link>
 
         {/* Exam header */}
         <div className="mb-6 flex flex-col items-start justify-between gap-5 border-b border-ink pb-6 sm:flex-row sm:items-end">
           <div className="min-w-0">
-            <span className="tag tag-accent mb-3.5">{exam.tag}</span>
-            <h1 className="m-0 text-[28px] leading-[1.06] font-light tracking-[-0.03em] text-ink md:text-4xl">{exam.title}</h1>
-            <div className="mono-label mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Tag tone="accent" className="mb-3.5">{exam.tag}</Tag>
+            <h1 className="m-0 text-heading leading-[1.06] font-light tracking-[-0.03em] text-ink md:text-4xl">{exam.title}</h1>
+            <div className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>{examNetMin} dəq</span>
               <span>{exam.totalQuestions} sual</span>
               <span>{exam.modules.length} modul</span>
             </div>
           </div>
-          <Link href={`/exam-session/${exam.id}`} className="btn-primary shrink-0">
-            {attempts === 0 ? 'İmtahana başla' : 'Yenidən cəhd et'} <span className="arrow" aria-hidden>→</span>
-          </Link>
+          <Button className="shrink-0" href={`/exam-session/${exam.id}`}>
+            {attempts === 0 ? 'İmtahana başla' : 'Yenidən cəhd et'} <ButtonArrow />
+          </Button>
         </div>
 
         {attempts === 0 ? (
-          <div className="panel px-8 py-20 text-center">
+          <div className="rounded-panel border border-rule bg-surface px-8 py-20 text-center">
             <h3 className="m-0 mb-3 text-2xl leading-tight font-light tracking-tight text-ink">Hələ nəticə yoxdur</h3>
             <p className="m-0 mb-7 text-sm text-ink-soft">Bu imtahana ilk dəfə girişinizi tamamlayın.</p>
-            <Link href={`/exam-session/${exam.id}`} className="btn-primary">
-              İmtahana başla <span className="arrow">→</span>
-            </Link>
+            <Button href={`/exam-session/${exam.id}`}>
+              İmtahana başla <ButtonArrow />
+            </Button>
           </div>
         ) : (
           <>
             {/* Stats — the home hero's figure row */}
-            <div className="panel mb-6 grid grid-cols-1 sm:grid-cols-3">
+            <div className="rounded-panel border border-rule bg-surface mb-6 grid grid-cols-1 sm:grid-cols-3">
               <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className={`figure text-3xl ${scoreColor(best!)}`}>
+                <div className={`font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl ${scoreColor(best!)}`}>
                   {bestDisp?.value}{bestDisp && bestDisp.unit !== '%' && <span className="ml-1.5 text-sm text-ink-mute">{bestDisp.unit}</span>}{bestDisp?.unit === '%' && '%'}
                 </div>
-                <p className="mono-label m-0 mt-2.5">Ən yaxşı bal</p>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Ən yaxşı bal</p>
               </div>
               <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className={`figure text-3xl ${scoreColor(avg!)}`}>
+                <div className={`font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl ${scoreColor(avg!)}`}>
                   {avgDisp?.value}{avgDisp && avgDisp.unit !== '%' && <span className="ml-1.5 text-sm text-ink-mute">{avgDisp.unit}</span>}{avgDisp?.unit === '%' && '%'}
                 </div>
-                <p className="mono-label m-0 mt-2.5">Ortalama bal</p>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Ortalama bal</p>
               </div>
               <div className="px-5 py-5">
-                <div className="figure text-3xl">{attempts}</div>
-                <p className="mono-label m-0 mt-2.5">Ümumi cəhd</p>
+                <div className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl">{attempts}</div>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Ümumi cəhd</p>
               </div>
             </div>
 
             {/* Score trend */}
             {attempts > 1 && (
-              <div className="panel mb-6">
-                <div className="panel-head flex-wrap">
-                  <h2 className="mono-label mono-label-lg m-0 text-ink">Bal dinamikası</h2>
-                  <div className="mono-label flex items-center gap-3.5">
+              <div className="rounded-panel border border-rule bg-surface mb-6">
+                <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5 flex-wrap">
+                  <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Bal dinamikası</h2>
+                  <div className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute flex items-center gap-3.5">
                     <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 bg-ok" aria-hidden />≥80%</span>
                     <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 bg-warn" aria-hidden />60–79%</span>
                     <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 bg-error" aria-hidden />&lt;60%</span>
                   </div>
                 </div>
-                <div className="panel-body">
+                <div className="p-5">
                   <ScoreTrendChart results={results} />
-                  <div className="mono-label mt-2.5 flex justify-between px-2">
+                  <div className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute mt-2.5 flex justify-between px-2">
                     <span>Cəhd {[...results].reverse()[0]?.attemptNumber}</span>
                     <span>Cəhd {results[0]?.attemptNumber}</span>
                   </div>
@@ -189,20 +191,20 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                 can be 0 (an exam whose bank was emptied after the attempt) even
                 when the exam declares questions — dividing by it printed NaN. */}
             {last && exam.totalQuestions > 0 && last.totalQuestions > 0 && expectedSecPerQ > 0 && (
-              <div className="panel mb-6">
-                <div className="panel-head">
-                  <h2 className="mono-label mono-label-lg m-0 text-ink">Vaxt effektivliyi</h2>
+              <div className="rounded-panel border border-rule bg-surface mb-6">
+                <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
+                  <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Vaxt effektivliyi</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3">
                   <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                    <p className="figure m-0 text-2xl">{Math.round(expectedSecPerQ)}s</p>
-                    <p className="mono-label m-0 mt-2.5">Gözlənilən / sual</p>
+                    <p className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink m-0 text-2xl">{Math.round(expectedSecPerQ)}s</p>
+                    <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Gözlənilən / sual</p>
                   </div>
                   <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                    <p className="figure m-0 text-2xl">
+                    <p className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink m-0 text-2xl">
                       {Math.round(last.durationSeconds / last.totalQuestions)}s
                     </p>
-                    <p className="mono-label m-0 mt-2.5">Ortalama / sual (son)</p>
+                    <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Ortalama / sual (son)</p>
                   </div>
                   <div className="px-5 py-5">
                     {(() => {
@@ -213,25 +215,25 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                       return (
                         <>
                           <p className={`m-0 text-2xl leading-none font-light tracking-tight ${color}`}>{label}</p>
-                          <p className="mono-label m-0 mt-2.5">Temp qiymətləndirməsi</p>
+                          <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Temp qiymətləndirməsi</p>
                         </>
                       );
                     })()}
                   </div>
                 </div>
                 <div className="border-t border-rule px-5 py-5">
-                  <p className="mono-label m-0 mb-4">Modullar üzrə gözlənilən vaxt</p>
+                  <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mb-4">Modullar üzrə gözlənilən vaxt</p>
                   <div className="space-y-3">
                     {exam.modules.map((mod, i) => {
                       const modExpected = mod.durationMinutes * 60;
                       const pct = Math.round((modExpected / (examNetMin * 60)) * 100);
                       return (
                         <div key={i} className="flex items-center gap-3.5">
-                          <span className="w-28 shrink-0 truncate text-[13px] text-ink-soft">{mod.name}</span>
+                          <span className="w-28 shrink-0 truncate text-note text-ink-soft">{mod.name}</span>
                           <div className="meter h-1.5 flex-1">
                             <span className="bg-ink-faint" style={{ width: `${pct}%` }} />
                           </div>
-                          <span className="w-12 shrink-0 text-right font-mono text-[11px] tabular-nums text-ink-mute">{mod.durationMinutes}d</span>
+                          <span className="w-12 shrink-0 text-right font-mono text-label tabular-nums text-ink-mute">{mod.durationMinutes}d</span>
                         </div>
                       );
                     })}
@@ -242,12 +244,12 @@ export default async function ExamAnalyticsPage({ params }: Props) {
 
             {/* Module breakdown */}
             {results.some(r => r.moduleScores.length > 0) && (
-              <div className="panel mb-6">
-                <div className="panel-head">
-                  <h2 className="mono-label mono-label-lg m-0 text-ink">Modul üzrə bölgü</h2>
-                  <span className="mono-label">Son cəhd əsasında</span>
+              <div className="rounded-panel border border-rule bg-surface mb-6">
+                <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
+                  <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Modul üzrə bölgü</h2>
+                  <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">Son cəhd əsasında</span>
                 </div>
-                <div className="panel-body space-y-4">
+                <div className="p-5 space-y-4">
                   {exam.modules.map((mod, modIdx) => {
                     const latestWithModule = results.find(r => r.moduleScores.some(m => m.moduleIndex === modIdx));
                     const ms = latestWithModule?.moduleScores.find(m => m.moduleIndex === modIdx);
@@ -255,8 +257,8 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                     return (
                       <div key={modIdx}>
                         <div className="mb-2 flex items-baseline justify-between gap-3">
-                          <span className="truncate text-[13px] font-medium text-ink-soft">{mod.name}</span>
-                          <span className={`shrink-0 font-mono text-[13px] tabular-nums ${scoreColor(ms.scorePercent)}`}>
+                          <span className="truncate text-note font-medium text-ink-soft">{mod.name}</span>
+                          <span className={`shrink-0 font-mono text-note tabular-nums ${scoreColor(ms.scorePercent)}`}>
                             {exam.type === 'ielts'
                               ? formatModuleScore(exam.type, ms)
                               : `${ms.correct}/${ms.total} · ${ms.scorePercent}%`}
@@ -274,20 +276,20 @@ export default async function ExamAnalyticsPage({ params }: Props) {
             )}
 
             {/* Attempt history */}
-            <div className="panel">
-              <div className="panel-head">
-                <h2 className="mono-label mono-label-lg m-0 text-ink">Cəhd tarixi</h2>
+            <div className="rounded-panel border border-rule bg-surface">
+              <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
+                <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Cəhd tarixi</h2>
               </div>
               <div>
                 {results.map((r, i) => (
                   <div key={r.id} className={`px-5 py-4.5 ${i > 0 ? 'border-t border-rule-soft' : ''}`}>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="m-0 flex items-baseline gap-2.5 text-[15px] font-medium text-ink">
+                        <p className="m-0 flex items-baseline gap-2.5 text-body font-medium text-ink">
                           Cəhd <span className="font-mono tabular-nums">{r.attemptNumber}</span>
-                          {r.score === best && <span className="tag tag-ok">Ən yaxşı</span>}
+                          {r.score === best && <Tag tone="ok">Ən yaxşı</Tag>}
                         </p>
-                        <p className="mono-label m-0 mt-1.5">
+                        <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-1.5">
                           {formatDate(r.completedAt)} · {formatDuration(r.durationSeconds)}
                         </p>
                       </div>
@@ -295,7 +297,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                         {(() => {
                           const d = formatOverallScore(r);
                           return (
-                            <span className={`figure text-2xl ${scoreColor(r.score)}`}>
+                            <span className={`font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-2xl ${scoreColor(r.score)}`}>
                               {d.value}{d.unit !== '%' ? <span className="ml-1 text-xs text-ink-mute">{d.unit}</span> : '%'}
                             </span>
                           );
@@ -303,20 +305,17 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                         {/* Promoted to the row's primary action: this is the
                             page students come back for, and as a muted ghost
                             button it read as a secondary detail. */}
-                        <Link href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}
-                          className="btn-primary btn-sm text-xs!">
-                          Cavablara bax <span className="arrow" aria-hidden>→</span>
-                        </Link>
+                        <Button size="xs" href={`/dashboard/analytics/${exam.id}/${r.attemptNumber}/review`}>
+                          Cavablara bax <ButtonArrow />
+                        </Button>
                       </div>
                     </div>
                     {r.moduleScores.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {r.moduleScores.map(ms => (
-                          <span key={ms.moduleIndex} className={`tag ${
-                            ms.scorePercent >= 80 ? 'tag-ok' : ms.scorePercent >= 60 ? 'tag-warn' : 'tag-error'
-                          }`}>
+                          <Tag key={ms.moduleIndex} tone={scoreTone(ms.scorePercent)}>
                             {ms.moduleName}: {formatModuleScore(r.examType, ms)}
-                          </span>
+                          </Tag>
                         ))}
                       </div>
                     )}

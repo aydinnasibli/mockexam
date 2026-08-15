@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getActiveExams, getExamById } from '@/lib/db/exams';
-import { examTypeLabel } from '@/lib/exam-types';
+import { examTypeLabel } from '@/lib/domain/exam-types';
 
 export const alt = 'Testcentre sınaq imtahanı';
 export const size = { width: 1200, height: 630 };

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { EXAM_TYPE_VALUES, type ExamType } from '@/lib/exam-types';
+import { EXAM_TYPE_VALUES, type ExamType } from '@/lib/domain/exam-types';
 
 export interface IUserSettings extends Document {
   userId: string;

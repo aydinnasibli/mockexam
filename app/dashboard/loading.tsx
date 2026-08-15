@@ -23,7 +23,7 @@ export default function DashboardLoading() {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
           <div className="min-w-0 space-y-6">
             {/* Next step */}
-            <div className="panel flex items-center justify-between gap-4 px-5 py-4.5">
+            <div className="rounded-panel border border-rule bg-surface flex items-center justify-between gap-4 px-5 py-4.5">
               <div className="min-w-0 flex-1 space-y-2">
                 <Skeleton className="h-4 w-44 rounded bg-surface-3" />
                 <Skeleton className="h-3.5 w-64 max-w-full rounded bg-surface-3" />
@@ -32,7 +32,7 @@ export default function DashboardLoading() {
             </div>
 
             {/* Figure row */}
-            <div className="panel grid grid-cols-1 sm:grid-cols-3">
+            <div className="rounded-panel border border-rule bg-surface grid grid-cols-1 sm:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className={`px-5 py-5 ${i < 2 ? 'border-b border-rule sm:border-r sm:border-b-0' : ''}`}>
                   <Skeleton className="h-7 w-14 rounded bg-surface-3" />
@@ -45,7 +45,7 @@ export default function DashboardLoading() {
             <div className="space-y-3">
               <Skeleton className="h-3 w-36 rounded bg-surface-3" />
               {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="panel px-5 py-4.5">
+                <div key={i} className="rounded-panel border border-rule bg-surface px-5 py-4.5">
                   <Skeleton className="mb-3 h-5 w-20 rounded-full bg-surface-3" />
                   <Skeleton className="h-5 w-2/3 rounded bg-surface-3" />
                   <Skeleton className="mt-2.5 h-2.5 w-32 rounded bg-surface-3" />
@@ -63,8 +63,8 @@ export default function DashboardLoading() {
               <Skeleton tone="ink" className="mb-5 h-3 w-32 rounded" />
               <Skeleton tone="ink" className="h-12 w-24 rounded" />
             </div>
-            <div className="panel">
-              <div className="panel-head">
+            <div className="rounded-panel border border-rule bg-surface">
+              <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
                 <Skeleton className="h-3 w-28 rounded bg-surface-3" />
               </div>
               {Array.from({ length: 3 }).map((_, i) => (

@@ -14,6 +14,7 @@ import {
   type StatusResult,
   type SignatureSelfTest,
 } from '@/lib/actions/testpayment';
+import SkipLink from '@/components/ui/SkipLink';
 
 interface Config {
   hasPublicKey: boolean;
@@ -130,14 +131,16 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
   }, [signing]);
 
   return (
-    <main className="min-h-screen bg-surface-subtle px-4 py-10">
+    <>
+      <SkipLink />
+      <main id="content" tabIndex={-1} className="min-h-screen bg-surface-2 px-4 py-10">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-8">
           <div className="flex items-center gap-3">
-            <FlaskConical className="text-secondary" size={28} />
-            <h1 className="font-headline text-2xl font-black text-primary">Epoint Test Harness</h1>
+            <FlaskConical className="text-ink" size={28} />
+            <h1 className="font-headline text-2xl font-black text-ink">Epoint Test Harness</h1>
           </div>
-          <p className="mt-2 text-sm text-on-surface-variant">
+          <p className="mt-2 text-sm text-ink-soft">
             Epoint-in Stripe kimi test kartı yoxdur. Test canlı API-yə real sorğu göndərməklə
             aparılır — kiçik məbləğ yaradın, bank səhifəsini açın və status yoxlayın. Bu səhifə
             yalnız admin üçündür.
@@ -147,8 +150,8 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
         {/* Config status */}
         <section className="tc-card mb-6 p-6">
           <div className="mb-4 flex items-center gap-2">
-            <KeyRound size={16} className="text-on-surface-variant" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+            <KeyRound size={16} className="text-ink-soft" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-ink-soft">
               Konfiqurasiya
             </h2>
           </div>
@@ -156,12 +159,12 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
             <Pill ok={config.hasPublicKey} label={`EPOINT_PUBLIC_KEY${config.publicKeyPreview ? ` · ${config.publicKeyPreview}` : ''}`} />
             <Pill ok={config.hasPrivateKey} label="EPOINT_PRIVATE_KEY" />
           </div>
-          <div className="mt-4 space-y-1.5 text-xs text-on-surface-variant">
+          <div className="mt-4 space-y-1.5 text-xs text-ink-soft">
             <p className="flex items-center gap-1.5">
               <Webhook size={13} />
               Callback (result_url) — Epoint kabinetində bu ünvana yönləndirin:
             </p>
-            <code className="block break-all rounded bg-surface-container px-2 py-1 font-mono text-xs text-primary">
+            <code className="block break-all rounded bg-surface-3 px-2 py-1 font-mono text-xs text-ink">
               {config.webhookUrl}
             </code>
           </div>
@@ -191,50 +194,50 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
         {/* 1. Create payment */}
         <section className="tc-card mb-6 p-6">
           <div className="mb-4 flex items-center gap-2">
-            <CreditCard size={16} className="text-on-surface-variant" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+            <CreditCard size={16} className="text-ink-soft" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-ink-soft">
               1 · Ödəniş yarat (POST /api/1/request)
             </h2>
           </div>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <label className="col-span-1 text-xs font-semibold text-on-surface-variant">
+            <label className="col-span-1 text-xs font-semibold text-ink-soft">
               Məbləğ
               <input
                 type="text"
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2 text-sm text-primary focus:border-secondary focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-ink-faint/40 bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
               />
             </label>
-            <label className="col-span-1 text-xs font-semibold text-on-surface-variant">
+            <label className="col-span-1 text-xs font-semibold text-ink-soft">
               Valyuta
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as typeof currency)}
-                className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2 text-sm text-primary focus:border-secondary focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-ink-faint/40 bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
               >
                 {['AZN', 'USD', 'EUR', 'RUB'].map((c) => <option key={c}>{c}</option>)}
               </select>
             </label>
-            <label className="col-span-1 text-xs font-semibold text-on-surface-variant">
+            <label className="col-span-1 text-xs font-semibold text-ink-soft">
               Dil
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as typeof language)}
-                className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2 text-sm text-primary focus:border-secondary focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-ink-faint/40 bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
               >
                 {['az', 'en', 'ru'].map((l) => <option key={l}>{l}</option>)}
               </select>
             </label>
-            <label className="col-span-2 text-xs font-semibold text-on-surface-variant sm:col-span-1">
+            <label className="col-span-2 text-xs font-semibold text-ink-soft sm:col-span-1">
               Təsvir
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2 text-sm text-primary focus:border-secondary focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-ink-faint/40 bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
               />
             </label>
           </div>
@@ -253,7 +256,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
               href={createResult.redirectUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 flex items-center justify-center gap-2 rounded-xl border-2 border-secondary px-5 py-3 text-sm font-bold text-secondary transition-colors hover:bg-secondary hover:text-white"
+              className="mt-4 flex items-center justify-center gap-2 rounded-xl border-2 border-ink px-5 py-3 text-sm font-bold text-ink transition-colors hover:bg-ink hover:text-white"
             >
               <ExternalLink size={16} />
               Bank ödəniş səhifəsini aç
@@ -269,15 +272,15 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
               )}
               {createResult.ok && (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">
                     Order ID
                   </p>
-                  <code className="text-xs text-primary">{createResult.orderId}</code>
+                  <code className="text-xs text-ink">{createResult.orderId}</code>
                 </div>
               )}
               {'request' in createResult && createResult.request && (
                 <details>
-                  <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                  <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-ink-soft">
                     Göndərilən sorğu (payload · data · signature)
                   </summary>
                   <Json value={createResult.request} />
@@ -285,7 +288,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
               )}
               {'response' in createResult && createResult.response && (
                 <details open>
-                  <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                  <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-ink-soft">
                     Epoint cavabı
                   </summary>
                   <Json value={createResult.response} />
@@ -298,8 +301,8 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
         {/* 2. Check status */}
         <section className="tc-card mb-6 p-6">
           <div className="mb-4 flex items-center gap-2">
-            <Search size={16} className="text-on-surface-variant" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+            <Search size={16} className="text-ink-soft" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-ink-soft">
               2 · Status yoxla (POST /api/1/get-status)
             </h2>
           </div>
@@ -309,12 +312,13 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
               value={transaction}
               onChange={(e) => setTransaction(e.target.value)}
               placeholder="transaction (məs. te_0000000001)"
-              className="flex-1 rounded-lg border border-outline-variant/40 bg-surface px-3 py-2 font-mono text-sm text-primary focus:border-secondary focus:outline-none"
+                aria-label="Yoxlanacaq transaction ID"
+              className="flex-1 rounded-lg border border-ink-faint/40 bg-surface px-3 py-2 font-mono text-sm text-ink focus:border-ink focus:outline-none"
             />
             <button
               onClick={handleCheck}
               disabled={checking || !configOk}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {checking ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
               Yoxla
@@ -337,19 +341,19 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
         {/* 3. Signature self-test */}
         <section className="tc-card p-6">
           <div className="mb-4 flex items-center gap-2">
-            <ShieldCheck size={16} className="text-on-surface-variant" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+            <ShieldCheck size={16} className="text-ink-soft" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-ink-soft">
               3 · İmza yoxlaması (offline)
             </h2>
           </div>
-          <p className="mb-4 text-sm text-on-surface-variant">
+          <p className="mb-4 text-sm text-ink-soft">
             Nümunə payload-u imzalayır və yerli olaraq təsdiqləyir — Epoint-ə sorğu göndərmədən
             data + signature kriptoqrafiyasının düzgün işlədiyini sübut edir.
           </p>
           <button
             onClick={handleSelfTest}
             disabled={signing}
-            className="flex items-center gap-2 rounded-lg border border-outline-variant/50 bg-surface px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-surface-container disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg border border-ink-faint/50 bg-surface px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-surface-3 disabled:opacity-50"
           >
             {signing ? <Loader2 size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
             İmza testini işə sal
@@ -363,5 +367,6 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
         </section>
       </div>
     </main>
+    </>
   );
 }

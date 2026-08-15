@@ -8,7 +8,7 @@ import RouteTransition from "@/components/ui/RouteTransition";
 import NavProgress from "@/components/ui/NavProgress";
 import PostHogIdentify from "@/components/PostHogIdentify";
 import CookieNotice from "@/components/ui/CookieNotice";
-import { BASE_URL, jsonLd } from "@/lib/seo";
+import { BASE_URL, jsonLd } from "@/lib/shared/seo";
 import "./globals.css";
 
 /*

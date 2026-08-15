@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
-import { verifySignature, decodeData, decodeOrderId } from '@/lib/epoint';
-import { captureException, captureMessage } from '@/lib/observability';
-import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
+import { verifySignature, decodeData, decodeOrderId } from '@/lib/payments/epoint';
+import { captureException, captureMessage } from '@/lib/infra/observability';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
 
 interface EpointCallback {
   order_id: string;

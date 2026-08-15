@@ -6,9 +6,8 @@ import { toast } from 'sonner';
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 import { sendContactMessage } from '@/lib/actions/contact';
+import { MONO_LABEL, MONO_SECTION } from '@/components/ui/type-styles';
 
-const MONO_LABEL = "font-mono text-[10px] tracking-[0.16em] uppercase";
-const MONO_SECTION = "font-mono text-[11px] tracking-[0.16em] uppercase";
 
 /** Replaces the old <select>: the subject is chosen from pills, and the choice
  *  is submitted through a hidden field so the server action sees the same
@@ -81,13 +80,13 @@ export default function ContactPage() {
           <div className="grid items-end gap-8 lg:grid-cols-[1fr_400px] lg:gap-20">
             <div>
               <div className={`${MONO_SECTION} mb-6 text-ink-mute lg:mb-8`}>Əlaqə</div>
-              <h1 className="m-0 text-[52px] font-light leading-[0.94] tracking-[-0.045em] text-ink md:text-7xl lg:text-[88px]">
+              <h1 className="m-0 text-display font-light leading-[0.94] tracking-[-0.045em] text-ink md:text-7xl lg:text-hero">
                 Yazın.<br />
                 <span className="text-ink-soft">Oxuyan bir insandır.</span>
               </h1>
             </div>
 
-            <p className="m-0 max-w-140 text-[17px] leading-[1.65] text-ink-soft lg:pb-3">
+            <p className="m-0 max-w-140 text-lede leading-[1.65] text-ink-soft lg:pb-3">
               Texniki problem, ödəniş sualı, akademik dəqiqləşdirmə və ya təklif —
               hamısı eyni qutuya düşür. 24 saat ərzində cavab yazırıq.
             </p>
@@ -101,7 +100,7 @@ export default function ContactPage() {
               <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>E-poçt</div>
               <a
                 href={`mailto:${EMAIL}`}
-                className="block text-[19px] tracking-[-0.02em] wrap-break-word text-ink underline decoration-ink-faint underline-offset-4 transition-colors duration-150 hover:decoration-ink"
+                className="block text-subhead tracking-[-0.02em] wrap-break-word text-ink underline decoration-ink-faint underline-offset-4 transition-colors duration-150 hover:decoration-ink"
               >
                 {EMAIL}
               </a>
@@ -120,18 +119,18 @@ export default function ContactPage() {
             <StaggerItem className="border-t border-rule pt-5 pb-6 sm:border-ink">
               <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>Cavab müddəti</div>
               <div className="flex items-baseline gap-2.5">
-                <span className="font-mono text-[38px] leading-none font-light tracking-[-0.04em] tabular-nums text-ink">
+                <span className="font-mono text-display-xs leading-none font-light tracking-[-0.04em] tabular-nums text-ink">
                   24
                 </span>
                 <span className={`${MONO_SECTION} text-ink-mute`}>saat</span>
               </div>
-              <div className="mt-3.5 text-[15px] text-ink-soft">Adətən daha tez</div>
+              <div className="mt-3.5 text-body text-ink-soft">Adətən daha tez</div>
             </StaggerItem>
 
             <StaggerItem className="border-t border-rule pt-5 pb-6 sm:border-ink">
               <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>Ünvan</div>
-              <div className="text-[19px] tracking-[-0.02em] text-ink">Bakı, Azərbaycan</div>
-              <div className="mt-3.5 text-[15px] text-ink-soft">Uzaqdan işləyən komanda</div>
+              <div className="text-subhead tracking-[-0.02em] text-ink">Bakı, Azərbaycan</div>
+              <div className="mt-3.5 text-body text-ink-soft">Uzaqdan işləyən komanda</div>
             </StaggerItem>
           </StaggerContainer>
         </section>
@@ -143,10 +142,10 @@ export default function ContactPage() {
 
               <aside className="lg:sticky lg:top-28 lg:self-start">
                 <div className={`${MONO_SECTION} mb-5 text-ink-mute`}>Forma</div>
-                <h2 className="m-0 mb-4 text-3xl font-light leading-[1.05] tracking-[-0.035em] text-ink md:text-[38px]">
+                <h2 className="m-0 mb-4 text-3xl font-light leading-[1.05] tracking-[-0.035em] text-ink md:text-display-xs">
                   Bir neçə sətir kifayətdir.
                 </h2>
-                <p className="m-0 mb-8 max-w-100 text-[15px] leading-[1.65] text-ink-soft">
+                <p className="m-0 mb-8 max-w-100 text-body leading-[1.65] text-ink-soft">
                   Nə baş verdiyini və hansı imtahanla bağlı olduğunu yazsanız,
                   ilk cavabda həll təklif edə bilərik.
                 </p>
@@ -160,7 +159,7 @@ export default function ContactPage() {
                       } ${i === ASSURANCES.length - 1 ? "border-b border-rule-strong" : ""}`}
                     >
                       <dt className={`${MONO_LABEL} shrink-0 text-ink-mute`}>{item.label}</dt>
-                      <dd className="m-0 text-right text-[15px] text-ink">{item.value}</dd>
+                      <dd className="m-0 text-right text-body text-ink">{item.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -174,10 +173,10 @@ export default function ContactPage() {
                         <span className="h-1.5 w-1.5 rounded-full bg-correct" aria-hidden />
                         <span className={`${MONO_LABEL} text-ink-mute`}>Qəbul edildi</span>
                       </div>
-                      <p className="m-0 mb-3 text-[32px] font-light leading-[1.05] tracking-[-0.035em] text-ink">
+                      <p className="m-0 mb-3 text-heading-lg font-light leading-[1.05] tracking-[-0.035em] text-ink">
                         Təşəkkür edirik.
                       </p>
-                      <p className="m-0 mb-8 max-w-120 text-[17px] leading-[1.6] text-ink-soft">
+                      <p className="m-0 mb-8 max-w-120 text-lede leading-[1.6] text-ink-soft">
                         Mesajınız bizə çatdı. Növbəti 24 saat ərzində
                         yazdığınız e-poçt ünvanına cavab yazacağıq.
                       </p>
@@ -203,7 +202,7 @@ export default function ContactPage() {
                             required
                             autoComplete="name"
                             placeholder="Aysel Məmmədova"
-                            className="w-full border-none bg-transparent p-0 text-[17px] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
+                            className="w-full border-none bg-transparent p-0 text-lede text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                           />
                         </div>
 
@@ -219,7 +218,7 @@ export default function ContactPage() {
                             required
                             autoComplete="email"
                             placeholder="ad@nümunə.az"
-                            className="w-full border-none bg-transparent p-0 text-[17px] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
+                            className="w-full border-none bg-transparent p-0 text-lede text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -239,7 +238,7 @@ export default function ContactPage() {
                                 type="button"
                                 onClick={() => setSubject(option)}
                                 aria-pressed={active}
-                                className={`cursor-pointer rounded-full px-4 py-2.25 text-[13px] transition-colors duration-150 ${
+                                className={`cursor-pointer rounded-full px-4 py-2.25 text-note transition-colors duration-150 ${
                                   active
                                     ? "bg-ink font-medium text-bg"
                                     : "border border-rule-strong text-ink-soft hover:border-ink hover:text-ink"
@@ -264,7 +263,7 @@ export default function ContactPage() {
                           required
                           onChange={(e) => setMessageLength(e.currentTarget.value.length)}
                           placeholder="Nə baş verdi? Hansı imtahan?"
-                          className="w-full resize-y border-none bg-transparent p-0 text-[17px] leading-[1.6] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
+                          className="w-full resize-y border-none bg-transparent p-0 text-lede leading-[1.6] text-ink placeholder:text-ink-mute focus:ring-0 focus:outline-none"
                         />
                         {/* Only worth a line once the limit is actually in reach. */}
                         {messageLength > MESSAGE_MAX - 500 && (
@@ -288,7 +287,7 @@ export default function ContactPage() {
                   )}
                 </div>
 
-                <p className="m-0 mt-6 text-[15px] leading-[1.6] text-ink-soft">
+                <p className="m-0 mt-6 text-body leading-[1.6] text-ink-soft">
                   Ödəniş və nəticə suallarının çoxu{' '}
                   <Link href="/#suallar" className="text-ink underline underline-offset-2 hover:text-accent-deep">
                     suallar bölməsində

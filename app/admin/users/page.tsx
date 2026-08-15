@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
 import AdminPageHeader from '../PageHeader';
-import { requireAdminPage } from '@/lib/admin';
+import { requireAdminPage } from '@/lib/infra/admin';
 
 export const metadata = { title: 'İstifadəçilər — Admin' };
 
@@ -36,7 +36,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
         meta={`${total} qeydiyyatlı istifadəçi`}
       />
 
-      <div className="panel overflow-hidden">
+      <div className="rounded-panel border border-rule bg-surface overflow-hidden">
         {users.length === 0 ? (
           <p className="m-0 px-6 py-20 text-center text-base font-light tracking-tight text-ink">
             İstifadəçi yoxdur
@@ -61,7 +61,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                     const initial  = (u.firstName?.[0] ?? u.emailAddresses[0]?.emailAddress?.[0] ?? '?').toUpperCase();
                     return (
                       <tr key={u.id}>
-                        <td>
+                        <td className="text-ink-soft">
                           <Link href={`/admin/users/${u.id}`} className="group flex items-center gap-3">
                             {u.imageUrl ? (
                               <Image
@@ -73,23 +73,23 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                               />
                             ) : (
                               <div className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-ink">
-                                <span className="text-[11px] font-medium text-bg">{initial}</span>
+                                <span className="text-label font-medium text-bg">{initial}</span>
                               </div>
                             )}
                             <span className="font-medium text-ink group-hover:underline">{fullName}</span>
                           </Link>
                         </td>
-                        <td>{u.emailAddresses[0]?.emailAddress ?? '—'}</td>
-                        <td className="num text-xs text-ink-mute!">…{u.id.slice(-10)}</td>
-                        <td className="num text-xs whitespace-nowrap text-ink-mute!">
+                        <td className="text-ink-soft">{u.emailAddresses[0]?.emailAddress ?? '—'}</td>
+                        <td className="num text-xs text-ink-mute">…{u.id.slice(-10)}</td>
+                        <td className="num text-xs whitespace-nowrap text-ink-mute">
                           {new Date(u.createdAt).toLocaleDateString('az-AZ')}
                         </td>
-                        <td className="num text-xs whitespace-nowrap text-ink-mute!">
+                        <td className="num text-xs whitespace-nowrap text-ink-mute">
                           {u.lastSignInAt
                             ? new Date(u.lastSignInAt).toLocaleDateString('az-AZ')
                             : '—'}
                         </td>
-                        <td className="text-right">
+                        <td className="text-right text-ink-soft">
                           <Link
                             href={`/admin/users/${u.id}`}
                             className="inline-flex rounded-btn border border-rule p-1.5 text-ink-soft transition-colors hover:border-ink-faint hover:text-ink"
@@ -108,7 +108,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule px-5 py-4">
-                <p className="mono-label m-0">
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0">
                   Səhifə {page} / {totalPages} · Ümumi {total} istifadəçi
                 </p>
                 <div className="flex gap-2">

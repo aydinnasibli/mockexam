@@ -54,11 +54,11 @@ export default function CheckoutClient({ exam }: Props) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-surface-subtle flex flex-col items-center justify-center p-6">
+      <main className="min-h-screen bg-surface-2 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
           <div className="text-center mb-6">
-            <ShoppingBag className="text-secondary mx-auto" size={40} />
-            <h1 className="text-2xl font-black text-primary font-headline mt-2">
+            <ShoppingBag className="text-ink mx-auto" size={40} />
+            <h1 className="text-2xl font-black text-ink font-headline mt-2">
               Sifarişi Tamamla
             </h1>
           </div>
@@ -77,12 +77,12 @@ export default function CheckoutClient({ exam }: Props) {
           {(status === 'idle' || status === 'processing' || status === 'failed') && (
             <>
               <div className="tc-card p-6 mb-6">
-                <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Sifariş məlumatları</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink-soft mb-4">Sifariş məlumatları</p>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-bold text-primary">{exam.title}</span>
-                  <span className="font-black text-primary text-lg">{exam.price} AZN</span>
+                  <span className="font-bold text-ink">{exam.title}</span>
+                  <span className="font-black text-ink text-lg">{exam.price} AZN</span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-on-surface-variant mt-3 pt-3 border-t border-outline-variant/20">
+                <div className="flex items-center gap-4 text-xs text-ink-soft mt-3 pt-3 border-t border-ink-faint/20">
                   <span className="flex items-center gap-1"><Timer size={14} />{examTime} dəq</span>
                   <span className="flex items-center gap-1"><HelpCircle size={14} />{exam.totalQuestions} sual</span>
                   <span className="flex items-center gap-1"><Infinity size={14} />Limitsiz baxış</span>
@@ -91,12 +91,12 @@ export default function CheckoutClient({ exam }: Props) {
 
               {isSignedIn ? (
                 <div className="tc-card p-6">
-                  <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-5">Ödəniş metodunu seçin</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink-soft mb-5">Ödəniş metodunu seçin</p>
                   {exam.features.length > 0 && (
                     <div className="space-y-3 mb-6">
                       {exam.features.map((f, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-on-surface-variant">
-                          <CheckCircle2 className="text-secondary shrink-0" size={16} />{f}
+                        <div key={i} className="flex items-center gap-2 text-sm text-ink-soft">
+                          <CheckCircle2 className="text-ink shrink-0" size={16} />{f}
                         </div>
                       ))}
                     </div>
@@ -111,9 +111,9 @@ export default function CheckoutClient({ exam }: Props) {
                       : (<><Lock size={18} />Ödənişə Keç — {exam.price} AZN</>)}
                   </button>
                   <div className="flex items-center justify-center gap-4 mt-4">
-                    <div className="flex items-center gap-1 text-xs text-on-surface-variant"><Shield size={14} />SSL şifrəli</div>
-                    <div className="flex items-center gap-1 text-xs text-on-surface-variant"><CreditCard size={14} />Epoint</div>
-                    <div className="flex items-center gap-1 text-xs text-on-surface-variant"><ShieldCheck size={14} />Təhlükəsiz</div>
+                    <div className="flex items-center gap-1 text-xs text-ink-soft"><Shield size={14} />SSL şifrəli</div>
+                    <div className="flex items-center gap-1 text-xs text-ink-soft"><CreditCard size={14} />Epoint</div>
+                    <div className="flex items-center gap-1 text-xs text-ink-soft"><ShieldCheck size={14} />Təhlükəsiz</div>
                   </div>
                 </div>
               ) : (

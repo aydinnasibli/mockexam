@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getActiveExams } from '@/lib/db/exams';
-import { BASE_URL } from '@/lib/seo';
+import { BASE_URL } from '@/lib/shared/seo';
 
 /**
  * sitemap.ts is a Route Handler, and Next caches it indefinitely unless it uses

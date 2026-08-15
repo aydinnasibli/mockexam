@@ -1,7 +1,6 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
-import posthog from 'posthog-js';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -10,16 +9,34 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { saveExamResult } from '@/lib/actions/results';
 import { beginExamSession, peekExamSession } from '@/lib/actions/session';
-import { markAudioPlayed, checkAudioPlayed } from '@/lib/actions/audio';
 import {
-  Timer, Flag, ChevronLeft, ChevronRight,
-  CheckCircle2, Grid3X3, BookOpen, Pencil, FileText, X,
-  Play, Volume2, ArrowRight, Headphones, TriangleAlert, ListChecks, Layers,
+  Timer,
+  Flag,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Grid3X3,
+  BookOpen,
+  Pencil,
+  FileText,
+  ArrowRight,
 } from 'lucide-react';
-import { renderMath } from '@/lib/render-math';
+import MathText from '@/components/ui/MathText';
+import BriefingScreen from './BriefingScreen';
+import SubmitConfirmDialog from './SubmitConfirmDialog';
+import QuestionGrid from './QuestionGrid';
+import { moduleIcon } from './module-icon';
+import StrictAudioPlayer from './StrictAudioPlayer';
+import {
+  clearPersistedSession,
+  loadSavedSession,
+  parseMatchingAnswers,
+  persistSession,
+} from '@/lib/domain/exam-session-storage';
 import PassageText from '@/components/ui/PassageText';
 import type { PublicExam } from '@/lib/db/exams';
 import type { SessionQuestion } from '@/lib/actions/questions';
+import Button from '@/components/ui/Button';
 
 interface Props {
   exam: PublicExam;
@@ -37,87 +54,6 @@ function formatTime(seconds: number) {
 }
 
 /** Icon standing in for a module's discipline on the briefing screens. */
-function moduleIcon(type: string) {
-  switch (type) {
-    case 'listening':                   return Headphones;
-    case 'writing': case 'analytical':  return Pencil;
-    case 'reading': case 'rw':
-    case 'verbal':                      return BookOpen;
-    case 'grammar':                     return ListChecks;
-    default:                            return Layers;
-  }
-}
-
-function MathText({ text, block = false }: { text: string; block?: boolean }) {
-  // Inline uses <span> so it stays valid inside <p> (a <div> child of <p> is
-  // invalid HTML and triggers a hydration error).
-  if (block) {
-    return <div dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
-  }
-  return <span dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="inline leading-normal" />;
-}
-
-// ── localStorage helpers ──────────────────────────────────────────────────────
-
-interface SavedSession {
-  answers: [string, number][];
-  openAnswers: [string, string][];
-  matchingAnswers?: [string, string][];
-  flagged: string[];
-  currentIdx: number;
-  /** Modules whose briefing card has already been shown, so a reload doesn't repeat it. */
-  seenModules?: number[];
-}
-
-function storageKey(examId: string) {
-  return `tc-exam-${examId}`;
-}
-
-function loadSavedSession(examId: string): SavedSession | null {
-  try {
-    const raw = localStorage.getItem(storageKey(examId));
-    return raw ? (JSON.parse(raw) as SavedSession) : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Matching answers are persisted as a JSON string per question. A corrupt entry
- * must not take the whole restore — and with it the running exam — down, so
- * each one is parsed defensively and a bad row is simply dropped.
- */
-function parseMatchingAnswers(saved: [string, string][]): Array<[string, number[]]> {
-  const out: Array<[string, number[]]> = [];
-  for (const [id, raw] of saved) {
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.every(n => typeof n === 'number')) {
-        out.push([id, parsed]);
-      }
-    } catch {
-      // Drop this question's saved matching; it re-answers as unanswered.
-    }
-  }
-  return out;
-}
-
-function persistSession(examId: string, data: SavedSession) {
-  try {
-    localStorage.setItem(storageKey(examId), JSON.stringify(data));
-  } catch {
-    // ignore quota / private-browsing errors
-  }
-}
-
-function clearPersistedSession(examId: string) {
-  try {
-    localStorage.removeItem(storageKey(examId));
-  } catch {
-    // ignore
-  }
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExamSessionClient({ exam, questions }: Props) {
@@ -519,143 +455,19 @@ export default function ExamSessionClient({ exam, questions }: Props) {
     qEnterTimeRef.current = Date.now(); // don't bill briefing time to the question
   }
 
-  // ── Pre-exam: loading / briefing ──────────────────────────────────────────
-  // Rendered instead of the player, because until the student presses "Başla"
-  // there is no clock and no session — nothing to show a question against.
+  // Until the student presses "Başla" there is no clock and no session, so the
+  // briefing is its own screen rather than a branch inside the player.
   if (phase !== 'running') {
     return (
-      <div className="min-h-dvh flex flex-col bg-bg text-ink">
-        <header className="h-14 md:h-16 px-4 md:px-8 flex items-center shrink-0 border-b border-rule">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="dot" />
-            <span className="font-display text-lg font-normal text-ink">Test<span>centre</span></span>
-          </Link>
-        </header>
-
-        {phase === 'loading' ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <span
-              className="w-9 h-9 rounded-full animate-spin border-[3px] border-rule border-t-ink" />
-            <p className="text-sm">Hazırlanır…</p>
-          </div>
-        ) : (
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-5 py-10 md:py-14">
-
-              <div className="flex items-center gap-2 mb-4">
-                <span className="tag tag-accent">{exam.tag}</span>
-                <span className="eyebrow">İmtahan brifinqi</span>
-              </div>
-
-              <h1
-                className="font-display font-normal text-ink text-3xl md:text-4xl leading-tight tracking-tight m-0 mb-3"
-              >
-                {exam.title}
-              </h1>
-              <p className="text-base leading-[1.6] m-0 mb-8">
-                Başlamazdan əvvəl imtahanın quruluşunu nəzərdən keçirin. Vaxt yalnız
-                aşağıdakı düyməyə basdıqdan sonra işləməyə başlayacaq.
-              </p>
-
-              {/* Headline numbers */}
-              <div className="grid grid-cols-3 gap-4 border-y py-6 mb-8 border-rule">
-                <div>
-                  <div className="eyebrow mb-2">Müddət</div>
-                  <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
-                    {exam.durationMinutes}<span className="text-sm ml-1 text-ink-mute">dəq</span>
-                  </div>
-                </div>
-                <div className="border-l pl-5 border-rule">
-                  <div className="eyebrow mb-2">Sual</div>
-                  <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
-                    {questions.length}
-                  </div>
-                </div>
-                <div className="border-l pl-5 border-rule">
-                  <div className="eyebrow mb-2">Bölmə</div>
-                  <div className="font-display tabular-nums lining-nums text-ink text-2xl md:text-3xl leading-none">
-                    {exam.modules.length}
-                  </div>
-                </div>
-              </div>
-
-              {/* Module breakdown */}
-              <p className="eyebrow mb-3">İmtahanın quruluşu</p>
-              <ol className="list-none p-0 m-0 space-y-2 mb-8">
-                {questionsByModule.map(({ mod, modIdx, qs }) => {
-                  const Icon = moduleIcon(mod.type);
-                  return (
-                    <li
-                      key={modIdx}
-                      className="flex items-start gap-4 p-4 rounded-2xl border border-rule bg-surface">
-                      <span
-                        className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-surface-2 text-ink-soft">
-                        <Icon size={16} />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="font-mono text-xs text-ink-mute">
-                            {String(modIdx + 1).padStart(2, '0')}
-                          </span>
-                          <span className="text-sm font-medium text-ink">{mod.name}</span>
-                        </div>
-                        <p className="text-sm mt-1 m-0 text-ink-mute">
-                          {qs.length > 0 ? `${qs.length} sual` : 'Açıq tapşırıq'}
-                          {mod.durationMinutes > 0 && ` · təxminən ${mod.durationMinutes} dəq`}
-                        </p>
-                        {mod.instructions && (
-                          <p className="text-sm mt-2 mb-0 leading-relaxed">
-                            {mod.instructions}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-
-              {/* Rules */}
-              <div
-                className="rounded-2xl p-5 mb-8 border border-rule bg-surface-2">
-                <div className="flex items-center gap-2 mb-3">
-                  <TriangleAlert size={14} className="text-warn" />
-                  <span className="eyebrow">Başlamazdan əvvəl</span>
-                </div>
-                <ul className="list-none p-0 m-0 space-y-2 text-xs leading-relaxed">
-                  <li>· Vaxt serverdə saxlanılır — səhifəni yeniləmək və ya bağlamaq sayğacı dayandırmır.</li>
-                  <li>· Vaxt bitdikdə imtahan avtomatik təhvil verilir.</li>
-                  <li>· Cavablarınız avtomatik yadda saxlanılır; qayıdanda qaldığınız yerdən davam edirsiniz.</li>
-                  {questions.some(q => q.audioUrl) && (
-                    <li>· Dinləmə audioları <span className="font-medium text-ink">yalnız bir dəfə</span> oxunur — dayandırmaq və geri sarmaq mümkün deyil.</li>
-                  )}
-                </ul>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  onClick={startExam}
-                  disabled={starting || hasNoQuestions}
-                  className="btn-primary justify-center py-3.5 px-8 text-base disabled:opacity-60"
-                >
-                  {starting ? 'Başladılır…' : 'Başla'}
-                  {!starting && <ArrowRight size={17} />}
-                </button>
-                <Link
-                  href="/dashboard"
-                  className="btn-ghost justify-center py-3.5 px-6 text-base"
-                >
-                  Panelə qayıt
-                </Link>
-              </div>
-              {hasNoQuestions && (
-                <p className="text-sm mt-3 m-0 text-warn">
-                  Bu imtahan üçün sual bankı hələ hazırlanır.
-                </p>
-              )}
-            </div>
-          </main>
-        )}
-      </div>
+      <BriefingScreen
+        exam={exam}
+        questions={questions}
+        questionsByModule={questionsByModule}
+        loading={phase === 'loading'}
+        starting={starting}
+        hasNoQuestions={hasNoQuestions}
+        onStart={startExam}
+      />
     );
   }
 
@@ -735,7 +547,7 @@ role="dialog"
                   <Icon size={22} />
                 </span>
 
-                <p className="eyebrow mb-3">
+                <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-3">
                   Bölmə {moduleIntro.to + 1} / {exam.modules.length}
                 </p>
                 <h2
@@ -751,16 +563,16 @@ role="dialog"
                 {to.instructions && (
                   <div
                     className="rounded-2xl p-4 mb-7 text-left border border-rule bg-surface-2">
-                    <p className="eyebrow mb-2">Təlimat</p>
+                    <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-2">Təlimat</p>
                     <p className="text-sm leading-relaxed m-0">
                       {to.instructions}
                     </p>
                   </div>
                 )}
 
-                <button onClick={dismissModuleIntro} className="btn-primary justify-center py-3.5 px-8 text-base">
+                <Button size="none" className="justify-center gap-2.5 px-8 py-3.5 text-base" onClick={dismissModuleIntro}>
                   Davam et <ArrowRight size={17} />
-                </button>
+                </Button>
                 <p className="text-sm mt-4 m-0 text-ink-mute">
                   Vaxt işləməyə davam edir.
                 </p>
@@ -771,18 +583,18 @@ role="dialog"
       </AnimatePresence>
 
       {/* ── Top bar ── */}
-      <header className="fixed top-0 w-full z-50 nav-frosted border-b border-rule">
+      <header className="bg-bg/88 backdrop-blur-md fixed top-0 w-full z-50 border-b border-rule">
         <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-6">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
             <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-              <span className="dot" />
+              <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
               <span className="font-display text-lg font-normal text-ink hidden sm:block">
                 Test<span>centre</span>
               </span>
             </Link>
             <div className="h-5 w-px shrink-0 hidden sm:block bg-rule"  />
             <div className="flex flex-col min-w-0">
-              <span className="eyebrow hidden sm:block">İmtahan Rejimi</span>
+              <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute hidden sm:block">İmtahan Rejimi</span>
               <span className="text-sm font-medium text-ink leading-tight max-w-30 md:max-w-50 truncate">
                 {exam.title}
               </span>
@@ -842,13 +654,12 @@ role="dialog"
             <span role="status" aria-live="assertive" className="sr-only">
               {sessionReady && remaining > 0 && remaining < 300 ? 'Diqqət: 5 dəqiqədən az vaxt qalıb.' : ''}
             </span>
-            <button
+            <Button size="none" className="gap-2.5 px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm disabled:opacity-60"
               onClick={() => setShowConfirm(true)}
               disabled={submitting || !sessionReady}
-              className="btn-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm disabled:opacity-60"
             >
               {submitting ? '...' : 'Bitir'}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -863,131 +674,30 @@ role="dialog"
         )}
       </header>
 
-      {/* ── Question grid overlay ── */}
       {showGrid && (
-        <div
-          className="fixed inset-0 z-40 pt-14 md:pt-16 bg-ink/20" 
-onClick={() => setShowGrid(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="question-nav-title"
-            className="absolute right-0 top-14 md:top-16 bottom-0 w-full max-w-xs overflow-y-auto bg-surface shadow-lg" 
-onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 flex items-center justify-between border-b border-rule">
-              <div>
-                <p id="question-nav-title" className="text-sm font-medium text-ink">Sual navigasiyası</p>
-                <p className="text-sm mt-0.5">
-                  {answeredCount}/{questions.length} cavablandı
-                  {flagged.size > 0 && ` · ${flagged.size} işarəli`}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowGrid(false)}
-                aria-label="Sual siyahısını bağla"
-                className="p-1.5 rounded-lg transition-colors"
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-            </div>
-            <div className="p-4 space-y-5">
-              {questionsByModule.map(({ mod, modIdx, qs }) => (
-                <div key={modIdx}>
-                  <p className="eyebrow mb-2">{mod.name}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {qs.map(q => {
-                      const globalIdx  = indexById.get(q.id) ?? 0;
-                      const isAnswered = q.type === 'mcq' ? answers.has(q.id)
-                        : (q.type === 'open' || q.type === 'writing') ? !!(openAnswers.get(q.id)?.trim())
-                        : q.type === 'matching' ? matchingAnswers.has(q.id)
-                        : false;
-                      const isFlagged  = flagged.has(q.id);
-                      const isCurrent  = globalIdx === currentIdx;
-                      return (
-                        <button
-                          key={q.id}
-                          onClick={() => goTo(globalIdx)}
-                          aria-current={isCurrent ? 'true' : undefined}
-                          aria-label={`Sual ${globalIdx + 1}${isAnswered ? ' — cavablandırılıb' : ' — cavablandırılmayıb'}${isFlagged ? ', işarələnib' : ''}`}
-                          className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
-                            isCurrent ? 'ring-2 ring-offset-1' : ''
-                          } ${
-                            isAnswered
-                              ? isFlagged ? 'bg-warn text-bg' : 'bg-ink text-bg'
-                              : isFlagged
-                                ? 'border border-warn bg-warn/10 text-warn'
-                                : 'bg-surface-2 text-ink-soft'
-                          }`}
-                        >
-                          {globalIdx + 1}
-                        </button>
-                      );
-                    })}
-                    {qs.length === 0 && (
-                      <p className="text-sm text-ink-mute">Bu modulda sual yoxdur</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="p-4 flex flex-wrap gap-3 text-xs border-t border-rule text-ink-soft">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded inline-block bg-ink"  /> Cavablandı
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded inline-block bg-warn"  /> İşarəli
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded inline-block bg-surface-2"  /> Cavabsız
-              </span>
-            </div>
-          </div>
-        </div>
+        <QuestionGrid
+          questionsByModule={questionsByModule}
+          indexById={indexById}
+          answers={answers}
+          openAnswers={openAnswers}
+          matchingAnswers={matchingAnswers}
+          flagged={flagged}
+          currentIdx={currentIdx}
+          answeredCount={answeredCount}
+          totalQuestions={questions.length}
+          onGoTo={goTo}
+          onClose={() => setShowGrid(false)}
+        />
       )}
 
-      {/* ── Confirm submit dialog ── */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="submit-confirm-title"
-            className="rounded-2xl p-6 md:p-8 max-w-sm w-full text-center bg-surface shadow-lg">
-            <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center bg-accent-soft">
-              <CheckCircle2 className="text-ink" size={24} />
-            </div>
-            <h3 id="submit-confirm-title" className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-3">İmtahanı bitirirsiniz?</h3>
-            <div className="text-sm mb-2">
-              <p>
-                <span className="font-medium text-ink">{answeredCount}</span> / {questions.length} sual cavablandı.
-              </p>
-              {questions.length - answeredCount > 0 && (
-                <p className="mt-1 font-medium text-warn">
-                  {questions.length - answeredCount} sual cavabsız qalır.
-                </p>
-              )}
-            </div>
-            <p className="text-sm mb-6 text-ink-mute">
-              Bu əməliyyat geri qaytarıla bilməz.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors border border-rule text-ink-soft">
-                Davam et
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 py-3 rounded-xl text-sm font-medium btn-primary disabled:opacity-60"
-              >
-                {submitting ? 'Göndərilir...' : 'Bitir'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <SubmitConfirmDialog
+          answeredCount={answeredCount}
+          totalQuestions={questions.length}
+          submitting={submitting}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={handleSubmit}
+        />
       )}
 
       {/* ── No questions state ── */}
@@ -999,9 +709,9 @@ onClick={e => e.stopPropagation()}
             <p className="text-sm mb-6 leading-relaxed">
               Bu imtahan üçün sual bankı hazırlanır. Tezliklə əlçatan olacaq.
             </p>
-            <Link href="/dashboard" className="btn-primary">
+            <Button href="/dashboard">
               Panelə qayıt
-            </Link>
+            </Button>
           </div>
         </main>
       ) : (
@@ -1017,7 +727,7 @@ onClick={e => e.stopPropagation()}
             className={`border-r border-rule bg-surface ${hasSidePanel ? 'hidden md:flex' : 'hidden'} md:w-[45%] flex-col overflow-hidden`}>
             <div className="px-6 py-3 flex justify-between items-center shrink-0 border-b border-rule bg-surface-2">
               <div className="flex items-center gap-2">
-                <span className="eyebrow">{currentModule?.name ?? 'Modul'}</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute">{currentModule?.name ?? 'Modul'}</span>
                 {exam.modules.length > 1 && current && (
                   <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-surface-3 text-ink-soft">
                     {current.moduleIndex + 1}/{exam.modules.length}
@@ -1031,8 +741,8 @@ onClick={e => e.stopPropagation()}
 
             {/* Audio player anchored at module level — persists across question navigation */}
             {moduleAudioUrl && (
-              <div className="px-6 py-3 border-b border-slate-100 bg-surface-container-low shrink-0">
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">🎧 Audio / Dinləmə</p>
+              <div className="px-6 py-3 border-b border-slate-100 bg-surface-2 shrink-0">
+                <p className="text-xs font-bold text-ink-soft uppercase tracking-widest mb-2">🎧 Audio / Dinləmə</p>
                 <StrictAudioPlayer src={moduleAudioUrl} examId={exam.id} />
               </div>
             )}
@@ -1048,7 +758,7 @@ onClick={e => e.stopPropagation()}
                   {passageGroup && passageGroup.size > 1 && (
                     <div
                       className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-rule">
-                      <span className="eyebrow">Bu mətnə aid {passageGroup.size} sual</span>
+                      <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute">Bu mətnə aid {passageGroup.size} sual</span>
                       <span className="font-mono tabular-nums text-xs">
                         {passageGroup.position} / {passageGroup.size}
                       </span>
@@ -1056,7 +766,7 @@ onClick={e => e.stopPropagation()}
                   )}
                   {current?.imageUrl && (
                     <div className="mb-6">
-                      <p className="eyebrow mb-3">📊 Diaqram / Şəkil</p>
+                      <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-3">📊 Diaqram / Şəkil</p>
                       {/*
                         Diagrams have no fixed aspect ratio. width/height are
                         required props but are inert here: once `sizes` is set
@@ -1084,8 +794,8 @@ onClick={e => e.stopPropagation()}
                 </article>
               ) : (
                 <div>
-                  <div className="card-new mb-6">
-                    <p className="eyebrow mb-2">Cari Modul</p>
+                  <div className="rounded-card border border-rule bg-surface mb-6 p-7">
+                    <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-2">Cari Modul</p>
                     <p className="font-medium text-ink">{currentModule?.name}</p>
                     {currentModule?.instructions && (
                       <p className="text-sm mt-2 leading-relaxed">
@@ -1093,8 +803,8 @@ onClick={e => e.stopPropagation()}
                       </p>
                     )}
                   </div>
-                  <div className="card-new">
-                    <p className="eyebrow mb-3">Bu Modulun Sualları</p>
+                  <div className="rounded-card border border-rule bg-surface p-7">
+                    <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-3">Bu Modulun Sualları</p>
                     <div className="flex flex-wrap gap-1.5">
                       {questions
                         .filter(q => q.moduleIndex === current?.moduleIndex)
@@ -1208,7 +918,7 @@ onClick={e => e.stopPropagation()}
                 {/* Mobile: module label */}
                 {currentModule && (
                   <div className="flex items-center gap-2 mb-3 md:hidden">
-                    <span className="eyebrow">{currentModule.name}</span>
+                    <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute">{currentModule.name}</span>
                     {exam.modules.length > 1 && (
                       <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-surface-2 text-ink-soft">
                         {(current?.moduleIndex ?? 0) + 1}/{exam.modules.length}
@@ -1307,7 +1017,7 @@ title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cis
                       value={openAnswers.get(current.id) ?? ''}
                       onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
                       placeholder="Cavabınızı burada yazın..."
-                      className="input-new resize-none font-sans" />
+                      className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5 resize-none" />
                   </div>
                 )}
 
@@ -1343,7 +1053,7 @@ title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cis
                                     return next;
                                   });
                                 }}
-                                className={`input-new text-sm ${
+                                className={`w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5 ${
                                   selectedValue >= 0 ? 'border-ink' : 'border-rule'
                                 }`}
                               >
@@ -1380,7 +1090,7 @@ title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cis
                       </div>
                       {current.rubric && (
                         <div className="p-3 rounded-xl border border-rule bg-surface-2">
-                          <p className="eyebrow mb-1">Qiymətləndirmə meyarları</p>
+                          <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-1">Qiymətləndirmə meyarları</p>
                           <p className="text-sm leading-relaxed">{current.rubric}</p>
                         </div>
                       )}
@@ -1389,7 +1099,7 @@ title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cis
                         value={essay}
                         onChange={e => setOpenAnswers(prev => new Map(prev).set(current.id, e.target.value))}
                         placeholder="Cavabınızı burada yazın..."
-                        className="input-new resize-y leading-relaxed font-sans" />
+                        className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5 resize-y leading-relaxed" />
                       <div
                         className={`flex items-center justify-between text-xs font-medium px-1 ${
                           belowMin ? 'text-warn' : aboveMax ? 'text-error' : 'text-ink-mute'
@@ -1431,181 +1141,18 @@ title={`Bu mətnə aid ${passageGroup.size} sualdan ${passageGroup.position}-cis
               <span className="font-mono tabular-nums text-xs">
                 {sessionReady ? formatTime(elapsed) : '--:--'} keçdi
               </span>
-              <button
+              <Button size="none" className="gap-1.5 rounded-xl px-4 py-2 text-sm md:gap-2 md:px-6"
                 onClick={() => currentIdx === questions.length - 1 ? setShowConfirm(true) : goTo(currentIdx + 1)}
                 aria-label={currentIdx === questions.length - 1 ? 'İmtahanı bitir' : 'Növbəti sual'}
-                className="btn-primary flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 rounded-xl text-sm"
               >
                 <span className="hidden sm:inline">
                   {currentIdx === questions.length - 1 ? 'Bitir' : 'Növbəti'}
                 </span>
                 <ChevronRight size={18} aria-hidden="true" />
-              </button>
+              </Button>
             </footer>
           </section>
         </main>
-      )}
-    </div>
-  );
-}
-
-function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
-  const [status, setStatus] = useState<'checking' | 'ready' | 'playing' | 'finished'>('checking');
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // On mount: check (read-only) whether this audio has already been played.
-  // `cancelled` covers the student navigating out of the module before the
-  // check resolves; the catch covers a transport failure, which must leave the
-  // player usable rather than stuck on "Yüklənir…" for the rest of the exam.
-  useEffect(() => {
-    let cancelled = false;
-    checkAudioPlayed(examId, src)
-      .then(result => {
-        if (cancelled) return;
-        if ('error' in result) {
-          setStatus('ready'); // fail open so the exam is not blocked
-          return;
-        }
-        setStatus(result.alreadyPlayed ? 'finished' : 'ready');
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('ready');
-      });
-    return () => { cancelled = true; };
-  }, [src, examId]);
-
-  const handlePlay = async () => {
-    if (status !== 'ready' || !audioRef.current) return;
-
-    // Must call play() synchronously inside the click handler — browsers block it
-    // if called after an await (loses the user-gesture context).
-    try {
-      await audioRef.current.play();
-      setStatus('playing');
-    } catch (err) {
-      const { name, message } = err instanceof Error
-        ? { name: err.name, message: err.message }
-        : { name: undefined, message: String(err) };
-      posthog.captureException(err, { context: 'audioPlay', error_name: name, error_message: message });
-      toast.error(`Audionu başlatmaq mümkün olmadı: ${message}. Zəhmət olmasa təkrar sınayın.`);
-      return;
-    }
-
-    // Mark as played server-side after playback has started. A failure here is
-    // deliberately silent: the audio is already running and stopping it over a
-    // bookkeeping error would cost the student the recording.
-    const result = await markAudioPlayed(examId, src).catch(() => ({ error: 'network' as const }));
-    if ('error' in result) return; // fail open — audio is already playing
-    if (result.alreadyPlayed) {
-      // Race condition: was already played in another tab — stop it
-      audioRef.current?.pause();
-      setStatus('finished');
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (!audioRef.current) return;
-    setCurrentTime(audioRef.current.currentTime);
-  };
-
-  const handleLoadedMetadata = () => {
-    if (!audioRef.current) return;
-    setDuration(audioRef.current.duration);
-  };
-
-  const handleEnded = () => {
-    setStatus('finished');
-    setCurrentTime(duration);
-  };
-
-  const remaining = Math.max(0, duration - currentTime);
-  const progress  = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-  function fmtTime(secs: number) {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }
-
-  return (
-    <div className="w-full space-y-2">
-      <audio
-        ref={audioRef}
-        src={src}
-        crossOrigin="anonymous"
-        preload="metadata"
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleEnded}
-        className="hidden"
-      />
-
-      {/* Checking state */}
-      {status === 'checking' && (
-        <div className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm border border-rule bg-surface-2 text-ink-soft">
-          <span className="w-4 h-4 border-2 border-t-ink rounded-full animate-spin border-rule border-t-ink"  />
-          Yüklənir...
-        </div>
-      )}
-
-      {/* Ready state */}
-      {status === 'ready' && (
-        <>
-          <button
-            onClick={handlePlay}
-            className="btn-primary w-full justify-center py-3 rounded-xl"
-          >
-            <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
-          </button>
-          <p className="text-sm text-center px-2 leading-tight font-medium text-warn">
-            ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.
-          </p>
-        </>
-      )}
-
-      {/* Playing state */}
-      {status === 'playing' && (
-        <div className="w-full rounded-2xl px-4 py-3 space-y-2.5 border border-rule bg-surface-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-ink">
-              <Volume2 size={16} className="animate-pulse shrink-0" />
-              <span>Səs oxunur...</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono tabular-nums text-base">{fmtTime(remaining)}</span>
-              <span className="eyebrow">qaldı</span>
-            </div>
-          </div>
-          <div className="score-bar">
-            <div
-              className="absolute left-0 top-0 h-full rounded-full bg-ink transition-all duration-300 ease-linear"
-              // A computed percentage cannot be a utility class; the colour can.
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="flex justify-between font-mono tabular-nums text-xs text-ink-mute">
-            <span>{fmtTime(currentTime)}</span>
-            <span>{fmtTime(duration)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Finished state */}
-      {status === 'finished' && (
-        <div className="w-full rounded-2xl px-4 py-3 space-y-2 border border-rule bg-surface-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <CheckCircle2 size={16} className="shrink-0 text-ok"  />
-              <span>Audio bitdi</span>
-            </div>
-            {duration > 0 && <span className="font-mono text-sm">{fmtTime(duration)}</span>}
-          </div>
-          <div className="score-bar">
-            <div className="absolute inset-0 rounded-full bg-ok/30"  />
-          </div>
-        </div>
       )}
     </div>
   );

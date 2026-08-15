@@ -1,8 +1,8 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { reconcilePurchase } from '@/lib/reconcile';
-import { isRateLimited } from '@/lib/rate-limit';
+import { reconcilePurchase } from '@/lib/payments/reconcile';
+import { isRateLimited } from '@/lib/infra/rate-limit';
 
 const paramsSchema = z.object({
   examId: z.string().min(1),

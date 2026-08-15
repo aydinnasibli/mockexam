@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 const STORAGE_KEY = 'tc-cookie-notice';
 /** Re-show the notice a week after it was dismissed. */
@@ -121,12 +122,11 @@ export default function CookieNotice() {
               .
             </p>
 
-            <button
+            <Button size="none" className="gap-2.5 rounded-xl px-4 py-2 text-sm"
               onClick={dismiss}
-              className="btn-primary text-sm px-4 py-2 rounded-xl"
             >
               Anladım
-            </button>
+            </Button>
           </div>
         </motion.div>
       )}

@@ -3,8 +3,8 @@
 import { headers } from 'next/headers';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
-import { isRateLimited } from '@/lib/rate-limit';
-import { captureException, captureMessage } from '@/lib/observability';
+import { isRateLimited } from '@/lib/infra/rate-limit';
+import { captureException, captureMessage } from '@/lib/infra/observability';
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Ad tələb olunur').max(100),

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import mongoose from 'mongoose';
-import dbConnect from '@/lib/mongodb';
-import { isRateLimited } from '@/lib/rate-limit';
+import dbConnect from '@/lib/infra/mongodb';
+import { isRateLimited } from '@/lib/infra/rate-limit';
 
 // Mongoose needs the Node.js runtime; never cache — every probe must be live.
 export const runtime = 'nodejs';

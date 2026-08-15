@@ -1,5 +1,5 @@
 import 'server-only';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
 
 /**

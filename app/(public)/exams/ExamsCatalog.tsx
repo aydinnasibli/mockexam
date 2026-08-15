@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { PublicExam } from '@/lib/db/exams';
-import { EXAM_TYPES, examTypeLabel, isExamType } from '@/lib/exam-types';
+import { EXAM_TYPES, examTypeLabel, isExamType } from '@/lib/domain/exam-types';
 import StructureBar from '@/components/ui/StructureBar';
 import {
   BREAK_FILL,
@@ -14,6 +14,8 @@ import {
   structureOf,
   upperLabel,
 } from './structure';
+import Button from '@/components/ui/Button';
+import { MONO_LABEL } from '@/components/ui/type-styles';
 
 /** A block narrower than this share of the bar has no room for its figure. */
 const MIN_FIGURE_SHARE = 0.11;
@@ -39,7 +41,6 @@ const PLANNED_EXTRA = ['GMAT'];
 
 const NUMBER_WORDS = ['Sıfır', 'Bir', 'İki', 'Üç', 'Dörd', 'Beş', 'Altı', 'Yeddi', 'Səkkiz', 'Doqquz', 'On'];
 
-const MONO_LABEL = 'font-mono text-[10px] tracking-[0.16em] uppercase';
 
 function numberWord(n: number): string {
   return NUMBER_WORDS[n] ?? String(n);
@@ -131,7 +132,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:gap-20 lg:items-end">
             <div>
               <div className={`${MONO_LABEL} mb-6 text-bg/50 lg:mb-7`}>Kataloq</div>
-              <h1 className="m-0 text-[44px] font-light leading-[0.94] tracking-[-0.045em] text-bg sm:text-6xl lg:text-[84px]">
+              <h1 className="m-0 text-display-sm font-light leading-[0.94] tracking-[-0.045em] text-bg sm:text-6xl lg:text-hero">
                 {headline.lead}
                 <br />
                 {headline.tail}
@@ -148,7 +149,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   {planned.map((label) => (
                     <span
                       key={label}
-                      className="rounded-full border border-bg/20 px-3.5 py-1.75 font-mono text-[11px] tracking-[0.06em] text-bg/55"
+                      className="rounded-full border border-bg/20 px-3.5 py-1.75 font-mono text-label tracking-[0.06em] text-bg/55"
                     >
                       {label}
                     </span>
@@ -179,7 +180,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                       : 'pt-3.5 pb-3.25 text-bg/70 hover:text-bg'
                   }`}
                 >
-                  <span className={`text-[15px] ${isActive ? 'font-medium' : ''}`}>
+                  <span className={`text-body ${isActive ? 'font-medium' : ''}`}>
                     {type === 'all' ? 'Hamısı' : shortLabel(type)}
                   </span>
                   {/* The inactive count sits on ink; /45 measured 4.33:1 at
@@ -220,9 +221,9 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             <p className="m-0 mb-7 text-base text-ink-soft">
               Digər proqramların sınaqları kataloqda açıqdır.
             </p>
-            <button type="button" onClick={() => selectType('all')} className="btn-ghost">
+            <Button variant="ghost" type="button" onClick={() => selectType('all')}>
               Bütün sınaqlar
-            </button>
+            </Button>
           </div>
         ) : (
           /*
@@ -250,29 +251,29 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               >
                 {/* Code */}
                 <div className="flex items-center gap-3 xl:block">
-                  <span className="block font-mono text-[13px] text-ink">{codes.get(exam.id)}</span>
-                  <span className="inline-flex rounded-full bg-surface-3 px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase text-ink xl:mt-2.5">
+                  <span className="block font-mono text-note text-ink">{codes.get(exam.id)}</span>
+                  <span className="inline-flex rounded-full bg-surface-3 px-2.5 py-1 font-mono text-caption tracking-[0.12em] uppercase text-ink xl:mt-2.5">
                     {shortLabel(exam.type)}
                   </span>
                 </div>
 
                 {/* Title + figures */}
                 <div>
-                  <div className="text-[22px] leading-[1.15] font-normal tracking-[-0.028em] text-ink xl:text-[27px]">
+                  <div className="text-title leading-[1.15] font-normal tracking-[-0.028em] text-ink xl:text-heading">
                     {exam.title}
                   </div>
                   <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-2">
                     <span className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-[19px] tabular-nums text-ink">{examMinutes}</span>
-                      <span className="font-mono text-[11px] tracking-[0.12em] uppercase text-ink-mute">dəq</span>
+                      <span className="font-mono text-subhead tabular-nums text-ink">{examMinutes}</span>
+                      <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">dəq</span>
                     </span>
                     <span className="h-4 w-px bg-rule-strong" />
                     <span className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-[19px] tabular-nums text-ink">{exam.totalQuestions}</span>
-                      <span className="font-mono text-[11px] tracking-[0.12em] uppercase text-ink-mute">sual</span>
+                      <span className="font-mono text-subhead tabular-nums text-ink">{exam.totalQuestions}</span>
+                      <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">sual</span>
                     </span>
                     <span className="h-4 w-px bg-rule-strong" />
-                    <span className="font-mono text-[11px] tracking-[0.12em] uppercase text-ink-mute">
+                    <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">
                       {exam.modules.length} {sectionNoun}
                     </span>
                   </div>
@@ -294,14 +295,14 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                     {structure.bands.map((band) => (
                       <span
                         key={band.label}
-                        className="flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-ink-mute"
+                        className="flex items-center gap-1.5 font-mono text-caption tracking-widest uppercase text-ink-mute"
                       >
                         <span className={`h-2 w-2 shrink-0 ${band.fill}`} />
                         {upperLabel(band.label)}
                       </span>
                     ))}
                     {structure.hasBreak && (
-                      <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-ink-mute">
+                      <span className="flex items-center gap-1.5 font-mono text-caption tracking-widest uppercase text-ink-mute">
                         <span className={`h-2 w-2 shrink-0 ${BREAK_FILL}`} />
                         Fasilə
                       </span>
@@ -311,7 +312,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
 
                 {/* Price */}
                 <div className="flex items-center gap-4.5 xl:justify-end">
-                  <span className="font-mono text-[26px] tabular-nums text-ink">
+                  <span className="font-mono text-title-lg tabular-nums text-ink">
                     {exam.price > 0 ? `${exam.price} ₼` : 'Pulsuz'}
                   </span>
                   <span
@@ -336,13 +337,13 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               { figure: '∞', label: 'cəhd və baxış' },
             ].map((tile) => (
               <div key={tile.label} className="bg-surface-2 px-5 pt-5.5 pb-6 lg:px-5.5">
-                <div className="mb-3 font-mono text-[26px] font-light tabular-nums text-ink">{tile.figure}</div>
-                <div className="text-[15px] text-ink">{tile.label}</div>
+                <div className="mb-3 font-mono text-title-lg font-light tabular-nums text-ink">{tile.figure}</div>
+                <div className="text-body text-ink">{tile.label}</div>
               </div>
             ))}
             <div className="bg-ink px-5 pt-5.5 pb-6 lg:px-5.5">
-              <div className="mb-3 font-mono text-[26px] font-light tabular-nums text-bg">{scoreScale}</div>
-              <div className="text-[15px] text-bg/70">bal proqnozu</div>
+              <div className="mb-3 font-mono text-title-lg font-light tabular-nums text-bg">{scoreScale}</div>
+              <div className="text-body text-bg/70">bal proqnozu</div>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import OpenAI from 'openai';
 import type { WritingTaskType } from '@/lib/models/Question';
-import { captureException, captureMessage } from '@/lib/observability';
+import { captureException, captureMessage } from '@/lib/infra/observability';
 
 /**
  * Reasoning-grader configuration.

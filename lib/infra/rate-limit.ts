@@ -2,7 +2,7 @@
 import 'server-only';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { captureException } from '@/lib/observability';
+import { captureException } from '@/lib/infra/observability';
 
 const limiters = new Map<string, Ratelimit>();
 

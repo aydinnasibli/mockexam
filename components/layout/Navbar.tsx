@@ -8,6 +8,7 @@ import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { LayoutDashboard, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
 
 const navLinks = [
   { href: "/exams",   label: "Sınaqlar" },
@@ -15,7 +16,6 @@ const navLinks = [
   { href: "/contact", label: "Əlaqə" },
 ];
 
-const MONO_LABEL = "font-mono text-[11px] tracking-[0.14em] uppercase";
 
 interface Props {
   /** The bulletin strip is the top tier of the nav; pages that need the
@@ -59,7 +59,7 @@ export default function Navbar({ showBulletin = true }: Props) {
               cannot move anything. */}
           <Link href="/" className="-my-1 flex shrink-0 items-center gap-2.25 py-1">
             <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
-            <span className="text-[22px] leading-none font-medium tracking-tight text-ink">
+            <span className="text-title leading-none font-medium tracking-tight text-ink">
               Test<span className="font-light text-ink-soft">centre</span>
             </span>
           </Link>
@@ -75,7 +75,7 @@ export default function Navbar({ showBulletin = true }: Props) {
                 <Link
                   key={href}
                   href={href}
-                  className={`flex flex-col items-center gap-1.25 text-[13px] font-medium tracking-[0.005em] transition-colors duration-150 ${
+                  className={`flex flex-col items-center gap-1.25 text-note font-medium tracking-[0.005em] transition-colors duration-150 ${
                     isActive ? "text-ink" : "text-ink-mute hover:text-ink"
                   }`}
                 >
@@ -106,12 +106,12 @@ export default function Navbar({ showBulletin = true }: Props) {
               ) : !isSignedIn ? (
                 <>
                   <SignInButton mode="modal">
-                    <button className="cursor-pointer text-[13px] font-medium text-ink-soft transition-colors duration-150 hover:text-ink">
+                    <button className="cursor-pointer text-note font-medium text-ink-soft transition-colors duration-150 hover:text-ink">
                       Daxil ol
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className="cursor-pointer rounded-full bg-ink px-5 py-2.25 text-[13px] font-medium text-bg transition-colors duration-150 hover:bg-ink-hover">
+                    <button className="cursor-pointer rounded-full bg-ink px-5 py-2.25 text-note font-medium text-bg transition-colors duration-150 hover:bg-ink-hover">
                       Qeydiyyat
                     </button>
                   </SignUpButton>
@@ -120,7 +120,7 @@ export default function Navbar({ showBulletin = true }: Props) {
                 <>
                   <Link
                     href="/dashboard"
-                    className={`-my-1 flex items-center gap-1.5 py-1 text-[13px] font-medium transition-colors duration-150 ${
+                    className={`-my-1 flex items-center gap-1.5 py-1 text-note font-medium transition-colors duration-150 ${
                       pathname.startsWith("/dashboard") ? "text-ink" : "text-ink-soft hover:text-ink"
                     }`}
                   >

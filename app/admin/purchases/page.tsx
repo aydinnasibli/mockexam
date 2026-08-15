@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import AdminPageHeader from '../PageHeader';
-import { requireAdminPage } from '@/lib/admin';
+import { requireAdminPage } from '@/lib/infra/admin';
 
 export const metadata = { title: 'Satışlar — Admin' };
 
@@ -31,7 +31,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
       <AdminPageHeader eyebrow="Satışlar" title="Satışlar." meta={`${total} ümumi satış`} />
 
       {/* Figures */}
-      <div className="panel mb-6 grid grid-cols-1 gap-px overflow-hidden bg-rule sm:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-panel border border-rule bg-surface mb-6 grid grid-cols-1 gap-px overflow-hidden bg-rule sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: 'Ümumi', value: total },
           { label: 'Bu səhifə', value: purchases.length },
@@ -39,13 +39,13 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
           { label: `Səhifə ${page} / ${totalPages}`, value: PAGE_SIZE },
         ].map(({ label, value }) => (
           <div key={label} className="bg-surface px-5 py-5">
-            <div className="figure text-3xl">{value}</div>
-            <p className="mono-label m-0 mt-2.5">{label}</p>
+            <div className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl">{value}</div>
+            <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">{label}</p>
           </div>
         ))}
       </div>
 
-      <div className="panel overflow-hidden">
+      <div className="rounded-panel border border-rule bg-surface overflow-hidden">
         {purchases.length === 0 ? (
           <p className="m-0 px-6 py-20 text-center text-base font-light tracking-tight text-ink">
             Hələ satış yoxdur
@@ -67,26 +67,26 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
                 <tbody>
                   {purchases.map((p) => (
                     <tr key={String(p._id)}>
-                      <td className="num max-w-35 truncate text-xs text-ink-mute!">
+                      <td className="num max-w-35 truncate text-xs text-ink-mute">
                         {p.transactionId}
                       </td>
-                      <td className="num text-xs text-ink-mute!">…{p.userId.slice(-10)}</td>
-                      <td className="font-medium text-ink!">{p.examId}</td>
-                      <td className="num">{(p.amountCents / 100).toFixed(2)} {p.currency}</td>
-                      <td>
+                      <td className="num text-xs text-ink-mute">…{p.userId.slice(-10)}</td>
+                      <td className="font-medium text-ink">{p.examId}</td>
+                      <td className="num text-ink">{(p.amountCents / 100).toFixed(2)} {p.currency}</td>
+                      <td className="text-ink-soft">
                         {/* A dot and a word, the way the home page marks an
                             open programme — not a filled icon in a fourth red. */}
                         {p.status === 'COMPLETED' ? (
-                          <span className="flex items-center gap-2 text-[13px] whitespace-nowrap text-ok">
+                          <span className="flex items-center gap-2 text-note whitespace-nowrap text-ok">
                             <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> Tamamlandı
                           </span>
                         ) : (
-                          <span className="flex items-center gap-2 text-[13px] whitespace-nowrap text-error">
+                          <span className="flex items-center gap-2 text-note whitespace-nowrap text-error">
                             <span className="h-1.5 w-1.5 rounded-full bg-error" aria-hidden /> Uğursuz
                           </span>
                         )}
                       </td>
-                      <td className="num text-xs whitespace-nowrap text-ink-mute!">
+                      <td className="num text-xs whitespace-nowrap text-ink-mute">
                         {new Date(p.createdAt).toLocaleString('az-AZ')}
                       </td>
                     </tr>
@@ -98,7 +98,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule px-5 py-4">
-                <p className="mono-label m-0">
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0">
                   Səhifə {page} / {totalPages} · Ümumi {total} satış
                 </p>
                 <div className="flex gap-2">

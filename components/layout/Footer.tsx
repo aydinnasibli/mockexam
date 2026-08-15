@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
+import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
 
-const MONO_LABEL = "font-mono text-[11px] tracking-[0.14em] uppercase";
 
 /**
  * Link columns. `href: null` marks a section that is announced but has no page
@@ -47,7 +47,7 @@ export default function Footer() {
         <div className="flex flex-col gap-8 pt-12 pb-10 sm:flex-row sm:items-end sm:justify-between lg:pt-14">
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo.svg" alt="Testcentre" width={30} height={27} className="shrink-0" />
-            <span className="text-[32px] leading-none font-light tracking-[-0.03em] text-ink lg:text-[40px]">
+            <span className="text-heading-lg leading-none font-light tracking-[-0.03em] text-ink lg:text-display-xs">
               Test<span className="text-ink-soft">centre</span>
             </span>
           </Link>
@@ -65,7 +65,7 @@ export default function Footer() {
         {/* Tier 2 — descriptor and link columns */}
         <div className="grid grid-cols-2 gap-10 border-t border-rule pt-10 pb-12 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12 lg:pb-14">
           <div className="col-span-2 lg:col-span-1">
-            <p className="m-0 max-w-80 text-[15px] leading-[1.65] text-ink-soft">
+            <p className="m-0 max-w-80 text-body leading-[1.65] text-ink-soft">
               Akademik imtahan hazırlığı — rəsmi format, ölçülə bilən tərəqqi, hər sualın
               arxasında izahat.
             </p>
@@ -80,12 +80,12 @@ export default function Footer() {
                     <Link
                       key={link.label}
                       href={link.href}
-                      className="-my-1 py-1 text-[15px] text-ink-soft transition-colors duration-150 hover:text-ink"
+                      className="-my-1 py-1 text-body text-ink-soft transition-colors duration-150 hover:text-ink"
                     >
                       {link.label}
                     </Link>
                   ) : (
-                    <span key={link.label} className="text-[15px] text-ink-mute">
+                    <span key={link.label} className="text-body text-ink-mute">
                       {link.label}
                     </span>
                   ),

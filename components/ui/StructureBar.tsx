@@ -40,7 +40,7 @@ export default function StructureBar({
   gapClass = 'gap-0.5',
   minFigureShare = 0.11,
   labelBreaks = false,
-  figureClass = 'pl-2 font-mono text-[10px]',
+  figureClass = 'pl-2 font-mono text-caption',
 }: Props) {
   return (
     <div className={`flex items-stretch ${gapClass} ${heightClass}`}>

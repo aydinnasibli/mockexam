@@ -4,6 +4,7 @@ import { useActionState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { seedExams, type SeedResult } from '@/lib/actions/admin';
 import { Clock } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 const initialState: SeedResult = { created: 0, skipped: 0 };
 
@@ -20,10 +21,9 @@ export default function SeedButton() {
 
   return (
     <form action={action}>
-      <button
+      <Button variant="ghost" size="sm" className="w-full justify-center disabled:opacity-50"
         type="submit"
         disabled={pending}
-        className="btn-ghost btn-sm w-full cursor-pointer justify-center disabled:opacity-50"
       >
         {pending ? (
           <>
@@ -36,7 +36,7 @@ export default function SeedButton() {
             Standart imtahanları idxal et
           </>
         )}
-      </button>
+      </Button>
     </form>
   );
 }

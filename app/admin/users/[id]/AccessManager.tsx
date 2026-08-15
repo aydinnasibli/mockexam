@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { grantExamAccess, revokeExamAccess } from '@/lib/actions/admin-users';
+import Button from '@/components/ui/Button';
 
 interface GrantableExam {
   examId: string;
@@ -47,7 +48,7 @@ export function GrantAccessForm({ userId, exams }: { userId: string; exams: Gran
         onChange={(e) => setSelected(e.target.value)}
         disabled={pending}
         aria-label="İmtahan seçin"
-        className="input-new flex-1"
+        className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5 flex-1"
       >
         <option value="">İmtahan seçin...</option>
         {exams.map((e) => (
@@ -56,14 +57,13 @@ export function GrantAccessForm({ userId, exams }: { userId: string; exams: Gran
           </option>
         ))}
       </select>
-      <button
+      <Button size="sm" className="shrink-0 justify-center disabled:cursor-not-allowed disabled:opacity-50"
         onClick={handleGrant}
         disabled={!selected || pending}
-        className="btn-primary btn-sm shrink-0 justify-center disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending && <Loader2 size={15} className="animate-spin" />}
         Ödənişsiz giriş ver
-      </button>
+      </Button>
     </div>
   );
 }
@@ -89,7 +89,7 @@ export function RevokeAccessButton({ userId, examId }: { userId: string; examId:
       onClick={handleRevoke}
       disabled={pending}
       title="Admin qrantını sil"
-      className="ml-auto flex cursor-pointer items-center gap-1.5 text-[13px] font-medium text-error transition-opacity hover:opacity-75 disabled:opacity-50"
+      className="ml-auto flex cursor-pointer items-center gap-1.5 text-note font-medium text-error transition-opacity hover:opacity-75 disabled:opacity-50"
     >
       {pending ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
       Geri al

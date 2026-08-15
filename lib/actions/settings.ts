@@ -1,10 +1,10 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import UserSettings from '@/lib/models/UserSettings';
-import { isExamType } from '@/lib/exam-types';
-import { captureException } from '@/lib/observability';
+import { isExamType } from '@/lib/domain/exam-types';
+import { captureException } from '@/lib/infra/observability';
 
 export interface UserSettingsData {
   targetExamDate: string | null;

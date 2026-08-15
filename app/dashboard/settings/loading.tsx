@@ -21,11 +21,11 @@ export default function SettingsLoading() {
 
         <div className="space-y-4">
           {/* Profile card — avatar row, then three label/value rows */}
-          <div className="panel">
-            <div className="panel-head">
+          <div className="rounded-panel border border-rule bg-surface">
+            <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
               <Skeleton className="h-3 w-16 rounded bg-surface-3" />
             </div>
-            <div className="panel-body">
+            <div className="p-5">
               <div className="mb-5 flex items-center gap-5 border-b border-rule pb-5">
                 <Skeleton className="h-15 w-15 shrink-0 rounded-full bg-surface-3" />
                 <div className="min-w-0 flex-1 space-y-2">
@@ -44,11 +44,11 @@ export default function SettingsLoading() {
 
           {/* Exam target, security, account */}
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="panel">
-              <div className="panel-head">
+            <div  key={i} className="rounded-panel border border-rule bg-surface">
+              <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
                 <Skeleton className="h-3 w-24 rounded bg-surface-3" />
               </div>
-              <div className="panel-body space-y-3">
+              <div className="p-5 space-y-3">
                 <Skeleton className="h-4 w-3/4 rounded bg-surface-3" />
                 <Skeleton className="h-10 w-full rounded-btn bg-surface-3" />
               </div>

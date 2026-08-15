@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getActiveExams } from '@/lib/db/exams';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/shared/seo';
 import HomeContent, { type ProgramData } from './HomeContent';
 
 // The per-type exam counts are read at build time. Without this the page is

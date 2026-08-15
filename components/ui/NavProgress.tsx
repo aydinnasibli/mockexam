@@ -15,13 +15,16 @@ import { useEffect, useRef } from 'react';
  *
  * Three decisions worth keeping:
  *
- * 1. **Debounced by 180ms.** The bar never appears for a navigation that
- *    finishes quickly, which is nearly all of them. Showing a progress bar for
- *    120ms is the same flicker problem as a skeleton that flashes. The timers
- *    are held in refs rather than in either effect's closure, because the
- *    effect that *cancels* a pending reveal is not the one that scheduled it —
- *    without that, a navigation finishing at 100ms left the timer armed and
- *    the bar appeared at 180ms, after the new page had already arrived.
+ * 1. **Shown on every navigation, with a floor on how briefly it can appear.**
+ *    This used to be debounced by 180ms so that quick navigations never showed a
+ *    bar. In practice that meant it almost never appeared at all — every local
+ *    navigation beats 180ms — so the feedback the bar exists to give was
+ *    missing. It now starts immediately and, once visible, stays up for at least
+ *    MIN_VISIBLE_MS before rushing to full. That avoids the flicker the debounce
+ *    was guarding against without trading away the signal: a 40ms navigation
+ *    still renders a complete, readable sweep rather than a one-frame blink.
+ *    The timers live in refs, not in either effect's closure, because the effect
+ *    that *ends* a navigation is not the one that started it.
  *
  * 2. **No React state.** The bar is a fixed element that is always mounted;
  *    all this does is toggle a data attribute on `<html>`. Navigation costs
@@ -34,7 +37,12 @@ import { useEffect, useRef } from 'react';
  *    remembering to use the wrapper forever. A capture-phase listener covers
  *    every link, including ones added later.
  */
-const SHOW_AFTER_MS = 180;
+/**
+ * Once the bar is up it stays up this long before completing, however fast the
+ * navigation actually was. Below roughly a third of a second a bar reads as a
+ * glitch rather than as progress.
+ */
+const MIN_VISIBLE_MS = 360;
 
 /** A navigation that never resolves must not leave the bar running forever. */
 const SAFETY_TIMEOUT_MS = 20000;
@@ -52,23 +60,18 @@ function setLiveMessage(text: string) {
 
 export default function NavProgress() {
   const pathname = usePathname();
-  const showTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const safetyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const doneTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const minTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const shownAt = useRef(0);
+  /** Set by the main effect; called by the pathname effect, which cannot see its closure. */
+  const finishRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const root = document.documentElement;
 
-    /** Ends a navigation, whether or not the bar ever became visible. */
-    function finish() {
-      clearTimeout(showTimer.current);
-      clearTimeout(safetyTimer.current);
-      showTimer.current = undefined;
-      safetyTimer.current = undefined;
-
-      // Nothing was ever shown — the navigation beat the debounce.
-      if (!root.hasAttribute(PENDING_ATTR)) return;
-
+    /** Rushes the bar to full and fades it out. */
+    function complete() {
       root.removeAttribute(PENDING_ATTR);
       root.setAttribute(DONE_ATTR, '');
       setLiveMessage('');
@@ -76,14 +79,29 @@ export default function NavProgress() {
       doneTimer.current = setTimeout(() => root.removeAttribute(DONE_ATTR), DONE_MS);
     }
 
+    /** Ends a navigation, holding the bar open for the rest of its minimum. */
+    function finish() {
+      clearTimeout(safetyTimer.current);
+      safetyTimer.current = undefined;
+      if (!root.hasAttribute(PENDING_ATTR)) return;
+
+      const remaining = MIN_VISIBLE_MS - (Date.now() - shownAt.current);
+      clearTimeout(minTimer.current);
+      if (remaining <= 0) complete();
+      else minTimer.current = setTimeout(complete, remaining);
+    }
+    finishRef.current = finish;
+
     function start() {
-      finish();
+      // Collapse an in-flight navigation immediately; the new one owns the bar.
+      clearTimeout(minTimer.current);
       clearTimeout(doneTimer.current);
+      clearTimeout(safetyTimer.current);
       root.removeAttribute(DONE_ATTR);
-      showTimer.current = setTimeout(() => {
-        root.setAttribute(PENDING_ATTR, '');
-        setLiveMessage('Yüklənir…');
-      }, SHOW_AFTER_MS);
+
+      root.setAttribute(PENDING_ATTR, '');
+      shownAt.current = Date.now();
+      setLiveMessage('Yüklənir…');
       safetyTimer.current = setTimeout(finish, SAFETY_TIMEOUT_MS);
     }
 
@@ -112,9 +130,9 @@ export default function NavProgress() {
     return () => {
       document.removeEventListener('click', onClick, true);
       window.removeEventListener('popstate', start);
-      clearTimeout(showTimer.current);
       clearTimeout(safetyTimer.current);
       clearTimeout(doneTimer.current);
+      clearTimeout(minTimer.current);
     };
   }, []);
 
@@ -123,19 +141,7 @@ export default function NavProgress() {
    * where there is nothing pending and every branch is a no-op.
    */
   useEffect(() => {
-    const root = document.documentElement;
-    clearTimeout(showTimer.current);
-    clearTimeout(safetyTimer.current);
-    showTimer.current = undefined;
-    safetyTimer.current = undefined;
-
-    if (!root.hasAttribute(PENDING_ATTR)) return;
-
-    root.removeAttribute(PENDING_ATTR);
-    root.setAttribute(DONE_ATTR, '');
-    setLiveMessage('');
-    const timer = setTimeout(() => root.removeAttribute(DONE_ATTR), DONE_MS);
-    return () => clearTimeout(timer);
+    finishRef.current();
   }, [pathname]);
 
   return (

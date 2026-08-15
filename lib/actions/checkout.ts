@@ -2,13 +2,13 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
-import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/epoint';
-import { isRateLimited } from '@/lib/rate-limit';
-import { captureException, captureMessage } from '@/lib/observability';
-import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
+import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/payments/epoint';
+import { isRateLimited } from '@/lib/infra/rate-limit';
+import { captureException, captureMessage } from '@/lib/infra/observability';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
 
 export type CheckoutResult =
   | { redirectUrl: string }

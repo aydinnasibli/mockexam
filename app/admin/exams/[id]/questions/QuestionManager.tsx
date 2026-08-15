@@ -5,7 +5,7 @@ import { useState, useTransition, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { renderMath } from '@/lib/render-math';
+import { renderMath } from '@/lib/shared/render-math';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2,
   FileText, Pencil, X, Save, Sigma, Eye, EyeOff,
@@ -13,6 +13,8 @@ import {
 import { addQuestion, updateQuestion, deleteQuestion, reorderQuestions } from '@/lib/actions/questions';
 import type { QuestionData } from '@/lib/actions/questions';
 import type { QuestionType, WritingTaskType } from '@/lib/models/Question';
+import Button from '@/components/ui/Button';
+import Tag from '@/components/ui/Tag';
 
 interface ModuleMeta {
   index: number;
@@ -128,7 +130,7 @@ function MathToolbar({ onInsert }: { onInsert: (s: string) => void }) {
           </div>
         )}
       </div>
-      <p className="mono-label px-3 pb-2.5">İnline: <code>$formula$</code> · Blok: <code>$$formula$$</code></p>
+      <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute px-3 pb-2.5">İnline: <code>$formula$</code> · Blok: <code>$$formula$$</code></p>
     </div>
   );
 }
@@ -180,7 +182,7 @@ function MathTextarea({
       {toolbar && showToolbar && <MathToolbar onInsert={insertAtCursor} />}
       {preview ? (
         <div className="min-h-20 rounded-btn border border-rule bg-surface px-4 py-3">
-          {value ? <MathPreview text={value} /> : <span className="mono-label">Mətn yoxdur...</span>}
+          {value ? <MathPreview text={value} /> : <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">Mətn yoxdur...</span>}
         </div>
       ) : (
         <textarea
@@ -189,7 +191,7 @@ function MathTextarea({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="input-new resize-y font-mono text-sm!"
+          className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5 resize-y text-sm"
         />
       )}
     </div>
@@ -327,7 +329,7 @@ function QuestionForm({
     <div className="space-y-5 rounded-panel border border-ink-faint bg-surface-2 p-6">
       {/* Type toggle */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mono-label mr-1">Sual növü</span>
+        <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute mr-1">Sual növü</span>
         {QUESTION_TYPES.map(t => (
           <button key={t.value} type="button" onClick={() => set('type', t.value)}
             className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
@@ -342,7 +344,7 @@ function QuestionForm({
 
       {/* Passage */}
       <div>
-        <label className="field-label">
+        <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
           Mətn / Passage <span className="font-normal normal-case">(ixtiyari)</span>
         </label>
         <MathTextarea value={form.passage} onChange={v => set('passage', v)} placeholder="Sual üçün oxuma mətni..." rows={4} showToolbar={false} />
@@ -350,7 +352,7 @@ function QuestionForm({
 
       {/* Audio URL */}
       <div>
-        <label className="field-label">
+        <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
           Audio URL <span className="font-normal normal-case">(ixtiyari, Listening üçün)</span>
         </label>
         <input
@@ -358,13 +360,13 @@ function QuestionForm({
           value={form.audioUrl}
           onChange={e => set('audioUrl', e.target.value)}
           placeholder="https://example.com/audio.mp3"
-          className="input-new"
+          className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5"
         />
       </div>
 
       {/* Image / chart URL */}
       <div>
-        <label className="field-label">
+        <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
           Şəkil / Diaqram URL <span className="font-normal normal-case">(ixtiyari — məs. IELTS Task 1 qrafiki, riyaziyyat diaqramı)</span>
         </label>
         <input
@@ -372,14 +374,14 @@ function QuestionForm({
           value={form.imageUrl}
           onChange={e => set('imageUrl', e.target.value)}
           placeholder="https://....public.blob.vercel-storage.com/chart.png"
-          className="input-new"
+          className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5"
         />
-        <p className="mt-1.5 text-[13px] text-ink-mute">
+        <p className="mt-1.5 text-note text-ink-mute">
           ⚠️ Şəkil Vercel Blob Storage-də (<code>*.public.blob.vercel-storage.com</code>) və ya saytın öz domenində (<code>/</code> ilə başlayan yol) saxlanılmalıdır. Başqa domenlər saxlanılarkən rədd ediləcək.
         </p>
         {form.imageUrl.trim() && (
           <div className="mt-2.5 rounded-btn border border-rule bg-surface p-2.5">
-            <p className="mono-label mb-2">Önizləmə</p>
+            <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute mb-2">Önizləmə</p>
             {/*
               Deliberately a raw <img>, not next/image: this is a live validation
               preview of a URL the admin is still typing. Its job is to FAIL
@@ -403,7 +405,7 @@ function QuestionForm({
 
       {/* Stem */}
       <div>
-        <label className="field-label">
+        <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
           Sual mətni <span className="text-error">*</span>
         </label>
         <MathTextarea value={form.stem} onChange={v => set('stem', v)} placeholder="Sualı daxil edin... Riyaziyyat üçün $formula$ istifadə edin" rows={3} showToolbar />
@@ -412,7 +414,7 @@ function QuestionForm({
       {/* MCQ options */}
       {form.type === 'mcq' && (
         <div>
-          <label className="field-label">
+          <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
             Variantlar <span className="text-error">*</span> <span className="font-normal normal-case">(düzgün cavabı seçmək üçün hərf düyməsini basın)</span>
           </label>
           <div className="space-y-3">
@@ -422,7 +424,7 @@ function QuestionForm({
                     does in the exam review: it is the answer key. */}
                 <button type="button" onClick={() => set('correctIndex', i)}
                   aria-pressed={form.correctIndex === i}
-                  className={`mt-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border font-mono text-[11px] transition-colors ${
+                  className={`mt-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border font-mono text-label transition-colors ${
                     form.correctIndex === i
                       ? 'border-correct bg-correct text-bg'
                       : 'border-rule bg-surface text-ink-mute hover:border-ink hover:text-ink'
@@ -443,9 +445,9 @@ function QuestionForm({
             ))}
           </div>
           {form.options.length < 8 && (
-            <button type="button" onClick={addOption} className="btn-ghost btn-sm mt-3 cursor-pointer text-xs!">
+            <Button variant="ghost" size="xs" className="mt-3" type="button" onClick={addOption}>
               <Plus size={13} /> Variant əlavə et
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -453,14 +455,14 @@ function QuestionForm({
       {/* Open answers */}
       {form.type === 'open' && (
         <div>
-          <label className="field-label">
+          <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
             Düzgün cavab(lar) <span className="text-error">*</span> <span className="font-normal normal-case">(hər sətir bir qəbul edilən cavab)</span>
           </label>
           <div className="space-y-2">
             {form.openAnswers.map((ans, i) => (
               <div key={i} className="flex items-center gap-2">
                 <input type="text" value={ans} onChange={e => setOpenAnswer(i, e.target.value)} placeholder={`Cavab ${i + 1}`}
-                  className="input-new flex-1 py-2.5!" />
+                  className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5 flex-1" />
                 {form.openAnswers.length > 1 && (
                   <button type="button" onClick={() => removeOpenAnswer(i)} className="shrink-0 cursor-pointer rounded-btn p-1.5 text-ink-mute transition-colors hover:bg-surface-2 hover:text-error" title="Sil">
                     <Trash2 size={14} />
@@ -469,10 +471,10 @@ function QuestionForm({
               </div>
             ))}
           </div>
-          <button type="button" onClick={addOpenAnswer} className="btn-ghost btn-sm mt-3 cursor-pointer text-xs!">
+          <Button variant="ghost" size="xs" className="mt-3" type="button" onClick={addOpenAnswer}>
             <Plus size={13} /> Cavab variantı əlavə et
-          </button>
-          <p className="mt-1.5 text-[13px] text-ink-mute">Cavablar böyük/kiçik hərf və boşluqlara həssas deyil (məs. &quot;15 April&quot; = &quot;15april&quot;). Bütün düzgün variantları əlavə edin.</p>
+          </Button>
+          <p className="mt-1.5 text-note text-ink-mute">Cavablar böyük/kiçik hərf və boşluqlara həssas deyil (məs. &quot;15 April&quot; = &quot;15april&quot;). Bütün düzgün variantları əlavə edin.</p>
         </div>
       )}
 
@@ -480,15 +482,15 @@ function QuestionForm({
       {form.type === 'matching' && (
         <div className="space-y-4">
           <div>
-            <label className="field-label">
+            <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
               Hədəflər (sağ sütun) <span className="text-error">*</span>
             </label>
             <div className="space-y-2">
               {form.options.map((opt, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-rule bg-surface font-mono text-[11px] text-ink-mute">{OPTION_LABELS[i]}</span>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-rule bg-surface font-mono text-label text-ink-mute">{OPTION_LABELS[i]}</span>
                   <input type="text" value={opt} onChange={e => setOption(i, e.target.value)} placeholder={`Hədəf ${OPTION_LABELS[i]}`}
-                    className="input-new flex-1 py-2.5!" />
+                    className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5 flex-1" />
                   {form.options.length > 2 && (
                     <button type="button" onClick={() => removeOption(i)} className="shrink-0 cursor-pointer rounded-btn p-1.5 text-ink-mute transition-colors hover:bg-surface-2 hover:text-error" title="Sil">
                       <Trash2 size={14} />
@@ -498,24 +500,24 @@ function QuestionForm({
               ))}
             </div>
             {form.options.length < 8 && (
-              <button type="button" onClick={addOption} className="btn-ghost btn-sm mt-3 cursor-pointer text-xs!">
+              <Button variant="ghost" size="xs" className="mt-3" type="button" onClick={addOption}>
                 <Plus size={13} /> Hədəf əlavə et
-              </button>
+              </Button>
             )}
           </div>
           <div>
-            <label className="field-label">
+            <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
               Elementlər (sol sütun) və düzgün uyğunluq <span className="text-error">*</span>
             </label>
             <div className="space-y-2">
               {form.matchItems.map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-rule bg-surface font-mono text-[11px] text-ink-mute">{i + 1}</span>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-rule bg-surface font-mono text-label text-ink-mute">{i + 1}</span>
                   <input type="text" value={item} onChange={e => setMatchItem(i, e.target.value)} placeholder={`Element ${i + 1}`}
-                    className="input-new flex-1 py-2.5!" />
+                    className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5 flex-1" />
                   <span className="text-ink-mute text-xs">→</span>
                   <select value={form.correctMatching[i] ?? 0} onChange={e => setMatchTarget(i, parseInt(e.target.value))}
-                    className="input-new w-auto shrink-0 py-2.5!">
+                    className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5 shrink-0">
                     {form.options.map((opt, oi) => (
                       <option key={oi} value={oi}>{OPTION_LABELS[oi]}. {opt.trim() ? opt.slice(0, 24) : `Hədəf ${OPTION_LABELS[oi]}`}</option>
                     ))}
@@ -528,9 +530,9 @@ function QuestionForm({
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addMatchItem} className="btn-ghost btn-sm mt-3 cursor-pointer text-xs!">
+            <Button variant="ghost" size="xs" className="mt-3" type="button" onClick={addMatchItem}>
               <Plus size={13} /> Element əlavə et
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -540,37 +542,37 @@ function QuestionForm({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="field-label">Tapşırıq növü</label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Tapşırıq növü</label>
               <select value={form.writingTaskType} onChange={e => set('writingTaskType', e.target.value as WritingTaskType)}
-                className="input-new py-2.5!">
+                className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5">
                 {WRITING_TASK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="field-label">Min. söz</label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Min. söz</label>
               <input type="number" min={0} value={form.minWords} onChange={e => set('minWords', Math.max(0, parseInt(e.target.value) || 0))}
-                className="input-new py-2.5!" />
+                className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5" />
             </div>
             <div>
-              <label className="field-label">Maks. söz <span className="font-normal normal-case">(0 = limitsiz)</span></label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Maks. söz <span className="font-normal normal-case">(0 = limitsiz)</span></label>
               <input type="number" min={0} value={form.maxWords} onChange={e => set('maxWords', Math.max(0, parseInt(e.target.value) || 0))}
-                className="input-new py-2.5!" />
+                className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5" />
             </div>
           </div>
           <div>
-            <label className="field-label">
+            <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
               Qiymətləndirmə meyarları / Rubric <span className="text-error">*</span> <span className="font-normal normal-case">(AI bununla qiymətləndirir)</span>
             </label>
             <textarea rows={4} value={form.rubric} onChange={e => set('rubric', e.target.value)}
               placeholder="Məs.: TA — bütün əsas trendləri və müqayisələri əhatə edir; CC — aydın struktur..."
-              className="input-new resize-y" />
+              className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5 resize-y" />
           </div>
         </div>
       )}
 
       {/* Explanation */}
       <div>
-        <label className="field-label">
+        <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
           İzahat <span className="font-normal normal-case">(ixtiyari)</span>
         </label>
         <MathTextarea value={form.explanation} onChange={v => set('explanation', v)} placeholder="Düzgün cavabın izahatı... $formula$ dəstəklənir" rows={2} showToolbar />
@@ -579,14 +581,12 @@ function QuestionForm({
       {validationError && <p className="text-sm text-error">{validationError}</p>}
 
       <div className="flex items-center gap-2 pt-1">
-        <button type="button" onClick={handleSubmit} disabled={pending}
-          className="btn-primary btn-sm cursor-pointer disabled:opacity-60">
+        <Button size="sm" className="disabled:opacity-60" type="button" onClick={handleSubmit} disabled={pending}>
           <Save size={14} /> {pending ? 'Saxlanılır...' : isEdit ? 'Yadda saxla' : 'Əlavə et'}
-        </button>
-        <button type="button" onClick={onCancel} disabled={pending}
-          className="btn-ghost btn-sm cursor-pointer">
+        </Button>
+        <Button variant="ghost" size="sm" type="button" onClick={onCancel} disabled={pending}>
           <X size={14} /> Ləğv et
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -610,7 +610,7 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
 
   return (
     <div className="flex gap-4 rounded-panel border border-rule bg-surface p-5">
-      <div className="w-6 shrink-0 pt-0.5 text-center font-mono text-[13px] tabular-nums text-ink-mute">
+      <div className="w-6 shrink-0 pt-0.5 text-center font-mono text-note tabular-nums text-ink-mute">
         {String(index + 1).padStart(2, '0')}
       </div>
       <div className="min-w-0 flex-1">
@@ -657,12 +657,12 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
         )}
         {q.type === 'open' && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="tag">Açıq</span>
+            <Tag>Açıq</Tag>
             {(q.openAnswers ?? []).filter(a => a.trim()).map((a, i) => (
-              <span key={i} className="tag tag-ok">✓ {a}</span>
+              <Tag tone="ok" key={i}>✓ {a}</Tag>
             ))}
             {(q.openAnswers ?? []).filter(a => a.trim()).length === 0 && (
-              <span className="text-[13px] text-error">⚠️ Cavab təyin edilməyib — qiymətləndirilə bilməz</span>
+              <span className="text-note text-error">⚠️ Cavab təyin edilməyib — qiymətləndirilə bilməz</span>
             )}
           </div>
         )}
@@ -672,12 +672,12 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
               const target = q.correctMatching?.[i];
               return (
                 <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-mute">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="shrink-0 font-mono text-label tabular-nums text-ink-mute">{String(i + 1).padStart(2, '0')}</span>
                   <MathPreview text={item} className="flex-1" />
                   <span className="text-ink-faint" aria-hidden>→</span>
-                  <span className="tag tag-ok">
+                  <Tag tone="ok">
                     {typeof target === 'number' ? `${OPTION_LABELS[target]}. ${q.options[target] ?? ''}` : '—'}
-                  </span>
+                  </Tag>
                 </div>
               );
             })}
@@ -686,13 +686,13 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
         {q.type === 'writing' && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="tag tag-accent">Yazı · {q.writingTaskType ?? 'general'}</span>
-              {(q.minWords ?? 0) > 0 && <span className="tag">Min {q.minWords} söz</span>}
-              {(q.maxWords ?? 0) > 0 && <span className="tag">Maks {q.maxWords} söz</span>}
+              <Tag tone="accent">Yazı · {q.writingTaskType ?? 'general'}</Tag>
+              {(q.minWords ?? 0) > 0 && <Tag>Min {q.minWords} söz</Tag>}
+              {(q.maxWords ?? 0) > 0 && <Tag>Maks {q.maxWords} söz</Tag>}
             </div>
             {q.rubric?.trim()
-              ? <p className="m-0 line-clamp-2 text-[13px] text-ink-mute"><span className="font-medium text-ink-soft">Rubric:</span> {q.rubric}</p>
-              : <span className="text-[13px] text-error">⚠️ Rubric təyin edilməyib — AI qiymətləndirə bilməz</span>}
+              ? <p className="m-0 line-clamp-2 text-note text-ink-mute"><span className="font-medium text-ink-soft">Rubric:</span> {q.rubric}</p>
+              : <span className="text-note text-error">⚠️ Rubric təyin edilməyib — AI qiymətləndirə bilməz</span>}
           </div>
         )}
         {q.explanation && (
@@ -756,17 +756,17 @@ export default function QuestionManager({ examId, modules, initialQuestions }: P
         const isAdding = addingTo === mod.index;
 
         return (
-          <div key={mod.index} className="panel">
+          <div  key={mod.index} className="rounded-panel border border-rule bg-surface">
             <button type="button" onClick={() => toggleModule(mod.index)}
               aria-expanded={isOpen}
               className="flex w-full cursor-pointer items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-surface-2">
               <div className="flex min-w-0 items-baseline gap-3.5">
-                <span className="font-mono text-[13px] tabular-nums text-ink-mute">
+                <span className="font-mono text-note tabular-nums text-ink-mute">
                   {String(mod.index + 1).padStart(2, '0')}
                 </span>
                 <div className="min-w-0">
-                  <p className="m-0 text-[15px] font-medium tracking-[-0.01em] text-ink">{mod.name}</p>
-                  <p className="mono-label m-0 mt-1.5">
+                  <p className="m-0 text-body font-medium tracking-[-0.01em] text-ink">{mod.name}</p>
+                  <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-1.5">
                     {qs.length} / {mod.questionCount} sual
                     {qs.length < mod.questionCount && <span className="ml-1 text-warn">· {mod.questionCount - qs.length} çatışmır</span>}
                     {qs.length >= mod.questionCount && mod.questionCount > 0 && <span className="ml-1 text-ok">· Tam</span>}
@@ -779,7 +779,7 @@ export default function QuestionManager({ examId, modules, initialQuestions }: P
             {isOpen && (
               <div className="space-y-3 border-t border-rule px-5 py-5">
                 {qs.length === 0 && !isAdding && (
-                  <p className="m-0 py-8 text-center text-[13px] text-ink-mute">Bu modulda hələ sual yoxdur.</p>
+                  <p className="m-0 py-8 text-center text-note text-ink-mute">Bu modulda hələ sual yoxdur.</p>
                 )}
                 {qs.map((q, i) => (
                   <QuestionCard key={q.id} q={q} index={i} examId={examId}

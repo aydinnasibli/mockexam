@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/shared/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Əlaqə',

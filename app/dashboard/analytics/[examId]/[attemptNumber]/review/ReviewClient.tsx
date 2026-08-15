@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { renderMath } from '@/lib/render-math';
+import MathText from '@/components/ui/MathText';
 import PassageText from '@/components/ui/PassageText';
 import { reevaluatePendingWriting } from '@/lib/actions/results';
-import { formatOverallScore, formatModuleScore } from '@/lib/scoring';
+import { formatOverallScore, formatModuleScore } from '@/lib/domain/scoring';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
   ArrowLeft, RotateCcw, BarChart2, FileText, Pencil,
@@ -26,11 +26,6 @@ interface Props {
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-function MathText({ text }: { text: string }) {
-  // <span> keeps it valid inside <p> (e.g. matching items) — a <div> child of a
-  // <p> is invalid HTML and causes a hydration error.
-  return <span dangerouslySetInnerHTML={{ __html: renderMath(text) }} className="leading-relaxed" />;
-}
 
 function formatTime(secs: number) {
   if (secs < 60) return `${secs}s`;
@@ -157,7 +152,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="tag-ink text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-bg/10 text-bg/70 border-0">
+                <span className="rounded-full bg-bg/10 px-2.5 py-0.5 text-xs font-bold tracking-wide uppercase text-bg/70">
                   {exam.tag}
                 </span>
                 <span className="text-bg/55 text-xs">·</span>
@@ -182,7 +177,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                   ? <span className="text-base font-medium text-ink-mute ml-1">{overall.unit}</span>
                   : <span>%</span>}
               </p>
-              <p className="eyebrow text-ink-mute mt-1">{overallLabel}</p>
+              <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mt-1">{overallLabel}</p>
             </div>
           </div>
 
@@ -369,7 +364,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Stem — `whitespace-pre-line` so authored paragraph
                           breaks survive (renderMath emits no <br>). */}
                       <div className="text-sm font-medium text-ink leading-relaxed mb-4 whitespace-pre-line">
-                        <MathText text={q.stem} />
+                        <MathText text={q.stem} className="leading-relaxed" />
                       </div>
 
                       {/* MCQ options */}
@@ -393,7 +388,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                   {OPTION_LABELS[i]}
                                 </span>
                                 <div className="text-sm flex-1 pt-0.5">
-                                  <MathText text={opt} />
+                                  <MathText text={opt} className="leading-relaxed" />
                                 </div>
                                 {isCorrectOption && <CheckCircle2 size={15} className="text-ok shrink-0 mt-0.5" />}
                                 {isUserChoice && !isCorrectOption && <XCircle size={15} className="text-error shrink-0 mt-0.5" />}
@@ -432,7 +427,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                     {idx + 1}
                                   </span>
                                   <div className="flex-1 text-sm">
-                                    <p className="font-medium text-ink mb-1"><MathText text={item} /></p>
+                                    <p className="font-medium text-ink mb-1"><MathText text={item} className="leading-relaxed" /></p>
                                     {userPick >= 0 && !itemCorrect && (
                                       <p className="text-error text-sm">Sizin: {OPTION_LABELS[userPick]}. {q.options[userPick]}</p>
                                     )}
@@ -465,7 +460,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                 : isCorrect ? 'border-green-400 bg-green-50'
                                 : 'border-red-400 bg-red-50'
                             }`}>
-                              <p className="eyebrow text-ink-mute mb-1.5 flex items-center gap-1.5">
+                              <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-1.5 flex items-center gap-1.5">
                                 <Pencil size={11} /> Sizin cavabınız
                               </p>
                               {typed ? (
@@ -481,7 +476,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
                             {accepted.length > 0 && (
                               <div className="px-4 py-3 rounded-xl border-2 border-green-400 bg-green-50">
-                                <p className="eyebrow text-ink-mute mb-1.5 flex items-center gap-1.5">
+                                <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-1.5 flex items-center gap-1.5">
                                   <CheckCircle2 size={11} className="text-ok" />
                                   {accepted.length > 1 ? 'Qəbul edilən cavablar' : 'Doğru cavab'}
                                 </p>
@@ -509,7 +504,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           <div className="space-y-3 mb-4">
                             {essay ? (
                               <div className="p-4 bg-surface-2 border border-rule rounded-xl">
-                                <p className="eyebrow text-ink-mute mb-2 flex items-center gap-1.5">
+                                <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-2 flex items-center gap-1.5">
                                   <FileText size={11} /> Sizin cavabınız {wordCount ? `· ${wordCount} söz` : ''}
                                 </p>
                                 <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{essay}</p>
@@ -535,7 +530,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                             {!writingAnswer?.writingPending && bandScore !== undefined && (
                               <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="eyebrow text-purple-700">AI Qiymətləndirməsi</p>
+                                  <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute text-purple-700">AI Qiymətləndirməsi</p>
                                   <span className={`font-display text-2xl font-bold ${bandColor}`}>
                                     {bandScore.toFixed(1)} <span className="text-sm font-medium text-ink-mute">/ 9</span>
                                   </span>
@@ -585,9 +580,9 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Explanation */}
                       {q.explanation && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                          <p className="eyebrow text-blue-600 mb-1">İzahat</p>
+                          <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute text-blue-600 mb-1">İzahat</p>
                           <div className="text-xs text-blue-900 leading-relaxed">
-                            <MathText text={q.explanation} />
+                            <MathText text={q.explanation} className="leading-relaxed" />
                           </div>
                         </div>
                       )}

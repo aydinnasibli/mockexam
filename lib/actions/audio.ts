@@ -1,10 +1,10 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamSessionModel, { type IExamSession } from '@/lib/models/ExamSession';
-import { isRateLimited } from '@/lib/rate-limit';
-import { captureException } from '@/lib/observability';
+import { isRateLimited } from '@/lib/infra/rate-limit';
+import { captureException } from '@/lib/infra/observability';
 
 /** Read-only check — does NOT mark the audio as played. Used on component mount. */
 export async function checkAudioPlayed(

@@ -3,19 +3,19 @@
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
 import QuestionModel from '@/lib/models/Question';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import ExamSessionModel from '@/lib/models/ExamSession';
-import { isRateLimited } from '@/lib/rate-limit';
-import { checkRole } from '@/lib/admin';
+import { isRateLimited } from '@/lib/infra/rate-limit';
+import { checkRole } from '@/lib/infra/admin';
 import { evaluateWriting, type WritingCriterionResult } from '@/lib/actions/writing-eval';
-import { computeAuthenticScores } from '@/lib/scoring';
-import { gradeAnswers } from '@/lib/grading';
-import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
-import { captureException, captureMessage } from '@/lib/observability';
+import { computeAuthenticScores } from '@/lib/domain/scoring';
+import { gradeAnswers } from '@/lib/domain/grading';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
+import { captureException, captureMessage } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
 
 type AnswerRecord = {

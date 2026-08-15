@@ -4,14 +4,15 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getActiveExams, getExamById, type PublicExam } from '@/lib/db/exams';
 import { getSampleQuestion } from '@/lib/db/questions';
-import { BASE_URL, SITE_NAME, clampDescription, jsonLd, pageMetadata } from '@/lib/seo';
-import { examTypeLabel } from '@/lib/exam-types';
-import { renderMath } from '@/lib/render-math';
+import { BASE_URL, SITE_NAME, clampDescription, jsonLd, pageMetadata } from '@/lib/shared/seo';
+import { examTypeLabel } from '@/lib/domain/exam-types';
+import { renderMath } from '@/lib/shared/render-math';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import StructureBar from '@/components/ui/StructureBar';
 import { SCORE_SCALE, examCodes, pad2, shortTypeLabel, structureOf, upperLabel } from '../structure';
 import PurchaseCard from './PurchaseCard';
+import { MONO_LABEL } from '@/components/ui/type-styles';
 
 /**
  * Prerender every active exam at build time; anything added later is rendered
@@ -45,7 +46,6 @@ interface Props {
  */
 const MIN_USEFUL_DESCRIPTION = 60;
 
-const MONO_LABEL = 'font-mono text-[10px] tracking-[0.14em] uppercase';
 
 function examDescription(exam: PublicExam): string {
   const stored = exam.description?.trim() ?? '';
@@ -203,9 +203,9 @@ export default async function ExamDetails({ params }: Props) {
             {/* ── Left: the specification ── */}
             <div className="min-w-0">
               <div className="mb-6 flex items-center gap-3">
-                <span className={`${MONO_LABEL} text-[11px] tracking-[0.16em] text-ink`}>{code}</span>
+                <span className={`${MONO_LABEL} text-label tracking-[0.16em] text-ink`}>{code}</span>
                 <span className="h-1.25 w-1.25 rounded-full bg-correct" aria-hidden />
-                <span className={`${MONO_LABEL} text-[11px] text-ink-mute`}>açıq</span>
+                <span className={`${MONO_LABEL} text-label text-ink-mute`}>açıq</span>
               </div>
 
               <h1 className="m-0 max-w-155 text-4xl leading-[0.98] font-light tracking-[-0.042em] text-ink md:text-5xl lg:text-6xl">
@@ -226,7 +226,7 @@ export default async function ExamDetails({ params }: Props) {
                       i === 3 ? 'border-r-0 pr-0' : '',
                     ].filter(Boolean).join(' ')}
                   >
-                    <div className="font-mono text-[28px] font-light tracking-[-0.03em] tabular-nums text-ink lg:text-[34px]">
+                    <div className="font-mono text-heading font-light tracking-[-0.03em] tabular-nums text-ink lg:text-heading-lg">
                       {figure.value}
                     </div>
                     <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</div>
@@ -240,7 +240,7 @@ export default async function ExamDetails({ params }: Props) {
                   {/* Same wrap rule as the Nümunə heading below — this label is
                       short today, but it is built from exam data too. */}
                   <div className="mb-7 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">
+                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">
                       Vaxt xətti
                     </h2>
                     {totalBreak > 0 && (
@@ -256,7 +256,7 @@ export default async function ExamDetails({ params }: Props) {
                     heightClass="h-11 lg:h-14"
                     gapClass="gap-0.75"
                     labelBreaks
-                    figureClass="px-3.5 font-mono text-[11px]"
+                    figureClass="px-3.5 font-mono text-label"
                   />
 
                   {/* Labels track the same flex ratios, so each sits under its
@@ -271,7 +271,7 @@ export default async function ExamDetails({ params }: Props) {
 
                   {isAdaptive && (
                     <div className="mt-5 flex items-center gap-2">
-                      <span className="font-mono text-[10px] text-ink-mute" aria-hidden>△</span>
+                      <span className="font-mono text-caption text-ink-mute" aria-hidden>△</span>
                       <span className="text-sm text-ink-soft">
                         çətinlik əvvəlki modulun nəticəsinə görə seçilir
                       </span>
@@ -283,7 +283,7 @@ export default async function ExamDetails({ params }: Props) {
               {/* ── Module table ── */}
               {exam.modules.length > 0 && (
                 <div className="mt-14 lg:mt-18">
-                  <div className={`${MONO_LABEL} grid grid-cols-[32px_1fr_64px] gap-4 border-t border-ink pt-2.75 pb-2.75 text-[9px] tracking-[0.16em] text-ink-mute sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5`}>
+                  <div className={`${MONO_LABEL} grid grid-cols-[32px_1fr_64px] gap-4 border-t border-ink pt-2.75 pb-2.75 text-ink-mute sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5`}>
                     <span>№</span>
                     <span>Modul</span>
                     <span className="hidden text-right sm:block">Sual</span>
@@ -296,10 +296,10 @@ export default async function ExamDetails({ params }: Props) {
                     <StaggerItem key={i}>
                       <div className="grid grid-cols-[32px_1fr_64px] items-center gap-4 border-b border-rule py-4 sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5">
                         <span className="font-mono text-xs text-ink-mute">{pad2(i + 1)}</span>
-                        <span className="min-w-0 text-[15px] font-medium text-ink sm:text-base">
+                        <span className="min-w-0 text-body font-medium text-ink sm:text-base">
                           {mod.name}
                           {mod.isAdaptive && (
-                            <span className={`${MONO_LABEL} ml-2 text-[10px] tracking-[0.12em] text-ink-mute`}>
+                            <span className={`${MONO_LABEL} ml-2 text-caption tracking-[0.12em] text-ink-mute`}>
                               adaptive
                             </span>
                           )}
@@ -339,7 +339,7 @@ export default async function ExamDetails({ params }: Props) {
                       column, pushing the whole document 92px wide at 390px. It
                       still sits on the headline's baseline wherever it fits. */}
                   <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-[32px]">Nümunə</h2>
+                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">Nümunə</h2>
                     <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
                       {sampleModule ? `${upperLabel(sampleModule)} · ` : ''}
                       {exam.totalQuestions} sualdan biri
@@ -355,9 +355,9 @@ export default async function ExamDetails({ params }: Props) {
                           so it carries the opening of the passage only. */}
                       {sample.passage && (
                         <div className="mb-5 border-l-2 border-rule pl-4">
-                          <div className={`${MONO_LABEL} mb-2 text-[9px] tracking-[0.16em] text-ink-mute`}>Mətn</div>
+                          <div className={`${MONO_LABEL} mb-2 text-ink-mute`}>Mətn</div>
                           <p
-                            className="m-0 text-[15px] leading-[1.6] text-ink-soft"
+                            className="m-0 text-body leading-[1.6] text-ink-soft"
                             dangerouslySetInnerHTML={{ __html: renderMath(passageExcerpt(sample.passage)) }}
                           />
                         </div>
@@ -378,11 +378,11 @@ export default async function ExamDetails({ params }: Props) {
                                 correct ? 'border-correct bg-correct' : 'border-rule'
                               }`}
                             >
-                              <span className={`font-mono text-[11px] ${correct ? 'text-bg/60' : 'text-ink-mute'}`}>
+                              <span className={`font-mono text-label ${correct ? 'text-bg/60' : 'text-ink-mute'}`}>
                                 {OPTION_KEYS[i] ?? i + 1}
                               </span>
                               <span
-                                className={`min-w-0 text-[15px] ${correct ? 'text-bg' : 'text-ink'}`}
+                                className={`min-w-0 text-body ${correct ? 'text-bg' : 'text-ink'}`}
                                 dangerouslySetInnerHTML={{ __html: renderMath(option) }}
                               />
                             </div>
@@ -393,7 +393,7 @@ export default async function ExamDetails({ params }: Props) {
 
                     {sample.explanation && (
                       <div className="bg-surface-2 px-5 py-6 lg:px-5.5">
-                        <div className={`${MONO_LABEL} mb-3.5 text-[9px] tracking-[0.16em] text-ink-mute`}>İzahat</div>
+                        <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>İzahat</div>
                         <p
                           className="m-0 text-sm leading-[1.65] text-ink"
                           dangerouslySetInnerHTML={{ __html: renderMath(sample.explanation) }}

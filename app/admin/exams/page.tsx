@@ -1,10 +1,12 @@
 import Link from 'next/link';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import ExamSearch from './ExamSearch';
 import ExamRowActions from './ExamRowActions';
 import AdminPageHeader from '../PageHeader';
-import { requireAdminPage } from '@/lib/admin';
+import { requireAdminPage } from '@/lib/infra/admin';
+import Button, { ButtonArrow } from '@/components/ui/Button';
+import Tag from '@/components/ui/Tag';
 
 export const metadata = { title: 'İmtahanlar — Admin' };
 
@@ -43,12 +45,12 @@ export default async function AdminExamsPage({ searchParams }: Props) {
         meta={`${exams.length} imtahan · ${activeCount} aktiv`}
         action={
           <>
-            <Link href="/admin/exams/import" className="btn-ghost btn-sm">
+            <Button variant="ghost" size="sm" href="/admin/exams/import">
               JSON yüklə
-            </Link>
-            <Link href="/admin/exams/new" className="btn-primary btn-sm">
-              Yeni imtahan <span className="arrow" aria-hidden>→</span>
-            </Link>
+            </Button>
+            <Button size="sm" href="/admin/exams/new">
+              Yeni imtahan <ButtonArrow />
+            </Button>
           </>
         }
       />
@@ -58,14 +60,14 @@ export default async function AdminExamsPage({ searchParams }: Props) {
 
       {/* overflow-hidden so the table head's fill is clipped by the panel's
           14px corners rather than squaring them off. */}
-      <div className="panel overflow-hidden">
+      <div className="rounded-panel border border-rule bg-surface overflow-hidden">
         {exams.length === 0 ? (
           <div className="px-6 py-20 text-center">
             <p className="m-0 text-base font-light tracking-tight text-ink">
               {q ? 'Nəticə tapılmadı' : 'İmtahan yoxdur'}
             </p>
             {!q && (
-              <Link href="/admin/exams/new" className="mt-4 inline-flex border-b border-ink-faint pb-0.5 text-[13px] font-medium text-ink transition-colors hover:border-ink">
+              <Link href="/admin/exams/new" className="mt-4 inline-flex border-b border-ink-faint pb-0.5 text-note font-medium text-ink transition-colors hover:border-ink">
                 İlk imtahanı əlavə et →
               </Link>
             )}
@@ -88,28 +90,28 @@ export default async function AdminExamsPage({ searchParams }: Props) {
               <tbody>
                 {exams.map((exam) => (
                   <tr key={exam.examId}>
-                    <td className="num text-xs text-ink-mute!">{exam.examId}</td>
-                    <td className="font-medium text-ink!">{exam.title}</td>
+                    <td className="num text-xs text-ink-mute">{exam.examId}</td>
+                    <td className="font-medium text-ink">{exam.title}</td>
                     {/* The five per-type pastels this column used to carry
                         (blue/green/purple/orange/rose) were the only place in
                         the product colour was used decoratively rather than
                         semantically. */}
-                    <td><span className="tag tag-accent">{exam.tag}</span></td>
-                    <td className="num">{exam.price} ₼</td>
-                    <td className="num">{exam.durationMinutes} dəq</td>
-                    <td className="num">{exam.totalQuestions}</td>
-                    <td>
+                    <td className="text-ink-soft"><Tag tone="accent">{exam.tag}</Tag></td>
+                    <td className="num text-ink">{exam.price} ₼</td>
+                    <td className="num text-ink">{exam.durationMinutes} dəq</td>
+                    <td className="num text-ink">{exam.totalQuestions}</td>
+                    <td className="text-ink-soft">
                       {exam.isActive ? (
-                        <span className="flex items-center gap-2 text-[13px] text-ok">
+                        <span className="flex items-center gap-2 text-note text-ok">
                           <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> Aktiv
                         </span>
                       ) : (
-                        <span className="flex items-center gap-2 text-[13px] text-ink-mute">
+                        <span className="flex items-center gap-2 text-note text-ink-mute">
                           <span className="h-1.5 w-1.5 rounded-full border border-ink-mute" aria-hidden /> Deaktiv
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td className="text-ink-soft">
                       {/* Client component handles toggle + delete */}
                       <ExamRowActions examId={exam.examId} isActive={exam.isActive} />
                     </td>

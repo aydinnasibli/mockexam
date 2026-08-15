@@ -3,16 +3,18 @@ import Link from 'next/link';
 import { getActiveExams } from '@/lib/db/exams';
 import { getUserResults } from '@/lib/db/results';
 import { getUserSettings } from '@/lib/actions/settings';
-import { formatOverallScore } from '@/lib/scoring';
+import { formatOverallScore } from '@/lib/domain/scoring';
 import { ownedExamIds } from '@/lib/db/entitlements';
-import { reconcilePurchase } from '@/lib/reconcile';
-import { captureException } from '@/lib/observability';
+import { reconcilePurchase } from '@/lib/payments/reconcile';
+import { captureException } from '@/lib/infra/observability';
 import { ArrowRight } from 'lucide-react';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import MyExamsList, { type MyExamRow } from './MyExamsList';
 
-import { examTypeLabel } from '@/lib/exam-types';
+import { examTypeLabel } from '@/lib/domain/exam-types';
+import Button, { ButtonArrow } from '@/components/ui/Button';
+import Tag, { scoreTone } from '@/components/ui/Tag';
 
 function weekAgoMs(): number {
   return Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -54,12 +56,6 @@ function scoreBarColor(score: number) {
  * This used to return raw Tailwind pastels (`bg-green-50 text-green-700
  * border-green-200`), which belonged to no palette in the design.
  */
-function scoreTag(score: number) {
-  if (score >= 80) return 'tag-ok';
-  if (score >= 60) return 'tag-warn';
-  return 'tag-error';
-}
-
 export const metadata = { title: 'Panel' };
 
 export default async function DashboardPage({
@@ -213,12 +209,16 @@ export default async function DashboardPage({
       <FadeUp y={10} className="shrink-0 bg-ink px-8 py-11">
         <div className="mb-6 flex items-center gap-3">
           <span className="h-1.75 w-1.75 rounded-full bg-bg/70" aria-hidden />
-          <span className="mono-label mono-label-lg text-bg/55 capitalize">{todayString()}</span>
+          {/* NOTE: the original was `mono-label mono-label-lg text-bg/55 capitalize`, but
+              `.mono-label` set both `text-transform` and `color`, and globals.css's
+              @layer utilities is emitted after Tailwind's — so it won both ties and
+              the `text-bg/55 capitalize` never applied. Reproduced as it shipped. */}
+          <span className="font-mono text-label font-normal tracking-[0.16em] uppercase text-ink-mute">{todayString()}</span>
         </div>
-        <h1 className="m-0 text-[32px] leading-[1.04] font-light tracking-[-0.035em] text-bg md:text-[40px]">
+        <h1 className="m-0 text-heading-lg leading-[1.04] font-light tracking-[-0.035em] text-bg md:text-display-xs">
           Xoş gəlmisiniz, <span className="font-medium">{firstName}.</span>
         </h1>
-        <p className="mt-3.5 mb-0 text-[15px] text-bg/55">
+        <p className="mt-3.5 mb-0 text-body text-bg/55">
           {purchasedExams.length === 0
             ? 'Başlamaq üçün bir sınaq əldə edin.'
             : `${purchasedExams.length} aktiv sınaq · ${results.length} tamamlanan cəhd`}
@@ -234,64 +234,64 @@ export default async function DashboardPage({
             {/* Next step */}
             {/* Stacks below sm: side by side, the button squeezed the sentence
                 down to "IELTS Academi…" on a phone. */}
-            <FadeUp delay={0.05} className="panel flex flex-col items-start gap-4 px-5 py-4.5 sm:flex-row sm:items-center">
+            <FadeUp delay={0.05} className="rounded-panel border border-rule bg-surface flex flex-col items-start gap-4 px-5 py-4.5 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
-                <p className="m-0 text-[15px] font-medium tracking-[-0.01em] text-ink">{nextStep.label}</p>
+                <p className="m-0 text-body font-medium tracking-[-0.01em] text-ink">{nextStep.label}</p>
                 <p className="m-0 mt-1 text-sm text-ink-soft sm:line-clamp-1">{nextStep.desc}</p>
               </div>
-              <Link href={nextStep.href} className="btn-primary btn-sm shrink-0">
-                {nextStep.cta} <span className="arrow" aria-hidden>→</span>
-              </Link>
+              <Button size="sm" className="shrink-0" href={nextStep.href}>
+                {nextStep.cta} <ButtonArrow />
+              </Button>
             </FadeUp>
 
             {/* Stats. The home hero's figure row: mono numerals over mono
                 captions, divided by rules rather than boxed into three tiles
                 with an icon chip apiece. */}
-            <StaggerContainer className="panel grid grid-cols-1 sm:grid-cols-3" delay={0.08}>
+            <StaggerContainer className="rounded-panel border border-rule bg-surface grid grid-cols-1 sm:grid-cols-3" delay={0.08}>
               <StaggerItem className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className="figure text-3xl">{purchasedExams.length}</div>
-                <p className="mono-label m-0 mt-2.5">Sınaqlarım</p>
+                <div className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl">{purchasedExams.length}</div>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Sınaqlarım</p>
                 {exploreExams.length > 0
-                  ? <p className="m-0 mt-1.5 text-[13px] text-ink-soft">+{exploreExams.length} kataloqda</p>
-                  : <p className="m-0 mt-1.5 text-[13px] text-ink-mute">hamısı əldə edilib</p>
+                  ? <p className="m-0 mt-1.5 text-note text-ink-soft">+{exploreExams.length} kataloqda</p>
+                  : <p className="m-0 mt-1.5 text-note text-ink-mute">hamısı əldə edilib</p>
                 }
               </StaggerItem>
 
               <StaggerItem className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
-                <div className="figure text-3xl">{results.length}</div>
-                <p className="mono-label m-0 mt-2.5">Cəhdlər</p>
+                <div className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl">{results.length}</div>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Cəhdlər</p>
                 {weeklyAttempts > 0
-                  ? <p className="m-0 mt-1.5 text-[13px] text-ok">+{weeklyAttempts} bu həftə</p>
-                  : <p className="m-0 mt-1.5 text-[13px] text-ink-mute">bu həftə yoxdur</p>
+                  ? <p className="m-0 mt-1.5 text-note text-ok">+{weeklyAttempts} bu həftə</p>
+                  : <p className="m-0 mt-1.5 text-note text-ink-mute">bu həftə yoxdur</p>
                 }
               </StaggerItem>
 
               <StaggerItem className="px-5 py-5">
                 {typeAvgs.length === 0 ? (
                   <>
-                    <div className="figure text-3xl text-ink-faint">—</div>
-                    <p className="mono-label m-0 mt-2.5">Ortalama</p>
+                    <div className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-3xl text-ink">—</div>
+                    <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Ortalama</p>
                   </>
                 ) : typeAvgs.length === 1 ? (
                   <>
-                    <div className={`figure text-3xl ${scoreColor(typeAvgs[0].avg)}`}>
+                    <div className={`font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl ${scoreColor(typeAvgs[0].avg)}`}>
                       {typeAvgs[0].avg}%
                     </div>
-                    <p className="mono-label m-0 mt-2.5">{typeAvgs[0].label} ortalama</p>
+                    <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">{typeAvgs[0].label} ortalama</p>
                     {scoreTrend != null && (
-                      <p className={`m-0 mt-1.5 font-mono text-[13px] tabular-nums ${scoreTrend > 0 ? 'text-ok' : scoreTrend < 0 ? 'text-error' : 'text-ink-mute'}`}>
+                      <p className={`m-0 mt-1.5 font-mono text-note tabular-nums ${scoreTrend > 0 ? 'text-ok' : scoreTrend < 0 ? 'text-error' : 'text-ink-mute'}`}>
                         {scoreTrend > 0 ? '▲' : scoreTrend < 0 ? '▼' : '·'} {Math.abs(scoreTrend)}% son 3 cəhd
                       </p>
                     )}
                   </>
                 ) : (
                   <>
-                    <p className="mono-label m-0 mb-3">Növ üzrə ortalama</p>
+                    <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mb-3">Növ üzrə ortalama</p>
                     <div>
                       {typeAvgs.map(t => (
                         <div key={t.type} className="flex items-baseline justify-between gap-3 border-t border-rule-soft py-1.5 first:border-t-0 first:pt-0">
-                          <span className="truncate text-[13px] text-ink-soft">{t.label}</span>
-                          <span className={`font-mono text-[13px] tabular-nums ${scoreColor(t.avg)}`}>{t.avg}%</span>
+                          <span className="truncate text-note text-ink-soft">{t.label}</span>
+                          <span className={`font-mono text-note tabular-nums ${scoreColor(t.avg)}`}>{t.avg}%</span>
                         </div>
                       ))}
                     </div>
@@ -303,23 +303,23 @@ export default async function DashboardPage({
             {/* My exams */}
             <section>
               <FadeUp delay={0.1} className="mb-4 flex items-center justify-between gap-4 border-b border-ink pb-3">
-                <h2 className="mono-label mono-label-lg m-0 text-ink">Mənim Sınaqlarım</h2>
+                <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Mənim Sınaqlarım</h2>
                 {results.length > 0 && (
-                  <Link href="/dashboard/analytics" className="-my-1 flex items-center gap-1 py-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+                  <Link href="/dashboard/analytics" className="-my-1 flex items-center gap-1 py-1 text-note font-medium text-ink-soft transition-colors hover:text-ink">
                     Nəticələr <ArrowRight size={12} />
                   </Link>
                 )}
               </FadeUp>
 
               {purchasedExams.length === 0 ? (
-                <FadeUp delay={0.15} className="panel px-8 py-12 text-center">
+                <FadeUp delay={0.15} className="rounded-panel border border-rule bg-surface px-8 py-12 text-center">
                   <h3 className="m-0 mb-2.5 text-xl font-light tracking-tight text-ink">Hələ sınaq yoxdur</h3>
                   <p className="m-0 mx-auto mb-7 max-w-xs text-sm text-ink-soft">
                     Mövcud sınaq paketlərini kəşf edin və hazırlığa başlayın.
                   </p>
-                  <Link href="/exams" className="btn-primary">
-                    Kataloqa bax <span className="arrow">→</span>
-                  </Link>
+                  <Button href="/exams">
+                    Kataloqa bax <ButtonArrow />
+                  </Button>
                 </FadeUp>
               ) : (
                 <MyExamsList exams={myExamRows} />
@@ -330,8 +330,8 @@ export default async function DashboardPage({
             {exploreExams.length > 0 && (
               <section>
                 <FadeUp delay={0.05} className="mb-4 flex items-center justify-between gap-4 border-b border-ink pb-3">
-                  <h2 className="mono-label mono-label-lg m-0 text-ink">Kəşf et</h2>
-                  <Link href="/exams" className="-my-1 flex items-center gap-1 py-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+                  <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Kəşf et</h2>
+                  <Link href="/exams" className="-my-1 flex items-center gap-1 py-1 text-note font-medium text-ink-soft transition-colors hover:text-ink">
                     Hamısı <ArrowRight size={12} />
                   </Link>
                 </FadeUp>
@@ -341,15 +341,15 @@ export default async function DashboardPage({
                     return (
                       <StaggerItem key={exam.id}>
                         <Link href={`/exams/${exam.id}`}
-                          className="panel card-new-hover group flex h-full flex-col p-4.5">
+                          className="panel group flex h-full flex-col p-4.5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-ink-faint hover:shadow-md">
                           <div className="mb-3.5 flex items-start justify-between gap-3">
-                            <span className="tag tag-accent">{exam.tag}</span>
-                            <span className="font-mono text-[15px] tabular-nums text-ink">{exam.price} ₼</span>
+                            <Tag tone="accent">{exam.tag}</Tag>
+                            <span className="font-mono text-body tabular-nums text-ink">{exam.price} ₼</span>
                           </div>
                           <h3 className="m-0 mb-auto text-sm leading-snug font-medium text-ink">
                             {exam.title}
                           </h3>
-                          <div className="mono-label mt-3.5 flex items-center gap-3 border-t border-rule-soft pt-3">
+                          <div className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute mt-3.5 flex items-center gap-3 border-t border-rule-soft pt-3">
                             <span>{examMinutes} dəq</span>
                             <span>{exam.totalQuestions} sual</span>
                             <span className="ml-auto text-ink transition-transform duration-150 group-hover:translate-x-0.5">Bax →</span>
@@ -371,22 +371,22 @@ export default async function DashboardPage({
             {countdown && (
               <StaggerItem className="rounded-panel bg-ink px-6 pt-5.5 pb-6">
                 <div className="mb-5 flex items-baseline justify-between gap-3">
-                  <p className="mono-label mono-label-lg m-0 text-bg/50">İmtahan geri sayımı</p>
+                  <p className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">İmtahan geri sayımı</p>
                   <Link href="/dashboard/settings" className="shrink-0 text-xs font-medium text-bg/50 transition-colors hover:text-bg">
                     Dəyişdir
                   </Link>
                 </div>
                 <div className="flex items-baseline gap-3.5">
-                  <span className="figure text-[56px] text-bg">{countdown.days}</span>
+                  <span className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-display-md text-ink">{countdown.days}</span>
                   <span className="text-sm text-bg/55">
                     {countdown.days === 0 ? 'Bugün!' : countdown.days === 1 ? 'gün qalıb' : 'gün qalır'}
                   </span>
                 </div>
-                <p className="mono-label mt-5 m-0 border-t border-bg/16 pt-3 text-bg/55">{countdown.dateStr}</p>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase mt-5 m-0 border-t border-bg/16 pt-3 text-ink-mute">{countdown.dateStr}</p>
                 {countdown.days <= 14 && (
                   <Link
                     href={`/exams?type=${countdown.type}`}
-                    className="mt-5 inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-bg px-5 py-3 text-[13px] font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-bg px-5 py-3 text-note font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
                   >
                     Sınaqlara bax <span aria-hidden>→</span>
                   </Link>
@@ -396,10 +396,10 @@ export default async function DashboardPage({
 
             {/* Recent activity */}
             {recentResults.length > 0 ? (
-              <StaggerItem className="panel">
-                <div className="panel-head">
-                  <h2 className="mono-label mono-label-lg m-0 text-ink">Son Fəaliyyət</h2>
-                  <Link href="/dashboard/analytics" className="-my-1 py-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">Hamısı</Link>
+              <StaggerItem className="rounded-panel border border-rule bg-surface">
+                <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
+                  <h2 className="font-mono text-label font-normal tracking-[0.16em] uppercase m-0 text-ink-mute">Son Fəaliyyət</h2>
+                  <Link href="/dashboard/analytics" className="-my-1 py-1 text-note font-medium text-ink-soft transition-colors hover:text-ink">Hamısı</Link>
                 </div>
                 {/*
                   Each row links straight to that attempt's answer-by-answer
@@ -419,27 +419,27 @@ export default async function DashboardPage({
                       <span className={`h-2 w-2 shrink-0 ${scoreBarColor(r.score)}`} aria-hidden />
                       <div className="min-w-0 flex-1">
                         <p className="m-0 truncate text-sm font-medium text-ink">{r.examTitle}</p>
-                        <p className="mono-label m-0 mt-1">
+                        <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-1">
                           {shortDate(r.completedAt)} · {formatDuration(r.durationSeconds)}
                         </p>
                       </div>
-                      <span className={`tag shrink-0 font-mono tabular-nums ${scoreTag(r.score)}`}>
+                      <Tag tone={scoreTone(r.score)} className="shrink-0 font-mono tabular-nums">
                         {(() => { const d = formatOverallScore(r); return d.unit !== '%' ? `${d.value} ${d.unit}` : `${d.value}%`; })()}
-                      </span>
+                      </Tag>
                     </Link>
                   ))}
                 </div>
-                <p className="m-0 px-5 py-3 text-[13px] text-ink-mute">
+                <p className="m-0 px-5 py-3 text-note text-ink-mute">
                   Cavablarınızı görmək üçün bir cəhdə toxunun.
                 </p>
               </StaggerItem>
             ) : (
-              <StaggerItem className="panel px-5 py-8 text-center">
+              <StaggerItem className="rounded-panel border border-rule bg-surface px-5 py-8 text-center">
                 <p className="m-0 mb-2 text-base font-light tracking-tight text-ink">Fəaliyyət yoxdur</p>
                 <p className="m-0 mb-5 text-sm text-ink-soft">
                   İmtahan bitirdikdən sonra nəticələriniz burada görünəcək.
                 </p>
-                <Link href="/exams" className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+                <Link href="/exams" className="inline-flex items-center gap-1 text-note font-medium text-ink-soft transition-colors hover:text-ink">
                   Sınaqlara bax <ArrowRight size={12} />
                 </Link>
               </StaggerItem>

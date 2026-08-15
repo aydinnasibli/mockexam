@@ -29,7 +29,7 @@ export default function ExamSearch({ defaultValue }: { defaultValue: string }) {
         value={value}
         onChange={handleChange}
         aria-label="İmtahan axtar"
-        className="input-new pl-11!"
+        className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 pr-4 pl-11 py-3.5"
       />
     </div>
   );

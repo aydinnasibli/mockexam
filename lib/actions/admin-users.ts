@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamModel from '@/lib/models/Exam';
-import { checkRole } from '@/lib/admin';
-import { ADMIN_GRANT_PREFIX } from '@/lib/exam-types';
-import { captureException } from '@/lib/observability';
+import { checkRole } from '@/lib/infra/admin';
+import { ADMIN_GRANT_PREFIX } from '@/lib/domain/exam-types';
+import { captureException } from '@/lib/infra/observability';
 
 export async function grantExamAccess(
   targetUserId: string,

@@ -1,10 +1,10 @@
 // Reads the Epoint merchant keys and calls the payment API.
 import 'server-only';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import { getExamById } from '@/lib/db/exams';
-import { signRequest, EPOINT_STATUS_URL } from '@/lib/epoint';
-import { captureException, captureMessage } from '@/lib/observability';
+import { signRequest, EPOINT_STATUS_URL } from '@/lib/payments/epoint';
+import { captureException, captureMessage } from '@/lib/infra/observability';
 
 /**
  * Safety net for a missed or delayed webhook.

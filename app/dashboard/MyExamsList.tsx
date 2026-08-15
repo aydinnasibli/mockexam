@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
+import Button, { ButtonArrow } from '@/components/ui/Button';
+import Tag from '@/components/ui/Tag';
 
 /** One purchased exam, flattened by the server so nothing Mongoose-shaped crosses over. */
 export interface MyExamRow {
@@ -132,9 +133,9 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Sınaq axtar…"
                 aria-label="Sınaqlarım arasında axtar"
-                /* All four sides need `!`: `.input-new` sets `padding` as a
-                   shorthand, which otherwise wins over a longhand utility. */
-                className="input-new py-2.5! pr-9! pl-9.5!"
+                /* The asymmetric padding leaves room for the search icon on the
+                   left and the clear button on the right. */
+                className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 py-2.5 pr-9 pl-9.5"
               />
               {query && (
                 <button
@@ -151,7 +152,7 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
               <select
                 value={sort}
                 onChange={e => setSort(e.target.value as SortKey)}
-                className="input-new w-auto py-2.5! text-sm!"
+                className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-2.5 text-sm"
               >
                 {(Object.keys(SORT_LABELS) as SortKey[]).map(k => (
                   <option key={k} value={k}>{SORT_LABELS[k]}</option>
@@ -188,13 +189,13 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
       )}
 
       {visible.length === 0 ? (
-        <div className="panel px-8 py-10 text-center">
+        <div className="rounded-panel border border-rule bg-surface px-8 py-10 text-center">
           <p className="m-0 text-sm text-ink-soft">
             &ldquo;{query}&rdquo; üçün sınaq tapılmadı.
           </p>
           <button
             onClick={() => { setQuery(''); setType('all'); }}
-            className="mt-3 cursor-pointer text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
+            className="mt-3 cursor-pointer text-note font-medium text-ink-soft transition-colors hover:text-ink"
           >
             Filtrləri sıfırla
           </button>
@@ -202,16 +203,16 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
       ) : (
         <StaggerContainer className="space-y-3" delay={0.12}>
           {visible.map(exam => (
-            <StaggerItem key={exam.id} className="panel px-5 py-4.5">
+            <StaggerItem className="rounded-panel border border-rule bg-surface px-5 py-4.5" key={exam.id}>
               <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="tag tag-accent">{exam.tag}</span>
+                <Tag tone="accent">{exam.tag}</Tag>
                 {exam.attemptCount > 0
-                  ? <span className="tag">{exam.attemptCount} cəhd</span>
-                  : <span className="tag tag-warn">Başlanmayıb</span>
+                  ? <Tag>{exam.attemptCount} cəhd</Tag>
+                  : <Tag tone="warn">Başlanmayıb</Tag>
                 }
               </div>
               <h3 className="m-0 text-base leading-snug font-medium tracking-[-0.01em] text-ink">{exam.title}</h3>
-              <div className="mono-label mt-2 flex items-center gap-3.5">
+              <div className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute mt-2 flex items-center gap-3.5">
                 <span>{exam.minutes} dəq</span>
                 <span>{exam.totalQuestions} sual</span>
               </div>
@@ -221,8 +222,8 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                   <>
                     <div className="min-w-45 flex-1">
                       <div className="mb-2 flex items-baseline justify-between gap-3">
-                        <span className="mono-label">Son nəticə</span>
-                        <span className={`font-mono text-[13px] tabular-nums ${scoreColor(exam.lastScore)}`}>
+                        <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">Son nəticə</span>
+                        <span className={`font-mono text-note tabular-nums ${scoreColor(exam.lastScore)}`}>
                           {exam.lastScoreLabel}
                         </span>
                       </div>
@@ -233,25 +234,23 @@ export default function MyExamsList({ exams }: { exams: MyExamRow[] }) {
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                      <Link href={`/dashboard/analytics/${exam.id}/${exam.lastAttemptNumber}/review`}
-                        className="btn-ghost btn-sm text-xs!">
+                      <Button variant="ghost" size="xs" href={`/dashboard/analytics/${exam.id}/${exam.lastAttemptNumber}/review`}>
                         İcmal
-                      </Link>
-                      <Link href={`/dashboard/analytics/${exam.id}`}
-                        className="btn-ghost btn-sm text-xs!">
+                      </Button>
+                      <Button variant="ghost" size="xs" href={`/dashboard/analytics/${exam.id}`}>
                         Analiz
-                      </Link>
-                      <Link href={`/exam-session/${exam.id}`} className="btn-primary btn-sm text-xs!">
-                        Yenidən <span className="arrow" aria-hidden>→</span>
-                      </Link>
+                      </Button>
+                      <Button size="xs" href={`/exam-session/${exam.id}`}>
+                        Yenidən <ButtonArrow />
+                      </Button>
                     </div>
                   </>
                 ) : (
                   <>
                     <p className="m-0 flex-1 text-sm text-ink-soft">İlk cəhdinizi başladın!</p>
-                    <Link href={`/exam-session/${exam.id}`} className="btn-primary btn-sm shrink-0 text-xs!">
-                      Başla <span className="arrow" aria-hidden>→</span>
-                    </Link>
+                    <Button size="xs" className="shrink-0" href={`/exam-session/${exam.id}`}>
+                      Başla <ButtonArrow />
+                    </Button>
                   </>
                 )}
               </div>

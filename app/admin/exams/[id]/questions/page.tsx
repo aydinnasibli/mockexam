@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import { getExamQuestions } from '@/lib/actions/questions';
 import QuestionManager from './QuestionManager';
 import AdminPageHeader from '../../../PageHeader';
-import { requireAdminPage } from '@/lib/admin';
+import { requireAdminPage } from '@/lib/infra/admin';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -36,7 +36,7 @@ export default async function ExamQuestionsPage({ params }: Props) {
 
   return (
     <div>
-      <div className="mb-7 flex items-center gap-2.5 text-[13px] font-medium">
+      <div className="mb-7 flex items-center gap-2.5 text-note font-medium">
         <Link
           href="/admin/exams"
           className="inline-flex items-center gap-1.5 text-ink-soft transition-colors hover:text-ink"

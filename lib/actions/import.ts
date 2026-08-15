@@ -3,14 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamModel, { computeExamTotals } from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
-import { checkRole } from '@/lib/admin';
-import { validateModules } from '@/lib/exam-modules';
-import { isExamType } from '@/lib/exam-types';
-import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
-import { captureException } from '@/lib/observability';
+import { checkRole } from '@/lib/infra/admin';
+import { validateModules } from '@/lib/domain/exam-modules';
+import { isExamType } from '@/lib/domain/exam-types';
+import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/shared/media';
+import { captureException } from '@/lib/infra/observability';
 
 /**
  * Import payload schema.

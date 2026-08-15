@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamModel, { computeExamTotals } from '@/lib/models/Exam';
-import { checkRole } from '@/lib/admin';
-import { isExamType, type ExamType } from '@/lib/exam-types';
-import { validateModules, type ParsedModule } from '@/lib/exam-modules';
-import { captureException } from '@/lib/observability';
+import { checkRole } from '@/lib/infra/admin';
+import { isExamType, type ExamType } from '@/lib/domain/exam-types';
+import { validateModules, type ParsedModule } from '@/lib/domain/exam-modules';
+import { captureException } from '@/lib/infra/observability';
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 

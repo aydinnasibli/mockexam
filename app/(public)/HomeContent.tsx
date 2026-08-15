@@ -2,6 +2,7 @@ import Link from "next/link";
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 import WipeBar from "@/components/ui/WipeBar";
+import { MONO_LABEL, MONO_SECTION } from '@/components/ui/type-styles';
 
 export interface ProgramData {
   count: number;
@@ -15,9 +16,7 @@ interface Props {
   totalExams: number;
 }
 
-const MONO_LABEL = "font-mono text-[10px] tracking-[0.14em] uppercase";
-const MONO_SECTION = "font-mono text-[11px] tracking-[0.16em] uppercase";
-const H2 = "m-0 text-[32px] font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-[44px]";
+const H2 = "m-0 text-heading-lg font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-display-sm";
 
 /*
  * `type` is the database value and is written out literally — it must NOT be
@@ -125,7 +124,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 top of the canvas's — the double application is what gives the
                 ink card its delayed settle. */}
             <div className="anim-rise">
-              <h1 className="m-0 mb-7 text-[52px] font-light leading-[0.94] tracking-[-0.042em] text-ink md:text-7xl lg:text-[88px]">
+              <h1 className="m-0 mb-7 text-display font-light leading-[0.94] tracking-[-0.042em] text-ink md:text-7xl lg:text-hero">
                 {/* The spaces before each <br /> are load-bearing. `<br>`
                     contributes nothing to textContent, so without them the
                     accessible name and the SEO-visible string both collapse to
@@ -140,7 +139,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   with live counts, which is the honest place for the list.
                   That reasoning holds; what was wrong was the strip's position,
                   not this sentence. See the hero's bottom padding below. */}
-              <p className="m-0 mb-10 max-w-100 text-lg leading-[1.5] text-ink-soft lg:text-[21px]">
+              <p className="m-0 mb-10 max-w-100 text-lg leading-[1.5] text-ink-soft lg:text-title">
                 İmtahan gününü əvvəlcədən yaşayın.
               </p>
 
@@ -169,17 +168,17 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   right. */}
               <div className="mt-14 flex items-stretch border-t border-ink lg:mt-18">
                 <div className="flex-1 border-r border-rule pt-4.5 pr-4.5">
-                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-[32px]">
+                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">
                     {String(totalExams).padStart(2, "0")}
                   </div>
                   <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>Açıq sınaq</div>
                 </div>
                 <div className="flex-1 border-r border-rule px-4.5 pt-4.5">
-                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-[32px]">11</div>
+                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">11</div>
                   <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>Analiz ölçüsü</div>
                 </div>
                 <div className="flex-1 pt-4.5 pl-4.5">
-                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-[32px]">1:1</div>
+                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">1:1</div>
                   <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>Format uyğunluğu</div>
                 </div>
               </div>
@@ -217,7 +216,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               <div className="overflow-hidden rounded-panel border border-rule bg-surface shadow-[0_24px_64px_rgba(26,26,26,0.10),0_2px_6px_rgba(26,26,26,0.04)] lg:ml-auto lg:w-full lg:max-w-134">
                 <div className="flex items-center justify-between gap-4 bg-ink px-5 py-3.25">
                   <span className={`${MONO_LABEL} truncate text-bg/55`}>SAT · Math · Module II</span>
-                  <span className="font-mono text-[13px] tabular-nums text-bg">32:14</span>
+                  <span className="font-mono text-note tabular-nums text-bg">32:14</span>
                 </div>
                 <div className="flex items-center gap-3.5 border-b border-rule bg-surface-2 px-5 py-2.5">
                   <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>14 / 22</span>
@@ -226,7 +225,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   </div>
                 </div>
                 <div className="px-5 pt-7 pb-5.5">
-                  <p className="m-0 mb-5 text-[17px] leading-[1.45] text-ink">
+                  <p className="m-0 mb-5 text-lede leading-[1.45] text-ink">
                     If <span className="font-mono text-base">ƒ(x) = 3x² − 5x + 2</span>, what is{" "}
                     <span className="font-mono text-base">ƒ(−1)</span>?
                   </p>
@@ -243,10 +242,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
                           option.correct ? "border-ink bg-ink" : "border-rule"
                         }`}
                       >
-                        <span className={`font-mono text-[11px] ${option.correct ? "text-bg/50" : "text-ink-mute"}`}>
+                        <span className={`font-mono text-label ${option.correct ? "text-bg/50" : "text-ink-mute"}`}>
                           {option.key}
                         </span>
-                        <span className={`font-mono text-[15px] ${option.correct ? "text-bg" : "text-ink"}`}>
+                        <span className={`font-mono text-body ${option.correct ? "text-bg" : "text-ink"}`}>
                           {option.value}
                         </span>
                       </div>
@@ -266,11 +265,11 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       `ink-mute` to #6E6E66 to clear 4.5:1 on the three page
                       backgrounds; the ink surfaces were missed. /35 measured
                       3.12, /40 measured 3.71, /45 measured 4.33 — all below AA. */}
-                  <span className="font-mono text-[10px] tracking-[0.1em] text-bg/55">SAT</span>
+                  <span className="font-mono text-caption tracking-[0.1em] text-bg/55">SAT</span>
                 </div>
                 <div className="flex items-end gap-5">
                   <div>
-                    <div className="font-mono text-[56px] leading-[0.9] font-light tracking-[-0.04em] tabular-nums text-bg">
+                    <div className="font-mono text-display-md leading-[0.9] font-light tracking-[-0.04em] tabular-nums text-bg">
                       +184
                     </div>
                     <div className={`${MONO_LABEL} mt-2.5 text-bg/50`}>orta artım</div>
@@ -285,7 +284,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                         {/* `dim` now only holds back the BAR fill, not the
                             numeral: a score a visitor is meant to read has to
                             clear AA whether or not it is the latest attempt. */}
-                        <span className={`text-center font-mono text-[10px] ${bar.dim ? "text-bg/55" : "text-bg"}`}>
+                        <span className={`text-center font-mono text-caption ${bar.dim ? "text-bg/55" : "text-bg"}`}>
                           {bar.score}
                         </span>
                         <div className={`anim-grow ${bar.height} ${bar.fill}`} style={{ animationDelay: bar.delay }} />
@@ -392,10 +391,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
                     <div className="relative pt-6">
                       <span className="absolute -top-1.25 left-0 hidden h-2.75 w-2.75 rounded-full bg-ink lg:block" aria-hidden />
-                      <div className={`${MONO_SECTION} mb-3 text-[11px] tracking-[0.14em] text-ink-mute`}>
+                      <div className={`${MONO_SECTION} mb-3 text-label tracking-[0.14em] text-ink-mute`}>
                         Mərhələ {step.n}
                       </div>
-                      <h3 className="m-0 mb-2.5 text-2xl font-normal tracking-[-0.025em] text-ink lg:text-[28px]">
+                      <h3 className="m-0 mb-2.5 text-2xl font-normal tracking-[-0.025em] text-ink lg:text-heading">
                         {step.title}
                       </h3>
                       <p className="m-0 max-w-70 text-base leading-[1.55] text-ink-soft">{step.line}</p>
@@ -412,7 +411,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
           <SectionHead n="02">
             <div className="mb-10 grid gap-6 lg:mb-14 lg:grid-cols-[1fr_1.35fr] lg:items-end lg:gap-18">
               <h2 className={H2}>Nəticə<br />11 ölçüdə.</h2>
-              <p className="m-0 max-w-105 text-[17px] leading-[1.6] text-ink-soft lg:pb-1.5">
+              <p className="m-0 max-w-105 text-lede leading-[1.6] text-ink-soft lg:pb-1.5">
                 Hesabat sınaq bitdikdən dərhal sonra açılır.
               </p>
             </div>
@@ -426,7 +425,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               <div className="grid lg:grid-cols-[1fr_372px]">
                 {/* Dimension chart */}
                 <div className="border-b border-rule px-5 pt-6 pb-7 lg:border-r lg:border-b-0 lg:px-7">
-                  <div className={`${MONO_LABEL} mb-1.5 grid grid-cols-[110px_1fr_46px] items-center gap-4 border-b border-rule-soft pb-3 text-[9px] tracking-[0.16em] text-ink-mute sm:grid-cols-[180px_1fr_46px]`}>
+                  <div className={`${MONO_LABEL} mb-1.5 grid grid-cols-[110px_1fr_46px] items-center gap-4 border-b border-rule-soft pb-3 text-ink-mute sm:grid-cols-[180px_1fr_46px]`}>
                     <span>Ölçü</span><span>Dəqiqlik</span><span className="text-right">%</span>
                   </div>
 
@@ -447,7 +446,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                           delay={i * 0.06}
                         />
                       </div>
-                      <span className={`text-right font-mono text-[13px] tabular-nums ${dimension.weak ? "text-error" : "text-ink"}`}>
+                      <span className={`text-right font-mono text-note tabular-nums ${dimension.weak ? "text-error" : "text-ink"}`}>
                         {dimension.value}
                       </span>
                     </div>
@@ -463,12 +462,12 @@ export default function HomeContent({ byType, totalExams }: Props) {
                 {/* Forecast + time */}
                 <div className="flex flex-col">
                   <div className="border-b border-rule px-5 pt-6 pb-6 lg:px-7">
-                    <div className={`${MONO_SECTION} mb-3.5 text-[10px] text-ink-mute`}>Proqnoz bal</div>
+                    <div className={`${MONO_SECTION} mb-3.5 text-caption text-ink-mute`}>Proqnoz bal</div>
                     <div className="flex items-baseline gap-3">
-                      <span className="font-mono text-[52px] leading-[0.9] font-light tracking-[-0.04em] tabular-nums text-ink">
+                      <span className="font-mono text-display leading-[0.9] font-light tracking-[-0.04em] tabular-nums text-ink">
                         1364
                       </span>
-                      <span className="font-mono text-[13px] text-correct">▲ 92</span>
+                      <span className="font-mono text-note text-correct">▲ 92</span>
                     </div>
                     <div className="mt-5 flex h-6.5 gap-px">
                       <div className="flex-1 bg-rule-soft" />
@@ -478,17 +477,17 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       <div className="flex-1 bg-rule-strong" />
                       <div className="flex-1 bg-rule-soft" />
                     </div>
-                    <div className="mt-2 flex justify-between font-mono text-[10px] text-ink-mute">
+                    <div className="mt-2 flex justify-between font-mono text-caption text-ink-mute">
                       <span>400</span><span>1600</span>
                     </div>
                   </div>
 
                   <div className="px-5 py-6 lg:px-7">
-                    <div className={`${MONO_SECTION} mb-4 text-[10px] text-ink-mute`}>Vaxt bölgüsü</div>
+                    <div className={`${MONO_SECTION} mb-4 text-caption text-ink-mute`}>Vaxt bölgüsü</div>
                     <div className="flex flex-col gap-3">
                       {MODULE_TIMES.map((module) => (
                         <div key={module.label} className="flex items-center gap-3">
-                          <span className="w-13 shrink-0 font-mono text-[11px] text-ink-mute">{module.label}</span>
+                          <span className="w-13 shrink-0 font-mono text-label text-ink-mute">{module.label}</span>
                           <div className="h-1.5 flex-1 bg-rule-soft">
                             <WipeBar
                               percent={module.pct}
@@ -496,7 +495,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                               delay={0.2 + MODULE_TIMES.indexOf(module) * 0.06}
                             />
                           </div>
-                          <span className={`w-8 shrink-0 text-right font-mono text-[11px] ${module.over ? "text-error" : "text-ink"}`}>
+                          <span className={`w-8 shrink-0 text-right font-mono text-label ${module.over ? "text-error" : "text-ink"}`}>
                             {module.minutes}′
                           </span>
                         </div>
@@ -520,7 +519,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   sections, so it clears the same 4.5:1 bar they were raised to. */}
               <div className={`${MONO_SECTION} text-bg/55 lg:pt-2.5`}>03</div>
               <div className="min-w-0">
-                <h2 className="m-0 mb-10 max-w-140 text-[32px] font-light leading-[1.04] tracking-[-0.035em] text-bg md:text-[44px] lg:mb-14">
+                <h2 className="m-0 mb-10 max-w-140 text-heading-lg font-light leading-[1.04] tracking-[-0.035em] text-bg md:text-display-sm lg:mb-14">
                   Səhv → izahat.
                 </h2>
 
@@ -537,27 +536,27 @@ export default function HomeContent({ byType, totalExams }: Props) {
                       </p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div className="flex items-center gap-3.5 rounded-btn border border-rule px-4 py-3.25">
-                          <span className="font-mono text-[11px] text-ink-mute">A</span>
+                          <span className="font-mono text-label text-ink-mute">A</span>
                           <span className="font-mono text-base">−6</span>
                         </div>
                         <div className="flex items-center gap-3.5 rounded-btn border border-error px-4 py-3.25">
-                          <span className="font-mono text-[11px] text-error">B</span>
+                          <span className="font-mono text-label text-error">B</span>
                           <span className="font-mono text-base text-error">0</span>
                           <span className={`${MONO_LABEL} ml-auto tracking-[0.12em] text-error`}>sizin</span>
                         </div>
                         <div className="flex items-center gap-3.5 rounded-btn border border-correct bg-correct px-4 py-3.25">
-                          <span className="font-mono text-[11px] text-bg/60">C</span>
+                          <span className="font-mono text-label text-bg/60">C</span>
                           <span className="font-mono text-base text-bg">10</span>
                           <span className={`${MONO_LABEL} ml-auto tracking-[0.12em] text-bg/75`}>doğru</span>
                         </div>
                         <div className="flex items-center gap-3.5 rounded-btn border border-rule px-4 py-3.25">
-                          <span className="font-mono text-[11px] text-ink-mute">D</span>
+                          <span className="font-mono text-label text-ink-mute">D</span>
                           <span className="font-mono text-base">14</span>
                         </div>
                       </div>
                     </div>
                     <div className="border-t border-rule bg-surface-2 px-5 pt-5.5 pb-6 lg:px-6">
-                      <div className={`${MONO_SECTION} mb-4 text-[10px] text-ink-mute`}>Addım-addım</div>
+                      <div className={`${MONO_SECTION} mb-4 text-caption text-ink-mute`}>Addım-addım</div>
                       {[
                         { n: "01", step: "3(−1)² = 3",     note: null },
                         { n: "02", step: "−5(−1) = +5",    note: "← ən çox səhv" },
@@ -569,10 +568,10 @@ export default function HomeContent({ byType, totalExams }: Props) {
                             i === rows.length - 1 ? "border-b" : ""
                           }`}
                         >
-                          <span className="font-mono text-[11px] text-ink-mute">{row.n}</span>
-                          <span className="font-mono text-[15px] text-ink">
+                          <span className="font-mono text-label text-ink-mute">{row.n}</span>
+                          <span className="font-mono text-body text-ink">
                             {row.step}
-                            {row.note && <span className="ml-2 font-sans text-[13px] text-error">{row.note}</span>}
+                            {row.note && <span className="ml-2 font-sans text-note text-error">{row.note}</span>}
                           </span>
                         </div>
                       ))}
@@ -591,15 +590,15 @@ export default function HomeContent({ byType, totalExams }: Props) {
                           i === 0 ? "border-t border-bg/25" : "border-t border-bg/14"
                         } ${i === rows.length - 1 ? "border-b border-bg/14" : ""}`}
                       >
-                        <span className="font-mono text-[11px] text-bg/55">{row.n}</span>
+                        <span className="font-mono text-label text-bg/55">{row.n}</span>
                         <div>
-                          <div className="mb-1 text-[17px] font-medium text-bg">{row.label}</div>
-                          <div className="text-[15px] text-bg/60">{row.value}</div>
+                          <div className="mb-1 text-lede font-medium text-bg">{row.label}</div>
+                          <div className="text-body text-bg/60">{row.value}</div>
                         </div>
                       </div>
                     ))}
                     <div className="mt-7 rounded-xl bg-bg/8 px-5.5 py-5">
-                      <div className="font-mono text-[32px] font-light tracking-[-0.03em] text-bg">98</div>
+                      <div className="font-mono text-heading-lg font-light tracking-[-0.03em] text-bg">98</div>
                       <div className="mt-1.5 text-sm text-bg/60">sualın hər biri belə açılır</div>
                     </div>
                   </FadeUp>
@@ -616,19 +615,19 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
             <FadeUp className="grid grid-cols-[1fr_100px_100px] border-t border-ink sm:grid-cols-[1fr_200px_200px]">
               <div className="py-3.5" />
-              <div className={`${MONO_SECTION} bg-ink px-3 py-3.5 text-[10px] text-bg sm:px-5`}>Testcentre</div>
-              <div className={`${MONO_SECTION} px-3 py-3.5 text-[10px] text-ink-mute sm:px-5`}>Sərbəst</div>
+              <div className={`${MONO_SECTION} bg-ink px-3 py-3.5 text-caption text-bg sm:px-5`}>Testcentre</div>
+              <div className={`${MONO_SECTION} px-3 py-3.5 text-caption text-ink-mute sm:px-5`}>Sərbəst</div>
 
               {COMPARISON.map((row, i) => {
                 const last = i === COMPARISON.length - 1;
                 const rule = `border-t border-rule ${last ? "border-b" : ""}`;
                 return (
                   <div key={row.criterion} className="contents">
-                    <div className={`${rule} py-4.5 pr-3 text-[15px] text-ink sm:text-[17px]`}>{row.criterion}</div>
-                    <div className={`${rule} bg-surface-2 px-3 py-4.5 font-mono text-[13px] text-correct sm:px-5 sm:text-[15px]`}>
+                    <div className={`${rule} py-4.5 pr-3 text-body text-ink sm:text-lede`}>{row.criterion}</div>
+                    <div className={`${rule} bg-surface-2 px-3 py-4.5 font-mono text-note text-correct sm:px-5 sm:text-body`}>
                       ✓{row.ours && ` ${row.ours}`}
                     </div>
-                    <div className={`${rule} px-3 py-4.5 font-mono text-[13px] text-ink-mute sm:px-5 sm:text-[15px]`}>
+                    <div className={`${rule} px-3 py-4.5 font-mono text-note text-ink-mute sm:px-5 sm:text-body`}>
                       ✗{row.theirs && ` ${row.theirs}`}
                     </div>
                   </div>
@@ -645,15 +644,15 @@ export default function HomeContent({ byType, totalExams }: Props) {
               <div className="grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-18">
                 <FadeUp>
                   <div className="mb-5 flex items-baseline gap-4">
-                    <span className="font-mono text-[56px] leading-[0.85] font-light tracking-[-0.045em] tabular-nums text-ink lg:text-[76px]">
+                    <span className="font-mono text-display-md leading-[0.85] font-light tracking-[-0.045em] tabular-nums text-ink lg:text-display-lg">
                       {REVIEWS[0].score}
                     </span>
-                    <span className={`${MONO_SECTION} text-[13px] text-correct`}>{REVIEWS[0].delta}</span>
+                    <span className={`${MONO_SECTION} text-note text-correct`}>{REVIEWS[0].delta}</span>
                   </div>
-                  <blockquote className="m-0 mb-5.5 max-w-130 text-[22px] leading-[1.35] font-light tracking-[-0.025em] text-ink lg:text-[26px]">
+                  <blockquote className="m-0 mb-5.5 max-w-130 text-title leading-[1.35] font-light tracking-[-0.025em] text-ink lg:text-title-lg">
                     “{REVIEWS[0].quote}”
                   </blockquote>
-                  <div className="text-[15px] text-ink">
+                  <div className="text-body text-ink">
                     {REVIEWS[0].name} <span className="text-ink-mute">· {REVIEWS[0].place}</span>
                   </div>
                 </FadeUp>
@@ -662,12 +661,12 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   {REVIEWS.slice(1).map((review) => (
                     <StaggerItem key={review.name} className="border-t border-ink-faint pt-5">
                       <div className="mb-2.5 flex items-baseline gap-3">
-                        <span className="font-mono text-[34px] font-light tracking-[-0.03em] tabular-nums text-ink">
+                        <span className="font-mono text-heading-lg font-light tracking-[-0.03em] tabular-nums text-ink">
                           {review.score}
                         </span>
-                        <span className={`${MONO_SECTION} text-[11px] text-correct`}>{review.delta}</span>
+                        <span className={`${MONO_SECTION} text-label text-correct`}>{review.delta}</span>
                       </div>
-                      <p className="m-0 mb-2 text-[17px] leading-[1.45] text-ink">“{review.quote}”</p>
+                      <p className="m-0 mb-2 text-lede leading-[1.45] text-ink">“{review.quote}”</p>
                       <div className="text-sm text-ink-mute">{review.name} · {review.place}</div>
                     </StaggerItem>
                   ))}
@@ -711,7 +710,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
           <div className="shell py-20 lg:pt-24 lg:pb-22">
             <div className="grid items-end gap-12 lg:grid-cols-[1fr_480px] lg:gap-20">
               <div>
-                <h2 className="m-0 mb-8 text-[44px] font-light leading-[0.98] tracking-[-0.042em] text-bg lg:text-[64px]">
+                <h2 className="m-0 mb-8 text-display-sm font-light leading-[0.98] tracking-[-0.042em] text-bg lg:text-display-lg">
                   Sessiya<br />açıqdır.
                 </h2>
                 <Link
@@ -737,11 +736,11 @@ export default function HomeContent({ byType, totalExams }: Props) {
                         i === 0 ? "border-t border-bg/28" : "border-t border-bg/14"
                       } ${i === openPrograms.length - 1 ? "border-b border-bg/14" : ""}`}
                     >
-                      <span className={`${MONO_SECTION} w-17 shrink-0 text-[11px] text-bg/50`}>{program.code}</span>
+                      <span className={`${MONO_SECTION} w-17 shrink-0 text-label text-bg/50`}>{program.code}</span>
                       {/* min-w-0: without it the flex item cannot shrink below
                           its text width, and a long exam title widens the page
                           instead of truncating. */}
-                      <span className="min-w-0 flex-1 truncate text-[17px]">
+                      <span className="min-w-0 flex-1 truncate text-lede">
                         {data.count === 1 ? data.titles[0] : `${data.count} sınaq`}
                       </span>
                       <span className="shrink-0 font-mono text-xl tabular-nums">{data.minPrice}₼</span>

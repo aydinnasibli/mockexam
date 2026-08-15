@@ -8,8 +8,10 @@ import {
   ChevronDown, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { createExam, updateExam, type ActionResult } from '@/lib/actions/admin';
-import type { ParsedModule } from '@/lib/exam-modules';
-import { MODULE_TYPES, EXAM_TYPES } from '@/lib/exam-types';
+import type { ParsedModule } from '@/lib/domain/exam-modules';
+import { MODULE_TYPES, EXAM_TYPES } from '@/lib/domain/exam-types';
+import Button from '@/components/ui/Button';
+import Tag from '@/components/ui/Tag';
 
 // Module types allowed per exam type. Types absent here fall back to the full
 // module list (see ModuleCard), which is what DİM/GRE want — their sections
@@ -335,18 +337,18 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
       {/* ── Basic info ─────────────────────────────────────────────────────── */}
       <Section title="Əsas Məlumatlar">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="İmtahan ID *" hint="Kiçik hərf, rəqəm, tire (maks. 64). Sonradan dəyişdirilmir.">
+          <Field label="İmtahan ID *" hint="Kiçik hərf, rəqəm, tire (maks. 64). Sonradan dəyişdirilmir." htmlFor="exam-id">
             <input
-              type="text" name="examId"
+              type="text" id="exam-id" name="examId"
               defaultValue={mode === 'edit' ? examId : (defaultValues?.examId ?? '')}
               placeholder="sat-mock-4"
               required disabled={mode === 'edit'}
               className="input-field disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-mute"
             />
           </Field>
-          <Field label="Növ *">
+          <Field label="Növ *" htmlFor="exam-type">
             <select
-              name="type"
+              id="exam-type" name="type"
               value={examType}
               onChange={e => handleTypeChange(e.target.value)}
               className="input-field"
@@ -355,14 +357,14 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
               {EXAM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </Field>
-          <Field label="Başlıq *" className="sm:col-span-2">
-            <input type="text" name="title" defaultValue={defaultValues?.title ?? ''} placeholder="Digital SAT Full Mock #4" required className="input-field" />
+          <Field label="Başlıq *" className="sm:col-span-2" htmlFor="exam-title">
+            <input type="text" id="exam-title" name="title" defaultValue={defaultValues?.title ?? ''} placeholder="Digital SAT Full Mock #4" required className="input-field" />
           </Field>
-          <Field label="Etiket (Tag) *">
-            <input type="text" name="tag" value={tag} onChange={e => setTag(e.target.value)} placeholder="SAT" required className="input-field" />
+          <Field label="Etiket (Tag) *" htmlFor="exam-tag">
+            <input type="text" id="exam-tag" name="tag" value={tag} onChange={e => setTag(e.target.value)} placeholder="SAT" required className="input-field" />
           </Field>
-          <Field label="Qiymət (₼) *">
-            <input type="number" name="price" min="0" step="0.01" defaultValue={defaultValues?.price ?? ''} placeholder="12" required className="input-field" />
+          <Field label="Qiymət (₼) *" htmlFor="exam-price">
+            <input type="number" id="exam-price" name="price" min="0" step="0.01" defaultValue={defaultValues?.price ?? ''} placeholder="12" required className="input-field" />
           </Field>
           <Field label="Status" className="sm:col-span-2">
             <label className="flex h-11 cursor-pointer items-center gap-3 select-none">
@@ -375,26 +377,26 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
       {/* ── Description ────────────────────────────────────────────────────── */}
       <Section title="Təsvir">
-        <textarea name="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="İmtahan haqqında ətraflı məlumat..." required className="input-field w-full resize-none" />
+        <textarea id="exam-description" aria-label="İmtahan təsviri" name="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="İmtahan haqqında ətraflı məlumat..." required className="input-field w-full resize-none" />
       </Section>
 
       {/* ── Modules ────────────────────────────────────────────────────────── */}
-      <div className="panel">
+      <div className="rounded-panel border border-rule bg-surface">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-rule px-5 py-4">
           <div className="min-w-0">
-            <h2 className="panel-title">Modullar / Bölmələr</h2>
-            <p className="m-0 mt-1 text-[13px] text-ink-mute">
+            <h2 className="m-0 text-body font-medium tracking-[-0.01em] text-ink">Modullar / Bölmələr</h2>
+            <p className="m-0 mt-1 text-note text-ink-mute">
               Hər imtahan bir və ya bir neçə moduldan ibarət olur. Sıra mühümdür.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <button type="button" onClick={applyPreset} className="btn-ghost btn-sm cursor-pointer text-xs!">
+            <Button variant="ghost" size="xs" type="button" onClick={applyPreset}>
               <RefreshCw size={12} />
               {EXAM_TYPES.find(t => t.value === examType)?.label ?? examType.toUpperCase()} preseti
-            </button>
-            <button type="button" onClick={addModule} className="btn-ghost btn-sm cursor-pointer text-xs!">
+            </Button>
+            <Button variant="ghost" size="xs" type="button" onClick={addModule}>
               <Plus size={13} /> Modul əlavə et
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -417,18 +419,18 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
         {/* Totals summary */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-rule bg-surface-2 px-5 py-3.5">
-          <span className="mono-label">
+          <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">
             Ümumi sual <span className="ml-1 text-sm text-ink">{totalQuestions}</span>
           </span>
-          <span className="mono-label">
+          <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">
             İmtahan müddəti <span className="ml-1 text-sm text-ink">{examMinutes} dəq</span>
           </span>
           {totalBreak > 0 && (
-            <span className="mono-label">
+            <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">
               Fasilə <span className="ml-1 text-sm text-ink">{totalBreak} dəq</span>
             </span>
           )}
-          <span className="mono-label ml-auto">
+          <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute ml-auto">
             Ümumi <span className="ml-1 text-sm text-ink">{totalDuration} dəq</span>
           </span>
         </div>
@@ -437,12 +439,12 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
       {/* ── Features ───────────────────────────────────────────────────────── */}
       <Section
         title="Xüsusiyyətlər"
-        action={<button type="button" onClick={addFeature} className="btn-ghost btn-sm cursor-pointer text-xs!"><Plus size={13} /> Əlavə et</button>}
+        action={<Button variant="ghost" size="xs" type="button" onClick={addFeature}><Plus size={13} /> Əlavə et</Button>}
       >
         <div className="space-y-3">
           {features.map((f, i) => (
             <div key={i} className="flex gap-3">
-              <input type="text" name="features" value={f} onChange={e => setFeature(i, e.target.value)} placeholder={`Xüsusiyyət ${i + 1}`} className="input-field flex-1" />
+              <input type="text" aria-label={`Xüsusiyyət ${i + 1}`} name="features" value={f} onChange={e => setFeature(i, e.target.value)} placeholder={`Xüsusiyyət ${i + 1}`} className="input-field flex-1" />
               {features.length > 1 && (
                 <button
                   type="button"
@@ -460,13 +462,13 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
 
       {/* ── Actions ────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
-        <button type="submit" disabled={pending} className="btn-primary cursor-pointer disabled:opacity-60">
+        <Button className="disabled:opacity-60" type="submit" disabled={pending}>
           {pending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
           {mode === 'create' ? 'İmtahan yarat' : 'Dəyişiklikləri saxla'}
-        </button>
-        <button type="button" onClick={() => router.back()} className="btn-ghost cursor-pointer">
+        </Button>
+        <Button variant="ghost" type="button" onClick={() => router.back()}>
           Ləğv et
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -506,7 +508,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
         </div>
 
         {/* Mono index, the way the home page numbers its own sections. */}
-        <span className="w-6 shrink-0 text-center font-mono text-[13px] tabular-nums text-ink-mute">
+        <span className="w-6 shrink-0 text-center font-mono text-note tabular-nums text-ink-mute">
           {String(index + 1).padStart(2, '0')}
         </span>
 
@@ -521,9 +523,9 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
           />
         </div>
 
-        <span className="tag shrink-0">
+        <Tag className="shrink-0">
           {MODULE_TYPES.find(t => t.value === mod.type)?.label ?? mod.type}
-        </span>
+        </Tag>
 
         <button type="button" onClick={onToggle} aria-expanded={mod.expanded} aria-label="Modul detalları" className={`${iconButton} shrink-0`}>
           {mod.expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -541,13 +543,13 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
         <div className="mt-5 ml-13 space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="field-label">Modul növü *</label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Modul növü *</label>
               <select value={mod.type} onChange={e => onUpdate({ type: e.target.value as ModuleRow['type'] })} className="input-field">
                 {filteredModuleTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="field-label">Müddət (dəq) *</label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Müddət (dəq) *</label>
               <input
                 type="number" min="1" max="480"
                 value={mod.durationMinutes}
@@ -556,7 +558,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
               />
             </div>
             <div>
-              <label className="field-label">Sual sayı</label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Sual sayı</label>
               <input
                 type="number" min="0" max="1000"
                 value={mod.questions}
@@ -566,7 +568,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
               />
             </div>
             <div>
-              <label className="field-label">Fasilə sonra (dəq)</label>
+              <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Fasilə sonra (dəq)</label>
               <input
                 type="number" min="0" max="120"
                 value={mod.breakAfterMinutes}
@@ -585,12 +587,12 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
                 className="h-4 w-4 accent-ink"
               />
               <span className="text-sm font-medium text-ink">Adaptiv modul</span>
-              <span className="text-[13px] text-ink-mute">(nəticəyə əsasən çətinlik dəyişir)</span>
+              <span className="text-note text-ink-mute">(nəticəyə əsasən çətinlik dəyişir)</span>
             </label>
           </div>
 
           <div>
-            <label className="field-label">Modul təlimatları <span className="normal-case font-normal">(ixtiyari — imtahandan əvvəl göstərilir)</span></label>
+            <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Modul təlimatları <span className="normal-case font-normal">(ixtiyari — imtahandan əvvəl göstərilir)</span></label>
             <textarea
               value={mod.instructions}
               onChange={e => onUpdate({ instructions: e.target.value })}
@@ -601,7 +603,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
             />
           </div>
 
-          <div className="mono-label flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-rule-soft pt-3.5">
+          <div className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-rule-soft pt-3.5">
             <span>{mod.durationMinutes} dəq imtahan</span>
             {mod.breakAfterMinutes > 0 && <span>{mod.breakAfterMinutes} dəq fasilə</span>}
             {mod.questions > 0 && <span>{mod.questions} sual</span>}
@@ -617,21 +619,21 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="panel">
-      <div className="panel-head">
-        <h2 className="panel-title">{title}</h2>
+    <div className="rounded-panel border border-rule bg-surface">
+      <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
+        <h2 className="m-0 text-body font-medium tracking-[-0.01em] text-ink">{title}</h2>
         {action}
       </div>
-      <div className="panel-body">{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   );
 }
 
-function Field({ label, hint, className, children }: { label: string; hint?: string; className?: string; children: React.ReactNode }) {
+function Field({ label, hint, className, htmlFor, children }: { label: string; hint?: string; className?: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className={className}>
-      <label className="field-label">{label}</label>
-      {hint && <p className="m-0 -mt-1 mb-2 text-[13px] text-ink-mute">{hint}</p>}
+      <label htmlFor={htmlFor} className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">{label}</label>
+      {hint && <p className="m-0 -mt-1 mb-2 text-note text-ink-mute">{hint}</p>}
       {children}
     </div>
   );

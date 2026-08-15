@@ -1,15 +1,15 @@
 'use server';
 
 import { headers } from 'next/headers';
-import { checkRole } from '@/lib/admin';
+import { checkRole } from '@/lib/infra/admin';
 import {
   signRequest,
   verifySignature,
   decodeData,
   EPOINT_REQUEST_URL,
   EPOINT_STATUS_URL,
-} from '@/lib/epoint';
-import { captureException } from '@/lib/observability';
+} from '@/lib/payments/epoint';
+import { captureException } from '@/lib/infra/observability';
 
 /**
  * Order-id prefix for payments created from the /testpayment harness.

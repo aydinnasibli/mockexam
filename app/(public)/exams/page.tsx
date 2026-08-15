@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getActiveExams } from '@/lib/db/exams';
-import { examTypeLabel, isExamType } from '@/lib/exam-types';
-import { BASE_URL, jsonLd, pageMetadata } from '@/lib/seo';
+import { examTypeLabel, isExamType } from '@/lib/domain/exam-types';
+import { BASE_URL, jsonLd, pageMetadata } from '@/lib/shared/seo';
 import ExamsCatalog from './ExamsCatalog';
 
 interface Props {

@@ -1,5 +1,5 @@
 import 'server-only';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import QuestionModel from '@/lib/models/Question';
 
 /** One question from an exam's bank, printed as the public specimen. */

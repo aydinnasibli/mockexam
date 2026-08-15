@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { adminRegradeResult, adminRegradeAllPending, type WritingEvalProblem } from '@/lib/actions/results';
+import Button from '@/components/ui/Button';
+import Tag from '@/components/ui/Tag';
 
 export default function WritingProblemsClient({ problems }: { problems: WritingEvalProblem[] }) {
   const router = useRouter();
@@ -34,7 +36,7 @@ export default function WritingProblemsClient({ problems }: { problems: WritingE
 
   if (problems.length === 0) {
     return (
-      <div className="panel px-8 py-16 text-center">
+      <div className="rounded-panel border border-rule bg-surface px-8 py-16 text-center">
         <CheckCircle2 className="mx-auto mb-4 text-ok" size={32} />
         <p className="m-0 mb-2 text-xl font-light tracking-tight text-ink">Problem yoxdur</p>
         <p className="m-0 text-sm text-ink-soft">Bütün yazı tapşırıqları qiymətləndirilib.</p>
@@ -43,19 +45,18 @@ export default function WritingProblemsClient({ problems }: { problems: WritingE
   }
 
   return (
-    <div className="panel overflow-hidden">
-      <div className="panel-head flex-wrap">
-        <p className="m-0 text-[15px] font-medium tracking-[-0.01em] text-ink">
+    <div className="rounded-panel border border-rule bg-surface overflow-hidden">
+      <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5 flex-wrap">
+        <p className="m-0 text-body font-medium tracking-[-0.01em] text-ink">
           {problems.length} nəticədə qiymətləndirilməmiş yazı var
         </p>
-        <button
+        <Button size="sm" className="disabled:opacity-60"
           onClick={regradeAll}
           disabled={allPending}
-          className="btn-primary btn-sm cursor-pointer disabled:opacity-60"
         >
           <RefreshCw size={13} className={allPending ? 'animate-spin' : ''} />
           {allPending ? 'Emal olunur…' : 'Hamısını qiymətləndir'}
-        </button>
+        </Button>
       </div>
 
       <div className="overflow-x-auto">
@@ -73,26 +74,25 @@ export default function WritingProblemsClient({ problems }: { problems: WritingE
           <tbody>
             {problems.map((p) => (
               <tr key={p.resultId}>
-                <td>
+                <td className="text-ink-soft">
                   <span className="font-medium text-ink">{p.examTitle}</span>
-                  <span className="tag ml-2">{p.examTag}</span>
+                  <Tag className="ml-2">{p.examTag}</Tag>
                 </td>
-                <td className="num text-xs text-ink-mute!">…{p.userId.slice(-10)}</td>
-                <td className="num">{p.attemptNumber}</td>
-                <td className="whitespace-nowrap">
-                  <span className="num">{p.pendingCount}</span> esse
+                <td className="num text-xs text-ink-mute">…{p.userId.slice(-10)}</td>
+                <td className="num text-ink">{p.attemptNumber}</td>
+                <td className="whitespace-nowrap text-ink-soft">
+                  <span className="num text-ink">{p.pendingCount}</span> esse
                   {p.wordCounts.length > 0 && <span className="text-xs text-ink-mute"> ({p.wordCounts.join(', ')} söz)</span>}
                 </td>
-                <td className="num text-xs whitespace-nowrap text-ink-mute!">{p.completedAtLabel}</td>
-                <td className="text-right">
-                  <button
+                <td className="num text-xs whitespace-nowrap text-ink-mute">{p.completedAtLabel}</td>
+                <td className="text-right text-ink-soft">
+                  <Button variant="ghost" size="xs" className="whitespace-nowrap disabled:opacity-50"
                     onClick={() => regradeOne(p.resultId)}
                     disabled={busyId === p.resultId || allPending}
-                    className="btn-ghost btn-sm cursor-pointer whitespace-nowrap text-xs! disabled:opacity-50"
                   >
                     <RefreshCw size={12} className={busyId === p.resultId ? 'animate-spin' : ''} />
                     {busyId === p.resultId ? 'Qiymətləndirilir…' : 'Yenidən qiymətləndir'}
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

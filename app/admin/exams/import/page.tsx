@@ -5,6 +5,7 @@ import { UploadCloud, FileJson, AlertCircle, Loader2, ArrowLeft, CheckCircle } f
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { importExamFromJson } from '@/lib/actions/import';
+import Button, { ButtonArrow } from '@/components/ui/Button';
 
 /** Best-effort read of the fields shown in the confirmation preview. */
 function previewOf(data: unknown) {
@@ -65,19 +66,19 @@ export default function ImportExamPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link href="/admin/exams" className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">
+      <Link href="/admin/exams" className="mb-7 inline-flex items-center gap-1.5 text-note font-medium text-ink-soft transition-colors hover:text-ink">
         <ArrowLeft size={15} /> İmtahanlara qayıt
       </Link>
 
       <header className="mb-8 border-b border-ink pb-6">
         <div className="mb-4 flex items-center gap-3">
-          <span className="dot" aria-hidden />
-          <span className="mono-label mono-label-lg text-ink">İdxal</span>
+          <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+          <span className="font-mono text-label font-normal tracking-[0.16em] uppercase text-ink-mute">İdxal</span>
         </div>
-        <h1 className="m-0 text-3xl leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-[38px]">
+        <h1 className="m-0 text-3xl leading-[1.05] font-light tracking-[-0.035em] text-ink md:text-display-xs">
           İmtahan yüklə (JSON).
         </h1>
-        <p className="m-0 mt-3.5 text-[15px] text-ink-soft">
+        <p className="m-0 mt-3.5 text-body text-ink-soft">
           AI tərəfindən yaradılmış məlumat bazasına uyğun <code className="font-mono text-sm">.json</code> faylını yükləyin.
         </p>
       </header>
@@ -97,13 +98,13 @@ export default function ImportExamPage() {
             <div className="flex flex-col items-center">
               <FileJson size={32} className="mb-4 text-ink" />
               <p className="m-0 text-base font-medium text-ink">{file.name}</p>
-              <p className="mono-label m-0 mt-2">{(file.size / 1024).toFixed(2)} KB</p>
+              <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2">{(file.size / 1024).toFixed(2)} KB</p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
               <UploadCloud size={32} className="mb-4 text-ink-faint" />
               <p className="m-0 text-base font-light tracking-tight text-ink">Faylı seçin və ya bura sürüşdürün</p>
-              <p className="mono-label m-0 mt-2">Yalnız .json formatı qəbul olunur</p>
+              <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2">Yalnız .json formatı qəbul olunur</p>
             </div>
           )}
         </div>
@@ -118,9 +119,9 @@ export default function ImportExamPage() {
 
         {/* Success / Preview State */}
         {parsedData != null && !error && (
-          <div className="panel overflow-hidden">
-            <div className="panel-head">
-              <h2 className="panel-title flex items-center gap-2">
+          <div className="rounded-panel border border-rule bg-surface overflow-hidden">
+            <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3.5">
+              <h2 className="m-0 text-body font-medium tracking-[-0.01em] text-ink flex items-center gap-2">
                 <CheckCircle size={16} className="text-ok" /> Fayl uğurla oxundu
               </h2>
             </div>
@@ -136,8 +137,8 @@ export default function ImportExamPage() {
                   key={label}
                   className={`flex items-baseline justify-between gap-4 py-3 ${i > 0 ? 'border-t border-rule-soft' : ''}`}
                 >
-                  <span className="mono-label">{label}</span>
-                  <span className="truncate font-mono text-[13px] tabular-nums text-ink">{value}</span>
+                  <span className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute">{label}</span>
+                  <span className="truncate font-mono text-note tabular-nums text-ink">{value}</span>
                 </div>
               ))}
             </div>
@@ -145,10 +146,9 @@ export default function ImportExamPage() {
         )}
 
         {/* Upload Button */}
-        <button
+        <Button className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
           onClick={handleUpload}
           disabled={!parsedData || loading}
-          className="btn-primary w-full cursor-pointer justify-center disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
             <>
@@ -156,10 +156,10 @@ export default function ImportExamPage() {
             </>
           ) : (
             <>
-              İmtahanı verilənlər bazasına yaz <span className="arrow" aria-hidden>→</span>
+              İmtahanı verilənlər bazasına yaz <ButtonArrow />
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

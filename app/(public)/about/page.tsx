@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from "next/link";
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata } from "@/lib/shared/seo";
+import { MONO_LABEL, MONO_SECTION } from '@/components/ui/type-styles';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Haqqımızda',
@@ -11,9 +12,7 @@ export const metadata: Metadata = pageMetadata({
   path: '/about',
 });
 
-const MONO_LABEL = "font-mono text-[10px] tracking-[0.14em] uppercase";
-const MONO_SECTION = "font-mono text-[11px] tracking-[0.16em] uppercase";
-const H2 = "m-0 text-[32px] font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-[44px]";
+const H2 = "m-0 text-heading-lg font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-display-sm";
 
 /** The statement ledger: what the platform refuses, and what it commits to. */
 const REFUSE = [
@@ -79,11 +78,11 @@ export default function AboutPage() {
               <span className={`${MONO_SECTION} text-ink`}>Haqqımızda</span>
             </div>
 
-            <h1 className="m-0 text-[44px] font-light leading-[0.98] tracking-[-0.042em] text-ink md:text-[64px] lg:text-[80px]">
+            <h1 className="m-0 text-display-sm font-light leading-[0.98] tracking-[-0.042em] text-ink md:text-display-lg lg:text-hero">
               Rəsmi formatda<br /><span className="font-medium">sınaq platforması.</span>
             </h1>
 
-            <p className="m-0 mt-9 max-w-130 text-[19px] leading-[1.6] text-ink-soft lg:mt-11">
+            <p className="m-0 mt-9 max-w-130 text-subhead leading-[1.6] text-ink-soft lg:mt-11">
               Hər sınaq rəsmi qaydalarla keçir — eyni vaxt limiti, eyni quruluş,
               eyni interfeys. İmtahan günü heç nə yeni görünməsin deyə.
             </p>
@@ -98,7 +97,7 @@ export default function AboutPage() {
                   i < HERO_FIGURES.length - 1 ? "border-r border-rule" : ""
                 }`}
               >
-                <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-[32px]">
+                <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">
                   {figure.value}
                 </div>
                 <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</div>
@@ -115,12 +114,12 @@ export default function AboutPage() {
 
               <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-18">
                 <FadeUp>
-                  <p className="m-0 mb-6 max-w-130 text-[19px] leading-[1.55] tracking-[-0.015em] text-ink">
+                  <p className="m-0 mb-6 max-w-130 text-subhead leading-[1.55] tracking-[-0.015em] text-ink">
                     Hazırlıqda ən çox itirilən şey vaxt deyil — istiqamətdir.
                     Tələbə yüzlərlə sual həll edir, amma onu geridə saxlayanın
                     hansı bacarıq olduğunu bilmir.
                   </p>
-                  <p className="m-0 max-w-130 text-[17px] leading-[1.65] text-ink-soft">
+                  <p className="m-0 max-w-130 text-lede leading-[1.65] text-ink-soft">
                     Ona görə ardıcıllığı tərsinə çevirdik: əvvəlcə ölçü, sonra məşq.
                     Hər sınaq rəsmi formatda keçir, hər səhv 11 ölçüdən birinə yazılır,
                     hər hesabat isə növbəti məşqin istiqamətini göstərir.
@@ -129,7 +128,7 @@ export default function AboutPage() {
 
                 <FadeUp delay={0.1}>
                   <blockquote className="m-0 border-t border-ink pt-7">
-                    <p className="m-0 mb-6 max-w-120 text-[26px] leading-[1.3] font-light tracking-[-0.03em] text-ink lg:text-3xl">
+                    <p className="m-0 mb-6 max-w-120 text-title-lg leading-[1.3] font-light tracking-[-0.03em] text-ink lg:text-3xl">
                       “Sınaq imtahandan asan olanda, imtahan sınaqdan çətin olur.”
                     </p>
                     <footer className={`${MONO_LABEL} text-ink-mute`}>Prinsip</footer>
@@ -159,10 +158,10 @@ export default function AboutPage() {
                         {/* Sized to the title it marks, not to the fine print —
                             at 12px the glyph read as a bullet rather than a
                             verdict. */}
-                        <span className="w-5 shrink-0 font-mono text-[22px] leading-none text-error" aria-hidden>✗</span>
+                        <span className="w-5 shrink-0 font-mono text-title leading-none text-error" aria-hidden>✗</span>
                         <div className="min-w-0">
-                          <div className="text-[19px] tracking-[-0.02em] text-ink-soft">{item.title}</div>
-                          <p className="m-0 mt-2 max-w-100 text-[15px] leading-[1.6] text-ink-mute">{item.line}</p>
+                          <div className="text-subhead tracking-[-0.02em] text-ink-soft">{item.title}</div>
+                          <p className="m-0 mt-2 max-w-100 text-body leading-[1.6] text-ink-mute">{item.line}</p>
                         </div>
                       </div>
                     </StaggerItem>
@@ -179,10 +178,10 @@ export default function AboutPage() {
                       }`}
                     >
                       <div className="flex items-baseline gap-4">
-                        <span className="w-5 shrink-0 font-mono text-[22px] leading-none text-correct" aria-hidden>✓</span>
+                        <span className="w-5 shrink-0 font-mono text-title leading-none text-correct" aria-hidden>✓</span>
                         <div className="min-w-0">
-                          <div className="text-[19px] font-medium tracking-[-0.02em] text-ink">{item.title}</div>
-                          <p className="m-0 mt-2 max-w-100 text-[15px] leading-[1.6] text-ink-soft">{item.line}</p>
+                          <div className="text-subhead font-medium tracking-[-0.02em] text-ink">{item.title}</div>
+                          <p className="m-0 mt-2 max-w-100 text-body leading-[1.6] text-ink-soft">{item.line}</p>
                         </div>
                       </div>
                     </StaggerItem>
@@ -198,7 +197,7 @@ export default function AboutPage() {
             <SectionHead n="03">
               <div className="mb-10 grid gap-6 lg:mb-12 lg:grid-cols-[1fr_1fr] lg:items-end lg:gap-18">
                 <h2 className={H2}>Qaydalar.</h2>
-                <p className="m-0 max-w-105 text-[17px] leading-[1.6] text-ink-soft lg:pb-1.5">
+                <p className="m-0 max-w-105 text-lede leading-[1.6] text-ink-soft lg:pb-1.5">
                   Şərtlərin tam mətni{' '}
                   <Link href="/legal/terms" className="text-ink underline decoration-ink-faint underline-offset-4 transition-colors duration-150 hover:decoration-ink">
                     hüquqi bölmədədir
@@ -215,10 +214,10 @@ export default function AboutPage() {
                       i < 2 ? "border-t border-ink-faint" : "border-t border-rule-strong"
                     } ${i >= POLICIES.length - 2 ? "border-b border-rule-strong" : ""}`}
                   >
-                    <span className={`${MONO_SECTION} text-[11px] tracking-[0.14em] text-ink-mute`}>
+                    <span className={`${MONO_SECTION} text-label tracking-[0.14em] text-ink-mute`}>
                       {policy.label}
                     </span>
-                    <span className="text-[17px] text-ink">{policy.value}</span>
+                    <span className="text-lede text-ink">{policy.value}</span>
                   </StaggerItem>
                 ))}
               </StaggerContainer>
@@ -230,10 +229,10 @@ export default function AboutPage() {
         <section className="shell py-20 lg:py-24">
           <FadeUp className="flex flex-col items-start gap-6 border-t border-ink pt-7 sm:flex-row sm:items-baseline sm:justify-between sm:gap-10">
             <div>
-              <h2 className="m-0 text-4xl font-light leading-none tracking-[-0.04em] text-ink lg:text-[52px]">
+              <h2 className="m-0 text-4xl font-light leading-none tracking-[-0.04em] text-ink lg:text-display">
                 Sınaqlara keçin.
               </h2>
-              <p className="m-0 mt-4 max-w-100 text-[15px] leading-[1.6] text-ink-soft">
+              <p className="m-0 mt-4 max-w-100 text-body leading-[1.6] text-ink-soft">
                 Sualınız qalıbsa,{' '}
                 <Link href="/contact" className="text-ink underline decoration-ink-faint underline-offset-4 transition-colors duration-150 hover:decoration-ink">
                   yazın

@@ -21,10 +21,10 @@ export default function GlobalError({ error, reset }: Props) {
         <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-5">
           <span className="text-2xl">⚠</span>
         </div>
-        <h1 className="text-2xl font-extrabold text-primary font-headline mb-3">
+        <h1 className="text-2xl font-extrabold text-ink font-headline mb-3">
           Xəta baş verdi
         </h1>
-        <p className="text-sm text-on-surface-variant mb-8">
+        <p className="text-sm text-ink-soft mb-8">
           Gözlənilməz bir problem yarandı. Zəhmət olmasa yenidən cəhd edin.
         </p>
         <div className="flex items-center justify-center gap-3">
@@ -36,7 +36,7 @@ export default function GlobalError({ error, reset }: Props) {
           </button>
           <Link
             href="/"
-            className="px-6 py-3 rounded-xl font-bold text-sm text-on-surface-variant bg-white border border-outline-variant/40 hover:bg-surface-container transition-colors"
+            className="px-6 py-3 rounded-xl font-bold text-sm text-ink-soft bg-white border border-ink-faint/40 hover:bg-surface-3 transition-colors"
           >
             Ana səhifə
           </Link>

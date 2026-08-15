@@ -1,4 +1,4 @@
-import { renderPassage } from '@/lib/render-math';
+import { renderPassage } from '@/lib/shared/render-math';
 
 /**
  * Renders a reading passage with proper structure (title, separated paragraphs,

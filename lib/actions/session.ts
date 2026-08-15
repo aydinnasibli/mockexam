@@ -1,12 +1,12 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamSessionModel from '@/lib/models/ExamSession';
 import { getExamByIdAdmin } from '@/lib/db/exams';
-import { isRateLimited } from '@/lib/rate-limit';
-import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics';
-import { captureException } from '@/lib/observability';
+import { isRateLimited } from '@/lib/infra/rate-limit';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
+import { captureException } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
 
 export interface SessionInfo {

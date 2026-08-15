@@ -50,7 +50,7 @@ export default function AnalyticsLoading() {
       {/* Attempt cards */}
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="panel">
+          <div  key={i} className="rounded-panel border border-rule bg-surface">
             <div className="flex items-center justify-between gap-4 p-6">
               <div className="min-w-0 flex-1 space-y-2.5">
                 <Skeleton className="h-5 w-20 rounded-full bg-surface-3" />

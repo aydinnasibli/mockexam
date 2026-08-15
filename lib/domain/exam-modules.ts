@@ -7,7 +7,7 @@
 // `lib/actions/admin.ts`, which published it as an unauthenticated endpoint for
 // no reason.
 
-import { MODULE_TYPES, type ModuleType } from '@/lib/exam-types';
+import { MODULE_TYPES, type ModuleType } from '@/lib/domain/exam-types';
 
 const VALID_MOD_TYPES: ReadonlySet<string> = new Set(MODULE_TYPES.map(t => t.value));
 

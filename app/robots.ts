@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { BASE_URL } from '@/lib/seo';
+import { BASE_URL } from '@/lib/shared/seo';
 
 export default function robots(): MetadataRoute.Robots {
   return {

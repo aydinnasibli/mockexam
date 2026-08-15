@@ -43,10 +43,15 @@ app/
   checkout/[id]/        # Purchase flow
   api/                  # Route handlers (webhooks, purchase status)
 lib/
+  domain/               # pure rules, no I/O: exam types, module validation, grading, scoring,
+                        #   exam-session crash recovery. Unit-testable without a database.
+  db/                   # server-only Data Access Layer (incl. entitlements.ts)
   models/               # Mongoose schemas (Exam, Question, ExamSession, ExamResult, Purchase, UserSettings)
   actions/              # Server actions (session, questions, results, checkout, AI eval, audio, import)
-  db/                   # server-only Data Access Layer (incl. entitlements.ts)
-  mongodb.ts            # Mongoose connection singleton (server-only)
+  payments/             # Epoint: request signing, callback decoding, webhook-miss reconciliation
+  infra/                # I/O and cross-cutting: mongodb, rate-limit, observability, analytics, admin auth
+  shared/               # client-safe helpers used by both server render and browser: seo, render-math, media
+  posthog/              # server-side PostHog client factory
 components/
   layout/               # Navbar, Footer, Sidebar
   ui/                   # Animation wrappers (FadeUp, StaggerChildren, PageTransition)
@@ -126,7 +131,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 > **Admin access** is granted through Clerk, not an environment variable. Set
 > `{ "role": "admin" }` on a user's **public metadata** in the Clerk dashboard,
 > and expose it on the session token (Sessions → Customize session token) as
-> `{ "metadata": "{{user.public_metadata}}" }`. `lib/admin.ts` reads
+> `{ "metadata": "{{user.public_metadata}}" }`. `lib/infra/admin.ts` reads
 > `sessionClaims.metadata.role`.
 
 > **Deploying to production:** switch to Clerk *production* keys (`pk_live_` /
@@ -156,7 +161,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Exam & Module Types
 
-Exam types and module types are both defined once in [`lib/exam-types.ts`](lib/exam-types.ts)
+Exam types and module types are both defined once in [`lib/domain/exam-types.ts`](lib/domain/exam-types.ts)
 and consumed everywhere (schemas, validators, importer, admin form, catalog filter).
 Add a type there and it becomes usable across the whole app.
 
@@ -185,19 +190,19 @@ Run `npm audit` before a release; it is expected to report zero vulnerabilities.
 ## Scoring integrity
 
 Attempts are graded **server-side against the question bank**, never against the
-submitted payload — see [`lib/grading.ts`](lib/grading.ts). The score denominator
+submitted payload — see [`lib/domain/grading.ts`](lib/domain/grading.ts). The score denominator
 is the exam's real question count, `moduleIndex` and `correctIndex` always come
 from the database, duplicate answers are collapsed, and unknown question IDs are
 ignored. [`lib/grading.test.ts`](lib/grading.test.ts) covers these cases directly.
 
 Score conversion (IELTS bands, SAT scaled scores) lives in
-[`lib/scoring.ts`](lib/scoring.ts) and is documented in [docs/scoring.md](docs/scoring.md).
+[`lib/domain/scoring.ts`](lib/domain/scoring.ts) and is documented in [docs/scoring.md](docs/scoring.md).
 
 ## Observability
 
-Error reporting goes through [`lib/observability.ts`](lib/observability.ts) —
+Error reporting goes through [`lib/infra/observability.ts`](lib/infra/observability.ts) —
 `captureException` / `captureMessage` — rather than importing a vendor SDK at
-each call site. Product events go through [`lib/analytics.ts`](lib/analytics.ts),
+each call site. Product events go through [`lib/infra/analytics.ts`](lib/infra/analytics.ts),
 which defines every event name in one place so a typo can't silently break a
 funnel. Both are `server-only` and neither ever throws; an observability outage
 must not be able to fail a checkout or lose an exam submission.

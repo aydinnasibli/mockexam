@@ -12,7 +12,7 @@ the way it is actually graded**:
 | `sat`     | Scaled **200–800** per section, **400–1600** total | `totalScaled`, `rwScaled`, `mathScaled` |
 | others (`general_english`, …) | Percentage | `score` |
 
-All conversions live in **`lib/scoring.ts`** (pure, client-safe). They are
+All conversions live in **`lib/domain/scoring.ts`** (pure, client-safe). They are
 computed once at submit time (and on writing re-check) in `lib/actions/results.ts`
 and stored, so every display surface (review page, dashboard, analytics) reads
 the same numbers via `formatOverallScore()` / `formatModuleScore()`.
@@ -24,7 +24,7 @@ to `%` automatically.
 
 **Listening / Academic Reading** — raw correct out of 40 → band, using the
 published Cambridge/British Council conversion tables (`IELTS_LISTENING`,
-`IELTS_ACADEMIC_READING` in `lib/scoring.ts`). E.g. 27/40 reading → **6.5**.
+`IELTS_ACADEMIC_READING` in `lib/domain/scoring.ts`). E.g. 27/40 reading → **6.5**.
 
 **Writing** — the two AI task bands are combined with Task 2 weighted double:
 
@@ -63,7 +63,7 @@ total **1210 / 1600**.
 > ⚠️ **Approximation.** The official Digital SAT raw→scaled curves are equated
 > per form and are not public, so this uses a linear map rounded to the nearest
 > 10. Real SAT curves compress the extremes. If you obtain an official
-> conversion table, replace `satSectionScaled()` in `lib/scoring.ts` — it is the
+> conversion table, replace `satSectionScaled()` in `lib/domain/scoring.ts` — it is the
 > single swap point.
 
 ## Where scores render

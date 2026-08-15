@@ -1,0 +1,177 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, Play, Volume2 } from 'lucide-react';
+import { toast } from 'sonner';
+import posthog from 'posthog-js';
+import Button from '@/components/ui/Button';
+import { checkAudioPlayed, markAudioPlayed } from '@/lib/actions/audio';
+
+/**
+ * Listening audio that may be played exactly once.
+ *
+ * Real listening sections do not let a candidate replay a track, so the
+ * "already played" flag is owned by the server (lib/actions/audio.ts) rather
+ * than by this component — a reload, a second tab, or devtools cannot hand
+ * anyone a second listen.
+ */
+export default function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
+  const [status, setStatus] = useState<'checking' | 'ready' | 'playing' | 'finished'>('checking');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // On mount: check (read-only) whether this audio has already been played.
+  // `cancelled` covers the student navigating out of the module before the
+  // check resolves; the catch covers a transport failure, which must leave the
+  // player usable rather than stuck on "Yüklənir…" for the rest of the exam.
+  useEffect(() => {
+    let cancelled = false;
+    checkAudioPlayed(examId, src)
+      .then(result => {
+        if (cancelled) return;
+        if ('error' in result) {
+          setStatus('ready'); // fail open so the exam is not blocked
+          return;
+        }
+        setStatus(result.alreadyPlayed ? 'finished' : 'ready');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('ready');
+      });
+    return () => { cancelled = true; };
+  }, [src, examId]);
+
+  const handlePlay = async () => {
+    if (status !== 'ready' || !audioRef.current) return;
+
+    // Must call play() synchronously inside the click handler — browsers block it
+    // if called after an await (loses the user-gesture context).
+    try {
+      await audioRef.current.play();
+      setStatus('playing');
+    } catch (err) {
+      const { name, message } = err instanceof Error
+        ? { name: err.name, message: err.message }
+        : { name: undefined, message: String(err) };
+      posthog.captureException(err, { context: 'audioPlay', error_name: name, error_message: message });
+      toast.error(`Audionu başlatmaq mümkün olmadı: ${message}. Zəhmət olmasa təkrar sınayın.`);
+      return;
+    }
+
+    // Mark as played server-side after playback has started. A failure here is
+    // deliberately silent: the audio is already running and stopping it over a
+    // bookkeeping error would cost the student the recording.
+    const result = await markAudioPlayed(examId, src).catch(() => ({ error: 'network' as const }));
+    if ('error' in result) return; // fail open — audio is already playing
+    if (result.alreadyPlayed) {
+      // Race condition: was already played in another tab — stop it
+      audioRef.current?.pause();
+      setStatus('finished');
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setDuration(audioRef.current.duration);
+  };
+
+  const handleEnded = () => {
+    setStatus('finished');
+    setCurrentTime(duration);
+  };
+
+  const remaining = Math.max(0, duration - currentTime);
+  const progress  = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  function fmtTime(secs: number) {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  return (
+    <div className="w-full space-y-2">
+      <audio
+        ref={audioRef}
+        src={src}
+        crossOrigin="anonymous"
+        preload="metadata"
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        className="hidden"
+      />
+
+      {/* Checking state */}
+      {status === 'checking' && (
+        <div className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm border border-rule bg-surface-2 text-ink-soft">
+          <span className="w-4 h-4 border-2 border-t-ink rounded-full animate-spin border-rule border-t-ink"  />
+          Yüklənir...
+        </div>
+      )}
+
+      {/* Ready state */}
+      {status === 'ready' && (
+        <>
+          <Button size="none" className="w-full justify-center gap-2.5 rounded-xl px-5.5 py-3 text-sm"
+            onClick={handlePlay}
+          >
+            <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
+          </Button>
+          <p className="text-sm text-center px-2 leading-tight font-medium text-warn">
+            ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.
+          </p>
+        </>
+      )}
+
+      {/* Playing state */}
+      {status === 'playing' && (
+        <div className="w-full rounded-2xl px-4 py-3 space-y-2.5 border border-rule bg-surface-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-ink">
+              <Volume2 size={16} className="animate-pulse shrink-0" />
+              <span>Səs oxunur...</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono tabular-nums text-base">{fmtTime(remaining)}</span>
+              <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute">qaldı</span>
+            </div>
+          </div>
+          <div className="relative h-1 w-full overflow-hidden rounded-full bg-rule-soft">
+            <div
+              className="absolute left-0 top-0 h-full rounded-full bg-ink transition-all duration-300 ease-linear"
+              // A computed percentage cannot be a utility class; the colour can.
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex justify-between font-mono tabular-nums text-xs text-ink-mute">
+            <span>{fmtTime(currentTime)}</span>
+            <span>{fmtTime(duration)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Finished state */}
+      {status === 'finished' && (
+        <div className="w-full rounded-2xl px-4 py-3 space-y-2 border border-rule bg-surface-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <CheckCircle2 size={16} className="shrink-0 text-ok"  />
+              <span>Audio bitdi</span>
+            </div>
+            {duration > 0 && <span className="font-mono text-sm">{fmtTime(duration)}</span>}
+          </div>
+          <div className="relative h-1 w-full overflow-hidden rounded-full bg-rule-soft">
+            <div className="absolute inset-0 rounded-full bg-ok/30"  />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

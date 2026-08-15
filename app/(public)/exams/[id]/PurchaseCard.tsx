@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
+import { MONO_LABEL } from '@/components/ui/type-styles';
 
 /**
  * Purchase rail for an exam: the ink price card, the "Daxildir" ledger and the
@@ -19,7 +20,6 @@ import { useAuth } from '@clerk/nextjs';
  * which is also the correct default: the buy CTA is the page's primary content.
  */
 
-const MONO_LABEL = 'font-mono text-[9px] tracking-[0.16em] uppercase';
 
 /**
  * Both ownership states render the same three rows, and the same price header,
@@ -75,7 +75,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
         <div className="px-6.5 pt-6.5 pb-5.5">
           <div className="flex items-baseline justify-between gap-3 border-b border-bg/18 pb-5.5">
             <span className="flex items-baseline gap-2.5">
-              <span className="font-mono text-[46px] leading-[0.88] font-light tracking-[-0.045em] tabular-nums lg:text-[56px]">
+              <span className="font-mono text-display-sm leading-[0.88] font-light tracking-[-0.045em] tabular-nums lg:text-display-md">
                 {price}
               </span>
               <span className="font-mono text-sm text-bg/50">AZN</span>
@@ -91,7 +91,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
                 }`}
               >
                 <span className="text-sm text-bg/55">{term.label}</span>
-                <span className="font-mono text-[13px] text-bg">
+                <span className="font-mono text-note text-bg">
                   {hasPurchased ? term.owned : term.value}
                 </span>
               </div>
@@ -115,7 +115,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
         </div>
 
         <div className="border-t border-bg/12 bg-bg/5 px-6.5 pt-4 pb-5">
-          <p className={`${MONO_LABEL} m-0 text-[10px] tracking-[0.12em] text-bg/55`}>
+          <p className={`${MONO_LABEL} m-0 text-caption tracking-[0.12em] text-bg/55`}>
             {hasPurchased ? 'giriş açıqdır · kabinetdə' : 'güvənli ödəniş · dərhal giriş'}
           </p>
         </div>
@@ -133,7 +133,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
         </div>
       )}
 
-      <p className="m-0 mt-5 text-[13px] leading-[1.6] text-ink-mute">
+      <p className="m-0 mt-5 text-note leading-[1.6] text-ink-mute">
         Rəqəmsal məhsul — ödəniş tamamlandıqda giriş dərhal açılır və geri qaytarılmır.{' '}
         <Link href="/legal/refund" className="underline transition-colors hover:text-ink">
           Şərtlər

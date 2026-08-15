@@ -3,12 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/models/Question';
 import ExamResult from '@/lib/models/ExamResult';
-import { checkRole } from '@/lib/admin';
-import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/media';
-import { captureException } from '@/lib/observability';
+import { checkRole } from '@/lib/infra/admin';
+import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/shared/media';
+import { captureException } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
 
 export interface QuestionData {

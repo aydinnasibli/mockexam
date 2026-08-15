@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { MODULE_TYPES, EXAM_TYPE_VALUES, type ModuleType, type ExamType } from '@/lib/exam-types';
+import { MODULE_TYPES, EXAM_TYPE_VALUES, type ModuleType, type ExamType } from '@/lib/domain/exam-types';
 
 export { MODULE_TYPES, type ModuleType, type ExamType };
 

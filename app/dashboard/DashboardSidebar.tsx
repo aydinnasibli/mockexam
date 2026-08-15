@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { SignOutButton } from '@clerk/nextjs';
+import Button, { ButtonArrow } from '@/components/ui/Button';
 
 /** User data resolved server-side in the dashboard layout — avoids client-side pop-in. */
 export interface ViewerSummary {
@@ -45,14 +46,14 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
       <div className="border-b border-rule px-5 py-5">
         <Link href="/" onClick={onClose} className="-my-1 flex items-center gap-2.25 py-1">
           <Image src="/logo.svg" alt="Testcentre" width={22} height={20} className="shrink-0" />
-          <span className="text-[19px] leading-none font-medium tracking-tight text-ink">
+          <span className="text-subhead leading-none font-medium tracking-tight text-ink">
             Test<span className="font-light text-ink-soft">centre</span>
           </span>
         </Link>
       </div>
 
       <div className="px-5 pt-6 pb-3">
-        <span className="mono-label mono-label-lg text-ink">Kabinet</span>
+        <span className="font-mono text-label font-normal tracking-[0.16em] uppercase text-ink-mute">Kabinet</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto border-t border-rule-soft">
@@ -71,15 +72,14 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
       </nav>
 
       <div className="space-y-3 border-t border-rule px-5 py-5">
-        <Link
+        <Button size="sm" className="w-full justify-center"
           href="/exams"
           onClick={onClose}
-          className="btn-primary btn-sm w-full justify-center"
         >
-          Sınaq əldə et <span className="arrow" aria-hidden>→</span>
-        </Link>
+          Sınaq əldə et <ButtonArrow />
+        </Button>
         <SignOutButton>
-          <button className="-my-1 w-full cursor-pointer py-1 text-left text-[13px] font-medium text-ink-mute transition-colors duration-150 hover:text-ink">
+          <button className="-my-1 w-full cursor-pointer py-1 text-left text-note font-medium text-ink-mute transition-colors duration-150 hover:text-ink">
             Çıxış
           </button>
         </SignOutButton>
@@ -101,7 +101,7 @@ export default function DashboardSidebar({ viewer, isOpen = false, onClose }: Pr
           </div>
         )}
         <div className="min-w-0">
-          <p className="m-0 truncate text-[13px] leading-tight font-medium text-ink">{viewer.fullName}</p>
+          <p className="m-0 truncate text-note leading-tight font-medium text-ink">{viewer.fullName}</p>
           <p className="m-0 truncate text-xs text-ink-mute">{viewer.email}</p>
         </div>
       </div>

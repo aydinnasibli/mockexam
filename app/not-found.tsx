@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import Button, { ButtonArrow } from '@/components/ui/Button';
 
 export const metadata = {
   title: 'Səhifə tapılmadı',
@@ -30,12 +30,12 @@ export default function NotFound() {
             Axtardığınız səhifə mövcud deyil və ya köçürülüb.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/exams" className="btn-primary">
-              Sınaqlara bax <span className="arrow">→</span>
-            </Link>
-            <Link href="/" className="btn-ghost">
+            <Button href="/exams">
+              Sınaqlara bax <ButtonArrow />
+            </Button>
+            <Button variant="ghost" href="/">
               Ana səhifə
-            </Link>
+            </Button>
           </div>
         </div>
       </main>

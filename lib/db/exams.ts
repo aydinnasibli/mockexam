@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import dbConnect from '@/lib/mongodb';
+import dbConnect from '@/lib/infra/mongodb';
 import ExamModel, { IModule } from '@/lib/models/Exam';
 
 /** Shape exposed to all public-facing pages — no Mongoose internals. */

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/shared/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Geri Qaytarma Siyasəti',
@@ -56,8 +56,8 @@ export default function RefundPage() {
         <div className="shell-prose py-24">
 
           <div className="flex items-center gap-3 mb-8 rise">
-            <span className="dot" />
-            <span className="eyebrow">Hüquqi</span>
+            <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute">Hüquqi</span>
           </div>
           <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink mb-4 rise rise-1">Geri Qaytarma Siyasəti</h1>
           <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-4 rise rise-2">
@@ -72,7 +72,7 @@ export default function RefundPage() {
             {sections.map((s, i) => (
               <div key={s.id} id={s.id} className="border-t border-rule pt-10">
                 <div className="flex items-baseline gap-5 mb-4">
-                  <span className="eyebrow min-w-8 tabular-nums text-ink-mute">
+                  <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">{s.title}</h2>

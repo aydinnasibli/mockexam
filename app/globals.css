@@ -45,17 +45,6 @@
   --color-warn:    #B8732B;
   --color-error:   #8C3A2B;
 
-  /* ── Legacy tokens (admin pages) ──────────────────────
-     Only the eight still referenced; 35 unused Material-derived tokens removed. */
-  --color-primary:               #001e40;
-  --color-secondary:             #00629d;
-  --color-secondary-fixed:       #cfe5ff;
-  --color-surface-subtle:        #f2f4f6;
-  --color-surface-container:     #eceef0;
-  --color-surface-container-low: #f2f4f6;
-  --color-on-surface-variant:    #43474f;
-  --color-outline-variant:       #c3c6d1;
-
   /* ── Fonts ───────────────────────────────────────────────
      Archivo serves both the display and body roles. The two tokens stay
      separate so a distinct display face can be introduced by editing this block
@@ -68,6 +57,33 @@
 
   /* Legacy font aliases */
   --font-headline: var(--font-archivo), system-ui, -apple-system, sans-serif;
+
+  /* ── Type scale ───────────────────────────────────────────
+     Every font size in the app used to be an arbitrary `text-[13px]` at the call
+     site — 25 distinct sizes across 369 uses, with several appearing exactly
+     once a pixel or two from a size already in use.
+
+     None of these declare a `--text-*--line-height` companion, and that is
+     deliberate: Tailwind only emits `line-height` for a size token when one is
+     defined, so these generate `font-size` alone — identical to the arbitrary
+     values they replace. Adding a companion here would silently change the line
+     box of every element using that step. */
+  --text-caption:    10px;
+  --text-label:      11px;
+  --text-note:       13px;
+  --text-body:       15px;
+  --text-lede:       17px;
+  --text-subhead:    19px;
+  --text-title:      22px;
+  --text-title-lg:   26px;
+  --text-heading:    28px;
+  --text-heading-lg: 32px;
+  --text-display-xs: 38px;
+  --text-display-sm: 44px;
+  --text-display:    52px;
+  --text-display-md: 56px;
+  --text-display-lg: 64px;
+  --text-hero:       88px;
 
   /* ── Sizing ──────────────────────────────────────────── */
   /* Three steps, one per surface: control, panel, card. Anything reaching for a
@@ -148,7 +164,7 @@
   .tc-card {
     background-color: var(--color-surface);
     border-radius: 1rem;
-    border: 1px solid var(--color-outline-variant);
+    border: 1px solid var(--color-ink-faint);
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
   }
 
@@ -181,19 +197,6 @@
   .input-field::placeholder { color: var(--color-ink-mute); }
   textarea.input-field { height: auto; padding: 0.75rem 0.875rem; }
 
-  /* 11px, not the 10px of `.mono-label`: a form label is text the user has to
-     read to answer correctly, so it stays above the uppercase legibility floor
-     that decorative captions are allowed to sit at. */
-  .field-label {
-    display: block;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--color-ink-mute);
-    margin-bottom: 0.5rem;
-  }
   select.input-field {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236E6E66' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
@@ -203,109 +206,6 @@
   }
 
   /* ── New design system utilities ── */
-
-  /* Buttons */
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 13px 22px;
-    background: var(--color-ink);
-    color: var(--color-bg);
-    border: 1px solid var(--color-ink);
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: -0.005em;
-    font-family: var(--font-sans);
-    cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
-    text-decoration: none;
-  }
-  .btn-primary:hover { background: var(--color-ink-hover); }
-  .btn-primary:active { transform: translateY(1px); }
-  .btn-primary .arrow { display: inline-block; transition: transform 0.2s; }
-  .btn-primary:hover .arrow { transform: translateX(3px); }
-
-  .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 22px;
-    background: transparent;
-    color: var(--color-ink);
-    border: 1px solid var(--color-rule);
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 500;
-    font-family: var(--font-sans);
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-    text-decoration: none;
-  }
-  .btn-ghost:hover { background: var(--color-surface); border-color: var(--color-ink-faint); }
-
-  /* Tags */
-  .tag {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    background: var(--color-surface-2);
-    color: var(--color-ink-soft);
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .tag-accent { background: var(--color-accent-soft); color: var(--color-accent); }
-  .tag-ink    { background: var(--color-ink); color: var(--color-bg); }
-  /* Tints derived from their own token, so a token change cannot drift from the fill. */
-  .tag-ok     { background: color-mix(in srgb, var(--color-ok) 10%, transparent); color: var(--color-ok); }
-  .tag-warn   { background: color-mix(in srgb, var(--color-warn) 10%, transparent); color: var(--color-warn); }
-  .tag-error  { background: color-mix(in srgb, var(--color-error) 8%, transparent); color: var(--color-error); }
-
-  /* Cards */
-  .card-new {
-    background: var(--color-surface);
-    border: 1px solid var(--color-rule);
-    border-radius: var(--radius-card);
-    padding: 28px;
-  }
-  .card-new-hover {
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-  }
-  .card-new-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--color-ink-faint);
-  }
-
-  /* Inputs */
-  .input-new {
-    width: 100%;
-    background: var(--color-surface);
-    border: 1px solid var(--color-rule);
-    border-radius: var(--radius-btn);
-    padding: 14px 16px;
-    font-family: var(--font-sans);
-    /* 16px — see .input-field: anything smaller triggers iOS focus zoom. */
-    font-size: 1rem;
-    color: var(--color-ink);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .input-new:focus { border-color: var(--color-ink); }
-  /* See .input-field::placeholder above. */
-  .input-new::placeholder { color: var(--color-ink-mute); }
-
-  /* Eyebrow text */
-  .eyebrow {
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-ink-mute);
-  }
 
   /* ── Reading passage typography (exam + review panels) ──────────── */
   /* Reading passages are the longest sustained read in the product, so they
@@ -334,23 +234,6 @@
     letter-spacing: 0.06em;
     color: var(--color-ink-mute);
     margin-bottom: 0.2rem;
-  }
-
-  /* Score bar */
-  .score-bar {
-    width: 100%;
-    height: 4px;
-    background: var(--color-rule-soft);
-    border-radius: 999px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* Navbar frosted. `--color-bg` at partial alpha; color-mix keeps it tied to the token. */
-  .nav-frosted {
-    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
   }
 
   /* Selection */
@@ -481,16 +364,6 @@
      inline `style={{ fontSize }}` at ~20 call sites, so the same class
      rendered at three different sizes depending on the file. */
 
-  /* Dot — small accent circle */
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-accent);
-    display: inline-block;
-    flex-shrink: 0;
-  }
-
   /* ── Signed-in surfaces (dashboard + admin) ───────────────────────────────
      The kabinet and the admin panel are built from the same vocabulary as the
      public pages — bone ground, hairline rules, mono micro-labels, mono
@@ -502,70 +375,10 @@
      repeated across a dozen screens, and the point of the exercise is that a
      panel on /admin/users and a panel on /dashboard are the same object. */
 
-  /* Micro-label — the mono, wide-tracked caption the public pages use for
-     column heads, figure captions and meta. 10px is the size those captions
-     are set at; `.field-label` above stays larger because it is read, not
-     scanned. */
-  .mono-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 400;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-ink-mute);
-  }
-  .mono-label-lg {
-    font-size: 11px;
-    letter-spacing: 0.16em;
-  }
-
-  /* Figure — a large numeral. The light weight, tight tracking and tabular
-     figures are what make a number read as a printed measurement instead of a
-     UI counter; it is the same treatment as the home hero's stat row. */
-  .figure {
-    font-family: var(--font-mono);
-    font-weight: 300;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums lining-nums;
-    line-height: 1;
-    color: var(--color-ink);
-  }
-
   /* Panel — the framed card. 14px and a hairline rule, deliberately with no
      shadow: in this design elevation is spent only on the home hero, and a
      page of drop-shadowed tiles is precisely what made the dashboards read as
      a different product. */
-  .panel {
-    background: var(--color-surface);
-    border: 1px solid var(--color-rule);
-    border-radius: var(--radius-panel);
-  }
-  .panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--color-rule);
-  }
-  .panel-title {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    color: var(--color-ink);
-  }
-  .panel-body { padding: 20px; }
-
-  /* Compact button. Sits after .btn-primary/.btn-ghost so it wins on source
-     order — it replaces the `py-2! px-4! text-sm!` important-overrides that
-     were being sprinkled at call sites. */
-  .btn-sm {
-    padding: 8px 16px;
-    font-size: 13px;
-    gap: 8px;
-  }
-
   /* Table. Rules, not zebra stripes: a ruled table is what the comparison and
      analysis figures on the home page are made of. */
   .app-table {
@@ -591,7 +404,6 @@
   .app-table td {
     padding: 13px 20px;
     font-size: 14px;
-    color: var(--color-ink-soft);
     vertical-align: middle;
   }
   /* Identifiers, amounts and counts — anything that should line up column-wise
@@ -599,7 +411,6 @@
   .app-table .num {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums lining-nums;
-    color: var(--color-ink);
   }
 
   /* Sidebar navigation. Ruled rows with a mono index, echoing the numbered
@@ -667,8 +478,7 @@
 }
 
 /* Inputs that null out the default outline still need a keyboard affordance. */
-.input-field:focus-visible,
-.input-new:focus-visible {
+.input-field:focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 1px;
 }

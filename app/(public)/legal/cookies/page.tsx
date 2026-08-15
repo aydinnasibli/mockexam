@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/shared/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Cookie Siyasəti',
@@ -13,8 +13,8 @@ export default function CookiesPage() {
         <div className="shell-prose py-24">
 
           <div className="flex items-center gap-3 mb-8 rise">
-            <span className="dot" />
-            <span className="eyebrow">Hüquqi</span>
+            <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute">Hüquqi</span>
           </div>
           <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink mb-4 rise rise-1">Cookie Siyasəti</h1>
           <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-4 rise rise-2">
@@ -28,7 +28,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">01</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">01</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Cookie nədir?</h2>
               </div>
               <div className="pl-13">
@@ -41,11 +41,11 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">02</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">02</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">İstifadə etdiyimiz cookie-lər</h2>
               </div>
               <div className="pl-13 flex flex-col gap-6">
-                <div className="card-new px-6 py-5">
+                <div className="rounded-card border border-rule bg-surface p-7">
                   <div className="flex items-center gap-3 mb-3">
                     <span
                       className="rounded bg-accent-soft px-2 py-0.5 text-xs font-semibold tracking-wide uppercase text-ink"
@@ -63,7 +63,7 @@ export default function CookiesPage() {
                   </p>
                 </div>
 
-                <div className="card-new px-6 py-5 opacity-60">
+                <div className="rounded-card border border-rule bg-surface p-7 opacity-60">
                   <div className="flex items-center gap-3 mb-3">
                     <span
                       className="rounded bg-surface-3 px-2 py-0.5 text-xs font-semibold tracking-wide uppercase text-ink-soft"
@@ -84,7 +84,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">03</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">03</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Cookie-ləri idarə etmək</h2>
               </div>
               <div className="pl-13">
@@ -100,7 +100,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">04</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">04</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Üçüncü tərəf cookie-ləri</h2>
               </div>
               <div className="pl-13">
@@ -113,7 +113,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">05</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">05</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Lokal yaddaş (localStorage / sessionStorage)</h2>
               </div>
               <div className="pl-13">
@@ -131,7 +131,7 @@ export default function CookiesPage() {
 
             <div className="border-t border-rule pt-10">
               <div className="flex items-baseline gap-5 mb-4">
-                <span className="eyebrow min-w-8 tabular-nums text-ink-mute">06</span>
+                <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase min-w-8 tabular-nums text-ink-mute">06</span>
                 <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink">Əlaqə</h2>
               </div>
               <div className="pl-13">

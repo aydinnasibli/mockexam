@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import { checkRole } from '@/lib/admin';
+import { checkRole } from '@/lib/infra/admin';
 import TestPaymentClient from './TestPaymentClient';
 
 export const metadata = {
