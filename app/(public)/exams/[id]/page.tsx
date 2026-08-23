@@ -10,7 +10,7 @@ import { renderMath } from '@/lib/shared/render-math';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import StructureBar from '@/components/ui/StructureBar';
-import { SCORE_SCALE, examCodes, pad2, shortTypeLabel, structureOf, upperLabel } from '../structure';
+import { SCORE_SCALE, examCodes, missingSections, pad2, shortTypeLabel, structureOf, upperLabel } from '../structure';
 import PurchaseCard from './PurchaseCard';
 import { MONO_LABEL } from '@/components/ui/type-styles';
 
@@ -102,7 +102,6 @@ export default async function ExamDetails({ params }: Props) {
 
   const totalBreak = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
   const examTime = exam.durationMinutes - totalBreak;
-  const isAdaptive = exam.modules.some(m => m.isAdaptive);
   const description = examDescription(exam);
   const structure = structureOf(exam);
 
@@ -269,14 +268,6 @@ export default async function ExamDetails({ params }: Props) {
                     ))}
                   </div>
 
-                  {isAdaptive && (
-                    <div className="mt-5 flex items-center gap-2">
-                      <span className="font-mono text-caption text-ink-mute" aria-hidden>△</span>
-                      <span className="text-sm text-ink-soft">
-                        çətinlik əvvəlki modulun nəticəsinə görə seçilir
-                      </span>
-                    </div>
-                  )}
                 </FadeUp>
               )}
 
@@ -298,11 +289,6 @@ export default async function ExamDetails({ params }: Props) {
                         <span className="font-mono text-xs text-ink-mute">{pad2(i + 1)}</span>
                         <span className="min-w-0 text-body font-medium text-ink sm:text-base">
                           {mod.name}
-                          {mod.isAdaptive && (
-                            <span className={`${MONO_LABEL} ml-2 text-caption tracking-[0.12em] text-ink-mute`}>
-                              adaptive
-                            </span>
-                          )}
                         </span>
                         <span className="hidden text-right font-mono text-sm text-ink-soft sm:block">
                           {mod.questions > 0 ? mod.questions : '—'}
@@ -323,6 +309,20 @@ export default async function ExamDetails({ params }: Props) {
                     </StaggerItem>
                   ))}
                   </StaggerContainer>
+
+                  {/*
+                    Stated before purchase, not discovered during the exam. A
+                    section we do not offer is a real difference from the exam
+                    being simulated, and burying it would be the kind of thing a
+                    candidate finds out at the worst possible moment.
+                  */}
+                  {missingSections(exam.type, exam.modules).length > 0 && (
+                    <p className="mt-5 text-body text-ink-soft">
+                      <span className={`${MONO_LABEL} mr-2 text-ink-mute`}>Qeyd</span>
+                      Bu sınaqda {missingSections(exam.type, exam.modules).join(', ')} bölməsi yoxdur.
+                      Qalan bölmələr tam formatda verilir və bal yalnız həmin bölmələr üzrə hesablanır.
+                    </p>
+                  )}
                 </div>
               )}
 

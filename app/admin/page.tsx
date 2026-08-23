@@ -5,6 +5,7 @@ import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
 import ExamModel from '@/lib/models/Exam';
 import SeedButton from './SeedButton';
+import ResyncTotalsButton from './ResyncTotalsButton';
 import AdminPageHeader from './PageHeader';
 import { requireAdminPage } from '@/lib/infra/admin';
 import Button, { ButtonArrow } from '@/components/ui/Button';
@@ -162,6 +163,7 @@ export default async function AdminOverviewPage() {
                 Standart imtahan kataloqgunu DB-yə idxal et. Mövcud imtahanlar keçilər.
               </p>
               <SeedButton />
+              <ResyncTotalsButton />
             </div>
           </div>
         </div>

@@ -132,10 +132,25 @@ export default function BriefingScreen({
                 <span className={`${MONO_SECTION} text-ink-mute`}>Başlamazdan əvvəl</span>
               </div>
               <ul className="list-none p-0 m-0 space-y-2 text-xs leading-relaxed">
+                {/*
+                  Section timing leads, because it is the rule that most changes
+                  how a candidate should pace themselves — and the one they will
+                  otherwise discover only when a module closes on them.
+                */}
+                {exam.modules.length > 1 && (
+                  <li>· <span className="font-medium text-ink">Hər bölmənin öz vaxtı var.</span> Bölmənin vaxtı bitdikdə suallar bağlanır, növbəti bölmə avtomatik açılır və geri qayıtmaq mümkün olmur.</li>
+                )}
+                <li>· Bölməni erkən bitirmək olmaz — qalan vaxtı cavablarınızı yoxlamaq üçün istifadə edin. İstifadə olunmayan vaxt növbəti bölməyə keçmir.</li>
+                {exam.modules.some(m => m.breakAfterMinutes > 0) && (
+                  <li>· Fasilə vaxtı imtahan vaxtından çıxılmır.</li>
+                )}
                 <li>· Vaxt serverdə saxlanılır — səhifəni yeniləmək və ya bağlamaq sayğacı dayandırmır.</li>
                 <li>· Vaxt bitdikdə imtahan avtomatik təhvil verilir.</li>
                 <li>· Cavablarınız avtomatik yadda saxlanılır; qayıdanda qaldığınız yerdən davam edirsiniz.</li>
-                {questions.some(q => q.audioUrl) && (
+                {exam.modules.some(m => m.layout === 'block') && (
+                  <li>· Bəzi bölmələrdə bir hissənin bütün sualları eyni ekranda göstərilir — səs başlamazdan əvvəl hamısını oxuyun.</li>
+                )}
+                {questions.some(q => q.hasAudio) && (
                   <li>· Dinləmə audioları <span className="font-medium text-ink">yalnız bir dəfə</span> oxunur — dayandırmaq və geri sarmaq mümkün deyil.</li>
                 )}
               </ul>

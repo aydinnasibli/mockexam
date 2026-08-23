@@ -30,7 +30,7 @@ export default async function ReviewPage({ params }: Props) {
   const [exam, result, questions] = await Promise.all([
     getExamByIdAdmin(examId),
     getResultDetail(userId, examId, attemptNumber),
-    getExamQuestionsForReview(examId),
+    getExamQuestionsForReview(examId, attemptNumber),
   ]);
 
   if (!exam || !result) notFound();

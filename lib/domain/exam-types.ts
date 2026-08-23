@@ -58,3 +58,15 @@ export const MODULE_TYPES = [
 ] as const;
 
 export type ModuleType = typeof MODULE_TYPES[number]['value'];
+
+/**
+ * How a module presents its questions.
+ *   'single' — one question per screen (TOEFL listening, SAT, and the default).
+ *   'block'  — questions sharing a `blockId` render together on one screen.
+ *
+ * Lives here rather than on the Mongoose model because the admin form and the
+ * JSON importer both need it on the client, and this file is the one that
+ * carries no server imports.
+ */
+export const MODULE_LAYOUTS = ['single', 'block'] as const;
+export type ModuleLayout = typeof MODULE_LAYOUTS[number];

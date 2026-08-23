@@ -52,6 +52,9 @@ export interface AnswerDetail {
   moduleIndex: number;
   userAnswer: number;
   userAnswerText: string;
+  /** Marks available / earned — only `matching` is ever worth more than 1. */
+  marks: number;
+  earnedMarks: number;
   correctIndex: number;
   isCorrect: boolean;
   timeSeconds: number;
@@ -137,6 +140,10 @@ export async function getResultDetail(
       moduleIndex:     a.moduleIndex,
       userAnswer:      a.userAnswer,
       userAnswerText:  a.userAnswerText ?? '',
+      // Attempts saved before per-item marking have neither field; a single
+      // mark scored by `isCorrect` reproduces exactly what they used to show.
+      marks:           a.marks ?? 1,
+      earnedMarks:     a.earnedMarks ?? (a.isCorrect ? 1 : 0),
       correctIndex:    a.correctIndex,
       isCorrect:       a.isCorrect,
       timeSeconds:     a.timeSeconds,

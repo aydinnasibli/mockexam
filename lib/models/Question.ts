@@ -8,6 +8,22 @@ export interface IQuestion extends Document {
   moduleIndex: number;
   order: number;
   type: QuestionType;
+  /**
+   * Questions sharing a blockId within a module are ONE screen.
+   *
+   * IELTS Listening is the reason this exists. The recording runs continuously
+   * through four parts and never waits, and the real test puts the whole
+   * ten-question part in front of the candidate while it plays — a form with
+   * six numbered gaps IS one form, and the "you now have thirty seconds to look
+   * at questions 1 to 10" pause only means something if there are ten questions
+   * to look at. Rendering one question per screen against an unpausable
+   * single-play track made four of the five IELTS listening question types
+   * unanswerable rather than merely harder.
+   *
+   * Empty means the question stands alone, which is the correct behaviour for
+   * TOEFL listening and for SAT, so existing banks keep working untouched.
+   */
+  blockId?: string;
   passage: string;
   audioUrl?: string;
   imageUrl?: string;           // For diagram/map labeling questions
@@ -33,6 +49,7 @@ const QuestionSchema = new Schema<IQuestion>(
     moduleIndex:     { type: Number, required: true, min: 0 },
     order:           { type: Number, required: true, default: 0 },
     type:            { type: String, required: true, enum: ['mcq', 'open', 'matching', 'writing'], default: 'mcq' },
+    blockId:         { type: String, default: '', trim: true },
     passage:         { type: String, default: '' },
     audioUrl:        { type: String, default: '' },
     imageUrl:        { type: String, default: '' },

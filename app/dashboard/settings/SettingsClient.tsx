@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import { saveUserSettings } from '@/lib/actions/settings';
 import { EXAM_TYPES } from '@/lib/domain/exam-types';
+import { formatAzDate, todayIsoUtc } from '@/lib/shared/az-date';
 import Button from '@/components/ui/Button';
 
 const examTypeOptions = EXAM_TYPES;
@@ -43,9 +44,10 @@ export default function SettingsClient({ initialTargetDate, initialTargetType }:
   const fullName    = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'İstifadəçi';
   const email       = user?.emailAddresses?.[0]?.emailAddress ?? '';
   const imageUrl    = user?.imageUrl;
-  const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' })
-    : '';
+  // `toLocaleDateString('az-AZ')` renders differently under Node's ICU than in
+  // a browser, which in a client component is a hydration mismatch. See
+  // `formatAzDate`.
+  const memberSince = user?.createdAt ? formatAzDate(user.createdAt) : '';
 
   const [targetDate, setTargetDate]  = useState(initialTargetDate);
   const [targetType, setTargetType]  = useState(initialTargetType);
@@ -65,7 +67,13 @@ export default function SettingsClient({ initialTargetDate, initialTargetType }:
     });
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  /*
+   * Computed once on mount, not during render: `new Date()` in a render body
+   * differs between the server pass and the client pass around a UTC midnight,
+   * which would hand the date input a different `min` than the markup shipped
+   * with.
+   */
+  const [today] = useState(() => todayIsoUtc());
 
   return (
     <div className="min-h-screen bg-bg">

@@ -2,9 +2,10 @@
 import 'server-only';
 import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import { getExamById } from '@/lib/db/exams';
+import { getExamByIdAdmin } from '@/lib/db/exams';
 import { signRequest, EPOINT_STATUS_URL } from '@/lib/payments/epoint';
 import { captureException, captureMessage } from '@/lib/infra/observability';
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
 
 /**
  * Safety net for a missed or delayed webhook.
@@ -47,15 +48,23 @@ export async function reconcilePurchase(userId: string, examId: string): Promise
 
     if (result.status !== 'success') return false;
 
-    const exam = await getExamById(examId);
+    /*
+     * Same two rules as the webhook, for the same reason — this path exists to
+     * rescue a payment the webhook missed, so it must not fail on the states
+     * that made the webhook fail. `getExamByIdAdmin` so a deactivated exam
+     * still resolves, and the price quoted at checkout (stored on the PENDING
+     * row) rather than the live one, so a mid-payment reprice cannot deny
+     * access to a payment that was correct when it was authorised.
+     */
+    const exam = await getExamByIdAdmin(examId);
     if (!exam) return false;
 
-    const expectedCents = Math.round(exam.price * 100);
+    const expectedCents = purchase.amountCents ?? Math.round(exam.price * 100);
     const paidCents = Math.round((result.amount ?? 0) * 100);
     if (paidCents !== expectedCents) {
       void captureMessage('Reconcile amount mismatch', {
         level: 'error',
-        extra: { examId, transaction: purchase.transactionId, expected: expectedCents, paid: paidCents },
+        extra: { examId, transaction: purchase.transactionId, expected: expectedCents, paid: paidCents, quotedAtCheckout: purchase.amountCents ?? null },
       });
       return false;
     }
@@ -63,7 +72,7 @@ export async function reconcilePurchase(userId: string, examId: string): Promise
     // Grant access. The status guard avoids racing the webhook and never
     // re-completes a purchase that was meanwhile refunded.
     try {
-      await Purchase.findOneAndUpdate(
+      const completed = await Purchase.findOneAndUpdate(
         { userId, examId, status: { $nin: ['COMPLETED', 'REFUNDED'] } },
         {
           $set: {
@@ -76,6 +85,27 @@ export async function reconcilePurchase(userId: string, examId: string): Promise
         },
         { new: true },
       );
+
+      /*
+       * Report the sale HERE too.
+       *
+       * This was the only completion path that never emitted
+       * `purchaseCompleted`, so every purchase the reconciler rescued was
+       * invisible to revenue reporting — and since it runs whenever the webhook
+       * did not land, that is not a rare path. Gated on the update actually
+       * transitioning a row, exactly as the webhook gates on its `before`
+       * status, so a second reconcile cannot double-count.
+       */
+      if (completed) {
+        void trackEvent(ANALYTICS_EVENTS.purchaseCompleted, userId, {
+          examId,
+          examTitle:  exam.title,
+          examType:   exam.type,
+          revenueAzn: expectedCents / 100,
+          transaction: purchase.transactionId,
+          via: 'reconcile',
+        });
+      }
     } catch (err) {
       if ((err as { code?: number }).code !== 11000) throw err;
     }

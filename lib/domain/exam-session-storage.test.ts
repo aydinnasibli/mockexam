@@ -33,7 +33,6 @@ const SAMPLE: SavedSession = {
   matchingAnswers: [['q4', '[1,0,2]']],
   flagged: ['q2'],
   currentIdx: 3,
-  seenModules: [0, 1],
 };
 
 beforeEach(() => {

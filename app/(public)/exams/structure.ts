@@ -135,13 +135,37 @@ export function structureOf(exam: PublicExam): Structure {
   };
 }
 
-/** Published maxima, quoted as the "maksimum bal" figure. */
+/**
+ * Sections the real exam has that this platform does not offer.
+ *
+ * Speaking needs a recorded response and a human or audio-capable grader, and
+ * neither exists here — so rather than ship a module that renders nothing, the
+ * omission is stated on the exam page before anyone pays. Returns [] when there
+ * is nothing to disclose.
+ */
+export function missingSections(
+  type: string,
+  modules: readonly { type: string }[],
+): string[] {
+  const has = (t: string) => modules.some(m => m.type === t);
+  const out: string[] = [];
+  if ((type === 'ielts' || type === 'toefl') && !has('speaking')) out.push('Speaking');
+  return out;
+}
+
+/**
+ * Published maxima, quoted as the "maksimum bal" figure.
+ *
+ * ONLY the scales this platform can actually produce. `computeAuthenticScores`
+ * converts IELTS bands and SAT scaled scores and nothing else; TOEFL, DİM and
+ * GRE attempts report a plain percentage. Advertising "120", "700" and "340"
+ * beside exams that can never report them promised a score the engine has no
+ * way to compute. Add a type back here the same day its conversion ships, not
+ * before.
+ */
 export const SCORE_SCALE: Record<string, string> = {
   sat:   '1600',
-  dim:   '700',
   ielts: '9.0',
-  toefl: '120',
-  gre:   '340',
 };
 
 /** Long type labels do not fit a code column or an 84px headline. */

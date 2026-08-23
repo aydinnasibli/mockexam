@@ -10,9 +10,11 @@ import MathText from '@/components/ui/MathText';
 import PassageText from '@/components/ui/PassageText';
 import { reevaluatePendingWriting } from '@/lib/actions/results';
 import { formatOverallScore, formatModuleScore } from '@/lib/domain/scoring';
+import { isReviewStale } from '@/lib/domain/review-join';
+import { formatAzDate } from '@/lib/shared/az-date';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
-  ArrowLeft, RotateCcw, BarChart2, FileText, Pencil,
+  ArrowLeft, RotateCcw, BarChart2, FileText, Pencil, TriangleAlert,
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 import type { QuestionData } from '@/lib/actions/questions';
@@ -32,29 +34,6 @@ function formatTime(secs: number) {
   return `${Math.floor(secs / 60)}d ${secs % 60}s`;
 }
 
-const AZ_MONTHS = [
-  'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-  'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr',
-];
-
-/**
- * Deterministic az-AZ date, built by hand rather than via
- * `toLocaleDateString('az-AZ')`.
- *
- * That call resolves differently on either side of the render boundary: Node's
- * ICU build falls back to "2026 M07 12" while browsers produce "12 iyul 2026".
- * In a client component that is a hydration mismatch, and React responded by
- * throwing away the whole review tree and re-rendering it on every page load.
- *
- * UTC parts, not local ones — the server runs in UTC and the visitor does not,
- * so local parts would reintroduce the same mismatch for any attempt finished
- * late in the day. It also keeps this date consistent with the analytics pages,
- * which format on the server.
- */
-function formatAzDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getUTCDate()} ${AZ_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
 
 export default function ReviewClient({ exam, questions, result }: Props) {
   const router = useRouter();
@@ -63,6 +42,17 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   const [recheckPending, startRecheck] = useTransition();
 
   const answerMap = new Map(result.answers.map(a => [a.questionId, a]));
+
+  /*
+   * Can this attempt still be joined to the question bank at all?
+   *
+   * Re-importing an exam replaces every question document, and with it every
+   * id, so results recorded beforehand point at questions that no longer
+   * exist. The join then misses on every lookup and each question renders as
+   * unanswered and wrong — underneath the header still showing the score the
+   * candidate genuinely earned. See `isReviewStale`.
+   */
+  const reviewStale = isReviewStale(result.answers, questions);
   const hasAnswers = result.answers.length > 0;
   const hasPendingWriting = result.answers.some(a => a.writingPending);
 
@@ -125,9 +115,21 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   const score = result.score;
   const scoreColor = score >= 80 ? 'text-ok' : score >= 60 ? 'text-warn' : 'text-error';
   const overall = formatOverallScore(result);
-  const overallLabel = result.examType === 'ielts' ? 'Ümumi bal (band)'
-    : result.examType === 'sat' ? 'Ümumi bal'
-    : 'Ümumi bal';
+  /*
+   * A section still with the writing grader is left OUT of the overall figure
+   * rather than counted as zero, so what is shown is a mean of the sections
+   * already marked. Saying so beats presenting a partial band as a final one —
+   * an essay that never grades leaves it partial permanently.
+   */
+  /*
+   * `təxmini` is not hedging — the band tables and the SAT scaled curve are
+   * both conversions this platform approximates (see `formatOverallScore`), and
+   * a figure printed in the exam's own units reads as that exam's real result
+   * unless it says otherwise.
+   */
+  const overallLabel = (result.examType === 'ielts' ? 'Ümumi bal (band)' : 'Ümumi bal')
+    + (overall.approximate ? ' — təxmini' : '')
+    + (overall.provisional ? ' — ilkin' : '');
 
   function togglePassage(qId: string) {
     setExpandedPassages(prev => {
@@ -286,6 +288,26 @@ export default function ReviewClient({ exam, questions, result }: Props) {
             )}
 
             {/* Questions */}
+            {reviewStale ? (
+              /*
+                Say what happened instead of rendering a review that contradicts
+                the score above it. The scores themselves are stored on the
+                result and remain accurate, so they stay on screen.
+              */
+              <div className="rounded-card border border-warn bg-warn/8 p-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <TriangleAlert size={16} className="shrink-0 text-warn" />
+                  <p className="m-0 text-sm font-medium text-ink">
+                    Sual-sual baxış bu cəhd üçün əlçatan deyil
+                  </p>
+                </div>
+                <p className="m-0 text-sm leading-relaxed">
+                  Bu cəhddən sonra imtahanın sual bankı yenilənib, ona görə cavablarınızı
+                  hazırkı suallarla uyğunlaşdırmaq mümkün deyil. Yuxarıdakı bal və bölmə
+                  nəticələri isə cəhdinizlə birlikdə saxlanılıb və dəqiqdir.
+                </p>
+              </div>
+            ) : (
             <div className="space-y-4">
               {moduleGroups[activeModule]?.qs.map((q) => {
                 const answer = answerMap.get(q.id);
@@ -334,6 +356,17 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           {q.type === 'matching' && ' (Uyğunlaşdırma)'}
                           {q.type === 'writing' && ' (Yazı)'}
                         </span>
+                        {/*
+                          Partial credit, shown only where it can occur. A
+                          matching task is marked per item, so a candidate who
+                          placed three of four correctly earns 3 — the tick/cross
+                          alone would report that as a flat wrong answer.
+                        */}
+                        {(answer?.marks ?? 1) > 1 && (
+                          <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-xs tabular-nums text-ink-soft">
+                            {answer?.earnedMarks ?? 0} / {answer?.marks} bal
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         {timeSecs > 0 && (
@@ -530,7 +563,13 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                             {!writingAnswer?.writingPending && bandScore !== undefined && (
                               <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute text-purple-700">AI Qiymətləndirməsi</p>
+                                  {/* One colour only. This carried `text-ink-mute` as well —
+                                      inherited from the shared label class string — and rendered
+                                      purple purely because Tailwind emits `text-purple-700` later
+                                      in the stylesheet than `text-ink-mute`. Correct by accident
+                                      is not correct: reordering the theme would have silently
+                                      turned this label grey. */}
+                                  <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-purple-700">AI Qiymətləndirməsi</p>
                                   <span className={`font-display text-2xl font-bold ${bandColor}`}>
                                     {bandScore.toFixed(1)} <span className="text-sm font-medium text-ink-mute">/ 9</span>
                                   </span>
@@ -580,7 +619,10 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Explanation */}
                       {q.explanation && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                          <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute text-blue-600 mb-1">İzahat</p>
+                          {/* This one was actually broken: `text-ink-mute` is emitted AFTER
+                              `text-blue-600`, so it won, and the heading rendered grey inside a
+                              blue card whose border and body text are both blue. */}
+                          <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-blue-600 mb-1">İzahat</p>
                           <div className="text-xs text-blue-900 leading-relaxed">
                             <MathText text={q.explanation} className="leading-relaxed" />
                           </div>
@@ -591,6 +633,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                 );
               })}
             </div>
+            )}
           </>
         )}
       </div>

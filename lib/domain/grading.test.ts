@@ -183,3 +183,92 @@ describe('normalizeOpenAnswer', () => {
     expect(normalizeOpenAnswer('3,5')).toBe('3.5');
   });
 });
+
+/*
+ * Per-item marking. A matching question is worth one mark PER ITEM, because
+ * that is how every exam this platform mocks marks it. Under the previous
+ * all-or-nothing rule a candidate who placed five of six headings correctly
+ * scored zero for the task.
+ */
+describe('gradeAnswers — matching is marked per item', () => {
+  const matching = {
+    id: 'm1', moduleIndex: 0, type: 'matching',
+    correctMatching: [1, 2, 0, 3],
+  };
+
+  it('awards one mark per correct item', () => {
+    const [g] = gradeAnswers([matching], [
+      { questionId: 'm1', userAnswerText: JSON.stringify([1, 2, 0, 9]) },
+    ]);
+    expect(g.marks).toBe(4);
+    expect(g.earnedMarks).toBe(3);
+    expect(g.isCorrect).toBe(false);   // not everything, so not "correct"
+  });
+
+  it('marks the question correct only when every item is right', () => {
+    const [g] = gradeAnswers([matching], [
+      { questionId: 'm1', userAnswerText: JSON.stringify([1, 2, 0, 3]) },
+    ]);
+    expect(g.earnedMarks).toBe(4);
+    expect(g.isCorrect).toBe(true);
+  });
+
+  it('gives a short answer array credit for the items it does contain', () => {
+    const [g] = gradeAnswers([matching], [
+      { questionId: 'm1', userAnswerText: JSON.stringify([1, 2]) },
+    ]);
+    expect(g.marks).toBe(4);
+    expect(g.earnedMarks).toBe(2);
+  });
+
+  it('earns nothing for an unanswered or corrupt matching question', () => {
+    const [unanswered] = gradeAnswers([matching], []);
+    expect(unanswered).toMatchObject({ marks: 4, earnedMarks: 0, isCorrect: false });
+
+    const [corrupt] = gradeAnswers([matching], [{ questionId: 'm1', userAnswerText: 'not json' }]);
+    expect(corrupt).toMatchObject({ marks: 4, earnedMarks: 0, isCorrect: false });
+  });
+
+  it('keeps every other type at a single mark', () => {
+    const graded = gradeAnswers(
+      [
+        { id: 'q1', moduleIndex: 0, type: 'mcq', correctIndex: 2 },
+        { id: 'q2', moduleIndex: 0, type: 'open', openAnswers: ['2pm'] },
+        { id: 'q3', moduleIndex: 0, type: 'writing' },
+      ],
+      [
+        { questionId: 'q1', userAnswer: 2 },
+        { questionId: 'q2', userAnswerText: '2 PM' },
+        { questionId: 'q3', userAnswerText: 'an essay' },
+      ],
+    );
+    expect(graded.map(g => [g.marks, g.earnedMarks])).toEqual([[1, 1], [1, 1], [1, 0]]);
+    // Writing is graded by the AI later, so it is never "correct" here.
+    expect(graded[2].isCorrect).toBe(false);
+  });
+});
+
+describe('matching with no answer key', () => {
+  /*
+   * `?? 1` let an empty key produce marks: 0, and a 0-mark question disappears
+   * from the denominator entirely instead of showing up as unearned.
+   */
+  it('is worth one unearnable mark, not zero', () => {
+    const [graded] = gradeAnswers(
+      [{ id: 'q1', moduleIndex: 0, type: 'matching', correctMatching: [] }],
+      [{ questionId: 'q1', userAnswerText: '[0,1]' }],
+    );
+    expect(graded.marks).toBe(1);
+    expect(graded.earnedMarks).toBe(0);
+    expect(graded.isCorrect).toBe(false);
+  });
+
+  it('still marks per item when the key is present', () => {
+    const [graded] = gradeAnswers(
+      [{ id: 'q1', moduleIndex: 0, type: 'matching', correctMatching: [0, 1, 2] }],
+      [{ questionId: 'q1', userAnswerText: '[0,1,9]' }],
+    );
+    expect(graded.marks).toBe(3);
+    expect(graded.earnedMarks).toBe(2);
+  });
+});

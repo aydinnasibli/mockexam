@@ -24,7 +24,9 @@ export default function ExamRowActions({ examId, isActive }: Props) {
   };
 
   const handleDelete = () => {
-    if (!confirm(`"${examId}" imtahanını silmək istəyirsiniz?`)) return;
+    // Deletion now takes the question bank with it (it used to orphan it), so
+    // the prompt says so rather than letting the admin find out afterwards.
+    if (!confirm(`"${examId}" imtahanı və onun bütün sualları silinəcək. Davam edilsin?`)) return;
     startDelete(async () => {
       const result = await deleteExam(examId);
       if (result.error) toast.error(result.error);

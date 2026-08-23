@@ -9,8 +9,10 @@ import QuestionModel from '@/lib/models/Question';
 import { checkRole } from '@/lib/infra/admin';
 import { validateModules } from '@/lib/domain/exam-modules';
 import { isExamType } from '@/lib/domain/exam-types';
+import { validateQuestion } from '@/lib/domain/question-validation';
 import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/shared/media';
 import { captureException } from '@/lib/infra/observability';
+import { syncExamTotals } from '@/lib/db/exam-totals';
 
 /**
  * Import payload schema.
@@ -26,6 +28,7 @@ const questionSchema = z.object({
   moduleIndex:     z.number().int().min(0).max(99).optional(),
   order:           z.number().int().min(0).max(9999).optional(),
   type:            z.enum(['mcq', 'open', 'matching', 'writing']).optional(),
+  blockId:         z.string().max(120).optional(),
   passage:         z.string().max(20_000).optional(),
   audioUrl:        z.string().max(2_000).optional(),
   // Rendered with next/image, which throws on a host outside remotePatterns —
@@ -91,39 +94,10 @@ export async function importExamFromJson(
         return { error: `${label}: moduleIndex ${moduleIndex} mövcud deyil (imtahanda ${modulesResult.length} modul var).` };
       }
 
-      if (!q.stem?.trim() && qType !== 'writing') {
-        return { error: `${label}: sual mətni (stem) boş ola bilməz.` };
-      }
-
-      if (qType === 'mcq') {
-        if (!q.options || q.options.length < 2) {
-          return { error: `${label}: MCQ sualında ən azı 2 seçim olmalıdır.` };
-        }
-        if (q.correctIndex == null || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
-          return { error: `${label}: correctIndex seçimlər aralığında olmalıdır (0–${q.options.length - 1}).` };
-        }
-      }
-
-      if (qType === 'open' && !(q.openAnswers?.some(a => a.trim()))) {
-        return { error: `${label}: açıq sual üçün ən azı bir düzgün cavab (openAnswers) lazımdır.` };
-      }
-
-      if (qType === 'matching') {
-        if (!q.matchItems?.length || !q.options?.length) {
-          return { error: `${label}: uyğunlaşdırma sualı üçün matchItems və options tələb olunur.` };
-        }
-        if (q.correctMatching?.length !== q.matchItems.length) {
-          return { error: `${label}: correctMatching uzunluğu matchItems ilə eyni olmalıdır (${q.matchItems.length}).` };
-        }
-        const outOfRange = q.correctMatching.find(m => m >= q.options!.length);
-        if (outOfRange !== undefined) {
-          return { error: `${label}: correctMatching dəyəri ${outOfRange} seçimlər aralığından kənardadır.` };
-        }
-      }
-
-      if (qType === 'writing' && q.minWords != null && q.maxWords != null && q.minWords > q.maxWords) {
-        return { error: `${label}: minWords maxWords-dan böyük ola bilməz.` };
-      }
+      // Gradability is checked by the same validator the admin form now uses,
+      // so the two write paths cannot drift apart again.
+      const invalid = validateQuestion({ ...q, type: qType }, label);
+      if (invalid) return { error: invalid };
     }
 
     await dbConnect();
@@ -155,6 +129,7 @@ export async function importExamFromJson(
     const questionsToInsert = data.questions.map((q, i) => ({
       examId,
       moduleIndex:     q.moduleIndex ?? 0,
+      blockId:         q.blockId?.trim() ?? '',
       order:           q.order ?? i,
       type:            q.type ?? 'mcq',
       passage:         q.passage ?? '',
@@ -182,6 +157,10 @@ export async function importExamFromJson(
       await QuestionModel.deleteMany({ examId });
       await QuestionModel.insertMany(questionsToInsert);
     }
+
+    // `computeExamTotals` above wrote the DECLARED totals; replace them with
+    // the ones this bank actually produces.
+    await syncExamTotals(examId);
   } catch (err) {
     void captureException(err, { tags: { action: 'importExamFromJson' } });
     return { error: 'Fayl yüklənərkən daxili server xətası baş verdi.' };

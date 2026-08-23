@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { getExamResults } from '@/lib/db/results';
 import { getExamById } from '@/lib/db/exams';
-import { formatOverallScore, formatModuleScore, roundHalfBand } from '@/lib/domain/scoring';
+import { formatOverallScore, formatModuleScore, roundHalfBand, pickBestAttempt } from '@/lib/domain/scoring';
 import { hasExamAccess } from '@/lib/db/entitlements';
 import { ArrowLeft } from 'lucide-react';
 import type { ResultSummary } from '@/lib/db/results';
@@ -90,13 +90,16 @@ export default async function ExamAnalyticsPage({ params }: Props) {
   if (!exam) notFound();
 
   const attempts   = results.length;
-  const best       = attempts > 0 ? Math.max(...results.map(r => r.score)) : null;
   const avg        = attempts > 0 ? Math.round(results.reduce((s, r) => s + r.score, 0) / attempts) : null;
   const last       = results[0] ?? null;
 
   // Best/average shown in the exam's real units (IELTS band / SAT scaled / %).
-  const bestResult = attempts > 0 ? results.reduce((a, b) => (b.score > a.score ? b : a)) : null;
+  // Ranked in the unit it is DISPLAYED in — taking the maximum percentage and
+  // then printing that attempt's band could show a band that was not the best.
+  const bestResult = pickBestAttempt(results, exam.type);
   const bestDisp   = bestResult ? formatOverallScore(bestResult) : null;
+  // The headline's colour belongs to the attempt actually being shown.
+  const best       = bestResult?.score ?? null;
   const avgDisp    = (() => {
     if (exam.type === 'ielts') {
       const bands = results.map(r => r.overallBand).filter((x): x is number => typeof x === 'number');
@@ -151,7 +154,14 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                 <div className={`font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl ${scoreColor(best!)}`}>
                   {bestDisp?.value}{bestDisp && bestDisp.unit !== '%' && <span className="ml-1.5 text-sm text-ink-mute">{bestDisp.unit}</span>}{bestDisp?.unit === '%' && '%'}
                 </div>
-                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">Ən yaxşı bal</p>
+                <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-2.5">
+                  {/* Marked provisional while a section is still with the writing
+                      grader: it is excluded from the figure, not scored as zero.
+                      Marked approximate whenever the unit is a converted band or
+                      scaled score rather than a mark count — see formatOverallScore. */}
+                  {bestDisp?.approximate ? 'Ən yaxşı bal (təxmini)' : 'Ən yaxşı bal'}
+                  {bestDisp?.provisional && ' — ilkin'}
+                </p>
               </div>
               <div className="border-b border-rule px-5 py-5 sm:border-r sm:border-b-0">
                 <div className={`font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl ${scoreColor(avg!)}`}>
@@ -287,7 +297,7 @@ export default async function ExamAnalyticsPage({ params }: Props) {
                       <div className="min-w-0">
                         <p className="m-0 flex items-baseline gap-2.5 text-body font-medium text-ink">
                           Cəhd <span className="font-mono tabular-nums">{r.attemptNumber}</span>
-                          {r.score === best && <Tag tone="ok">Ən yaxşı</Tag>}
+                          {r.attemptNumber === bestResult?.attemptNumber && <Tag tone="ok">Ən yaxşı</Tag>}
                         </p>
                         <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-1.5">
                           {formatDate(r.completedAt)} · {formatDuration(r.durationSeconds)}

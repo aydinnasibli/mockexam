@@ -1,14 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
 import { usePostHog } from '@posthog/react';
+import Button from '@/components/ui/Button';
 
 interface Props {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
+/**
+ * The application-wide error boundary, on the same tokens as every other
+ * surface. It had been left on the pre-token palette (`bg-[#f0f2f5]`,
+ * `red-100`, `font-headline`, `editorial-gradient`) long after the rest of the
+ * product moved.
+ */
 export default function GlobalError({ error, reset }: Props) {
   const posthog = usePostHog();
   useEffect(() => {
@@ -16,30 +22,24 @@ export default function GlobalError({ error, reset }: Props) {
   }, [error, posthog]);
 
   return (
-    <main className="min-h-screen bg-[#f0f2f5] flex items-center justify-center px-6">
-      <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-5">
-          <span className="text-2xl">⚠</span>
+    <main className="flex min-h-dvh items-center justify-center bg-bg px-6">
+      <div className="max-w-md text-center">
+        <div className="font-mono text-label font-normal tracking-[0.16em] uppercase mb-5 text-ink-mute">
+          Xəta
         </div>
-        <h1 className="text-2xl font-extrabold text-ink font-headline mb-3">
+        <h1 className="font-display m-0 mb-3 text-heading leading-tight font-light tracking-[-0.03em] text-ink">
           Xəta baş verdi
         </h1>
-        <p className="text-sm text-ink-soft mb-8">
+        <p className="m-0 mb-7 text-sm text-ink-soft">
           Gözlənilməz bir problem yarandı. Zəhmət olmasa yenidən cəhd edin.
         </p>
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={reset}
-            className="editorial-gradient text-white px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity shadow-sm"
-          >
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button size="sm" onClick={reset}>
             Yenidən cəhd et
-          </button>
-          <Link
-            href="/"
-            className="px-6 py-3 rounded-xl font-bold text-sm text-ink-soft bg-white border border-ink-faint/40 hover:bg-surface-3 transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" href="/">
             Ana səhifə
-          </Link>
+          </Button>
         </div>
       </div>
     </main>

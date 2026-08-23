@@ -15,7 +15,18 @@ import { checkAudioPlayed, markAudioPlayed } from '@/lib/actions/audio';
  * than by this component — a reload, a second tab, or devtools cannot hand
  * anyone a second listen.
  */
-export default function StrictAudioPlayer({ src, examId }: { src: string; examId: string }) {
+/**
+ * `secondsLeftInModule` is the section clock, not the track's.
+ *
+ * The module's window opens on the schedule whether or not the candidate has
+ * pressed play, and browsers will not let us start audio without a gesture — so
+ * a candidate who arrives at the section late can be left with less time than
+ * the recording runs for. Nothing can start it for them; the honest thing is to
+ * say so before they commit to a track they cannot finish.
+ */
+export default function StrictAudioPlayer(
+  { src, examId, secondsLeftInModule }: { src: string; examId: string; secondsLeftInModule?: number | null },
+) {
   const [status, setStatus] = useState<'checking' | 'ready' | 'playing' | 'finished'>('checking');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -89,6 +100,13 @@ export default function StrictAudioPlayer({ src, examId }: { src: string; examId
   const remaining = Math.max(0, duration - currentTime);
   const progress  = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Only meaningful once the metadata has given us a real duration.
+  const wontFit = status === 'ready'
+    && duration > 0
+    && typeof secondsLeftInModule === 'number'
+    && secondsLeftInModule > 0
+    && secondsLeftInModule < duration;
+
   function fmtTime(secs: number) {
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
@@ -127,6 +145,12 @@ export default function StrictAudioPlayer({ src, examId }: { src: string; examId
           <p className="text-sm text-center px-2 leading-tight font-medium text-warn">
             ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.
           </p>
+          {wontFit && (
+            <p className="text-sm text-center px-2 leading-tight font-medium text-error">
+              Bu bölmədə qalan vaxt ({fmtTime(secondsLeftInModule)}) audionun uzunluğundan
+              ({fmtTime(duration)}) azdır — audio sona çatmaya bilər.
+            </p>
+          )}
         </>
       )}
 

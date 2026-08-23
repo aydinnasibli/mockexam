@@ -72,6 +72,7 @@ export default async function EditExamPage({ params }: Props) {
             breakAfterMinutes: m.breakAfterMinutes,
             isAdaptive:        m.isAdaptive ?? false,
             instructions:      m.instructions ?? '',
+            layout:            m.layout === 'block' ? 'block' as const : 'single' as const,
           })),
         }}
       />

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/infra/mongodb';
 import Purchase from '@/lib/models/Purchase';
-import { getExamById } from '@/lib/db/exams';
+import { getExamByIdAdmin } from '@/lib/db/exams';
 import { verifySignature, decodeData, decodeOrderId } from '@/lib/payments/epoint';
 import { captureException, captureMessage } from '@/lib/infra/observability';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
@@ -78,8 +78,17 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     if (status === 'success') {
-      // Verify the paid amount matches the exam price before granting access.
-      const exam = await getExamById(examId);
+      /*
+       * Resolve the exam WITHOUT the isActive filter.
+       *
+       * `getExamById` only returns active exams, so an admin toggling an exam
+       * off while a payment was in flight made this return 400 — after the card
+       * had already been charged. The purchase stayed PENDING, the customer got
+       * nothing, and the reconciler failed the same way on their return.
+       * Whether an exam is currently on sale has no bearing on honouring a
+       * payment that was authorised while it was.
+       */
+      const exam = await getExamByIdAdmin(examId);
       if (!exam) {
         void captureMessage('Webhook received for unknown exam', {
           level: 'error',
@@ -88,17 +97,28 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Exam not found' }, { status: 400 });
       }
 
-      const expectedCents = Math.round(exam.price * 100);
+      // Idempotent: re-applying COMPLETED for the same transaction is a no-op.
+      const before = await Purchase.findOne({ userId, examId }).lean();
+
+      /*
+       * Validate against the price QUOTED AT CHECKOUT, not the live one.
+       *
+       * `createCheckoutSession` writes a PENDING purchase carrying the
+       * `amountCents` the customer was actually shown. Comparing against
+       * `exam.price` instead meant an admin repricing an exam mid-payment
+       * rejected a correct payment as an "Amount mismatch" and refused access.
+       * The live price is only the fallback for a payment with no PENDING row
+       * to check against.
+       */
+      const expectedCents = before?.amountCents ?? Math.round(exam.price * 100);
       if (amountCents !== expectedCents) {
         void captureMessage('Payment amount mismatch', {
           level: 'error',
-          extra: { examId, transaction, expected: expectedCents, received: amountCents },
+          extra: { examId, transaction, expected: expectedCents, received: amountCents, quotedAtCheckout: before?.amountCents ?? null },
         });
         return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
       }
 
-      // Idempotent: re-applying COMPLETED for the same transaction is a no-op.
-      const before = await Purchase.findOne({ userId, examId }).lean();
       await Purchase.findOneAndUpdate(
         { userId, examId },
         {

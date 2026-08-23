@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { getExamByIdAdmin } from '@/lib/db/exams';
-import { getExamQuestionsForSession } from '@/lib/actions/questions';
+import { getSessionQuestionMeta } from '@/lib/actions/questions';
 import { hasExamAccess } from '@/lib/db/entitlements';
 import ExamSessionClient from './ExamSessionClient';
 
@@ -30,7 +30,14 @@ export default async function ExamSessionPage({ params }: Props) {
   if (!exam) notFound();
   if (!hasAccess) redirect(`/checkout/${id}`);
 
-  const questions = await getExamQuestionsForSession(id);
+  /*
+   * Only the paper's SKELETON is serialised into the page: ids, modules, order,
+   * block grouping. Passages, stems and options are fetched module by module by
+   * the player as each section's clock opens (`getModuleQuestionContent`), so a
+   * candidate sitting in Listening cannot read the Reading texts out of the RSC
+   * payload — which is exactly what shipping the whole paper here allowed.
+   */
+  const questionMeta = await getSessionQuestionMeta(id);
 
-  return <ExamSessionClient exam={exam} questions={questions} />;
+  return <ExamSessionClient exam={exam} questionMeta={questionMeta} />;
 }

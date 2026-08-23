@@ -23,6 +23,7 @@ export interface PublicExam {
     breakAfterMinutes: number;
     isAdaptive: boolean;
     instructions: string;
+    layout: 'single' | 'block';
   }>;
 }
 
@@ -35,6 +36,7 @@ function serialize(m: IModule) {
     breakAfterMinutes: m.breakAfterMinutes,
     isAdaptive:        m.isAdaptive ?? false,
     instructions:      m.instructions ?? '',
+    layout:            m.layout === 'block' ? ('block' as const) : ('single' as const),
   };
 }
 

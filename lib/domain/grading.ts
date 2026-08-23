@@ -31,6 +31,21 @@ export interface GradedAnswer {
   userAnswerText: string;
   correctIndex: number;
   isCorrect: boolean;
+  /**
+   * How many marks this question is worth, and how many were earned.
+   *
+   * Everything is worth 1 except `matching`, which is worth one mark PER ITEM —
+   * the way every exam we mock actually marks it. Grading a six-item
+   * matching-headings task as a single all-or-nothing mark meant a candidate
+   * who placed five of six correctly scored zero for the task, and it squeezed
+   * an IELTS reading section's 53 real marks into 40 question documents fed to
+   * a band table calibrated for 40.
+   *
+   * `isCorrect` is kept as "earned everything", so the review page and the
+   * per-question analytics read exactly as before.
+   */
+  marks: number;
+  earnedMarks: number;
   timeSeconds: number;
   writingPending?: boolean;
   writingScore?: number;
@@ -82,28 +97,44 @@ export function gradeAnswers(
       ? a.userAnswerText.slice(0, MAX_ANSWER_TEXT_CHARS)
       : '';
 
-    let isCorrect = false;
+    let marks = 1;
+    let earnedMarks = 0;
     if (q.type === 'mcq') {
-      isCorrect = userAnswer !== -1 && userAnswer === correctIndex;
+      earnedMarks = userAnswer !== -1 && userAnswer === correctIndex ? 1 : 0;
     } else if (q.type === 'open') {
       if (userAnswerText && q.openAnswers?.length) {
         const normalized = normalizeOpenAnswer(userAnswerText);
-        isCorrect = q.openAnswers.some(ans => normalizeOpenAnswer(String(ans)) === normalized);
+        earnedMarks = q.openAnswers.some(ans => normalizeOpenAnswer(String(ans)) === normalized) ? 1 : 0;
       }
     } else if (q.type === 'matching') {
-      // userAnswerText is a JSON array string e.g. "[1,0,2,0,1]"
+      /*
+       * One mark per item. userAnswerText is a JSON array e.g. "[1,0,2,0,1]".
+       *
+       * `?? 1` only catches null/undefined, so an EMPTY `correctMatching` gave
+       * `marks = 0` — and a question worth nothing contributes 0/0, vanishing
+       * from its section's denominator without a trace. `validateQuestion` now
+       * blocks that shape on both write paths, but rows stored before it are
+       * never revalidated, so the floor stays. One unearnable mark is the safe
+       * failure: the question is visibly wrong rather than invisibly absent.
+       */
+      marks = q.correctMatching?.length || 1;
       if (userAnswerText && q.correctMatching?.length) {
         try {
           const userMatches: unknown = JSON.parse(userAnswerText);
-          isCorrect = Array.isArray(userMatches)
-            && q.correctMatching.length === userMatches.length
-            && q.correctMatching.every((correct, idx) => correct === userMatches[idx]);
+          if (Array.isArray(userMatches)) {
+            earnedMarks = q.correctMatching.reduce(
+              (sum, correct, idx) => sum + (correct === userMatches[idx] ? 1 : 0),
+              0,
+            );
+          }
         } catch {
-          isCorrect = false;
+          earnedMarks = 0;
         }
       }
     }
-    // writing: isCorrect stays false — graded by AI separately.
+    // writing: earns nothing here — graded by AI separately.
+
+    const isCorrect = q.type !== 'writing' && marks > 0 && earnedMarks === marks;
 
     const rawSeconds = typeof a?.timeSeconds === 'number' && Number.isFinite(a.timeSeconds)
       ? a.timeSeconds
@@ -116,6 +147,8 @@ export function gradeAnswers(
       userAnswerText,
       correctIndex,
       isCorrect,
+      marks,
+      earnedMarks,
       timeSeconds: Math.min(MAX_QUESTION_SECONDS, Math.max(0, Math.round(rawSeconds))),
       // Writing answers with an essay start "pending" until graded on the
       // results page; a blank essay is a genuine 0 and is never pending.

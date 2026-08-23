@@ -9,10 +9,11 @@ import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
 import QuestionModel from '@/lib/models/Question';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import ExamSessionModel from '@/lib/models/ExamSession';
+import PlayedAudioModel from '@/lib/models/PlayedAudio';
 import { isRateLimited } from '@/lib/infra/rate-limit';
 import { checkRole } from '@/lib/infra/admin';
-import { evaluateWriting, type WritingCriterionResult } from '@/lib/actions/writing-eval';
-import { computeAuthenticScores } from '@/lib/domain/scoring';
+import { evaluateWriting, type WritingCriterionResult } from '@/lib/infra/writing-eval';
+import { computeAuthenticScores, overallPercent } from '@/lib/domain/scoring';
 import { gradeAnswers } from '@/lib/domain/grading';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
 import { captureException, captureMessage } from '@/lib/infra/observability';
@@ -25,6 +26,9 @@ type AnswerRecord = {
   userAnswerText: string;
   correctIndex: number;
   isCorrect: boolean;
+  /** Marks available / earned. Only `matching` is ever worth more than 1. */
+  marks: number;
+  earnedMarks: number;
   timeSeconds: number;
   writingScore?: number;
   writingWordCount?: number;
@@ -32,23 +36,6 @@ type AnswerRecord = {
   aiFeedback?: string;
   writingPending?: boolean;
 };
-
-/** Mean of the parts that actually have a value (nulls are skipped, not zeroed). */
-function averageOfPresent(parts: (number | null)[]): number {
-  const present = parts.filter((v): v is number => v !== null);
-  return present.length ? Math.round(present.reduce((a, b) => a + b, 0) / present.length) : 0;
-}
-
-/**
- * Aggregate writing band → percentage, counting ONLY essays that were actually
- * graded. If every writing answer is still pending, returns null so writing is
- * excluded from the overall score instead of dragging it to 0.
- */
-function writingScorePercent(records: AnswerRecord[]): number | null {
-  const graded = records.filter(r => !r.writingPending && typeof r.writingScore === 'number');
-  if (graded.length === 0) return null;
-  return graded.reduce((sum, r) => sum + ((r.writingScore ?? 0) / 9) * 100, 0) / graded.length;
-}
 
 type ModuleScore = ReturnType<typeof buildModuleScores>[number] & { band?: number };
 
@@ -68,7 +55,13 @@ function applyAuthenticScores(
   // Task-2-counts-double weighting can't be flipped by submission order.
   const writingTasks = records
     .filter(r => typeOf(r.questionId) === 'writing' && !r.writingPending && typeof r.writingScore === 'number')
-    .map(r => ({ taskType: writingTaskTypeOf(r.questionId), band: r.writingScore as number }));
+    .map(r => ({
+      taskType: writingTaskTypeOf(r.questionId),
+      band: r.writingScore as number,
+      // Tagged so a paper with two writing sections scores each from its own
+      // essays rather than handing both the same all-essays band.
+      moduleIndex: r.moduleIndex,
+    }));
 
   const auth = computeAuthenticScores({ examType, modules, moduleScores, writingTasks });
   for (const ms of moduleScores) {
@@ -90,9 +83,20 @@ function buildModuleScores(
     const gradedWriting = modWriting.filter(a => !a.writingPending && typeof a.writingScore === 'number');
     const anyPending    = modWriting.some(a => a.writingPending);
 
+    /*
+     * Scored in MARKS, not in questions.
+     *
+     * A matching question is worth one mark per item, so a section's mark total
+     * is not its document count — an IELTS reading section of 40 documents can
+     * carry 53 marks. Counting documents both denied partial credit and fed the
+     * band tables a number that did not mean what they expect.
+     */
+    const earned = modNonWriting.reduce((sum, a) => sum + (a.earnedMarks ?? 0), 0);
+    const available = modNonWriting.reduce((sum, a) => sum + (a.marks ?? 1), 0);
+
     let scorePercent = 0;
-    if (modNonWriting.length > 0) {
-      scorePercent = Math.round((modNonWriting.filter(a => a.isCorrect).length / modNonWriting.length) * 100);
+    if (available > 0) {
+      scorePercent = Math.round((earned / available) * 100);
     } else if (gradedWriting.length > 0) {
       scorePercent = Math.round(gradedWriting.reduce((s, a) => s + ((a.writingScore ?? 0) / 9) * 100, 0) / gradedWriting.length);
     }
@@ -100,8 +104,10 @@ function buildModuleScores(
     return {
       moduleIndex: modIdx,
       moduleName:  mod.name,
-      correct:     modNonWriting.filter(a => a.isCorrect).length,
-      total:       modAnswers.length,
+      correct:     earned,
+      // Writing-only modules have no marks of their own; fall back to the
+      // answer count so the module still reports a sensible denominator.
+      total:       available > 0 ? available : modAnswers.length,
       scorePercent,
       ...(anyPending ? { pending: true } : {}),
     };
@@ -243,11 +249,44 @@ export async function saveExamResult(data: {
       : exam.durationMinutes * 60 + 300;
     const safeDurationSeconds = Math.min(Math.round(durationSeconds), Math.max(0, durationCeiling));
 
-    if (questionDocs.length === 0) return { error: 'Bu imtahanda sual yoxdur.' };
+    /*
+     * Grade only the questions the candidate could actually reach.
+     *
+     * `updateExam` replaces the module array wholesale, so an earlier edit can
+     * have left questions pointing at a module that no longer exists. The
+     * player already excludes them — they are unreachable and unscheduled — but
+     * grading still loaded every question for the exam, so each orphan was
+     * recorded as unanswered and counted in `totalQuestions`. The results page
+     * then reported a paper longer than the one that was sat.
+     *
+     * Filtered here rather than in the query so the three reads above stay
+     * parallel; the module count is only known once the exam has resolved.
+     */
+    /*
+     * ...and only the modules this ATTEMPT was actually scheduled to sit.
+     *
+     * A module that was empty when the attempt began is skipped by
+     * `buildModuleSchedule`, so it has no window and can never be opened. If
+     * questions are added to it mid-attempt, they would otherwise be graded
+     * here as unanswered — marking the candidate down for a section the
+     * schedule never gave them. `getSessionQuestionMeta` hides them for the
+     * same reason; the two must agree or the denominator drifts from the paper.
+     */
+    const scheduled = session?.moduleSchedule;
+    const scheduledModules = Array.isArray(scheduled) && scheduled.length > 0
+      ? new Set(scheduled.map(w => w.moduleIndex))
+      : null;
+
+    const liveQuestionDocs = questionDocs.filter(q =>
+      q.moduleIndex < exam.modules.length
+      && (!scheduledModules || scheduledModules.has(q.moduleIndex)),
+    );
+
+    if (liveQuestionDocs.length === 0) return { error: 'Bu imtahanda sual yoxdur.' };
 
     // Lookup for the two per-question attributes the scoring aggregation needs.
     const metaById = new Map(
-      questionDocs.map(q => [String(q._id), {
+      liveQuestionDocs.map(q => [String(q._id), {
         type: q.type,
         writingTaskType: q.writingTaskType,
       }])
@@ -258,7 +297,7 @@ export async function saveExamResult(data: {
     // payload cannot inflate the score, and moduleIndex/correctIndex always
     // come from the database rather than the request body.
     const answerRecords: AnswerRecord[] = gradeAnswers(
-      questionDocs.map(q => ({
+      liveQuestionDocs.map(q => ({
         id:              String(q._id),
         moduleIndex:     q.moduleIndex,
         type:            q.type,
@@ -272,18 +311,12 @@ export async function saveExamResult(data: {
     const typeOf = (questionId: string) => metaById.get(questionId)?.type;
     const writingTaskTypeOf = (questionId: string) => metaById.get(questionId)?.writingTaskType;
 
-    // Compute non-writing scores first (instant, no external calls)
-    const nonWritingAnswers = answerRecords.filter(a => typeOf(a.questionId) !== 'writing');
-
-    const nonWritingScore = nonWritingAnswers.length > 0
-      ? (nonWritingAnswers.filter(a => a.isCorrect).length / nonWritingAnswers.length) * 100
-      : null;
-
-    // Overall starts as the objective-only score. Writing is added once graded;
-    // while it is pending it is excluded so an ungraded essay never shows as 0.
-    const initialScore = nonWritingScore !== null ? Math.round(nonWritingScore) : 0;
-
     const moduleScores = buildModuleScores(exam.modules, answerRecords, typeOf);
+
+    // The headline percentage is the mean of the SECTIONS (see `overallPercent`).
+    // Writing modules are marked pending here and so are excluded until graded —
+    // an ungraded essay never shows as a zero.
+    const initialScore = overallPercent(moduleScores);
     const authentic = applyAuthenticScores(exam.type, exam.modules, moduleScores, answerRecords, typeOf, writingTaskTypeOf);
 
     // Persist the result BEFORE AI evaluation — never lose student work.
@@ -303,9 +336,10 @@ export async function saveExamResult(data: {
       startedAt:       startDate,
       completedAt:     new Date(),
       durationSeconds: safeDurationSeconds,
-      // The number of questions actually graded, which is now also the score's
-      // denominator. `exam.totalQuestions` is the sum the modules *declare* and
-      // can drift from the real question bank, so it would misreport the attempt.
+      // The number of questions actually graded. NOT the score's denominator —
+      // that is the mark total, which is larger wherever a matching question
+      // carries several items. `exam.totalQuestions` is the sum the modules
+      // *declare* and can drift from the real bank, so it would misreport this.
       totalQuestions:  answerRecords.length,
       score:           initialScore,
       ...authentic,
@@ -330,7 +364,35 @@ export async function saveExamResult(data: {
       });
     }
 
-    await ExamSessionModel.deleteOne({ userId, examId });
+    /*
+     * Cleanup, in its own guard — the attempt is already saved.
+     *
+     * This used to sit bare inside the main `try`, so a failure here threw past
+     * the return and the student was told the submission had failed. It had
+     * not: the result was in the database. They would retry, and the retry
+     * filed the SAME attempt a second time as N+1 — while the surviving session
+     * also meant the next visit resumed an attempt that was already submitted.
+     * A failed delete costs a stale session that the 7-day TTL clears; it must
+     * never cost a duplicate attempt.
+     */
+    try {
+      await ExamSessionModel.deleteOne({ userId, examId });
+      /*
+       * Filing the result is what releases the listening tracks.
+       *
+       * The claim deliberately survives `restartExamSession` — that is what
+       * stops "play, reload, start over" from handing the recording back. But
+       * an attempt that has actually been submitted is over, and the next one
+       * must start with the audio fresh, or unlimited attempts would only be
+       * unlimited for candidates who never listened.
+       */
+      await PlayedAudioModel.deleteMany({ userId, examId });
+    } catch (err) {
+      void captureException(err, {
+        tags: { action: 'saveExamResult', step: 'clearSession' },
+        extra: { userId, examId, attemptNumber },
+      });
+    }
 
     // Writing is NOT graded here — it stays "pending" on the saved result so the
     // student is redirected to their results instantly (grading two essays takes
@@ -356,15 +418,105 @@ export async function saveExamResult(data: {
 }
 
 /**
+ * How long one grader may hold a result before another caller may take over.
+ *
+ * Must exceed the worst case of a real grading pass, or a slow-but-healthy run
+ * would have its claim stolen and the duplicate call this exists to prevent
+ * happens anyway. `evaluateWriting` bounds itself at GRADER_TIMEOUT_MS (90s)
+ * with GRADER_MAX_RETRIES (1) — so ~3 minutes per essay, and essays on one
+ * result are graded concurrently. Five minutes clears that with margin.
+ *
+ * It must also stay SHORT enough that a claim orphaned by a killed serverless
+ * instance is retaken on a later visit rather than leaving the essay pending
+ * for ever. Five minutes means the student's next page load recovers it.
+ */
+const WRITING_CLAIM_TTL_MS = 5 * 60_000;
+
+/**
+ * Take exclusive ownership of this result's pending essays.
+ *
+ * A single-document conditional update, so the database decides the winner —
+ * exactly as `markAudioPlayed` leans on a unique index rather than on a
+ * read-then-write. Returns false when someone else holds a live claim, and the
+ * caller then reports the essays as still pending, which is what they are.
+ */
+async function claimWritingGrade(resultId: mongoose.Types.ObjectId): Promise<boolean> {
+  const staleBefore = new Date(Date.now() - WRITING_CLAIM_TTL_MS);
+  const res = await ExamResult.updateOne(
+    {
+      _id: resultId,
+      $or: [
+        { writingGradingAt: { $exists: false } },
+        { writingGradingAt: null },
+        { writingGradingAt: { $lte: staleBefore } },
+      ],
+    },
+    { $set: { writingGradingAt: new Date() } },
+  );
+  return res.modifiedCount === 1;
+}
+
+/** Release the claim, whatever the outcome. Never throws into the caller. */
+async function releaseWritingGrade(resultId: mongoose.Types.ObjectId): Promise<void> {
+  try {
+    await ExamResult.updateOne({ _id: resultId }, { $unset: { writingGradingAt: '' } });
+  } catch (err) {
+    // A stuck claim expires on its own via WRITING_CLAIM_TTL_MS, so this is
+    // reported rather than retried — it must never mask a completed grading.
+    void captureException(err, {
+      tags: { action: 'releaseWritingGrade' },
+      extra: { resultId: String(resultId) },
+    });
+  }
+}
+
+/**
  * Grade any still-"pending" writing answers on a result document (a live,
  * non-lean Mongoose doc), then recompute the overall + module scores and save.
  * No auth — the caller is responsible for authorising. Shared by the student
  * results-page auto-grade and the admin re-grade tools. Only touches pending
  * essays, so it is safe to call repeatedly.
+ *
+ * Concurrency-safe: the result is claimed before any grader call, so two tabs
+ * on the same review page cost one assessment rather than two. A caller that
+ * loses the race reports the essays as pending and returns immediately.
  */
 async function gradePendingWritingOnResult(
   result: mongoose.HydratedDocument<IExamResult>,
 ): Promise<{ graded: number; pending: number }> {
+  const records = result.answers as unknown as AnswerRecord[];
+
+  /*
+   * Cheap pre-check, before any query or any claim.
+   *
+   * `writingPending` is only ever written onto a writing record (see
+   * `gradeAnswers`), so its absence everywhere means there is nothing here to
+   * grade. The review page calls this on EVERY load, and a finished result is
+   * by far the common case — it used to pay for an exam read and a full
+   * question-bank read to discover that. This is a narrowing test only: the
+   * type-checked filter below still decides what actually gets graded.
+   */
+  if (!records.some(r => r.writingPending)) return { graded: 0, pending: 0 };
+
+  // Someone else is already grading this result. Their pass will resolve the
+  // same essays, so report them as pending rather than paying to duplicate it.
+  if (!(await claimWritingGrade(result._id))) {
+    return { graded: 0, pending: records.filter(r => r.writingPending).length };
+  }
+
+  try {
+    return await runWritingGrade(result, records);
+  } finally {
+    await releaseWritingGrade(result._id);
+  }
+}
+
+/** The grading pass itself. Only ever called with the claim held. */
+async function runWritingGrade(
+  result: mongoose.HydratedDocument<IExamResult>,
+  records: AnswerRecord[],
+): Promise<{ graded: number; pending: number }> {
+  const startedAt = Date.now();
   const exam = await getExamByIdAdmin(result.examId);
   if (!exam) return { graded: 0, pending: 0 };
 
@@ -375,7 +527,6 @@ async function gradePendingWritingOnResult(
   const typeOf = (questionId: string) => qmap.get(questionId)?.type;
   const writingTaskTypeOf = (questionId: string) => qmap.get(questionId)?.writingTaskType;
 
-  const records = result.answers as unknown as AnswerRecord[];
   const allPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending);
   if (allPending.length === 0) return { graded: 0, pending: 0 };
 
@@ -414,15 +565,11 @@ async function gradePendingWritingOnResult(
     }
   }));
 
-  const nonWriting = records.filter(r => typeOf(r.questionId) !== 'writing');
-  const nonWritingScore = nonWriting.length > 0
-    ? (nonWriting.filter(r => r.isCorrect).length / nonWriting.length) * 100
-    : null;
-
   const modScores = buildModuleScores(exam.modules, records, typeOf);
   const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf, writingTaskTypeOf);
 
-  result.score = averageOfPresent([nonWritingScore, writingScorePercent(records)]);
+  // Writing has now been scored, so its module joins the section mean.
+  result.score = overallPercent(modScores);
   // Plain objects into a Mongoose DocumentArray field: the cast names the target
   // type rather than reaching for `as never`, which suppressed every check here.
   result.moduleScores = modScores as unknown as IExamResult['moduleScores'];
@@ -436,7 +583,32 @@ async function gradePendingWritingOnResult(
   await result.save();
 
   const stillPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending).length;
-  return { graded: allPending.length - stillPending, pending: stillPending };
+  const graded = allPending.length - stillPending;
+
+  /*
+   * Report the grading pass.
+   *
+   * `writingGraded` was declared in ANALYTICS_EVENTS and emitted from nowhere,
+   * which left the one funnel step whose failure is SILENT with no telemetry at
+   * all: a grader without quota returns `pending` for ever, the student sees
+   * "yoxlanılır…", and nothing anywhere records that it happened. `stillPending`
+   * is the number worth alerting on. The bands come along because a model
+   * drifting generous is only visible as a distribution shift over time.
+   */
+  void trackEvent(ANALYTICS_EVENTS.writingGraded, result.userId, {
+    examId:       result.examId,
+    examType:     exam.type,
+    attemptNumber: result.attemptNumber,
+    essays:       allPending.length,
+    graded,
+    stillPending,
+    bands:        records
+      .filter(r => typeOf(r.questionId) === 'writing' && typeof r.writingScore === 'number')
+      .map(r => r.writingScore as number),
+    durationMs:   Date.now() - startedAt,
+  });
+
+  return { graded, pending: stillPending };
 }
 
 /**
@@ -529,24 +701,45 @@ export async function adminRegradeResult(
   }
 }
 
-/** Admin-only: (re-)grade all pending results in one pass (bounded). */
+/**
+ * How long one sweep may run before it stops and reports what it managed.
+ *
+ * Each result can hold several essays and each essay is a bounded but slow
+ * grader call, so twenty-five of them in sequence is minutes of work — well
+ * past the execution limit of a serverless request. Being killed mid-loop
+ * loses no grading (every result is saved as it completes) but does lose the
+ * REPORT, so the admin is told the sweep failed when much of it succeeded.
+ * Stopping on a budget turns that into an honest partial result.
+ */
+const REGRADE_BUDGET_MS = 60_000;
+const REGRADE_MAX_RESULTS = 25;
+
+/** Admin-only: (re-)grade pending results in one pass, bounded by count and time. */
 export async function adminRegradeAllPending(): Promise<
-  { ok: true; processed: number; graded: number; stillPending: number } | { error: string }
+  { ok: true; processed: number; graded: number; stillPending: number; remaining: number } | { error: string }
 > {
   if (!(await checkRole('admin'))) return { error: 'Forbidden' };
   try {
     await dbConnect();
     const docs = await ExamResult.find({ 'answers.writingPending': true })
       .sort({ completedAt: 1 })
-      .limit(25);
-    let graded = 0, stillPending = 0;
+      .limit(REGRADE_MAX_RESULTS);
+
+    const deadline = Date.now() + REGRADE_BUDGET_MS;
+    let processed = 0, graded = 0, stillPending = 0;
+
     for (const result of docs) {
+      // Checked before starting each result rather than after: the budget is
+      // there to stop a new slow grader call, not to interrupt one in flight.
+      if (Date.now() > deadline) break;
       const r = await gradePendingWritingOnResult(result);
+      processed++;
       graded += r.graded;
       stillPending += r.pending;
     }
+
     revalidatePath('/admin/writing');
-    return { ok: true, processed: docs.length, graded, stillPending };
+    return { ok: true, processed, graded, stillPending, remaining: docs.length - processed };
   } catch (err) {
     void captureException(err, { tags: { action: 'adminRegradeAllPending' } });
     return { error: 'Server xətası baş verdi.' };

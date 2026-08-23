@@ -7,7 +7,7 @@
 // `lib/actions/admin.ts`, which published it as an unauthenticated endpoint for
 // no reason.
 
-import { MODULE_TYPES, type ModuleType } from '@/lib/domain/exam-types';
+import { MODULE_TYPES, type ModuleType, type ModuleLayout } from '@/lib/domain/exam-types';
 
 const VALID_MOD_TYPES: ReadonlySet<string> = new Set(MODULE_TYPES.map(t => t.value));
 
@@ -19,6 +19,8 @@ export interface ParsedModule {
   breakAfterMinutes: number;
   isAdaptive: boolean;
   instructions: string;
+  /** 'block' groups questions sharing a blockId onto one screen. See IModule. */
+  layout: ModuleLayout;
 }
 
 export function validateModules(raw: unknown): ParsedModule[] | { error: string } {
@@ -57,6 +59,9 @@ export function validateModules(raw: unknown): ParsedModule[] | { error: string 
       breakAfterMinutes,
       isAdaptive:   !!m.isAdaptive,
       instructions: String(m.instructions ?? '').slice(0, 1000),
+      // Anything unrecognised falls back to one-question-per-screen, which is
+      // how every module behaved before block layout existed.
+      layout:       m.layout === 'block' ? 'block' : 'single',
     });
   }
   return modules;

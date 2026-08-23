@@ -29,7 +29,12 @@ export default function WritingProblemsClient({ problems }: { problems: WritingE
     startAll(async () => {
       const r = await adminRegradeAllPending();
       if ('error' in r) { toast.error(r.error); return; }
-      toast.success(`${r.processed} nəticə emal edildi · ${r.graded} esse qiymətləndirildi · ${r.stillPending} hələ gözləyir.`);
+      // `remaining` is non-zero when the sweep hit its time budget; say so, or
+      // the admin reads a short run as "there was nothing left to do".
+      toast.success(
+        `${r.processed} nəticə emal edildi · ${r.graded} esse qiymətləndirildi · ${r.stillPending} hələ gözləyir.`
+        + (r.remaining > 0 ? ` ${r.remaining} nəticə vaxt limitinə görə qaldı — yenidən işə salın.` : ''),
+      );
       router.refresh();
     });
   }

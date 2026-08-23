@@ -1,8 +1,25 @@
-'use server';
+import 'server-only';
 
 import OpenAI from 'openai';
 import type { WritingTaskType } from '@/lib/models/Question';
 import { captureException, captureMessage } from '@/lib/infra/observability';
+
+/*
+ * NOT a Server Action, and it must never become one again.
+ *
+ * This lived in `lib/actions/` under `'use server'`, which publishes every
+ * export as a callable POST endpoint. It had no auth check and no rate limit,
+ * so anyone could invoke it with an arbitrary `essay`, `prompt` and `rubric`
+ * and have this account run a reasoning model at medium effort with an
+ * 8000-token budget — an open bill, and an open LLM proxy, since the caller
+ * controls the text that reaches the model.
+ *
+ * Nothing outside the server ever calls it: `gradePendingWritingOnResult` is
+ * the only caller, and that is already behind auth. `server-only` makes the
+ * build fail if it is ever imported from a client component, which is the
+ * guarantee we actually want. `lib/domain/exam-modules.ts` carries the same
+ * warning for the same reason.
+ */
 
 /**
  * Reasoning-grader configuration.
@@ -27,6 +44,22 @@ const REASONING_EFFORT = 'medium' as const;
 // is truncated (finish_reason 'length') and we mark the essay pending instead
 // of scoring it.
 const MAX_COMPLETION_TOKENS = 8000;
+
+/*
+ * Request bounds, because the SDK's defaults are wrong for a web request.
+ *
+ * The OpenAI Node client defaults to a TEN MINUTE timeout and two automatic
+ * retries, so a single stuck call can hold a request open for roughly half an
+ * hour. That is awaited by `reevaluatePendingWriting` when a student opens
+ * their results, and by `adminRegradeAllPending` twenty-five times in a row.
+ *
+ * A medium-effort reasoning pass over one essay is tens of seconds, so ninety
+ * gives ample headroom while capping the worst case at about three minutes.
+ * Failing is cheap here: the essay stays `pending` and is regraded on the next
+ * visit, which is exactly what this whole path is built to do.
+ */
+const GRADER_TIMEOUT_MS = 90_000;
+const GRADER_MAX_RETRIES = 1;
 
 export interface WritingCriterionResult {
   criterion: string;
@@ -264,7 +297,11 @@ export async function evaluateWriting(params: {
   const rubric = getRubric(taskType, examType, examName);
 
   try {
-    const client = new OpenAI({ apiKey });
+    const client = new OpenAI({
+      apiKey,
+      timeout: GRADER_TIMEOUT_MS,
+      maxRetries: GRADER_MAX_RETRIES,
+    });
 
     const userMessage = [
       `**Task (${rubric.examLabel}):**`,

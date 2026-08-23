@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { MODULE_TYPES, EXAM_TYPE_VALUES, type ModuleType, type ExamType } from '@/lib/domain/exam-types';
+import { MODULE_TYPES, MODULE_LAYOUTS, EXAM_TYPE_VALUES, type ModuleType, type ExamType, type ModuleLayout } from '@/lib/domain/exam-types';
 
-export { MODULE_TYPES, type ModuleType, type ExamType };
+export { MODULE_TYPES, type ModuleType, type ExamType, type ModuleLayout };
 
 export interface IModule {
   name: string;
@@ -9,8 +9,26 @@ export interface IModule {
   durationMinutes: number;
   questions: number;        // 0 for open-ended (speaking/writing)
   breakAfterMinutes: number; // rest before next module; 0 = no break
+  /**
+   * Stored and editable, but NOT implemented by the player: nothing in the exam
+   * engine reads it, and no module's difficulty responds to an earlier one. It
+   * used to be advertised on the public exam page as "çətinlik əvvəlki modulun
+   * nəticəsinə görə seçilir", which was a claim made to someone before they
+   * paid. The claim is gone; the field stays so the data authored against it is
+   * not lost, and so real adaptive delivery has somewhere to land.
+   */
   isAdaptive: boolean;
   instructions: string;     // shown to user before the module starts
+  /**
+   * How the module presents its questions.
+   *   'single' — one question per screen (default; TOEFL listening, SAT).
+   *   'block'  — every question sharing a `blockId` on one scrolling screen
+   *              (IELTS listening parts and reading tasks, General English
+   *              listening dialogues).
+   * Defaulting to 'single' means no existing exam changes behaviour until its
+   * questions are actually given block ids.
+   */
+  layout: ModuleLayout;
 }
 
 export interface IExam extends Document {
@@ -39,6 +57,7 @@ const ModuleSchema = new Schema<IModule>(
     breakAfterMinutes:  { type: Number, required: true, min: 0, default: 0 },
     isAdaptive:         { type: Boolean, default: false },
     instructions:       { type: String, default: '' },
+    layout:             { type: String, enum: MODULE_LAYOUTS, default: 'single' },
   },
   { _id: false }
 );

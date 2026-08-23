@@ -18,8 +18,8 @@ import Tag from '@/components/ui/Tag';
 // don't map onto a fixed template the way SAT/IELTS/TOEFL do.
 const ALLOWED_MODULE_TYPES: Record<string, string[]> = {
   sat:   ['rw', 'math'],
-  ielts: ['listening', 'reading', 'writing', 'speaking'],
-  toefl: ['reading', 'listening', 'speaking', 'writing'],
+  ielts: ['listening', 'reading', 'writing'],
+  toefl: ['reading', 'listening', 'writing'],
   general_english: ['grammar', 'reading', 'listening'],
   gre:   ['verbal', 'quantitative', 'analytical'],
 };
@@ -53,132 +53,131 @@ const TYPE_DEFAULTS: Record<string, { tag: string; description: string }> = {
 };
 
 // ─── Type-specific module presets ─────────────────────────────────────────────
+//
+// `layout: 'block'` puts every question sharing a `blockId` on one screen. It is
+// set on the sections whose real-world equivalent shows the candidate a whole
+// task at once — an IELTS listening part, an IELTS reading task, a General
+// English dialogue set — and left at 'single' where one-question-per-screen is
+// what the real test does, which is TOEFL listening and all of SAT.
+//
+// No preset carries a Speaking module. Speaking is not offered on this platform
+// and there is no recording UI to render one; a module with an empty question
+// bank is now skipped by the scheduler (see lib/domain/exam-timing.ts), but
+// shipping one in a preset only invited an exam that advertises a section it
+// cannot deliver. The catalog states the omission explicitly instead.
 
 const EXAM_PRESETS: Record<string, ParsedModule[]> = {
   // Digital SAT (College Board, 2024 format)
-  // Section 1 – Reading & Writing: 2 adaptive modules × 27 questions × 32 min
+  // Section 1 – Reading & Writing: 2 modules × 27 questions × 32 min
   // 10-min break between sections
-  // Section 2 – Math: 2 adaptive modules × 22 questions × 35 min
+  // Section 2 – Math: 2 modules × 22 questions × 35 min
   // Total test time: 134 min | With break: 144 min | Questions: 98
+  //
+  // Module 2 is NOT adaptive here. Real Digital SAT routes candidates into an
+  // easier or harder second module on their first-module performance, and
+  // scoring it honestly needs two authored forms per section plus College
+  // Board's equating curves, which are not published. Rather than label a
+  // linear test "adaptive" and report a scaled score the routing was never
+  // applied to, the modules are fixed and the score is presented as an estimate.
   sat: [
     {
       name: 'Reading & Writing — Module 1',
       type: 'rw', durationMinutes: 32, questions: 27,
-      breakAfterMinutes: 0, isAdaptive: false,
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
       instructions: 'Reading & Writing bölməsi, 1-ci modul. 27 sual, 32 dəqiqə. Suallar 4 kateqoriyadan ibarətdir: Information & Ideas, Craft & Structure, Expression of Ideas, Standard English Conventions. Hər sualın yalnız bir düzgün cavabı var.',
     },
     {
       name: 'Reading & Writing — Module 2',
       type: 'rw', durationMinutes: 32, questions: 27,
-      breakAfterMinutes: 10, isAdaptive: true,
-      instructions: 'Reading & Writing bölməsi, 2-ci modul (adaptiv). 27 sual, 32 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən avtomatik müəyyən olunur (asan və ya çətin versiya). Bu moduldan sonra 10 dəqiqəlik fasilə başlayır.',
+      breakAfterMinutes: 10, isAdaptive: false, layout: 'single',
+      instructions: 'Reading & Writing bölməsi, 2-ci modul. 27 sual, 32 dəqiqə. Bu moduldan sonra 10 dəqiqəlik fasilə başlayır — fasilə vaxtı imtahan vaxtından ayrıdır.',
     },
     {
       name: 'Math — Module 1',
       type: 'math', durationMinutes: 35, questions: 22,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'Math bölməsi, 1-ci modul. 22 sual, 35 dəqiqə. 17 sual çoxseçimli, 5 sual student-produced response (SPR) formatındadır. Sual kateqoriyaları: Algebra, Advanced Math, Problem-Solving & Data Analysis, Geometry & Trigonometry. Kalkulyator bütün suallar üçün icazəlidir.',
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
+      instructions: 'Math bölməsi, 1-ci modul. 22 sual, 35 dəqiqə. 17 sual çoxseçimli, 5 sual student-produced response (SPR) formatındadır. Sual kateqoriyaları: Algebra, Advanced Math, Problem-Solving & Data Analysis, Geometry & Trigonometry. Kalkulyator və düstur vərəqi bütün suallar üçün açıqdır.',
     },
     {
       name: 'Math — Module 2',
       type: 'math', durationMinutes: 35, questions: 22,
-      breakAfterMinutes: 0, isAdaptive: true,
-      instructions: 'Math bölməsi, 2-ci modul (adaptiv). 22 sual, 35 dəqiqə. Çətinlik səviyyəsi 1-ci modulun nəticəsinə əsasən müəyyən olunur. 17 çoxseçimli + 5 SPR sual. Kalkulyator icazəlidir.',
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
+      instructions: 'Math bölməsi, 2-ci modul. 22 sual, 35 dəqiqə. 17 çoxseçimli + 5 SPR sual. Kalkulyator və düstur vərəqi açıqdır.',
     },
   ],
 
-  // IELTS Academic (British Council / IDP / Cambridge, 2025–2026 format — unchanged)
-  // Listening: 30 min test (digital mock — no paper transfer time needed)
-  // Reading: 60 min, 40 questions (3 academic texts)
-  // Writing: 60 min, 2 tasks
-  // Speaking: 11–14 min, 3 parts
+  // IELTS Academic (British Council / IDP / Cambridge)
+  // Listening: 30 min, 40 questions, 4 parts on one continuous recording
+  // Reading:   60 min, 40 questions, 3 academic texts
+  // Writing:   60 min, 2 tasks
+  // Speaking is not offered — see the note above.
   ielts: [
     {
       name: 'Listening',
       type: 'listening', durationMinutes: 30, questions: 40,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Listening: 30 dəqiqə, 40 sual. 4 hissə: Part 1 — gündəlik sosial dialoq (10 sual), Part 2 — ictimai mövzu monoloqu (10 sual), Part 3 — akademik müzakirə (10 sual), Part 4 — akademik mühazirə (10 sual). Sual növləri: Multiple choice, Form/note/table completion, Sentence completion, Short-answer. Hər düzgün cavab 1 xam bal verir.',
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'block',
+      instructions: 'IELTS Listening: 30 dəqiqə, 40 sual. 4 hissə: Part 1 — gündəlik sosial dialoq (1–10), Part 2 — ictimai mövzu monoloqu (11–20), Part 3 — akademik müzakirə (21–30), Part 4 — akademik mühazirə (31–40). Hər hissənin bütün sualları eyni ekranda göstərilir və səs yazısı fasiləsiz oxunur — sualları qabaqcadan oxuyun. Səs yalnız bir dəfə səslənir.',
     },
     {
       name: 'Reading',
       type: 'reading', durationMinutes: 60, questions: 40,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Academic Reading: 60 dəqiqə, 40 sual. 3 uzun akademik mətn (jurnallar, kitablar, qəzetlər). Sual növləri: Multiple choice, Matching headings, True/False/Not Given, Yes/No/Not Given, Matching information, Sentence completion, Short-answer. Fasilə yoxdur, vaxtı özünüz bölün.',
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'block',
+      instructions: 'IELTS Academic Reading: 60 dəqiqə, 40 sual. 3 uzun akademik mətn. Sual növləri: Multiple choice, Matching headings, True/False/Not Given, Yes/No/Not Given, Matching information, Sentence completion, Short-answer. Hər tapşırığın sualları mətnlə yanaşı bir ekranda verilir.',
     },
     {
       name: 'Writing',
       type: 'writing', durationMinutes: 60, questions: 2,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Academic Writing: 60 dəqiqə, 2 tapşırıq. Task 1 (~20 dəq, minimum 150 söz): verilmiş qrafik, cədvəl, diaqram və ya xəritəni akademik üslubda təsvir edin. Task 2 (~40 dəq, minimum 250 söz): bir arqument və ya problemə dair esse yazın. Task 2-nin çəkisi daha yüksəkdir.',
-    },
-    {
-      name: 'Speaking',
-      type: 'speaking', durationMinutes: 14, questions: 0,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'IELTS Speaking: 11–14 dəqiqə, ekzaminatorla canlı müsahibə. Part 1 (4–5 dəq): tanışlıq və gündəlik mövzular haqqında suallar. Part 2 (3–4 dəq): cue card — 1 dəq hazırlıq + 2 dəq fasiləsiz nitq. Part 3 (4–5 dəq): Part 2 mövzusu üzrə dərin abstrakt müzakirə. 4 kriteriya: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.',
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
+      instructions: 'IELTS Academic Writing: 60 dəqiqə, 2 tapşırıq. Task 1 (~20 dəq, minimum 150 söz): verilmiş qrafik, cədvəl, diaqram və ya xəritəni akademik üslubda təsvir edin. Task 2 (~40 dəq, minimum 250 söz): bir arqument və ya problemə dair esse yazın. Task 2-nin çəkisi daha yüksəkdir. Yuxarı söz həddi yoxdur.',
     },
   ],
 
-  // TOEFL iBT (ETS — YENİ FORMAT, yanvar 21, 2026-dan etibarən)
-  // Əsas dəyişikliklər: adaptiv Reading + Listening, tamamilə yeni Speaking və Writing tapşırıqları
-  // Ümumi müddət: ~67–85 dəqiqə (adaptivdən asılı olaraq)
-  // Yeni bal sistemi: 1.0–6.0 band (keçid dövrü üçün 0–120 da göstərilir)
+  // TOEFL iBT — Reading, Listening and Writing. Speaking is not offered.
+  // Listening stays 'single': the real test plays the lecture, then presents
+  // its questions one at a time with no going back, so one-per-screen is the
+  // faithful behaviour here rather than a limitation.
   toefl: [
     {
-      name: 'Reading — Modul 1',
-      type: 'reading', durationMinutes: 18, questions: 20,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Reading 2026 — Modul 1 (ümumi səviyyə). Yeni format: akademik mətnlər + günlük materiallar (e-mail, elan). Sual növləri: ənənəvi reading comprehension, word completion (çatışan hərfləri tamamla), daily-life materials. Nəticəyə əsasən 2-ci modul çətinliyi müəyyən olunur.',
+      name: 'Reading',
+      type: 'reading', durationMinutes: 35, questions: 20,
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
+      instructions: 'TOEFL Reading: 35 dəqiqə, 20 sual. 2 akademik mətn, hər birinə 10 sual. Sual növləri: main idea, detail, negative detail, vocabulary in context, inference, rhetorical purpose, insert sentence, summary. Bölmə daxilində suallara geri qayıda bilərsiniz.',
     },
     {
-      name: 'Reading — Modul 2 (Adaptiv)',
-      type: 'reading', durationMinutes: 15, questions: 18,
-      breakAfterMinutes: 0, isAdaptive: true,
-      instructions: 'TOEFL Reading 2026 — Modul 2 (adaptiv). 1-ci modulun nəticəsinə əsasən "asan" və ya "çətin" versiya verilir. Sual sayı və müddət adaptiv formatdan asılı olaraq dəyişə bilər (35–48 sual, cəmi).',
-    },
-    {
-      name: 'Listening — Modul 1',
-      type: 'listening', durationMinutes: 18, questions: 20,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Listening 2026 — Modul 1 (ümumi səviyyə). Yeni tapşırıq növləri: Listen & Choose a Response (qısa cavablar), Listen to a Conversation (kampus/gündəlik söhbətlər, 2 sual), Listen to an Announcement (40–85 söz elanlar). Nəticəyə əsasən 2-ci modul müəyyən olunur.',
-    },
-    {
-      name: 'Listening — Modul 2 (Adaptiv)',
-      type: 'listening', durationMinutes: 15, questions: 18,
-      breakAfterMinutes: 0, isAdaptive: true,
-      instructions: 'TOEFL Listening 2026 — Modul 2 (adaptiv). Çətinlik 1-ci modulun nəticəsinə əsasən müəyyən olunur. Cəmi listening sualları: 35–45 (adaptivdən asılı). Hər iki modul birlikdə təxminən 36 dəqiqə çəkir.',
-    },
-    {
-      name: 'Speaking',
-      type: 'speaking', durationMinutes: 8, questions: 11,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Speaking 2026 — YENİ FORMAT, ~8 dəqiqə, 11 tapşırıq. Task 1 — Listen & Repeat (7 sual, 8–12 san): qısa cümləni eşidin və eyni ilə təkrarlayın; cümlə ekranda görünmür. Task 2 — Take an Interview (4 sual, 45 san): video müsahibə simulyasiyası — tanış mövzularda suallar eşidilir, cavab verin. AI tərəfindən qiymətləndirilir.',
+      name: 'Listening',
+      type: 'listening', durationMinutes: 36, questions: 28,
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
+      instructions: 'TOEFL Listening: 36 dəqiqə, 28 sual. 3 mühazirə (hər birinə 6 sual) və 2 söhbət (hər birinə 5 sual). Səs yazısı bir dəfə səslənir; suallar səsdən SONRA bir-bir verilir və əvvəlki suala qayıtmaq olmur. Qeyd götürməyiniz tövsiyə olunur.',
     },
     {
       name: 'Writing',
-      type: 'writing', durationMinutes: 17, questions: 3,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'TOEFL Writing 2026 — YENİ FORMAT, ~17 dəqiqə, 3 tapşırıq. Task 1 — E-mail (7 dəq): verilmiş situasiyaya uyğun e-mail yazın. Task 2 — Sentence Building/Unscrambling: cümlə qurun. Task 3 — Academic Discussion (10 dəq): onlayn dərs müzakirəsinə 100+ söz cavab yazın (köhnə formatla eyni). AI + insan ekspert qiymətləndirir.',
+      type: 'writing', durationMinutes: 29, questions: 2,
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
+      instructions: 'TOEFL Writing: 29 dəqiqə, 2 tapşırıq. Integrated (20 dəq): mətni oxuyun, mühazirəni dinləyin, sonra əlaqəni izah edin — minimum 150 söz. Academic Discussion (10 dəq): onlayn müzakirəyə cavab yazın — minimum 100 söz.',
     },
   ],
+
+  // General English (CEFR A1–C1) — our own placement format.
+  // Listening is 'block' so all questions for a dialogue sit on one screen
+  // while it plays, the same reason IELTS listening needs it.
   general_english: [
     {
       name: 'Grammar',
       type: 'grammar', durationMinutes: 15, questions: 15,
-      breakAfterMinutes: 0, isAdaptive: false,
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
       instructions: 'Grammar bölməsi. 15 sual, 15 dəqiqə. Boşluqları doldurma və düzgün qrammatik formanı seçmə tipli suallardan ibarətdir.',
     },
     {
       name: 'Reading',
       type: 'reading', durationMinutes: 15, questions: 15,
-      breakAfterMinutes: 0, isAdaptive: false,
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'single',
       instructions: 'Reading bölməsi. 15 sual, 15 dəqiqə. Qısa mətnləri oxuyub çoxseçimli və ya doğru/yanlış suallarına cavab verin.',
     },
     {
       name: 'Listening',
       type: 'listening', durationMinutes: 15, questions: 15,
-      breakAfterMinutes: 0, isAdaptive: false,
-      instructions: 'Listening bölməsi. 15 sual, 15 dəqiqə. Qısa səs yazılarına qulaq asıb suallara cavab verin.',
+      breakAfterMinutes: 0, isAdaptive: false, layout: 'block',
+      instructions: 'Listening bölməsi. 15 sual, 15 dəqiqə. 3 dialoq, hər birinə 5 sual. Hər dialoqun sualları eyni ekranda göstərilir — səs başlamazdan əvvəl onları oxuyun. Səs yalnız bir dəfə səslənir.',
     },
   ],
 };
@@ -199,6 +198,7 @@ function toServerModule(m: ModuleRow): ParsedModule {
     breakAfterMinutes: m.breakAfterMinutes,
     isAdaptive: m.isAdaptive,
     instructions: m.instructions,
+    layout: m.layout,
   };
 }
 
@@ -217,7 +217,7 @@ function emptyModule(): ModuleRow {
     id: makeKey(), expanded: true,
     name: '', type: 'general',
     durationMinutes: 30, questions: 0,
-    breakAfterMinutes: 0, isAdaptive: false, instructions: '',
+    breakAfterMinutes: 0, isAdaptive: false, instructions: '', layout: 'single',
   };
 }
 
@@ -490,7 +490,20 @@ interface ModuleCardProps {
 
 function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp, onMoveDown, onToggle }: ModuleCardProps) {
   const allowedTypes = ALLOWED_MODULE_TYPES[examType] ?? MODULE_TYPES.map(t => t.value);
-  const filteredModuleTypes = MODULE_TYPES.filter(t => allowedTypes.includes(t.value));
+  /*
+   * The module's CURRENT type is always offered, even when the exam type no
+   * longer allows it.
+   *
+   * A <select> whose `value` matches no <option> renders the first option
+   * instead, while state keeps the real value — so a legacy module (Speaking,
+   * since it was removed from the IELTS and TOEFL lists) would display as
+   * "Listening" and save as `speaking`, with nothing on screen admitting the
+   * difference. Keeping the current value in the list makes the mismatch
+   * visible and the change deliberate.
+   */
+  const filteredModuleTypes = MODULE_TYPES.filter(
+    t => allowedTypes.includes(t.value) || t.value === mod.type,
+  );
   const iconButton =
     'cursor-pointer rounded-btn p-1.5 text-ink-mute transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-25';
 
@@ -579,16 +592,21 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <label className="flex shrink-0 cursor-pointer items-center gap-2.5 select-none">
-              <input
-                type="checkbox" checked={mod.isAdaptive}
-                onChange={e => onUpdate({ isAdaptive: e.target.checked })}
-                className="h-4 w-4 accent-ink"
-              />
-              <span className="text-sm font-medium text-ink">Adaptiv modul</span>
-              <span className="text-note text-ink-mute">(nəticəyə əsasən çətinlik dəyişir)</span>
-            </label>
+          <div>
+            <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">Sualların göstərilməsi</label>
+            <select
+              value={mod.layout}
+              onChange={e => onUpdate({ layout: e.target.value as ModuleRow['layout'] })}
+              className="input-field"
+            >
+              <option value="single">Bir ekranda bir sual</option>
+              <option value="block">Bloklar — eyni blockId-li suallar bir ekranda</option>
+            </select>
+            <p className="mt-2 text-note text-ink-mute">
+              Dinləmə və uzun mətn tapşırıqları üçün «Bloklar» seçin: səs yazısı
+              fasiləsiz oxunduğu üçün namizəd bütün hissəni eyni anda görməlidir.
+              Sualların JSON-da <code>blockId</code> sahəsi olmalıdır.
+            </p>
           </div>
 
           <div>
@@ -607,7 +625,7 @@ function ModuleCard({ mod, index, total, examType, onUpdate, onRemove, onMoveUp,
             <span>{mod.durationMinutes} dəq imtahan</span>
             {mod.breakAfterMinutes > 0 && <span>{mod.breakAfterMinutes} dəq fasilə</span>}
             {mod.questions > 0 && <span>{mod.questions} sual</span>}
-            {mod.isAdaptive && <span className="text-ink">Adaptiv</span>}
+            {mod.layout === 'block' && <span className="text-ink">Bloklar</span>}
           </div>
         </div>
       )}

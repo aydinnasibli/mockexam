@@ -10,6 +10,9 @@ import {
   computeAuthenticScores,
   formatOverallScore,
   formatModuleScore,
+  overallPercent,
+  pickBestAttempt,
+  scaleRawTo40,
 } from './scoring';
 
 describe('roundHalfBand', () => {
@@ -195,21 +198,280 @@ describe('computeAuthenticScores', () => {
 describe('display formatters', () => {
   it('shows IELTS as a band, SAT as a scaled total, everything else as a percentage', () => {
     expect(formatOverallScore({ examType: 'ielts', score: 72, overallBand: 6.5 }))
-      .toEqual({ value: '6.5', unit: 'Band' });
+      .toEqual({ value: '6.5', unit: 'Band', provisional: false, approximate: true });
     expect(formatOverallScore({ examType: 'sat', score: 72, totalScaled: 1210 }))
-      .toEqual({ value: '1210', unit: '/ 1600' });
+      .toEqual({ value: '1210', unit: '/ 1600', provisional: false, approximate: true });
     expect(formatOverallScore({ examType: 'general_english', score: 72 }))
-      .toEqual({ value: '72', unit: '%' });
+      .toEqual({ value: '72', unit: '%', provisional: false, approximate: false });
   });
 
   it('falls back to a percentage for older results with no band stored', () => {
     expect(formatOverallScore({ examType: 'ielts', score: 72 }))
-      .toEqual({ value: '72', unit: '%' });
+      .toEqual({ value: '72', unit: '%', provisional: false, approximate: false });
+  });
+
+  /*
+   * The band tables and the SAT scaled curve are both conversions this platform
+   * approximates, so a figure printed in the exam's own units has to say so.
+   * A percentage is a plain count of marks earned and never carries the caveat —
+   * including for an IELTS attempt that fell back to one, which is the case the
+   * flag would most easily get wrong.
+   */
+  it('flags converted units as approximate and raw percentages as exact', () => {
+    expect(formatOverallScore({ examType: 'ielts', score: 72, overallBand: 6.5 }).approximate).toBe(true);
+    expect(formatOverallScore({ examType: 'sat', score: 72, totalScaled: 1210 }).approximate).toBe(true);
+    expect(formatOverallScore({ examType: 'general_english', score: 72 }).approximate).toBe(false);
+    // IELTS with no stored band falls back to the percentage — an exact figure.
+    expect(formatOverallScore({ examType: 'ielts', score: 72 }).approximate).toBe(false);
+    expect(formatOverallScore({ examType: 'sat', score: 72 }).approximate).toBe(false);
   });
 
   it('shows a pending IELTS writing section as being checked', () => {
     expect(formatModuleScore('ielts', { scorePercent: 0, pending: true })).toBe('yoxlanılır…');
     expect(formatModuleScore('ielts', { scorePercent: 80, band: 7 })).toBe('Band 7.0');
     expect(formatModuleScore('sat', { scorePercent: 80 })).toBe('80%');
+  });
+});
+
+describe('scaleRawTo40', () => {
+  it('passes a 40-mark section through untouched', () => {
+    expect(scaleRawTo40(33, 40)).toBe(33);
+    expect(scaleRawTo40(0, 40)).toBe(0);
+  });
+
+  /*
+   * The case this exists for: per-item matching turned a shipped IELTS reading
+   * section into 53 marks. Unscaled, 40 of 53 would read as Band 9.
+   */
+  it('scales a longer section down onto the 40-mark table', () => {
+    expect(scaleRawTo40(53, 53)).toBe(40);
+    expect(scaleRawTo40(40, 53)).toBe(30);
+    expect(ieltsReadingBand(40, 53)).toBe(7);      // not 9
+    expect(ieltsReadingBand(53, 53)).toBe(9);
+  });
+
+  it('scales a shorter section up so a perfect paper still reaches Band 9', () => {
+    expect(scaleRawTo40(20, 20)).toBe(40);
+    expect(ieltsListeningBand(20, 20)).toBe(9);
+    expect(ieltsListeningBand(10, 20)).toBe(ieltsListeningBand(20, 40));
+  });
+
+  it('never exceeds the total or goes negative', () => {
+    expect(scaleRawTo40(99, 40)).toBe(40);
+    expect(scaleRawTo40(-5, 40)).toBe(0);
+  });
+
+  it('returns 0 for a degenerate total rather than dividing by zero', () => {
+    expect(scaleRawTo40(5, 0)).toBe(0);
+    expect(scaleRawTo40(5, Number.NaN)).toBe(0);
+  });
+});
+
+describe('overallPercent', () => {
+  it('averages the sections rather than the two aggregates', () => {
+    // IELTS shape: two objective sections and a writing section. Under the old
+    // "objective vs writing" mean, writing carried half the paper.
+    expect(overallPercent([
+      { scorePercent: 90, total: 40 },
+      { scorePercent: 90, total: 40 },
+      { scorePercent: 60, total: 2 },
+    ])).toBe(80);
+  });
+
+  it('skips modules with no marks instead of averaging in a zero', () => {
+    expect(overallPercent([
+      { scorePercent: 80, total: 40 },
+      { scorePercent: 0,  total: 0 },   // empty bank — never shown to the candidate
+    ])).toBe(80);
+  });
+
+  it('excludes a module still awaiting the writing grader', () => {
+    expect(overallPercent([
+      { scorePercent: 70, total: 40 },
+      { scorePercent: 0,  total: 2, pending: true },
+    ])).toBe(70);
+  });
+
+  it('returns 0 when nothing is countable', () => {
+    expect(overallPercent([])).toBe(0);
+    expect(overallPercent([{ scorePercent: 0, total: 0 }])).toBe(0);
+  });
+});
+
+describe('computeAuthenticScores — sections the candidate never sat', () => {
+  /*
+   * `buildModuleSchedule` skips a module with an empty bank, so it is never
+   * opened, never shown, and must never be scored.
+   */
+  it('keeps an unauthored IELTS section out of the overall band', () => {
+    const r = computeAuthenticScores({
+      examType: 'ielts',
+      modules: [{ type: 'listening' }, { type: 'reading' }],
+      moduleScores: [
+        { moduleIndex: 0, correct: 30, total: 40 },  // Band 7
+        { moduleIndex: 1, correct: 0,  total: 0  },  // declared, never authored
+      ],
+    });
+    expect(r.overallBand).toBe(7);          // not 3.5
+    expect(r.moduleBands[1]).toBeUndefined();
+  });
+
+  it('still scores a section that was sat and answered nothing', () => {
+    const r = computeAuthenticScores({
+      examType: 'ielts',
+      modules: [{ type: 'listening' }, { type: 'reading' }],
+      moduleScores: [
+        { moduleIndex: 0, correct: 30, total: 40 },
+        { moduleIndex: 1, correct: 0,  total: 40 },  // sat, scored zero
+      ],
+    });
+    expect(r.moduleBands[1]).toBe(0);
+    expect(r.overallBand).toBe(3.5);
+  });
+
+  it('omits SAT scaled scores for a section with no bank', () => {
+    const r = computeAuthenticScores({
+      examType: 'sat',
+      modules: [{ type: 'rw' }, { type: 'math' }],
+      moduleScores: [
+        { moduleIndex: 0, correct: 51, total: 54 },
+        { moduleIndex: 1, correct: 0,  total: 0  },
+      ],
+    });
+    expect(r.mathScaled).toBeUndefined();
+    expect(r.totalScaled).toBeUndefined();   // not 960
+    expect(r.rwScaled).toBeGreaterThan(200);
+  });
+
+  it('reports a total when both SAT sections exist', () => {
+    const r = computeAuthenticScores({
+      examType: 'sat',
+      modules: [{ type: 'rw' }, { type: 'math' }],
+      moduleScores: [
+        { moduleIndex: 0, correct: 54, total: 54 },
+        { moduleIndex: 1, correct: 44, total: 44 },
+      ],
+    });
+    expect(r.totalScaled).toBe(1600);
+  });
+
+  /* A floored section that was genuinely sat still reports 200. */
+  it('keeps the 200 floor for a section that was sat', () => {
+    const r = computeAuthenticScores({
+      examType: 'sat',
+      modules: [{ type: 'rw' }, { type: 'math' }],
+      moduleScores: [
+        { moduleIndex: 0, correct: 54, total: 54 },
+        { moduleIndex: 1, correct: 0,  total: 44 },
+      ],
+    });
+    expect(r.mathScaled).toBe(200);
+    expect(r.totalScaled).toBe(1000);
+  });
+});
+
+describe('pickBestAttempt', () => {
+  /*
+   * The percentage and the band need not agree, and the page shows the band —
+   * so the band is what "best" has to mean for an IELTS paper.
+   */
+  it('ranks IELTS by band, not by percentage', () => {
+    const results = [
+      { examType: 'ielts', score: 82, overallBand: 6.5 },
+      { examType: 'ielts', score: 78, overallBand: 7.5 },
+    ];
+    expect(pickBestAttempt(results, 'ielts')?.overallBand).toBe(7.5);
+  });
+
+  it('ranks SAT by the scaled total', () => {
+    const results = [
+      { examType: 'sat', score: 90, totalScaled: 1400 },
+      { examType: 'sat', score: 88, totalScaled: 1480 },
+    ];
+    expect(pickBestAttempt(results, 'sat')?.totalScaled).toBe(1480);
+  });
+
+  it('falls back to percentage when an attempt lacks the unit', () => {
+    // One essay still pending, so that attempt has no band yet.
+    const results = [
+      { examType: 'ielts', score: 82, overallBand: 6.5 },
+      { examType: 'ielts', score: 90 },
+    ];
+    expect(pickBestAttempt(results, 'ielts')?.score).toBe(90);
+  });
+
+  it('uses percentage for exams with no authentic unit', () => {
+    const results = [{ score: 40 }, { score: 71 }];
+    expect(pickBestAttempt(results, 'general_english')?.score).toBe(71);
+  });
+
+  it('returns null for no attempts', () => {
+    expect(pickBestAttempt([], 'ielts')).toBeNull();
+  });
+});
+
+describe('formatOverallScore — provisional results', () => {
+  /*
+   * A pending section is excluded from the band rather than scored as zero, so
+   * the figure is a mean of what HAS been marked. Presenting that as a finished
+   * overall band overstates it — and an essay that never grades leaves it that
+   * way for good.
+   */
+  it('flags a band computed while a section is still with the grader', () => {
+    expect(formatOverallScore({
+      examType: 'ielts',
+      score: 78,
+      overallBand: 7,
+      moduleScores: [{ }, { pending: true }],
+    }).provisional).toBe(true);
+  });
+
+  it('is not provisional once every section is marked', () => {
+    expect(formatOverallScore({
+      examType: 'ielts',
+      score: 78,
+      overallBand: 7,
+      moduleScores: [{ }, { pending: false }],
+    }).provisional).toBe(false);
+  });
+});
+
+describe('computeAuthenticScores — writing tasks are per module', () => {
+  const modules = [{ type: 'writing' }, { type: 'writing' }];
+  const moduleScores = [
+    { moduleIndex: 0, correct: 0, total: 1 },
+    { moduleIndex: 1, correct: 0, total: 1 },
+  ];
+
+  /*
+   * One flat list used to be handed to every writing module in turn, so both
+   * sections reported the same band computed from all essays in the attempt.
+   */
+  it('scores each writing module from its own essays', () => {
+    const r = computeAuthenticScores({
+      examType: 'ielts',
+      modules,
+      moduleScores,
+      writingTasks: [
+        { band: 8, moduleIndex: 0 },
+        { band: 5, moduleIndex: 1 },
+      ],
+    });
+    expect(r.moduleBands[0]).toBe(8);
+    expect(r.moduleBands[1]).toBe(5);
+  });
+
+  /* Older results carry no moduleIndex; they had only one writing module. */
+  it('still scores untagged essays against the writing module', () => {
+    const r = computeAuthenticScores({
+      examType: 'ielts',
+      modules: [{ type: 'reading' }, { type: 'writing' }],
+      moduleScores: [
+        { moduleIndex: 0, correct: 30, total: 40 },
+        { moduleIndex: 1, correct: 0, total: 2 },
+      ],
+      writingTasks: [{ band: 6.5 }],
+    });
+    expect(r.moduleBands[1]).toBe(6.5);
   });
 });
