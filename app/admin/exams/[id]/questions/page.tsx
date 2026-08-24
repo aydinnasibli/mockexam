@@ -32,6 +32,9 @@ export default async function ExamQuestionsPage({ params }: Props) {
     name: m.name,
     type: m.type,
     questionCount: m.questions,
+    // The form needs this to know whether `blockId` is meaningful: only a
+    // block-layout module groups its questions onto one screen.
+    layout: m.layout,
   }));
 
   return (

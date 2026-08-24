@@ -21,6 +21,8 @@ interface ModuleMeta {
   name: string;
   type: string;
   questionCount: number;
+  /** 'block' groups this module's questions onto one screen by `blockId`. */
+  layout?: string;
 }
 
 interface Props {
@@ -203,6 +205,7 @@ function MathTextarea({
 function emptyForm(moduleIndex: number, type: QuestionType = 'mcq') {
   return {
     moduleIndex, type,
+    blockId: '',
     passage: '', audioUrl: '', imageUrl: '', stem: '', explanation: '',
     options: ['', '', '', ''],            // mcq choices OR matching right-column targets
     correctIndex: 0,                       // mcq
@@ -220,9 +223,9 @@ type FormState = ReturnType<typeof emptyForm>;
 // ─── Question form ────────────────────────────────────────────────────────────
 
 function QuestionForm({
-  examId, moduleIndex, initial, onDone, onCancel,
+  examId, moduleIndex, moduleLayout, initial, onDone, onCancel,
 }: {
-  examId: string; moduleIndex: number; initial?: QuestionData;
+  examId: string; moduleIndex: number; moduleLayout?: string; initial?: QuestionData;
   onDone: () => void; onCancel: () => void;
 }) {
   const isEdit = !!initial;
@@ -231,6 +234,7 @@ function QuestionForm({
     initial
       ? {
           moduleIndex: initial.moduleIndex, type: initial.type,
+          blockId: initial.blockId ?? '',
           passage: initial.passage, audioUrl: initial.audioUrl ?? '', imageUrl: initial.imageUrl ?? '',
           stem: initial.stem, explanation: initial.explanation,
           options: initial.options.length ? [...initial.options] : ['', '', '', ''],
@@ -298,6 +302,7 @@ function QuestionForm({
     const matchCount = form.matchItems.filter(m => m.trim()).length;
     const payload = {
       type: t,
+      blockId: form.blockId.trim(),
       passage: form.passage,
       audioUrl: form.audioUrl,
       imageUrl: form.imageUrl,
@@ -341,6 +346,31 @@ function QuestionForm({
           </button>
         ))}
       </div>
+
+      {/*
+        Block id — only for a block-layout module, where it decides which
+        questions share a screen. In a single-layout module it does nothing, so
+        showing it there would just be a field with no consequence.
+      */}
+      {moduleLayout === 'block' && (
+        <div>
+          <label className="mb-2 block font-mono text-label font-normal tracking-[0.14em] uppercase text-ink-mute">
+            Blok ID <span className="font-normal normal-case">(bu modul bloklarla göstərilir)</span>
+          </label>
+          <input
+            type="text"
+            value={form.blockId}
+            onChange={e => set('blockId', e.target.value)}
+            placeholder="məs. part-1, task-2, dialogue-3"
+            className="w-full rounded-btn border border-rule bg-surface bg-none font-sans text-base text-ink outline-none transition-[border-color] duration-200 focus:border-ink placeholder:text-ink-mute focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-1 px-4 py-3.5"
+          />
+          <p className="mt-2 m-0 text-note text-ink-mute">
+            Eyni Blok ID-yə malik ardıcıl suallar bir ekranda birlikdə göstərilir.
+            Boş qoyulsa, bu sual tək başına ayrı ekranda çıxacaq — dayandırıla bilməyən
+            audio ilə bu, cavablandırmağı qeyri-mümkün edə bilər.
+          </p>
+        </div>
+      )}
 
       {/* Passage */}
       <div>
@@ -598,15 +628,15 @@ function QuestionForm({
 const cardIconButton =
   'cursor-pointer rounded-btn p-1.5 text-ink-mute transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30';
 
-function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
-  q: QuestionData; index: number; examId: string;
+function QuestionCard({ q, index, examId, moduleLayout, onMove, isFirst, isLast }: {
+  q: QuestionData; index: number; examId: string; moduleLayout?: string;
   onMove: (dir: -1 | 1) => void; isFirst: boolean; isLast: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [deleting, startDelete] = useTransition();
 
-  if (editing) return <QuestionForm examId={examId} moduleIndex={q.moduleIndex} initial={q} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />;
+  if (editing) return <QuestionForm examId={examId} moduleIndex={q.moduleIndex} moduleLayout={moduleLayout} initial={q} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />;
 
   return (
     <div className="flex gap-4 rounded-panel border border-rule bg-surface p-5">
@@ -614,6 +644,22 @@ function QuestionCard({ q, index, examId, onMove, isFirst, isLast }: {
         {String(index + 1).padStart(2, '0')}
       </div>
       <div className="min-w-0 flex-1">
+        {/*
+          A block-layout module groups its questions by `blockId`. One without
+          it silently becomes its own screen, which is the failure blocks exist
+          to prevent — so say so here rather than leaving it to be discovered
+          during a sitting.
+        */}
+        {moduleLayout === 'block' && !q.blockId?.trim() && (
+          <p className="mb-2.5 m-0 rounded-btn border border-warn bg-warn/8 px-3 py-2 text-xs text-ink">
+            Blok ID yoxdur — bu sual ayrıca ekranda göstəriləcək. Düzəliş edib blok ID əlavə edin.
+          </p>
+        )}
+        {q.blockId?.trim() && (
+          <span className="mb-2.5 mr-2 inline-block rounded-full bg-surface-2 px-2 py-0.5 font-mono text-caption text-ink-mute">
+            {q.blockId}
+          </span>
+        )}
         {q.passage && (
           <div className="mb-2.5 line-clamp-2 rounded-btn bg-surface-2 px-3 py-2 text-xs text-ink-mute">
             <FileText size={11} className="mr-1 inline" />
@@ -782,11 +828,11 @@ export default function QuestionManager({ examId, modules, initialQuestions }: P
                   <p className="m-0 py-8 text-center text-note text-ink-mute">Bu modulda hələ sual yoxdur.</p>
                 )}
                 {qs.map((q, i) => (
-                  <QuestionCard key={q.id} q={q} index={i} examId={examId}
+                  <QuestionCard key={q.id} q={q} index={i} examId={examId} moduleLayout={mod.layout}
                     onMove={dir => moveQuestion(mod.index, qs, i, dir)}
                     isFirst={i === 0} isLast={i === qs.length - 1} />
                 ))}
-                {isAdding && <QuestionForm examId={examId} moduleIndex={mod.index} onDone={() => setAddingTo(null)} onCancel={() => setAddingTo(null)} />}
+                {isAdding && <QuestionForm examId={examId} moduleIndex={mod.index} moduleLayout={mod.layout} onDone={() => setAddingTo(null)} onCancel={() => setAddingTo(null)} />}
                 {!isAdding && (
                   <button type="button" onClick={() => setAddingTo(mod.index)}
                     className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-panel border border-dashed border-ink-faint py-3.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink hover:text-ink">

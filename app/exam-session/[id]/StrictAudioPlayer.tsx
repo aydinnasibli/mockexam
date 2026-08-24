@@ -29,6 +29,10 @@ export default function StrictAudioPlayer(
 ) {
   const [status, setStatus] = useState<'checking' | 'ready' | 'playing' | 'finished'>('checking');
   const [currentTime, setCurrentTime] = useState(0);
+  /** True while the one-and-only claim is in flight; disables the button. */
+  const [claiming, setClaiming] = useState(false);
+  /** Synchronous guard — see `handlePlay`. Never reset once a claim is made. */
+  const claimStartedRef = useRef(false);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -54,14 +58,35 @@ export default function StrictAudioPlayer(
   }, [src, examId]);
 
   const handlePlay = async () => {
+    /*
+     * The latch is a REF, and it is set before anything is awaited.
+     *
+     * `status` is React state, and `setStatus('playing')` cannot run until
+     * `await play()` has resolved — so two clicks a few milliseconds apart both
+     * read `status === 'ready'` and both proceeded. The first created the claim;
+     * the second hit the unique index, was told `alreadyPlayed`, and took the
+     * "another tab has this" branch — pausing the audio and marking it finished
+     * with the claim already spent. A double-tap one second into an IELTS
+     * Listening part destroyed the recording permanently.
+     *
+     * A ref updates synchronously, so the second invocation returns before it
+     * can reach `play()`. `claiming` additionally disables the button, so the
+     * common case never gets that far.
+     */
+    if (claimStartedRef.current) return;
     if (status !== 'ready' || !audioRef.current) return;
+    claimStartedRef.current = true;
+    setClaiming(true);
 
     // Must call play() synchronously inside the click handler — browsers block it
     // if called after an await (loses the user-gesture context).
     try {
       await audioRef.current.play();
-      setStatus('playing');
     } catch (err) {
+      // Playback never started, so nothing was consumed: release the latch and
+      // let them try again rather than burning the track on a blocked autoplay.
+      claimStartedRef.current = false;
+      setClaiming(false);
       const { name, message } = err instanceof Error
         ? { name: err.name, message: err.message }
         : { name: undefined, message: String(err) };
@@ -69,14 +94,20 @@ export default function StrictAudioPlayer(
       toast.error(`Audionu başlatmaq mümkün olmadı: ${message}. Zəhmət olmasa təkrar sınayın.`);
       return;
     }
+    setStatus('playing');
 
     // Mark as played server-side after playback has started. A failure here is
     // deliberately silent: the audio is already running and stopping it over a
     // bookkeeping error would cost the student the recording.
     const result = await markAudioPlayed(examId, src).catch(() => ({ error: 'network' as const }));
+    setClaiming(false);
     if ('error' in result) return; // fail open — audio is already playing
     if (result.alreadyPlayed) {
-      // Race condition: was already played in another tab — stop it
+      /*
+       * With the latch in place this component claims at most once, so this can
+       * only mean the track was genuinely consumed elsewhere — another tab, or
+       * another device. Stopping it is right.
+       */
       audioRef.current?.pause();
       setStatus('finished');
     }
@@ -137,10 +168,11 @@ export default function StrictAudioPlayer(
       {/* Ready state */}
       {status === 'ready' && (
         <>
-          <Button size="none" className="w-full justify-center gap-2.5 rounded-xl px-5.5 py-3 text-sm"
+          <Button size="none" className="w-full justify-center gap-2.5 rounded-xl px-5.5 py-3 text-sm disabled:opacity-60"
             onClick={handlePlay}
+            disabled={claiming}
           >
-            <Play size={18} /> Səsi Başlat (Yalnız 1 dəfə)
+            <Play size={18} /> {claiming ? 'Başladılır…' : 'Səsi Başlat (Yalnız 1 dəfə)'}
           </Button>
           <p className="text-sm text-center px-2 leading-tight font-medium text-warn">
             ⚠️ Diqqət: Audio yalnız 1 dəfə dinlənilə bilər. Başlatdıqdan sonra dayandırmaq olmaz.

@@ -357,6 +357,15 @@ export async function addQuestion(data: {
   examId: string;
   moduleIndex: number;
   type: QuestionType;
+  /**
+   * Groups this question onto one screen with its neighbours. Required for a
+   * block-layout module — a question added without it renders as its own
+   * isolated screen, which against an unpausable single-play recording is the
+   * exact failure `exam-blocks.ts` exists to prevent. Only the JSON importer
+   * could set it before, so anything added through the admin panel silently
+   * broke the module it was added to.
+   */
+  blockId?: string;
   passage: string;
   audioUrl?: string;
   imageUrl?: string;
@@ -400,6 +409,8 @@ export async function updateQuestion(
   id: string,
   data: Partial<{
     type: QuestionType;
+    /** See `addQuestion`. Omitted keys leave the stored value untouched. */
+    blockId: string;
     passage: string;
     audioUrl?: string;
     imageUrl?: string;
