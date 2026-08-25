@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import dbConnect from '@/lib/infra/mongodb';
@@ -10,9 +9,13 @@ import { checkRole } from '@/lib/infra/admin';
 import { validateModules } from '@/lib/domain/exam-modules';
 import { isExamType } from '@/lib/domain/exam-types';
 import { validateQuestion } from '@/lib/domain/question-validation';
-import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/shared/media';
+import {
+  isAllowedMediaUrl,
+  INVALID_IMAGE_URL_MESSAGE,
+  INVALID_AUDIO_URL_MESSAGE,
+} from '@/lib/shared/media';
 import { captureException } from '@/lib/infra/observability';
-import { syncExamTotals } from '@/lib/db/exam-totals';
+import { syncExamTotals, revalidateExam } from '@/lib/db/exam-totals';
 
 /**
  * Import payload schema.
@@ -30,10 +33,11 @@ const questionSchema = z.object({
   type:            z.enum(['mcq', 'open', 'matching', 'writing']).optional(),
   blockId:         z.string().max(120).optional(),
   passage:         z.string().max(20_000).optional(),
-  audioUrl:        z.string().max(2_000).optional(),
+  // Same host rule as imageUrl — see INVALID_AUDIO_URL_MESSAGE.
+  audioUrl:        z.string().max(2_000).refine(isAllowedMediaUrl, INVALID_AUDIO_URL_MESSAGE).optional(),
   // Rendered with next/image, which throws on a host outside remotePatterns —
   // so the host is constrained here rather than at render time.
-  imageUrl:        z.string().max(2_000).refine(isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE).optional(),
+  imageUrl:        z.string().max(2_000).refine(isAllowedMediaUrl, INVALID_IMAGE_URL_MESSAGE).optional(),
   stem:            z.string().max(5_000).optional(),
   options:         z.array(z.string().max(2_000)).max(10).optional(),
   openAnswers:     z.array(z.string().max(500)).max(50).optional(),
@@ -167,7 +171,6 @@ export async function importExamFromJson(
   }
 
   // Next.js redirect must be outside try-catch to function correctly
-  revalidatePath('/admin/exams');
-  revalidatePath('/exams');
+  revalidateExam(examId);
   redirect(`/admin/exams/${examId}/questions`); // Redirect straight to the questions view
 }

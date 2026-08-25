@@ -1,4 +1,5 @@
 import posthog from 'posthog-js';
+import { hasAnalyticsConsent } from '@/lib/shared/analytics-consent';
 
 /**
  * Client-side PostHog init — product analytics, session replay and error
@@ -47,10 +48,31 @@ if (key) {
       maskTextSelector: '[data-ph-mask], [data-ph-mask] *',
     },
 
+    /*
+     * Replay does not start until the cookie notice has been acknowledged.
+     *
+     * It used to begin on first paint, before the visitor had been told
+     * anything. `respect_dnt` is honoured, but a Do-Not-Track header is not
+     * consent — and replay alongside an identified user was the pairing that
+     * carried real weight for EU traffic. `CookieNotice` calls
+     * `startSessionRecording()` on acknowledgement, and the check below covers
+     * a visitor who acknowledged on an earlier visit.
+     *
+     * Anonymous analytics events keep running: they carry no PII now that
+     * `identify` no longer sends an email address.
+     */
+    disable_session_recording: true,
+
     persistence: 'localStorage+cookie',
     // Honour the browser's Do Not Track signal.
     respect_dnt: true,
   });
+
+  // Already acknowledged on a previous visit — start replay without waiting for
+  // the notice, which will not be shown again inside the retention window.
+  if (hasAnalyticsConsent()) {
+    try { posthog.startSessionRecording(); } catch { /* replay is optional */ }
+  }
 
   // Local development is not a user session. Without this, every `npm run dev`
   // page load files a replay and a pageview against the production project and

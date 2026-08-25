@@ -12,7 +12,7 @@ import { checkRole } from '@/lib/infra/admin';
 import { isExamType, type ExamType } from '@/lib/domain/exam-types';
 import { validateModules, type ParsedModule } from '@/lib/domain/exam-modules';
 import { captureException } from '@/lib/infra/observability';
-import { syncExamTotals } from '@/lib/db/exam-totals';
+import { syncExamTotals, revalidateExam } from '@/lib/db/exam-totals';
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
@@ -107,6 +107,24 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
 
   try {
     await dbConnect();
+
+    /*
+     * Refuse an id that still has questions behind it.
+     *
+     * Questions reference their exam by the STRING `examId`, so creating an
+     * exam whose id matches a deleted one silently adopts its entire bank —
+     * `sat-mock-1` currently has 98 stranded questions waiting for exactly
+     * that. `importExamFromJson` is already safe (it refuses a duplicate id and
+     * runs `deleteMany` before inserting); this form path had neither guard.
+     */
+    const stranded = await QuestionModel.countDocuments({ examId: rawExamId });
+    if (stranded > 0) {
+      return {
+        error: `Bu ID (${rawExamId}) ilə silinmiş imtahandan qalan ${stranded} sual var. `
+             + 'Başqa ID seçin və ya köhnə sualları təmizləyin.',
+      };
+    }
+
     await ExamModel.create({
       examId:          rawExamId,
       title:           fields.title,
@@ -127,8 +145,7 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
     return { error: 'Server xətası baş verdi.' };
   }
 
-  revalidatePath('/admin/exams');
-  revalidatePath('/exams');
+  revalidateExam(rawExamId);
   redirect('/admin/exams');
 }
 
@@ -197,8 +214,7 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
     return { error: 'Server xətası baş verdi.' };
   }
 
-  revalidatePath('/admin/exams');
-  revalidatePath('/exams');
+  revalidateExam(examId);
   redirect('/admin/exams');
 }
 
@@ -207,8 +223,7 @@ export async function toggleExamActive(examId: string, newActive: boolean): Prom
     await requireAdmin();
     await dbConnect();
     await ExamModel.findOneAndUpdate({ examId }, { $set: { isActive: newActive } });
-    revalidatePath('/admin/exams');
-    revalidatePath('/exams');
+    revalidateExam(examId);
     return {};
   } catch (err) {
     void captureException(err, { tags: { action: 'toggleExamActive' } });
@@ -278,8 +293,7 @@ export async function deleteExam(examId: string): Promise<ActionResult> {
       ExamSessionModel.deleteMany({ examId }),
     ]);
 
-    revalidatePath('/admin/exams');
-    revalidatePath('/exams');
+    revalidateExam(examId);
     return {};
   } catch (err) {
     void captureException(err, { tags: { action: 'deleteExam' } });
@@ -338,8 +352,7 @@ export async function seedExams(_prev: SeedResult): Promise<SeedResult> {
       created++;
     }
     revalidatePath('/admin');
-    revalidatePath('/admin/exams');
-    revalidatePath('/exams');
+    revalidateExam();
     return { created, skipped };
   } catch (err) {
     void captureException(err, { tags: { action: 'seedExams' } });
@@ -369,8 +382,7 @@ export async function resyncExamTotals(
     await dbConnect();
     const exams = await ExamModel.find({}).select('examId').lean();
     for (const e of exams) await syncExamTotals(e.examId);
-    revalidatePath('/admin/exams');
-    revalidatePath('/exams');
+    revalidateExam();
     return { updated: exams.length };
   } catch (err) {
     void captureException(err, { tags: { action: 'resyncExamTotals' } });

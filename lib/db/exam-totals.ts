@@ -1,4 +1,5 @@
 import 'server-only';
+import { revalidatePath } from 'next/cache';
 import dbConnect from '@/lib/infra/mongodb';
 import ExamModel from '@/lib/models/Exam';
 import QuestionModel from '@/lib/models/Question';
@@ -73,5 +74,31 @@ export async function syncExamTotals(examId: string): Promise<void> {
     // Best-effort: a stale headline number must never fail the write that
     // prompted it. It is still reported, because silent drift is the bug.
     void captureException(err, { tags: { action: 'syncExamTotals' }, extra: { examId } });
+  }
+}
+
+/**
+ * Invalidate every cached surface that renders an exam.
+ *
+ * `revalidatePath('/exams')` alone was called from all six mutation sites and
+ * only ever invalidated the catalog. The detail page is `revalidate = 3600`
+ * with `generateStaticParams`, and Next builds its cache tag from the LITERAL
+ * path — its own source logs "this has no effect" when a dynamic route is
+ * passed without a `type`. So a reprice left `/exams/<id>` advertising the old
+ * price for up to an hour while checkout charged the new one, a deactivation
+ * left a working Buy button, and a delete kept serving.
+ *
+ * Pass `examId` for a single exam; omit it for a bulk operation (seed, resync)
+ * and every parameterisation of the route is invalidated instead.
+ */
+export function revalidateExam(examId?: string): void {
+  revalidatePath('/exams');
+  revalidatePath('/admin/exams');
+  if (examId) {
+    revalidatePath(`/exams/${examId}`);
+  } else {
+    // The `'page'` type is REQUIRED for a dynamic route; without it the call
+    // is silently a no-op.
+    revalidatePath('/exams/[id]', 'page');
   }
 }

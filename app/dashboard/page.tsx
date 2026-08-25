@@ -99,7 +99,17 @@ export default async function DashboardPage({
     if (!lastResultByExam.has(r.examId)) lastResultByExam.set(r.examId, r);
   }
 
-  const recentResults = results.slice(0, 6);
+  /*
+   * Only results whose exam still exists.
+   *
+   * Each of these links to a review page that resolves the exam and calls
+   * `notFound()` when it is gone — so an attempt on a deleted exam rendered as
+   * a dead link on the candidate's own dashboard. The analytics page never had
+   * the problem because it derives its list from the live catalog; this one
+   * took the results straight from the database.
+   */
+  const liveExamIds = new Set(allExams.map(e => e.id));
+  const recentResults = results.filter(r => liveExamIds.has(r.examId)).slice(0, 6);
 
   const resultsByType = new Map<string, typeof results>();
   for (const r of results) {

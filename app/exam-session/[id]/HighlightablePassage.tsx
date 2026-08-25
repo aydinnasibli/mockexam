@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { parsePassage } from '@/lib/shared/render-math';
 import {
   segmentRuns, normalizeRange, isEmptyRange,
@@ -20,6 +20,9 @@ import {
  * attributes; that is what turns a browser Selection back into the stable
  * anchors in `lib/domain/passage-highlights.ts`.
  */
+
+/** How long a touch selection must be still before it is committed. */
+const TOUCH_SETTLE_MS = 350;
 
 interface Props {
   text: string;
@@ -103,12 +106,53 @@ function HighlightablePassage({
     sel.removeAllRanges();
   }, [onCreate]);
 
+  /*
+   * ── Touch is not a mouse ──
+   *
+   * `touchend` fires the instant the finger lifts — which on iOS and Android is
+   * the moment the selection handles APPEAR, not the moment the reader has
+   * finished dragging them. Committing there captured whatever the long-press
+   * had grabbed (usually a single word) and then called `removeAllRanges()`,
+   * destroying the selection the reader was about to adjust.
+   *
+   * So on touch the commit is deferred, and any further `selectionchange`
+   * restarts the wait. Dragging a handle keeps pushing the deadline out; the
+   * highlight lands once the selection has been still for a moment. Mouse and
+   * keyboard are unchanged — they have no handles and no such gap.
+   *
+   * NOTE: reasoned from the platform behaviour, not yet confirmed on a physical
+   * device. The worst case if the premise is wrong is a highlight that commits
+   * a fraction of a second later than before.
+   */
+  const touchCommitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleTouchCommit = useCallback(() => {
+    if (touchCommitRef.current) clearTimeout(touchCommitRef.current);
+    touchCommitRef.current = setTimeout(() => {
+      touchCommitRef.current = null;
+      commitSelection();
+    }, TOUCH_SETTLE_MS);
+  }, [commitSelection]);
+
+  useEffect(() => {
+    const onSelectionChange = () => {
+      // Only meaningful while a touch commit is already pending; otherwise this
+      // is an ordinary mouse drag and `mouseup` owns it.
+      if (touchCommitRef.current) scheduleTouchCommit();
+    };
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', onSelectionChange);
+      if (touchCommitRef.current) clearTimeout(touchCommitRef.current);
+    };
+  }, [scheduleTouchCommit]);
+
   return (
     <div
       ref={rootRef}
       className={className}
       onMouseUp={commitSelection}
-      onTouchEnd={commitSelection}
+      onTouchEnd={scheduleTouchCommit}
     >
       {blocks.map((block, bi) => {
         const body = block.lines.map((line, li) => (

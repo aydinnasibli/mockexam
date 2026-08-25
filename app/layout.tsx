@@ -155,6 +155,24 @@ export default function RootLayout({
         </head>
         <body className="antialiased">
           {/*
+            ── Reveal fallback for a page without JS ──
+
+            Every scroll-reveal wrapper (`FadeUp`, `StaggerItem`, `StructureBar`)
+            sets a Framer `initial`, and Framer serialises that into the SSR
+            HTML as `style="opacity:0;transform:translateY(18px)"` — 17 elements
+            on the homepage alone. The markup is all there, but if the bundle
+            fails to load, or JS is blocked, it is painted invisible and the
+            page reads as blank.
+
+            `<noscript>` covers the blocked-JS case at zero cost and with no
+            effect on the animation when JS does run. It cannot cover a bundle
+            that fails after parsing, which is why the wrappers are also tagged
+            with a class rather than relying on element selectors.
+          */}
+          <noscript>
+            <style>{`.js-reveal{opacity:1!important;transform:none!important}`}</style>
+          </noscript>
+          {/*
             posthog-js is initialised in instrumentation-client.ts; this provider
             only supplies the React context for usePostHog(). PostHogPageView
             captures App Router navigations, which posthog-js cannot see itself.

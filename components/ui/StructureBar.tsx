@@ -52,7 +52,7 @@ export default function StructureBar({
         return (
           <motion.div
             key={i}
-            className={`flex min-w-0.5 items-center overflow-hidden ${block.fill} ${
+            className={`js-reveal flex min-w-0.5 items-center overflow-hidden ${block.fill} ${
               block.kind === 'break' && labelBreaks ? 'justify-center' : ''
             }`}
             style={{ flex: block.minutes, transformOrigin: 'left' }}
@@ -64,7 +64,7 @@ export default function StructureBar({
           >
             {showFigure && (
               <motion.span
-                className={`${figureClass} whitespace-nowrap ${block.figureClass}`}
+                className={`js-reveal ${figureClass} whitespace-nowrap ${block.figureClass}`}
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true, margin: '-60px' }}

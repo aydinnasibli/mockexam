@@ -23,7 +23,7 @@ export const ALLOWED_IMAGE_HOSTS_LABEL = '*.public.blob.vercel-storage.com';
  * Protocol-relative ('//host/x') and non-https URLs are rejected, as are hosts
  * that merely *contain* the suffix (e.g. 'evil.com/.public.blob...').
  */
-export function isAllowedImageUrl(value: string | undefined | null): boolean {
+export function isAllowedMediaUrl(value: string | undefined | null): boolean {
   if (!value) return true;
   const url = value.trim();
   if (!url) return true;
@@ -45,3 +45,21 @@ export function isAllowedImageUrl(value: string | undefined | null): boolean {
 /** Error message shown when validation fails. */
 export const INVALID_IMAGE_URL_MESSAGE =
   `Şəkil URL-i yalnız ${ALLOWED_IMAGE_HOSTS_LABEL} domenində və ya saytın öz domenində (/ ilə başlayan yol) ola bilər.`;
+
+/**
+ * @deprecated Prefer `isAllowedMediaUrl`. Kept as a named alias so existing
+ * call sites read naturally where the field really is an image.
+ */
+export const isAllowedImageUrl = isAllowedMediaUrl;
+
+/**
+ * Message for a rejected audio URL.
+ *
+ * `audioUrl` went unchecked while `imageUrl` was guarded on all three write
+ * paths — the same host rule, applied to the field with the worse failure. A
+ * bad image is a broken picture; a bad audio host saves cleanly and is then
+ * blocked by CSP `media-src` at runtime, which surfaces as a Play button that
+ * never sounds inside a live, timed, single-play listening module.
+ */
+export const INVALID_AUDIO_URL_MESSAGE =
+  `Audio URL yalnız ${ALLOWED_IMAGE_HOSTS_LABEL} hostundan ola bilər (və ya sayt daxili /path).`;

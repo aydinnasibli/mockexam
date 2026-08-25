@@ -11,11 +11,15 @@ import { getExamByIdAdmin } from '@/lib/db/exams';
 import { isModuleOpen, totalScheduledSeconds } from '@/lib/domain/exam-timing';
 import { validateQuestion } from '@/lib/domain/question-validation';
 import { checkRole } from '@/lib/infra/admin';
-import { isAllowedImageUrl, INVALID_IMAGE_URL_MESSAGE } from '@/lib/shared/media';
+import {
+  isAllowedMediaUrl,
+  INVALID_IMAGE_URL_MESSAGE,
+  INVALID_AUDIO_URL_MESSAGE,
+} from '@/lib/shared/media';
 import { captureException } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
 import { isRateLimited } from '@/lib/infra/rate-limit';
-import { syncExamTotals } from '@/lib/db/exam-totals';
+import { syncExamTotals, revalidateExam } from '@/lib/db/exam-totals';
 
 export interface QuestionData {
   id: string;
@@ -383,7 +387,8 @@ export async function addQuestion(data: {
 }): Promise<{ id: string } | { error: string }> {
   try {
     await requireAdmin();
-    if (!isAllowedImageUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
+    if (!isAllowedMediaUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
+    if (!isAllowedMediaUrl(data.audioUrl)) return { error: INVALID_AUDIO_URL_MESSAGE };
     // The same gradability rules the JSON importer enforces. Without them this
     // path could store an `open` question with no accepted answers or a
     // `matching` question with a short key — questions that render, count in
@@ -397,7 +402,8 @@ export async function addQuestion(data: {
     // The bank changed, so the exam's advertised totals did too.
     await syncExamTotals(data.examId);
     revalidatePath(`/admin/exams/${data.examId}/questions`);
-    revalidatePath('/exams');
+    // The bank changed, so the catalog AND this exam's detail page are stale.
+    revalidateExam(data.examId);
     return { id: String(doc._id) };
   } catch (err) {
     void captureException(err, { tags: { action: 'addQuestion' } });
@@ -430,7 +436,8 @@ export async function updateQuestion(
   if (!validId(id)) return { error: 'Invalid question ID' };
   try {
     await requireAdmin();
-    if (!isAllowedImageUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
+    if (!isAllowedMediaUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
+    if (!isAllowedMediaUrl(data.audioUrl)) return { error: INVALID_AUDIO_URL_MESSAGE };
     await dbConnect();
 
     // Validate the document as it WILL BE, not as the patch describes it: a
@@ -465,7 +472,7 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
     await Promise.all(remaining.map((q, i) => QuestionModel.updateOne({ _id: q._id }, { order: i })));
     await syncExamTotals(doc.examId);
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
-    revalidatePath('/exams');
+    revalidateExam(doc.examId);
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'deleteQuestion' } });

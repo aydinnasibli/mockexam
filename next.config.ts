@@ -83,6 +83,8 @@ const csp = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // Nothing gains from advertising the framework and version to a scanner.
+  poweredByHeader: false,
   images: {
     // Must stay in step with the `img-src` CSP directive below: a host allowed
     // here but not there (or vice versa) yields an image that 404s or is blocked.

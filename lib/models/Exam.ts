@@ -79,7 +79,19 @@ const ExamSchema = new Schema<IExam>(
   { timestamps: true }
 );
 
-ExamSchema.index({ type: 1 });
+/*
+ * `{type}` is not indexed: nothing queries by it.
+ *
+ * Every server-side read is by `examId` or `isActive` (see `lib/db/exams.ts`);
+ * the catalog's type filter is applied client-side on an already-fetched list.
+ * The index only cost write amplification on every exam save.
+ *
+ * NOTE: Mongoose creates indexes but never drops them, and it RE-CREATES any
+ * still declared here on the next connection — dropping `type_1` by hand while
+ * this line existed simply brought it back. Removing the declaration is what
+ * makes the drop stick:
+ *   db.exams.dropIndex('type_1')
+ */
 ExamSchema.index({ isActive: 1 });
 
 /** Compute totalQuestions and durationMinutes from the modules array. */

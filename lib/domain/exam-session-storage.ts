@@ -63,10 +63,48 @@ export function storageKey(examId: string): string {
   return `tc-exam-${examId}`;
 }
 
+/** `[["id", value], ...]` with the value type checked by `isValue`. */
+function parsePairs<T>(raw: unknown, isValue: (v: unknown) => v is T): [string, T][] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((p): p is [string, T] =>
+    Array.isArray(p) && p.length === 2 && typeof p[0] === 'string' && isValue(p[1]));
+}
+
+const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isString = (v: unknown): v is string => typeof v === 'string';
+
+/**
+ * Read the local draft, validating its SHAPE rather than trusting it.
+ *
+ * This used to be `JSON.parse(raw) as SavedSession` — a cast, which checks
+ * nothing. A payload whose `answers` was a string still satisfied
+ * `saved.answers?.length` at the call site, and `new Map("abc")` then threw
+ * from inside the player's `init()`, which has no catch of its own: the
+ * promise rejected, `setPhase` never ran, and the exam sat on "loading"
+ * for ever. Only reachable through hand-edited or version-skewed storage, but
+ * the cost of reaching it was the whole session.
+ *
+ * Every field is filtered rather than rejected wholesale, so one bad entry
+ * costs that entry and the rest of the draft still restores.
+ */
 export function loadSavedSession(examId: string): SavedSession | null {
   try {
     const raw = localStorage.getItem(storageKey(examId));
-    return raw ? (JSON.parse(raw) as SavedSession) : null;
+    if (!raw) return null;
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const o = parsed as Record<string, unknown>;
+
+    return {
+      answers:         parsePairs(o.answers, isNumber),
+      openAnswers:     parsePairs(o.openAnswers, isString),
+      matchingAnswers: parsePairs(o.matchingAnswers, isString),
+      flagged:         Array.isArray(o.flagged) ? o.flagged.filter(isString) : [],
+      currentIdx:      isNumber(o.currentIdx) ? o.currentIdx : 0,
+      mirroredAt:      isString(o.mirroredAt) ? o.mirroredAt : null,
+      highlights:      parseHighlights(o.highlights),
+    };
   } catch {
     return null;
   }

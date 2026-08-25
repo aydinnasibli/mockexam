@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import posthog from 'posthog-js';
 import { motion } from 'framer-motion';
 import { saveExamResult } from '@/lib/actions/results';
 import {
@@ -86,6 +87,7 @@ import type {
   SessionQuestionMeta,
 } from '@/lib/actions/questions';
 import Button from '@/components/ui/Button';
+import SkipLink from '@/components/ui/SkipLink';
 
 interface Props {
   exam: PublicExam;
@@ -389,7 +391,20 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
       }
       setPhase(peek.stale ? 'expired' : 'resume');
     }
-    void init();
+    /*
+     * `init` must never reject unhandled. It is the only thing that moves the
+     * player off 'loading', so anything thrown inside it — a corrupt local
+     * draft, a transport failure — used to leave the candidate on a spinner
+     * with no way forward. Falling back to the briefing is recoverable; hanging
+     * is not.
+     */
+    void init().catch(err => {
+      // Client component: posthog-js directly, per lib/infra/observability.ts,
+      // which is server-only by design.
+      posthog.captureException(err, { context: 'examSessionInit', examId: exam.id });
+      clearPersistedSession(exam.id);
+      setPhase('briefing');
+    });
   }, [exam.id, router, restoreDraft, syncClock]);
 
   /** Rejoin the running attempt exactly where it was left. */
@@ -654,6 +669,29 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
     document.addEventListener('visibilitychange', flush);
     return () => document.removeEventListener('visibilitychange', flush);
   }, [sessionReady, phase]);
+
+  /*
+   * Warn before a reload, a tab close or a back-navigation while the clock is
+   * running.
+   *
+   * The draft survives all three, so this is not about losing answers — it is
+   * about the things that do NOT come back: the clock keeps running while the
+   * candidate is away, and a listening track already claimed is gone. Browsers
+   * ignore custom text and show their own wording; setting `returnValue` is
+   * still what triggers the prompt.
+   *
+   * Not registered once the paper is submitted or being finalised, where
+   * leaving costs nothing.
+   */
+  useEffect(() => {
+    if (phase !== 'running' || submitted) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [phase, submitted]);
 
   // Told once. Mirroring continues — this is information, not a failure.
   useEffect(() => {
@@ -1370,6 +1408,13 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
     // of which ship a highlighter. It never stopped copying anyway — screenshots
     // and devtools were always available.
     <div data-ph-mask className="min-h-screen bg-bg text-ink">
+      {/*
+        First focusable element in the DOM, as in every other shell. The exam
+        header puts the brand, the navigator, the clock, the calculator, the
+        formula sheet and Bitir ahead of the question — a keyboard user re-tabbed
+        all of it on every screen change, under a running clock.
+      */}
+      <SkipLink />
 
       {/*
         ── Auto-submit gave up ──
@@ -1447,12 +1492,30 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
       <header className="bg-bg/88 backdrop-blur-md fixed top-0 w-full z-50 border-b border-rule">
         <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-6">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
-            <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-              <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-              <span className="font-display text-lg font-normal text-ink hidden sm:block">
-                Test<span>centre</span>
+            {/*
+              Not a link while the exam is running.
+              
+              One click on the brand mark walked out of a timed sitting. Most of
+              the damage is recoverable — the clock is server-side and the draft
+              is mirrored — but a listening module's audio claim is already
+              spent, so leaving mid-part destroys the recording permanently. The
+              way out is the Bitir button, which asks first.
+            */}
+            {phase === 'running' ? (
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                <span className="font-display text-lg font-normal text-ink hidden sm:block">
+                  Test<span>centre</span>
+                </span>
               </span>
-            </Link>
+            ) : (
+              <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                <span className="font-display text-lg font-normal text-ink hidden sm:block">
+                  Test<span>centre</span>
+                </span>
+              </Link>
+            )}
             <div className="h-5 w-px shrink-0 hidden sm:block bg-rule"  />
             <div className="flex flex-col min-w-0">
               <span className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute hidden sm:block">İmtahan Rejimi</span>
@@ -1595,7 +1658,7 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
 
       {/* ── No questions state ── */}
       {hasNoQuestions ? (
-        <main className="pt-14 md:pt-16 min-h-screen flex items-center justify-center">
+        <main id="content" className="pt-14 md:pt-16 min-h-screen flex items-center justify-center">
           <div className="text-center max-w-sm px-6">
             <BookOpen className="mx-auto mb-4 text-ink-mute"  size={48} />
             <h2 className="font-display font-medium text-xl leading-tight tracking-tight text-ink mb-2">Suallar hələ əlavə edilməyib</h2>
@@ -1608,7 +1671,8 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
           </div>
         </main>
       ) : (
-        <main className="pt-14 md:pt-16 h-dvh flex flex-col overflow-hidden">
+        // `id="content"` is the SkipLink target every other shell provides.
+        <main id="content" className="pt-14 md:pt-16 h-dvh flex flex-col overflow-hidden">
 
           {/*
             ── Listening audio ──

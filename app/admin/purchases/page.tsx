@@ -36,7 +36,9 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
           { label: 'Ümumi', value: total },
           { label: 'Bu səhifə', value: purchases.length },
           { label: 'Tamamlanmış', value: purchases.filter((p) => p.status === 'COMPLETED').length },
-          { label: `Səhifə ${page} / ${totalPages}`, value: PAGE_SIZE },
+          // Was `PAGE_SIZE` — a constant 20 rendered as a statistic under a
+          // "Səhifə 1 / 1" label, which read as a real figure and was not one.
+          { label: 'Səhifə', value: `${page} / ${totalPages}` },
         ].map(({ label, value }) => (
           <div key={label} className="bg-surface px-5 py-5">
             <div className="font-mono font-light tracking-[-0.03em] tabular-nums lining-nums leading-none text-ink text-3xl">{value}</div>

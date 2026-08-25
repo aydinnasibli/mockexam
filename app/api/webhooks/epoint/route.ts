@@ -30,7 +30,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
   }
 
-  const formData = await req.formData();
+  /*
+   * Parsing the body can throw, and did.
+   *
+   * `req.formData()` rejects when the request carries no body or a
+   * content-type it does not recognise — so any malformed POST produced an
+   * unhandled 500 and a report through `onRequestError` into PostHog. A
+   * gateway retry or an idle scanner was enough. A body we cannot parse is a
+   * bad request, and saying so costs nothing.
+   */
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return NextResponse.json({ error: 'Malformed request body' }, { status: 400 });
+  }
+
   const data = formData.get('data') as string | null;
   const signature = formData.get('signature') as string | null;
 

@@ -595,6 +595,29 @@ async function runWritingGrade(
    * is the number worth alerting on. The bands come along because a model
    * drifting generous is only visible as a distribution shift over time.
    */
+  /*
+   * An essay that stays pending is the one failure nobody sees.
+   *
+   * The student is shown "yoxlanılır…" indefinitely, `ReviewClient` swallows
+   * the error by design so as not to alarm them, and their band is computed
+   * from the sections that did grade. Nothing else reports it — the analytics
+   * event below is a metric, and metrics need someone to build an alert.
+   * Raising it through the error channel puts it where an outage is already
+   * watched, so a lapsed OpenAI quota surfaces on its own.
+   */
+  if (stillPending > 0) {
+    void captureMessage('Writing still pending after grading', {
+      level: 'warning',
+      extra: {
+        userId: result.userId,
+        examId: result.examId,
+        attemptNumber: result.attemptNumber,
+        stillPending,
+        graded,
+      },
+    });
+  }
+
   void trackEvent(ANALYTICS_EVENTS.writingGraded, result.userId, {
     examId:       result.examId,
     examType:     exam.type,

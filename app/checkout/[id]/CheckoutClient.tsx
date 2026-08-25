@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { PublicExam } from '@/lib/db/exams';
 import { createCheckoutSession } from '@/lib/actions/checkout';
+import SkipLink from '@/components/ui/SkipLink';
 
 type CheckoutStatus = 'idle' | 'processing' | 'unconfigured' | 'failed';
 
@@ -54,7 +55,8 @@ export default function CheckoutClient({ exam }: Props) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-surface-2 flex flex-col items-center justify-center p-6">
+      <SkipLink />
+      <main id="content" className="min-h-screen bg-surface-2 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg mb-8">
           <div className="text-center mb-6">
             <ShoppingBag className="text-ink mx-auto" size={40} />

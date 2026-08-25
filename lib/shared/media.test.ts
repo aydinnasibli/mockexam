@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isAllowedImageUrl } from './media';
+import { isAllowedImageUrl, isAllowedMediaUrl } from './media';
 
 describe('isAllowedImageUrl', () => {
   it('allows an empty value (no image)', () => {
@@ -43,5 +43,30 @@ describe('isAllowedImageUrl', () => {
   it('rejects malformed URLs', () => {
     expect(isAllowedImageUrl('not a url')).toBe(false);
     expect(isAllowedImageUrl('https://')).toBe(false);
+  });
+});
+
+describe('isAllowedMediaUrl — audio', () => {
+  /*
+   * `audioUrl` went unchecked while `imageUrl` was guarded. The rule is the
+   * same host rule; only the failure differs, and audio's is worse — a Play
+   * button that never sounds inside a live single-play listening module.
+   */
+  it('accepts the blob host and site-relative paths', () => {
+    expect(isAllowedMediaUrl('https://abc123.public.blob.vercel-storage.com/part1.mp3')).toBe(true);
+    expect(isAllowedMediaUrl('/audio/part1.mp3')).toBe(true);
+    expect(isAllowedMediaUrl('')).toBe(true);
+  });
+
+  it('rejects the hosts an admin is most likely to paste', () => {
+    expect(isAllowedMediaUrl('https://drive.google.com/file/d/abc/view')).toBe(false);
+    expect(isAllowedMediaUrl('https://my-bucket.s3.amazonaws.com/part1.mp3')).toBe(false);
+    expect(isAllowedMediaUrl('https://dropbox.com/s/x/part1.mp3')).toBe(false);
+  });
+
+  it('rejects the same spoofing shapes as images', () => {
+    expect(isAllowedMediaUrl('https://evil.com/.public.blob.vercel-storage.com/a.mp3')).toBe(false);
+    expect(isAllowedMediaUrl('https://public.blob.vercel-storage.com.evil.com/a.mp3')).toBe(false);
+    expect(isAllowedMediaUrl('//evil.com/a.mp3')).toBe(false);
   });
 });

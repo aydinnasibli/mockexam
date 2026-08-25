@@ -8,13 +8,27 @@ import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
  * yet — it renders as plain muted text rather than a link, so the footer never
  * advertises a route that 404s.
  */
-const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string | null }> }> = [
+const COLUMNS: Array<{
+  title: string;
+  links: Array<{ label: string; href: string | null; prefetch?: false }>;
+}> = [
   {
     title: "Platforma",
     links: [
       { label: "Sınaqlar", href: "/exams" },
-      { label: "Kabinet", href: "/dashboard" },
-      { label: "Analitika", href: "/dashboard/analytics" },
+      /*
+       * Prefetch off on both.
+       *
+       * These sit in the footer of every public page, so Next prefetches them
+       * the moment the footer scrolls into view. For a signed-out visitor the
+       * proxy answers that RSC prefetch with a cross-origin redirect to Clerk,
+       * which CORS then blocks — four console errors per page view, a wasted
+       * round-trip each time, and a steady drip of junk into PostHog error
+       * tracking (`capture_exceptions` is on). Clicking still works: that is a
+       * full navigation, not a prefetch.
+       */
+      { label: "Kabinet", href: "/dashboard", prefetch: false },
+      { label: "Analitika", href: "/dashboard/analytics", prefetch: false },
       { label: "Qiymətlər", href: null },
     ],
   },
@@ -80,6 +94,7 @@ export default function Footer() {
                     <Link
                       key={link.label}
                       href={link.href}
+                      prefetch={link.prefetch}
                       className="-my-1 py-1 text-body text-ink-soft transition-colors duration-150 hover:text-ink"
                     >
                       {link.label}

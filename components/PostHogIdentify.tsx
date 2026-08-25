@@ -30,9 +30,16 @@ export default function PostHogIdentify() {
     if (!isLoaded || !posthog) return;
 
     if (isSignedIn && user) {
-      posthog.identify(user.id, {
-        email: user.primaryEmailAddress?.emailAddress,
-      });
+      /*
+       * Id only — no email, and no other PII.
+       *
+       * The address added nothing PostHog needs: `identify` links the anonymous
+       * session to a stable id, and that is the id. Sending it meant a copy of
+       * every customer's email sat in a third-party analytics store alongside
+       * session replay, which is the pairing worth avoiding. Clerk remains the
+       * place to resolve an id to a person.
+       */
+      posthog.identify(user.id);
       return;
     }
 

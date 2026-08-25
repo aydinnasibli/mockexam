@@ -54,7 +54,9 @@ export function StaggerContainer({ children, className, delay = 0 }: ContainerPr
 
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div variants={itemVariants} className={className}>
+    // `js-reveal`: the hidden variant is serialised into the SSR HTML, so
+    // without JS this item never becomes visible. See app/layout.tsx.
+    <motion.div variants={itemVariants} className={className ? `js-reveal ${className}` : 'js-reveal'}>
       {children}
     </motion.div>
   );

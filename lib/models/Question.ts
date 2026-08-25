@@ -45,7 +45,11 @@ export interface IQuestion extends Document {
 
 const QuestionSchema = new Schema<IQuestion>(
   {
-    examId:          { type: String, required: true, index: true },
+    // No field-level index: `{examId}` is already served as a prefix of the
+    // compound index declared below. A standalone one only cost write
+    // amplification on every question insert and update. The other models
+    // (Purchase, ExamResult, Exam) all document and follow this same rule.
+    examId:          { type: String, required: true },
     moduleIndex:     { type: Number, required: true, min: 0 },
     order:           { type: Number, required: true, default: 0 },
     type:            { type: String, required: true, enum: ['mcq', 'open', 'matching', 'writing'], default: 'mcq' },
@@ -68,6 +72,15 @@ const QuestionSchema = new Schema<IQuestion>(
   { timestamps: true }
 );
 
+/*
+ * Serves `{examId}` on its own as well as the full ordered read, because a
+ * compound index answers any PREFIX of its own key.
+ *
+ * NOTE: Mongoose creates indexes but never drops them. Removing the field-level
+ * `index: true` above stops it being created on a fresh database; an existing
+ * deployment keeps it until dropped by hand:
+ *   db.questions.dropIndex('examId_1')
+ */
 QuestionSchema.index({ examId: 1, moduleIndex: 1, order: 1 });
 
 const QuestionModel: Model<IQuestion> =

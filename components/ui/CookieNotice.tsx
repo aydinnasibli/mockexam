@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import posthog from 'posthog-js';
 import Button from '@/components/ui/Button';
+import { CONSENT_STORAGE_KEY, hasAnalyticsConsent } from '@/lib/shared/analytics-consent';
 
-const STORAGE_KEY = 'tc-cookie-notice';
-/** Re-show the notice a week after it was dismissed. */
-const DISMISS_DAYS = 7;
-const DISMISS_MS = DISMISS_DAYS * 24 * 60 * 60 * 1000;
+// Key and window live in lib/shared/analytics-consent.ts so the analytics
+// bootstrap can read the same acknowledgement this component records.
+const STORAGE_KEY = CONSENT_STORAGE_KEY;
 
 /**
  * Routes where the notice must never appear.
@@ -48,18 +49,10 @@ function emitChange() {
 
 /** Client snapshot: has the notice been dismissed within the last week? */
 function getSnapshot(): boolean {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const at = Number(raw);
-    // A malformed or future-dated value is treated as "not dismissed" rather
-    // than hiding the notice forever.
-    if (!Number.isFinite(at) || at > Date.now()) return false;
-    return Date.now() - at < DISMISS_MS;
-  } catch {
-    // Private browsing / storage disabled: show it, don't crash.
-    return false;
-  }
+  // Same predicate the analytics bootstrap uses — a malformed, future-dated or
+  // unreadable value counts as "not dismissed", so the notice reappears rather
+  // than hiding forever, and replay stays off rather than starting unannounced.
+  return hasAnalyticsConsent();
 }
 
 /**
@@ -79,6 +72,15 @@ export default function CookieNotice() {
   const visible = !dismissed && !hiddenHere;
 
   function dismiss() {
+    /*
+     * Acknowledging is what turns session replay on.
+     *
+     * Replay is disabled at init (see instrumentation-client.ts) so nothing is
+     * recorded before the visitor has been told it might be. Analytics events
+     * themselves keep running — they are anonymous and carry no PII since
+     * `identify` stopped sending email.
+     */
+    try { posthog.startSessionRecording(); } catch { /* replay is optional */ }
     try {
       localStorage.setItem(STORAGE_KEY, String(Date.now()));
     } catch {

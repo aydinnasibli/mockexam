@@ -139,3 +139,55 @@ describe('formatResult', () => {
     expect(formatResult(2e-9)).toContain('e-');
   });
 });
+
+describe('scientific notation', () => {
+  /*
+   * `e` is Euler's constant in the identifier branch, so before the tokenizer
+   * consumed exponents `1e6` parsed as a call to an unknown function `e6`.
+   */
+  it('reads exponent notation as one number', () => {
+    expect(evaluate('1e6')).toBe(1_000_000);
+    expect(evaluate('6.02e23')).toBeCloseTo(6.02e23, -18);
+    expect(evaluate('2E3')).toBe(2000);
+    expect(evaluate('1.5e-3')).toBeCloseTo(0.0015, 10);
+    expect(evaluate('2e+4')).toBe(20000);
+  });
+
+  it('still treats a bare e as Euler', () => {
+    expect(evaluate('e')).toBeCloseTo(Math.E, 10);
+    expect(evaluate('2*e')).toBeCloseTo(2 * Math.E, 10);
+  });
+
+  /* Only consumed when digits follow, so a dangling identifier stays an error. */
+  it('does not swallow a malformed exponent', () => {
+    expect(() => evaluate('2e3x')).toThrow();
+    // Two numbers with nothing between them — see the juxtaposition rule.
+    expect(() => evaluate('1.2e1.5')).toThrow();
+  });
+
+  it('composes with the rest of the grammar', () => {
+    expect(evaluate('1e3 + 1')).toBe(1001);
+    expect(evaluate('2 * 1e2')).toBe(200);
+    expect(evaluate('(1e2)^2')).toBe(10000);
+  });
+});
+
+describe('juxtaposition', () => {
+  it('still multiplies the shapes candidates actually write', () => {
+    expect(evaluate('2pi')).toBeCloseTo(2 * Math.PI, 10);
+    expect(evaluate('2(3+4)')).toBe(14);
+    expect(evaluate('2sin(30)', { angleMode: 'deg' })).toBeCloseTo(1, 10);
+    expect(evaluate('(1+1)(2+2)')).toBe(8);
+  });
+
+  /*
+   * `12 34` returned 408. Two bare numbers are never algebra — they are a
+   * mistyped operator, and a silent product is a wrong answer the candidate
+   * has no way to notice.
+   */
+  it('rejects two numbers with no operator between them', () => {
+    expect(() => evaluate('12 34')).toThrow(/İki ədəd/);
+    expect(() => evaluate('3 4 5')).toThrow(/İki ədəd/);
+    expect(() => evaluate('1e2 5')).toThrow(/İki ədəd/);
+  });
+});

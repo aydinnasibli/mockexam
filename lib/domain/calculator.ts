@@ -62,8 +62,35 @@ export function tokenize(input: string): Token[] {
     if (/[0-9.]/.test(ch)) {
       let j = i;
       while (j < src.length && /[0-9.]/.test(src[j])) j++;
+
+      /*
+       * Exponent notation, consumed as part of the number.
+       *
+       * Without this the `e` fell through to the identifier branch, where it is
+       * Euler's constant — so `6.02e23` tokenised as a call to an unknown
+       * function `e23` and reported "Naməlum funksiya: e23". Scientific
+       * notation is ordinary input for SAT Math and IELTS data description, and
+       * a calculator that cannot read it is a calculator the candidate stops
+       * trusting.
+       *
+       * Only consumed when digits actually follow, so `2e` and `3e+` still fall
+       * through to the identifier path and `2e3x` is still a clean error —
+       * `1e6` must not silently become `1` with a dangling `e6`.
+       */
+      const k = j;
+      if (k < src.length && /[eE]/.test(src[k])) {
+        let m = k + 1;
+        if (m < src.length && /[+-]/.test(src[m])) m++;
+        if (m < src.length && /[0-9]/.test(src[m])) {
+          while (m < src.length && /[0-9]/.test(src[m])) m++;
+          j = m;
+        }
+      }
+
       const raw = src.slice(i, j);
-      if ((raw.match(/\./g) ?? []).length > 1) throw new CalcError(`Yanlış ədəd: ${raw}`);
+      // Digits only before the exponent: "1.2.3" and "1.2e1.5" are both errors.
+      const mantissa = raw.split(/[eE]/)[0];
+      if ((mantissa.match(/\./g) ?? []).length > 1) throw new CalcError(`Yanlış ədəd: ${raw}`);
       const value = Number(raw);
       if (!Number.isFinite(value)) throw new CalcError(`Yanlış ədəd: ${raw}`);
       tokens.push({ kind: 'num', value });
@@ -166,12 +193,20 @@ class Parser {
         continue;
       }
       /*
-       * Implicit multiplication: 2(3+4), 3x, 2sin(30).
+       * Implicit multiplication: 2(3+4), 3x, 2sin(30), 2pi.
        * Candidates write algebra, not calculator syntax, and rejecting `3x`
        * would make the graphing input useless. Only an atom-starting token can
        * follow, so this cannot swallow an operator.
+       *
+       * Two bare NUMBERS are excluded, because that shape is never algebra —
+       * it is a typo. `12 34` silently returned 408, and a wrong answer a
+       * candidate cannot see is worse than an error they can. Every genuine
+       * juxtaposition has an identifier or a bracket on the right.
        */
-      if (t && (t.kind === 'num' || t.kind === 'ident' || t.kind === 'lparen')) {
+      if (t?.kind === 'num') {
+        throw new CalcError(`İki ədəd arasında əməliyyat yoxdur: ${left} ${t.value}`);
+      }
+      if (t && (t.kind === 'ident' || t.kind === 'lparen')) {
         left *= this.unary();
         continue;
       }
