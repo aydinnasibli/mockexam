@@ -1,23 +1,39 @@
 'use server';
 
-import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/infra/mongodb';
-import Purchase from '@/lib/models/Purchase';
-import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
-import QuestionModel from '@/lib/models/Question';
+import { and, asc, desc, eq, gt, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
+import { db, txDb } from '@/lib/infra/db';
+import {
+  questions as questionsTable,
+  examSessions,
+  playedAudio,
+  examResults,
+  examAnswers,
+  purchases,
+} from '@/lib/db/schema';
 import { getExamByIdAdmin } from '@/lib/db/exams';
-import ExamSessionModel from '@/lib/models/ExamSession';
-import PlayedAudioModel from '@/lib/models/PlayedAudio';
-import { isRateLimited } from '@/lib/infra/rate-limit';
+import { isRateLimited, limited } from '@/lib/infra/rate-limit';
 import { checkRole } from '@/lib/infra/admin';
 import { evaluateWriting, type WritingCriterionResult } from '@/lib/infra/writing-eval';
 import { computeAuthenticScores, overallPercent } from '@/lib/domain/scoring';
+import type { ExamVariant } from '@/lib/domain/exam-types';
 import { gradeAnswers } from '@/lib/domain/grading';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
 import { captureException, captureMessage } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
+
+/**
+ * Bounds a result id before it reaches a query.
+ *
+ * Was `mongoose.isValidObjectId`. Result ids are `text` now: rows carried over
+ * from Mongo keep their 24-character ObjectId hex, rows created since take a
+ * uuid. Both are accepted, anything else is refused here.
+ */
+function validResultId(id: string): boolean {
+  return /^[0-9a-f]{24}$/i.test(id)
+    || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
 
 type AnswerRecord = {
   questionId: string;
@@ -40,11 +56,32 @@ type AnswerRecord = {
 type ModuleScore = ReturnType<typeof buildModuleScores>[number] & { band?: number };
 
 /**
+ * Is this record an essay?
+ *
+ * Asks the live question first, then falls back to the record's own writing
+ * fields. The fallback is what keeps a deleted or re-imported question from
+ * silently reclassifying an essay: `typeOf` alone returned undefined, the essay
+ * was counted as an ordinary one-mark answer earning zero, and it dragged its
+ * section's percentage down while also never being graded.
+ */
+function isWritingRecord(
+  r: AnswerRecord,
+  typeOf: (questionId: string) => string | undefined,
+): boolean {
+  const known = typeOf(r.questionId);
+  if (known) return known === 'writing';
+  return r.writingPending === true
+    || typeof r.writingScore === 'number'
+    || (r.writingCriteria?.length ?? 0) > 0;
+}
+
+/**
  * Stamp exam-authentic scores onto `moduleScores` (mutates `.band` per module)
  * and return the attempt-level fields (IELTS overall band, SAT scaled scores).
  */
 function applyAuthenticScores(
   examType: string,
+  variant: ExamVariant,
   modules: { type: string }[],
   moduleScores: ModuleScore[],
   records: AnswerRecord[],
@@ -54,7 +91,7 @@ function applyAuthenticScores(
   // Tag each graded essay with the task type declared on its question, so the
   // Task-2-counts-double weighting can't be flipped by submission order.
   const writingTasks = records
-    .filter(r => typeOf(r.questionId) === 'writing' && !r.writingPending && typeof r.writingScore === 'number')
+    .filter(r => isWritingRecord(r, typeOf) && !r.writingPending && typeof r.writingScore === 'number')
     .map(r => ({
       taskType: writingTaskTypeOf(r.questionId),
       band: r.writingScore as number,
@@ -63,7 +100,7 @@ function applyAuthenticScores(
       moduleIndex: r.moduleIndex,
     }));
 
-  const auth = computeAuthenticScores({ examType, modules, moduleScores, writingTasks });
+  const auth = computeAuthenticScores({ examType, variant, modules, moduleScores, writingTasks });
   for (const ms of moduleScores) {
     ms.band = auth.moduleBands[ms.moduleIndex]; // undefined clears a stale band
   }
@@ -78,8 +115,8 @@ function buildModuleScores(
 ) {
   return modules.map((mod, modIdx) => {
     const modAnswers    = records.filter(a => a.moduleIndex === modIdx);
-    const modWriting    = modAnswers.filter(a => typeOf(a.questionId) === 'writing');
-    const modNonWriting = modAnswers.filter(a => typeOf(a.questionId) !== 'writing');
+    const modWriting    = modAnswers.filter(a => isWritingRecord(a, typeOf));
+    const modNonWriting = modAnswers.filter(a => !isWritingRecord(a, typeOf));
     const gradedWriting = modWriting.filter(a => !a.writingPending && typeof a.writingScore === 'number');
     const anyPending    = modWriting.some(a => a.writingPending);
 
@@ -135,34 +172,138 @@ interface NewResultInput {
 }
 
 /**
- * Insert a result under the next free attempt number for this user+exam.
+ * Did this failure mean "another submission took that attempt number"?
  *
- * Reads the current maximum, inserts at max+1, and retries if the unique index
- * rejects it (another submission landed first). Bounded so a persistent
- * failure surfaces as an error instead of spinning.
+ * Narrow on purpose. A bare `code === '23505'` also matched a unique violation
+ * raised by the ANSWERS insert, which the loop would then retry — filing a
+ * second result row for one submission. The attempt key is the only collision
+ * worth retrying; anything else is a real fault and must surface.
+ */
+function isAttemptNumberCollision(err: unknown): boolean {
+  const e = err as { code?: string; constraint?: string } | null;
+  if (e?.code !== '23505') return false;
+  // Drivers that do not surface `constraint` fall back to the old behaviour;
+  // the transaction below means a spurious retry can no longer duplicate a row.
+  return e.constraint === undefined || e.constraint === 'exam_results_attempt_key';
+}
+
+/**
+ * Insert a result, and its answers, under the next free attempt number.
+ *
+ * Chooses the attempt number inside the INSERT, and retries if the unique index
+ * rejects it (another submission landed first). Bounded so a persistent failure
+ * surfaces as an error instead of spinning.
  */
 async function createResultWithNextAttempt(
   doc: NewResultInput,
-): Promise<mongoose.HydratedDocument<IExamResult>> {
+  snapshots: Map<string, QuestionSnapshot>,
+): Promise<{ id: string; attemptNumber: number }> {
   const MAX_TRIES = 5;
-  const { userId, examId } = doc;
+  const { userId, examId, answers, moduleScores, ...head } = doc;
 
-  for (let attemptTry = 0; attemptTry < MAX_TRIES; attemptTry++) {
-    const latest = await ExamResult.findOne({ userId, examId })
-      .sort({ attemptNumber: -1 })
-      .select('attemptNumber')
-      .lean();
-    const attemptNumber = (latest?.attemptNumber ?? 0) + 1;
+  /*
+   * The result and its answers are ONE unit of work.
+   *
+   * They used to be two statements with nothing around them, so a failure on
+   * the second left the attempt in the database with zero answers: it consumed
+   * an attempt number, listed on the dashboard as a filed result, and opened an
+   * empty review. The caller then reported "Server xətası baş verdi", so the
+   * candidate retried — and the retry filed a SECOND attempt while the empty
+   * first one stayed on their record.
+   *
+   * This is the one write in the system where a partial success loses a
+   * candidate's work outright, which makes it the strongest case in the
+   * codebase for an interactive transaction — see `lib/infra/db.ts` on why
+   * `txDb()` is otherwise avoided.
+   */
+  const { db: tx, close } = txDb();
+  try {
+    for (let attemptTry = 0; attemptTry < MAX_TRIES; attemptTry++) {
+      /*
+       * The attempt number is chosen by the INSERT, not read first.
+       *
+       * `(user_id, exam_id, attempt_number)` is UNIQUE, so a sub-select for
+       * max+1 evaluated inside the statement closes most of the race the old
+       * read-then-write left open. Two submissions landing in the same instant
+       * still collide on the index rather than both writing attempt 3, and the
+       * retry below picks that up — the guarantee comes from the constraint,
+       * exactly as it did from Mongo's unique index.
+       */
+      try {
+        return await tx.transaction(async trx => {
+          const [row] = await trx
+            .insert(examResults)
+            .values({
+              userId, examId,
+              examTitle: head.examTitle,
+              examTag: head.examTag,
+              examType: head.examType,
+              startedAt: head.startedAt,
+              completedAt: head.completedAt,
+              durationSeconds: head.durationSeconds,
+              totalQuestions: head.totalQuestions,
+              score: String(head.score),
+              overallBand: head.overallBand == null ? null : String(head.overallBand),
+              totalScaled: head.totalScaled ?? null,
+              rwScaled: head.rwScaled ?? null,
+              mathScaled: head.mathScaled ?? null,
+              moduleScores,
+              attemptNumber: sql`(SELECT coalesce(max(r.attempt_number) + 1, 1) FROM exam_results r
+                                   WHERE r.user_id = ${userId} AND r.exam_id = ${examId})`,
+            })
+            .returning({ id: examResults.id, attemptNumber: examResults.attemptNumber });
 
-    try {
-      return await ExamResult.create({ ...doc, attemptNumber } as Partial<IExamResult>);
-    } catch (err) {
-      if ((err as { code?: number }).code === 11000 && attemptTry < MAX_TRIES - 1) continue;
-      throw err;
+          if (answers.length > 0) {
+            await trx
+              .insert(examAnswers)
+              .values(answers.map(a => toAnswerRow(row.id, a, snapshots.get(a.questionId))));
+          }
+          return row;
+        });
+      } catch (err) {
+        if (isAttemptNumberCollision(err) && attemptTry < MAX_TRIES - 1) continue;
+        throw err;
+      }
     }
+    throw new Error('Could not allocate an attempt number after repeated collisions');
+  } finally {
+    await close();
   }
-  throw new Error('Could not allocate an attempt number after repeated collisions');
 }
+
+/**
+ * One answer as a row, including the snapshot of what was asked.
+ *
+ * `qStem`/`qOptions`/`qPassage` are copied at submit time, when the question is
+ * guaranteed to exist. That is what makes a filed attempt reviewable for ever:
+ * the review page renders these, never a join onto the live bank, so a later
+ * re-import or deletion can no longer turn a real attempt into a page of
+ * fabricated wrong answers.
+ */
+function toAnswerRow(resultId: string, a: AnswerRecord, q?: QuestionSnapshot) {
+  return {
+    resultId,
+    questionId:       a.questionId,
+    moduleIndex:      a.moduleIndex,
+    userAnswer:       a.userAnswer,
+    userAnswerText:   a.userAnswerText ?? '',
+    correctIndex:     a.correctIndex,
+    isCorrect:        a.isCorrect,
+    marks:            a.marks ?? 1,
+    earnedMarks:      a.earnedMarks ?? 0,
+    timeSeconds:      a.timeSeconds ?? 0,
+    writingScore:     a.writingScore == null ? null : String(a.writingScore),
+    writingWordCount: a.writingWordCount ?? null,
+    writingCriteria:  a.writingCriteria ?? null,
+    aiFeedback:       a.aiFeedback ?? null,
+    writingPending:   a.writingPending ?? false,
+    qStem:            q?.stem ?? '',
+    qOptions:         q?.options ?? [],
+    qPassage:         q?.passage ?? '',
+  };
+}
+
+type QuestionSnapshot = { stem: string; options: string[]; passage: string };
 
 export type ClientAnswerInput = {
   questionId: string;
@@ -199,7 +340,6 @@ export async function saveExamResult(data: {
   if (!Array.isArray(answers) || answers.length > 2000) return { error: 'Invalid answers' };
 
   try {
-    await dbConnect();
 
     // Validate the purchase before consuming an attempt number, so a failed
     // submission can't permanently burn one.
@@ -209,17 +349,48 @@ export async function saveExamResult(data: {
     // session clock, and the authoritative question set. In sequence they were
     // three round-trips stacked in front of the student's submission.
     //
-    // Only the fields grading and score aggregation need are selected —
-    // notably NOT `passage`/`stem`/`rubric`, which can run to tens of KB per
-    // question and are re-queried by the writing grader when an essay is
-    // actually assessed.
+    /*
+     * `stem`, `options` and `passage` ARE selected here, deliberately, even
+     * though grading does not need them.
+     *
+     * They are the snapshot written onto each answer row. Copying what was
+     * asked at the moment the attempt is filed is what makes a result
+     * reviewable for ever: the review page renders these rather than joining
+     * onto the live bank, so a later re-import or deletion cannot turn a real
+     * attempt into a page of fabricated wrong answers. That failure reached
+     * 1,064 of 1,310 answers on ielts-academic-1 before the migration.
+     *
+     * It costs one heavier read per submission — submissions are rare and this
+     * is the one moment the content is guaranteed to still exist. `rubric` is
+     * still excluded; only the writing grader needs it, and it re-queries.
+     */
     const [exam, session, questionDocs] = await Promise.all([
       getExamByIdAdmin(examId),
-      ExamSessionModel.findOne({ userId, examId }).lean(),
-      QuestionModel.find({ examId })
-        .select('_id correctIndex moduleIndex order type openAnswers correctMatching writingTaskType')
-        .sort({ moduleIndex: 1, order: 1 })
-        .lean(),
+      db.select()
+        .from(examSessions)
+        .where(and(
+          eq(examSessions.userId, userId),
+          eq(examSessions.examId, examId),
+          gt(examSessions.expiresAt, new Date()),
+        ))
+        .limit(1)
+        .then(r => r[0] ?? null),
+      db.select({
+          _id:             questionsTable.id,
+          stem:            questionsTable.stem,
+          options:         questionsTable.options,
+          passage:         questionsTable.passage,
+          correctIndex:    questionsTable.correctIndex,
+          moduleIndex:     questionsTable.moduleIndex,
+          order:           questionsTable.order,
+          type:            questionsTable.type,
+          openAnswers:     questionsTable.openAnswers,
+          correctMatching: questionsTable.correctMatching,
+          writingTaskType: questionsTable.writingTaskType,
+        })
+        .from(questionsTable)
+        .where(eq(questionsTable.examId, examId))
+        .orderBy(asc(questionsTable.moduleIndex), asc(questionsTable.order)),
     ]);
 
     if (!exam) return { error: 'Exam not found' };
@@ -309,7 +480,7 @@ export async function saveExamResult(data: {
     );
 
     const typeOf = (questionId: string) => metaById.get(questionId)?.type;
-    const writingTaskTypeOf = (questionId: string) => metaById.get(questionId)?.writingTaskType;
+    const writingTaskTypeOf = (questionId: string) => metaById.get(questionId)?.writingTaskType ?? undefined;
 
     const moduleScores = buildModuleScores(exam.modules, answerRecords, typeOf);
 
@@ -317,7 +488,7 @@ export async function saveExamResult(data: {
     // Writing modules are marked pending here and so are excluded until graded —
     // an ungraded essay never shows as a zero.
     const initialScore = overallPercent(moduleScores);
-    const authentic = applyAuthenticScores(exam.type, exam.modules, moduleScores, answerRecords, typeOf, writingTaskTypeOf);
+    const authentic = applyAuthenticScores(exam.type, exam.variant, exam.modules, moduleScores, answerRecords, typeOf, writingTaskTypeOf);
 
     // Persist the result BEFORE AI evaluation — never lose student work.
     //
@@ -345,7 +516,10 @@ export async function saveExamResult(data: {
       ...authentic,
       answers:         answerRecords,
       moduleScores,
-    });
+    }, new Map(questionDocs.map(q => [
+      String(q._id),
+      { stem: q.stem, options: q.options, passage: q.passage },
+    ])));
     const attemptNumber = result.attemptNumber;
 
     // Keep the purchase counter in step for the admin views. Best-effort: the
@@ -353,10 +527,12 @@ export async function saveExamResult(data: {
     // failure is still reported rather than swallowed, since a counter that
     // silently drifts from the real attempt count is a reporting bug.
     try {
-      await Purchase.updateOne(
-        { userId, examId },
-        { $max: { attemptCount: attemptNumber } },
-      );
+      // `$max` semantics: only ever move the counter forward, so an
+      // out-of-order write cannot walk it backwards.
+      await db
+        .update(purchases)
+        .set({ attemptCount: sql`greatest(${purchases.attemptCount}, ${attemptNumber})` })
+        .where(and(eq(purchases.userId, userId), eq(purchases.examId, examId)));
     } catch (err) {
       void captureException(err, {
         tags: { action: 'saveExamResult', step: 'syncAttemptCount' },
@@ -376,7 +552,9 @@ export async function saveExamResult(data: {
      * never cost a duplicate attempt.
      */
     try {
-      await ExamSessionModel.deleteOne({ userId, examId });
+      await db
+        .delete(examSessions)
+        .where(and(eq(examSessions.userId, userId), eq(examSessions.examId, examId)));
       /*
        * Filing the result is what releases the listening tracks.
        *
@@ -386,7 +564,9 @@ export async function saveExamResult(data: {
        * must start with the audio fresh, or unlimited attempts would only be
        * unlimited for candidates who never listened.
        */
-      await PlayedAudioModel.deleteMany({ userId, examId });
+      await db
+        .delete(playedAudio)
+        .where(and(eq(playedAudio.userId, userId), eq(playedAudio.examId, examId)));
     } catch (err) {
       void captureException(err, {
         tags: { action: 'saveExamResult', step: 'clearSession' },
@@ -410,7 +590,7 @@ export async function saveExamResult(data: {
       durationSeconds: safeDurationSeconds,
     });
 
-    return { resultId: result._id.toString(), attemptNumber };
+    return { resultId: result.id, attemptNumber };
   } catch (err) {
     void captureException(err, { tags: { action: 'saveExamResult' } });
     return { error: 'Server xətası baş verdi.' };
@@ -433,6 +613,68 @@ export async function saveExamResult(data: {
 const WRITING_CLAIM_TTL_MS = 5 * 60_000;
 
 /**
+ * A filed attempt and its answers, loaded as plain objects for grading.
+ *
+ * `rowId` is carried on each answer so a graded essay can be written back to
+ * its own row. It replaces the hydrated Mongoose document the grader used to
+ * mutate in place — the same data, but with the write made explicit instead of
+ * hidden behind `save()` and `markModified`.
+ */
+type GradableAnswer = AnswerRecord & {
+  rowId: number;
+  /** The prompt as it was at submit time — see `qStem`/`qPassage` on the row. */
+  qStem: string;
+  qPassage: string;
+};
+
+interface GradableResult {
+  id: string;
+  userId: string;
+  examId: string;
+  examType: string | null;
+  attemptNumber: number;
+  score: number;
+  answers: GradableAnswer[];
+}
+
+async function loadGradable(where: SQL | undefined): Promise<GradableResult | null> {
+  const [r] = await db.select().from(examResults).where(where).limit(1);
+  if (!r) return null;
+  const rows = await db
+    .select()
+    .from(examAnswers)
+    .where(eq(examAnswers.resultId, r.id))
+    .orderBy(asc(examAnswers.moduleIndex), asc(examAnswers.id));
+  return {
+    id: r.id,
+    userId: r.userId,
+    examId: r.examId,
+    examType: r.examType,
+    attemptNumber: r.attemptNumber,
+    score: Number(r.score),
+    answers: rows.map(a => ({
+      rowId:            a.id,
+      qStem:            a.qStem,
+      qPassage:         a.qPassage,
+      questionId:       a.questionId ?? '',
+      moduleIndex:      a.moduleIndex,
+      userAnswer:       a.userAnswer,
+      userAnswerText:   a.userAnswerText,
+      correctIndex:     a.correctIndex,
+      isCorrect:        a.isCorrect,
+      marks:            a.marks,
+      earnedMarks:      a.earnedMarks,
+      timeSeconds:      a.timeSeconds,
+      writingScore:     a.writingScore == null ? undefined : Number(a.writingScore),
+      writingWordCount: a.writingWordCount ?? undefined,
+      writingCriteria:  a.writingCriteria ?? undefined,
+      aiFeedback:       a.aiFeedback ?? undefined,
+      writingPending:   a.writingPending,
+    })),
+  };
+}
+
+/**
  * Take exclusive ownership of this result's pending essays.
  *
  * A single-document conditional update, so the database decides the winner —
@@ -440,32 +682,37 @@ const WRITING_CLAIM_TTL_MS = 5 * 60_000;
  * read-then-write. Returns false when someone else holds a live claim, and the
  * caller then reports the essays as still pending, which is what they are.
  */
-async function claimWritingGrade(resultId: mongoose.Types.ObjectId): Promise<boolean> {
+async function claimWritingGrade(resultId: string): Promise<boolean> {
   const staleBefore = new Date(Date.now() - WRITING_CLAIM_TTL_MS);
-  const res = await ExamResult.updateOne(
-    {
-      _id: resultId,
-      $or: [
-        { writingGradingAt: { $exists: false } },
-        { writingGradingAt: null },
-        { writingGradingAt: { $lte: staleBefore } },
-      ],
-    },
-    { $set: { writingGradingAt: new Date() } },
-  );
-  return res.modifiedCount === 1;
+  // One conditional UPDATE ... RETURNING: the row comes back only if this
+  // caller took the claim. No read-then-write for a second tab to slip through.
+  const claimed = await db
+    .update(examResults)
+    .set({ writingGradingAt: new Date() })
+    .where(and(
+      eq(examResults.id, resultId),
+      or(
+        isNull(examResults.writingGradingAt),
+        lte(examResults.writingGradingAt, staleBefore),
+      ),
+    ))
+    .returning({ id: examResults.id });
+  return claimed.length === 1;
 }
 
 /** Release the claim, whatever the outcome. Never throws into the caller. */
-async function releaseWritingGrade(resultId: mongoose.Types.ObjectId): Promise<void> {
+async function releaseWritingGrade(resultId: string): Promise<void> {
   try {
-    await ExamResult.updateOne({ _id: resultId }, { $unset: { writingGradingAt: '' } });
+    await db
+      .update(examResults)
+      .set({ writingGradingAt: null })
+      .where(eq(examResults.id, resultId));
   } catch (err) {
     // A stuck claim expires on its own via WRITING_CLAIM_TTL_MS, so this is
     // reported rather than retried — it must never mask a completed grading.
     void captureException(err, {
       tags: { action: 'releaseWritingGrade' },
-      extra: { resultId: String(resultId) },
+      extra: { resultId },
     });
   }
 }
@@ -482,9 +729,9 @@ async function releaseWritingGrade(resultId: mongoose.Types.ObjectId): Promise<v
  * loses the race reports the essays as pending and returns immediately.
  */
 async function gradePendingWritingOnResult(
-  result: mongoose.HydratedDocument<IExamResult>,
+  result: GradableResult,
 ): Promise<{ graded: number; pending: number }> {
-  const records = result.answers as unknown as AnswerRecord[];
+  const records = result.answers;
 
   /*
    * Cheap pre-check, before any query or any claim.
@@ -500,34 +747,52 @@ async function gradePendingWritingOnResult(
 
   // Someone else is already grading this result. Their pass will resolve the
   // same essays, so report them as pending rather than paying to duplicate it.
-  if (!(await claimWritingGrade(result._id))) {
+  if (!(await claimWritingGrade(result.id))) {
     return { graded: 0, pending: records.filter(r => r.writingPending).length };
   }
 
   try {
     return await runWritingGrade(result, records);
   } finally {
-    await releaseWritingGrade(result._id);
+    await releaseWritingGrade(result.id);
   }
 }
 
 /** The grading pass itself. Only ever called with the claim held. */
 async function runWritingGrade(
-  result: mongoose.HydratedDocument<IExamResult>,
-  records: AnswerRecord[],
+  result: GradableResult,
+  records: GradableAnswer[],
 ): Promise<{ graded: number; pending: number }> {
   const startedAt = Date.now();
   const exam = await getExamByIdAdmin(result.examId);
   if (!exam) return { graded: 0, pending: 0 };
 
-  const questionDocs = await QuestionModel.find({ examId: result.examId })
-    .select('_id type stem passage writingTaskType rubric')
-    .lean();
+  const questionDocs = await db
+    .select({
+      _id:             questionsTable.id,
+      type:            questionsTable.type,
+      stem:            questionsTable.stem,
+      passage:         questionsTable.passage,
+      writingTaskType: questionsTable.writingTaskType,
+      rubric:          questionsTable.rubric,
+    })
+    .from(questionsTable)
+    .where(eq(questionsTable.examId, result.examId));
   const qmap = new Map(questionDocs.map(q => [String(q._id), q]));
   const typeOf = (questionId: string) => qmap.get(questionId)?.type;
-  const writingTaskTypeOf = (questionId: string) => qmap.get(questionId)?.writingTaskType;
+  const writingTaskTypeOf = (questionId: string) => qmap.get(questionId)?.writingTaskType ?? undefined;
 
-  const allPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending);
+  /*
+   * Keyed on the ROW's own flag, not on the live question's type.
+   *
+   * `writingPending` is only ever set on a writing record (see `gradeAnswers`),
+   * so it is sufficient on its own — and it is the only signal that survives
+   * the question being deleted or re-imported. Requiring `typeOf(...)` to
+   * resolve meant an essay whose question had gone was never picked up: it
+   * could not be graded, could not be cleared, and sat in the admin queue for
+   * ever while the student was shown "yoxlanılır…" indefinitely.
+   */
+  const allPending = records.filter(r => r.writingPending);
   if (allPending.length === 0) return { graded: 0, pending: 0 };
 
   // A blank essay is a genuine 0 — resolve it immediately, no AI call needed.
@@ -546,9 +811,16 @@ async function runWritingGrade(
     const q = qmap.get(rec.questionId);
     const evalResult = await evaluateWriting({
       essay: rec.userAnswerText ?? '',
-      prompt: [q?.passage, q?.stem].filter(Boolean).join('\n\n'),
+      /*
+       * The live question first, the attempt's own snapshot as the fallback.
+       *
+       * `saveExamResult` copies what was asked onto every answer row, so a
+       * deleted or re-imported question no longer costs the grader its prompt —
+       * it grades exactly what the candidate was shown.
+       */
+      prompt: [q?.passage || rec.qPassage, q?.stem || rec.qStem].filter(Boolean).join('\n\n'),
       rubric: q?.rubric,
-      taskType: q?.writingTaskType,
+      taskType: q?.writingTaskType ?? undefined,
       examType: exam.type,
       examName: exam.title,
     });
@@ -566,23 +838,50 @@ async function runWritingGrade(
   }));
 
   const modScores = buildModuleScores(exam.modules, records, typeOf);
-  const auth = applyAuthenticScores(exam.type, exam.modules, modScores, records, typeOf, writingTaskTypeOf);
+  const auth = applyAuthenticScores(exam.type, exam.variant, exam.modules, modScores, records, typeOf, writingTaskTypeOf);
 
-  // Writing has now been scored, so its module joins the section mean.
+  /*
+   * Write back explicitly, in two parts.
+   *
+   * The Mongoose version mutated a hydrated document and called `save()`, which
+   * meant the answers rode along invisibly — and needed `markModified` to
+   * persist at all, because a mutation inside a nested array is not something
+   * the ODM can see. Answers are rows now, so each graded essay is its own
+   * UPDATE and nothing depends on remembering to flag a subdocument dirty.
+   *
+   * Only the essays this pass touched are written; the rest of the attempt is
+   * left exactly as it was filed.
+   */
   result.score = overallPercent(modScores);
-  // Plain objects into a Mongoose DocumentArray field: the cast names the target
-  // type rather than reaching for `as never`, which suppressed every check here.
-  result.moduleScores = modScores as unknown as IExamResult['moduleScores'];
   result.examType = result.examType ?? exam.type;
-  result.overallBand = auth.overallBand;
-  result.totalScaled = auth.totalScaled;
-  result.rwScaled = auth.rwScaled;
-  result.mathScaled = auth.mathScaled;
-  result.markModified('answers');
-  result.markModified('moduleScores');
-  await result.save();
 
-  const stillPending = records.filter(r => typeOf(r.questionId) === 'writing' && r.writingPending).length;
+  await db
+    .update(examResults)
+    .set({
+      score:        String(result.score),
+      moduleScores: modScores,
+      examType:     result.examType,
+      overallBand:  auth.overallBand == null ? null : String(auth.overallBand),
+      totalScaled:  auth.totalScaled ?? null,
+      rwScaled:     auth.rwScaled ?? null,
+      mathScaled:   auth.mathScaled ?? null,
+    })
+    .where(eq(examResults.id, result.id));
+
+  await Promise.all(allPending.map(rec =>
+    db
+      .update(examAnswers)
+      .set({
+        writingPending:   rec.writingPending ?? false,
+        writingScore:     rec.writingScore == null ? null : String(rec.writingScore),
+        writingWordCount: rec.writingWordCount ?? null,
+        writingCriteria:  rec.writingCriteria ?? null,
+        aiFeedback:       rec.aiFeedback ?? null,
+      })
+      .where(eq(examAnswers.id, rec.rowId)),
+  ));
+
+  const stillPending = records.filter(r => r.writingPending).length;
   const graded = allPending.length - stillPending;
 
   /*
@@ -626,7 +925,7 @@ async function runWritingGrade(
     graded,
     stillPending,
     bands:        records
-      .filter(r => typeOf(r.questionId) === 'writing' && typeof r.writingScore === 'number')
+      .filter(r => typeof r.writingScore === 'number')
       .map(r => r.writingScore as number),
     durationMs:   Date.now() - startedAt,
   });
@@ -652,8 +951,11 @@ export async function reevaluatePendingWriting(
   }
 
   try {
-    await dbConnect();
-    const result = await ExamResult.findOne({ userId, examId, attemptNumber });
+    const result = await loadGradable(and(
+      eq(examResults.userId, userId),
+      eq(examResults.examId, examId),
+      eq(examResults.attemptNumber, attemptNumber),
+    ));
     if (!result) return { error: 'Nəticə tapılmadı.' };
     const r = await gradePendingWritingOnResult(result);
     revalidatePath(`/dashboard/analytics/${examId}/${attemptNumber}/review`);
@@ -682,26 +984,57 @@ export interface WritingEvalProblem {
 /** Admin-only: every result that still has ungraded (pending) writing. */
 export async function getWritingEvalProblems(): Promise<WritingEvalProblem[]> {
   if (!(await checkRole('admin'))) return [];
-  await dbConnect();
-  const docs = await ExamResult.find({ 'answers.writingPending': true })
-    .sort({ completedAt: -1 })
-    .limit(200)
-    .lean();
-  return docs.map(d => {
-    const pending = (d.answers ?? []).filter((a) => a.writingPending);
-    return {
-      resultId:      String(d._id),
-      userId:        d.userId,
-      examId:        d.examId,
-      examTitle:     d.examTitle,
-      examTag:       d.examTag,
-      attemptNumber: d.attemptNumber,
-      completedAt:   d.completedAt.toISOString(),
-      completedAtLabel: d.completedAt.toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
-      pendingCount:  pending.length,
-      wordCounts:    pending.map((a) => (a.userAnswerText ?? '').trim().split(/\s+/).filter(Boolean).length),
-    };
-  });
+  const { userId: adminId } = await auth();
+  if (adminId && await limited('admin', 'writing-queue', adminId)) return [];
+  /*
+   * The writing queue, as one grouped join.
+   *
+   * In Mongo this filtered `{'answers.writingPending': true}` across a multikey
+   * array inside the heaviest documents in the system, and needed a partial
+   * compound index plus a page of reasoning about why a multikey index cannot
+   * serve a sorted stream. Answers are rows now, so it is an ordinary join
+   * against a partial index on a boolean column — and it reads only the pending
+   * answers rather than every answer of every matching attempt.
+   */
+  const rows = await db
+    .select({
+      resultId:       examResults.id,
+      userId:         examResults.userId,
+      examId:         examResults.examId,
+      examTitle:      examResults.examTitle,
+      examTag:        examResults.examTag,
+      attemptNumber:  examResults.attemptNumber,
+      completedAt:    examResults.completedAt,
+      userAnswerText: examAnswers.userAnswerText,
+    })
+    .from(examAnswers)
+    .innerJoin(examResults, eq(examResults.id, examAnswers.resultId))
+    .where(eq(examAnswers.writingPending, true))
+    .orderBy(desc(examResults.completedAt))
+    .limit(1000);
+
+  const byResult = new Map<string, WritingEvalProblem>();
+  for (const r of rows) {
+    let entry = byResult.get(r.resultId);
+    if (!entry) {
+      entry = {
+        resultId:      r.resultId,
+        userId:        r.userId,
+        examId:        r.examId,
+        examTitle:     r.examTitle,
+        examTag:       r.examTag,
+        attemptNumber: r.attemptNumber,
+        completedAt:   r.completedAt.toISOString(),
+        completedAtLabel: r.completedAt.toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+        pendingCount:  0,
+        wordCounts:    [],
+      };
+      byResult.set(r.resultId, entry);
+    }
+    entry.pendingCount++;
+    entry.wordCounts.push((r.userAnswerText ?? '').trim().split(/\s+/).filter(Boolean).length);
+  }
+  return [...byResult.values()].slice(0, 200);
 }
 
 /** Admin-only: manually (re-)grade the pending writing on one result. */
@@ -709,10 +1042,14 @@ export async function adminRegradeResult(
   resultId: string,
 ): Promise<{ ok: true; graded: number; pending: number } | { error: string }> {
   if (!(await checkRole('admin'))) return { error: 'Forbidden' };
-  if (!mongoose.isValidObjectId(resultId)) return { error: 'Yanlış nəticə ID.' };
+  // Each call can fan out to several paid grader requests.
+  const { userId: adminId } = await auth();
+  if (adminId && await limited('expensive', 'regrade-one', adminId)) {
+    return { error: 'Çox tez-tez yenidən qiymətləndirdiniz. Bir az gözləyin.' };
+  }
+  if (!validResultId(resultId)) return { error: 'Yanlış nəticə ID.' };
   try {
-    await dbConnect();
-    const result = await ExamResult.findById(resultId);
+    const result = await loadGradable(eq(examResults.id, resultId));
     if (!result) return { error: 'Nəticə tapılmadı.' };
     const r = await gradePendingWritingOnResult(result);
     revalidatePath('/admin/writing');
@@ -742,11 +1079,26 @@ export async function adminRegradeAllPending(): Promise<
   { ok: true; processed: number; graded: number; stillPending: number; remaining: number } | { error: string }
 > {
   if (!(await checkRole('admin'))) return { error: 'Forbidden' };
+  // Up to 25 results × several essays each, all billed. The tightest budget
+  // in the codebase, and the one most worth having.
+  const { userId: sweeperId } = await auth();
+  if (sweeperId && await limited('expensive', 'regrade-all', sweeperId)) {
+    return { error: 'Çox tez-tez işlədildi. Bir az gözləyin.' };
+  }
   try {
-    await dbConnect();
-    const docs = await ExamResult.find({ 'answers.writingPending': true })
-      .sort({ completedAt: 1 })
+    // Oldest first: a sweep bounded by time should clear the longest-waiting
+    // essays, not whichever happen to sort first.
+    const pendingIds = await db
+      .selectDistinct({ id: examResults.id, completedAt: examResults.completedAt })
+      .from(examAnswers)
+      .innerJoin(examResults, eq(examResults.id, examAnswers.resultId))
+      .where(eq(examAnswers.writingPending, true))
+      .orderBy(asc(examResults.completedAt))
       .limit(REGRADE_MAX_RESULTS);
+
+    const docs = (await Promise.all(
+      pendingIds.map(p => loadGradable(eq(examResults.id, p.id))),
+    )).filter((r): r is GradableResult => r !== null);
 
     const deadline = Date.now() + REGRADE_BUDGET_MS;
     let processed = 0, graded = 0, stillPending = 0;

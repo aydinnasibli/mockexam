@@ -43,6 +43,36 @@ export function examTypeLabel(type: string): string {
   return (EXAM_TYPE_LABELS as Record<string, string>)[type] ?? type.toUpperCase();
 }
 
+/**
+ * Which edition of a paper this is.
+ *
+ * Only read for IELTS today, where it is not cosmetic: Academic and General
+ * Training Reading convert a raw score to a band on DIFFERENT tables, and GT
+ * requires notably more correct answers for the same band. Grading every IELTS
+ * paper on the Academic table over-reported the band for every General Training
+ * candidate — on a product whose entire value is that the number is authentic.
+ *
+ * Defaults to 'academic', which is the correct reading for every other exam
+ * type too: they have a single edition, so the field is simply never consulted.
+ */
+export const EXAM_VARIANTS = [
+  { value: 'academic', label: 'Academic' },
+  { value: 'general',  label: 'General Training' },
+] as const;
+
+export type ExamVariant = typeof EXAM_VARIANTS[number]['value'];
+
+export const EXAM_VARIANT_VALUES = EXAM_VARIANTS.map(v => v.value) as readonly ExamVariant[];
+
+export function isExamVariant(value: unknown): value is ExamVariant {
+  return typeof value === 'string' && (EXAM_VARIANT_VALUES as readonly string[]).includes(value);
+}
+
+/** The variant selector only changes grading for IELTS. */
+export function variantAffectsScoring(examType: string): boolean {
+  return examType === 'ielts';
+}
+
 export const MODULE_TYPES = [
   { value: 'rw',           label: 'Reading & Writing (SAT)' },
   { value: 'reading',      label: 'Reading' },

@@ -1,18 +1,26 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/infra/mongodb';
-import ExamSessionModel, {
-  ATTEMPT_IDLE_LIMIT_SECONDS,
-  type IModuleWindow,
-  type ISessionAnswer,
-  type ISessionProgress,
-} from '@/lib/models/ExamSession';
-import QuestionModel from '@/lib/models/Question';
+import { and, count, eq, gt, sql } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import {
+  questions as questionsTable,
+  examSessions,
+  type ModuleWindow,
+  type SessionAnswer,
+  type SessionProgress as StoredProgress,
+} from '@/lib/db/schema';
 import { getExamByIdAdmin } from '@/lib/db/exams';
-import { buildModuleSchedule, totalScheduledSeconds } from '@/lib/domain/exam-timing';
+import {
+  buildModuleSchedule,
+  endBreakEarly,
+  finishModuleEarly,
+  locateInSchedule,
+  totalScheduledSeconds,
+  ATTEMPT_IDLE_LIMIT_SECONDS,
+} from '@/lib/domain/exam-timing';
 import { MAX_ANSWER_TEXT_CHARS, MAX_QUESTION_SECONDS } from '@/lib/domain/grading';
-import { isRateLimited } from '@/lib/infra/rate-limit';
+import { isRateLimited, limited } from '@/lib/infra/rate-limit';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
 import { captureException } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
@@ -45,7 +53,7 @@ export interface SessionInfo {
    * back to one countdown over the whole paper — an attempt already running
    * cannot have deadlines introduced underneath it.
    */
-  moduleSchedule: IModuleWindow[] | null;
+  moduleSchedule: ModuleWindow[] | null;
   /**
    * The draft mirrored from a previous visit, or `null` if none was ever saved.
    * This is what makes an attempt survive a cleared cache or a change of
@@ -78,9 +86,34 @@ export interface SessionInfo {
  * rely on every future caller remembering which query shape it used, both paths
  * go through here — the boundary only ever sees four numbers per window.
  */
-function toPlainSchedule(raw: unknown): IModuleWindow[] | null {
+/**
+ * How long a session survives after it is started.
+ *
+ * Replaces the 7-day Mongo TTL index, which Postgres has no equivalent for.
+ * The difference that matters is WHERE the rule lives: the TTL monitor deleted
+ * documents on a 60-second sweep, so expiry was a property of a background job.
+ * Here it is a property of the read — `liveSession` filters every access — and
+ * the sweep only reclaims space. Being late costs disk, never correctness.
+ */
+const SESSION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * This user's attempt at this exam, if it has not lapsed.
+ *
+ * Every read and every write goes through this, so no call site can forget the
+ * expiry check and resurrect an attempt whose clock ran out days ago.
+ */
+function liveSession(userId: string, examId: string) {
+  return and(
+    eq(examSessions.userId, userId),
+    eq(examSessions.examId, examId),
+    gt(examSessions.expiresAt, new Date()),
+  );
+}
+
+function toPlainSchedule(raw: unknown): ModuleWindow[] | null {
   if (!Array.isArray(raw) || raw.length === 0) return null;
-  return raw.map((w: IModuleWindow) => ({
+  return raw.map((w: ModuleWindow) => ({
     moduleIndex: Number(w.moduleIndex),
     startsAt:    Number(w.startsAt),
     endsAt:      Number(w.endsAt),
@@ -92,10 +125,10 @@ function toPlainSchedule(raw: unknown): IModuleWindow[] | null {
  * Copy the stored draft into plain objects, for the same reason the schedule is
  * copied: a hydrated Mongoose subdocument cannot cross the RSC boundary.
  */
-function toPlainProgress(raw: ISessionProgress | undefined | null): SessionProgress | null {
+function toPlainProgress(raw: StoredProgress | undefined | null): SessionProgress | null {
   if (!raw) return null;
   return {
-    answers: (raw.answers ?? []).map((a: ISessionAnswer) => ({
+    answers: (raw.answers ?? []).map((a: SessionAnswer) => ({
       questionId:     String(a.questionId),
       userAnswer:     Number(a.userAnswer),
       userAnswerText: String(a.userAnswerText ?? ''),
@@ -117,13 +150,19 @@ function toPlainProgress(raw: ISessionProgress | undefined | null): SessionProgr
  * sums every module's duration whether or not it has anything in it.
  */
 async function questionCountsByModule(examId: string, moduleCount: number): Promise<number[]> {
-  const rows = await QuestionModel.aggregate<{ _id: number; n: number }>([
-    { $match: { examId } },
-    { $group: { _id: '$moduleIndex', n: { $sum: 1 } } },
-  ]);
+  // The question bank lives in Postgres now, even though the surrounding
+  // session logic still reads Mongo — so this count must come from there or it
+  // would be answering from a store nothing writes to any more.
+  const rows = await db
+    .select({ moduleIndex: questionsTable.moduleIndex, n: count() })
+    .from(questionsTable)
+    .where(eq(questionsTable.examId, examId))
+    .groupBy(questionsTable.moduleIndex);
   const counts = new Array<number>(moduleCount).fill(0);
   for (const r of rows) {
-    if (Number.isInteger(r._id) && r._id >= 0 && r._id < moduleCount) counts[r._id] = r.n;
+    if (Number.isInteger(r.moduleIndex) && r.moduleIndex >= 0 && r.moduleIndex < moduleCount) {
+      counts[r.moduleIndex] = r.n;
+    }
   }
   return counts;
 }
@@ -135,7 +174,7 @@ async function questionCountsByModule(examId: string, moduleCount: number): Prom
  * conservative reading: an attempt with no recorded heartbeat has not shown
  * signs of life since it began.
  */
-function isAttemptStale(session: { lastSeenAt?: Date | null; startedAt: Date }): boolean {
+function isAttemptStale(session: { lastSeenAt: Date | null; startedAt: Date }): boolean {
   const last = session.lastSeenAt ? new Date(session.lastSeenAt) : new Date(session.startedAt);
   return (Date.now() - last.getTime()) / 1000 > ATTEMPT_IDLE_LIMIT_SECONDS;
 }
@@ -159,12 +198,19 @@ export async function peekExamSession(examId: string): Promise<SessionPeek | { e
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
 
-  try {
-    await dbConnect();
+  // Read-only, but it hits the database on every player mount and resume.
+  if (await limited('read', 'peek', userId)) {
+    return { error: 'Çox tez-tez sorğu göndərdiniz.' };
+  }
 
+  try {
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
-    const session = await ExamSessionModel.findOne({ userId, examId }).lean();
+    const [session] = await db
+      .select()
+      .from(examSessions)
+      .where(liveSession(userId, examId))
+      .limit(1);
     if (!session) return { exists: false };
 
     const startedAt = new Date(session.startedAt);
@@ -197,8 +243,16 @@ export async function getSessionClock(
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
 
+  /*
+   * The heartbeat runs once a minute per active attempt plus on every
+   * `visibilitychange`, so the ceiling is set well above honest use — this
+   * exists to stop a loop hammering it, not to police a running exam.
+   */
+  if (await limited('read', 'clock', userId)) {
+    return { error: 'Çox tez-tez sorğu göndərdiniz.' };
+  }
+
   try {
-    await dbConnect();
     // Checked here as everywhere else. The query is already scoped to this user
     // so nothing leaked without it, but a gate that is present on every
     // neighbour and absent on one is the kind of asymmetry that stops being
@@ -212,11 +266,11 @@ export async function getSessionClock(
      * it is the natural place to record that the attempt is still being sat.
      * `lastSeenAt` is what `isAttemptStale` reads.
      */
-    const session = await ExamSessionModel.findOneAndUpdate(
-      { userId, examId },
-      { $set: { lastSeenAt: new Date() } },
-      { new: true, projection: { startedAt: 1, totalSeconds: 1 } },
-    ).lean();
+    const [session] = await db
+      .update(examSessions)
+      .set({ lastSeenAt: new Date() })
+      .where(liveSession(userId, examId))
+      .returning({ startedAt: examSessions.startedAt, totalSeconds: examSessions.totalSeconds });
     if (!session) return { error: 'Session tapılmadı.' };
 
     return {
@@ -245,8 +299,6 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
   }
 
   try {
-    await dbConnect();
-
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
     const exam = await getExamByIdAdmin(examId);
@@ -262,15 +314,61 @@ export async function beginExamSession(examId: string): Promise<SessionInfo | { 
     const totalSeconds = scheduled > 0 ? scheduled : exam.durationMinutes * 60;
     const now = new Date();
 
-    // Atomically create session if it doesn't exist, or return existing one.
-    // $setOnInsert ensures startedAt is never overwritten on subsequent calls —
-    // and, with it, that the deadlines a candidate is being held to are the ones
-    // fixed when they pressed Start, not whatever the exam says now.
-    const session = await ExamSessionModel.findOneAndUpdate(
-      { userId, examId },
-      { $setOnInsert: { startedAt: now, totalSeconds, moduleSchedule: schedule } },
-      { upsert: true, returnDocument: 'after' },
-    );
+    /*
+     * Create the session if absent; otherwise hand back a LIVE one untouched,
+     * or restart a LAPSED one in place — all in one statement, so a
+     * double-click cannot produce two and nothing races between the branches.
+     *
+     * For a live session `startedAt` is never overwritten, and with it the
+     * deadlines a candidate is held to stay the ones fixed when they pressed
+     * Start, whatever the exam says now. That was `$setOnInsert`.
+     *
+     * A LAPSED session has to be restarted rather than returned, and that is
+     * what the CASE arms below add. Every other access goes through
+     * `liveSession`, which requires `expires_at > now()` — so once a session
+     * lapses `peekExamSession` reports none and the player shows the briefing.
+     * Handing the spent row back from here meant pressing Start returned an
+     * `elapsed` measured from days ago: `remaining` was 0, the player's
+     * auto-submit fired immediately, and an EMPTY attempt was filed against the
+     * candidate's record, consuming an attempt number. `expires_at` stayed in
+     * the past too, so the clock, the draft mirror and module content all
+     * reported "Session tapılmadı" for as long as the row survived — up to a
+     * day, since the sweep runs nightly.
+     *
+     * Under Mongo the TTL monitor deleted the document, so this same upsert
+     * inserted a fresh one. Moving expiry from a TTL index to a column brought
+     * back the case the TTL used to erase; these CASE arms are what replaces it.
+     *
+     * DO NOTHING would be wrong, and so would `setWhere`: both return no row
+     * when they do not fire, so an ordinary reload would look like a failure.
+     * Assigning every column through a CASE keeps the row eligible for
+     * RETURNING in all three branches — the standard upsert-and-read idiom,
+     * with the lapsed case folded in.
+     */
+    const lapsed = sql`${examSessions.expiresAt} <= now()`;
+    const [session] = await db
+      .insert(examSessions)
+      .values({
+        userId, examId, startedAt: now, totalSeconds, moduleSchedule: schedule,
+        lastSeenAt: now,
+        expiresAt: new Date(now.getTime() + SESSION_LIFETIME_MS),
+      })
+      .onConflictDoUpdate({
+        target: [examSessions.userId, examSessions.examId],
+        set: {
+          startedAt:      sql`CASE WHEN ${lapsed} THEN excluded.started_at       ELSE ${examSessions.startedAt} END`,
+          totalSeconds:   sql`CASE WHEN ${lapsed} THEN excluded.total_seconds    ELSE ${examSessions.totalSeconds} END`,
+          moduleSchedule: sql`CASE WHEN ${lapsed} THEN excluded.module_schedule  ELSE ${examSessions.moduleSchedule} END`,
+          // A lapsed attempt's draft is already unreachable — every read filters
+          // on expiry — so a restart starts from a clean sheet rather than
+          // resurrecting answers the candidate was told were gone.
+          progress:       sql`CASE WHEN ${lapsed} THEN NULL::jsonb              ELSE ${examSessions.progress} END`,
+          expiresAt:      sql`CASE WHEN ${lapsed} THEN excluded.expires_at       ELSE ${examSessions.expiresAt} END`,
+          // Always: the candidate is demonstrably here right now.
+          lastSeenAt:     sql`excluded.last_seen_at`,
+        },
+      })
+      .returning();
 
     const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
 
@@ -326,9 +424,10 @@ export async function restartExamSession(examId: string): Promise<{ ok: true } |
   }
 
   try {
-    await dbConnect();
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
-    await ExamSessionModel.deleteOne({ userId, examId });
+    await db
+      .delete(examSessions)
+      .where(and(eq(examSessions.userId, userId), eq(examSessions.examId, examId)));
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'restartExamSession' } });
@@ -355,6 +454,120 @@ const MAX_PROGRESS_FLAGGED = 2_000;
  * has already been submitted, is silently dropped rather than resurrecting a
  * clock.
  */
+/**
+ * Rewrite a running session's schedule, and keep the clock with it.
+ *
+ * The shared spine of the two "skip ahead" actions. Both do the same thing —
+ * shorten the attempt by handing back time the candidate no longer wants — and
+ * differ only in which window they truncate, so `apply` is the whole difference
+ * and everything else (auth, entitlement, the elapsed clock, the write) is here
+ * once.
+ *
+ * `apply` returning null means there was nothing to reclaim: the phase had
+ * already moved on, or the caller named a phase that is not running. That is a
+ * `stale` reply rather than an error, which is what makes a double-click and a
+ * click that races the clock both harmless.
+ */
+async function rescheduleSession(
+  examId: string,
+  rateKey: string,
+  apply: (schedule: ModuleWindow[], elapsed: number) => ModuleWindow[] | null,
+): Promise<{ ok: true; schedule: ModuleWindow[]; totalSeconds: number } | { stale: true } | { error: string }> {
+  const { userId } = await auth();
+  if (!userId) return { error: 'Unauthorized' };
+
+  // Deliberate, confirmed actions — a handful per attempt at most.
+  if (await isRateLimited(`${rateKey}:${userId}`, 30, 60_000)) {
+    return { error: 'Çox tez-tez cəhd etdiniz.' };
+  }
+
+  try {
+    if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
+
+    const [session] = await db
+      .select({ startedAt: examSessions.startedAt, schedule: examSessions.moduleSchedule })
+      .from(examSessions)
+      .where(and(eq(examSessions.userId, userId), eq(examSessions.examId, examId)))
+      .limit(1);
+
+    if (!session) return { error: 'Sessiya tapılmadı.' };
+
+    // A session predating per-module timing has one clock over the whole paper
+    // and no windows to move: there is nothing here to skip ahead of.
+    const schedule = session.schedule;
+    if (!schedule || schedule.length === 0) return { stale: true };
+
+    const elapsed = (Date.now() - new Date(session.startedAt).getTime()) / 1000;
+    const next = apply(schedule, elapsed);
+    if (!next) return { stale: true };
+
+    /*
+     * `totalSeconds` moves with the schedule, because the schedule is what it
+     * was derived from when the session was created — see `beginExamSession`.
+     * Leaving it behind desynchronised the two: the resume screen reads the
+     * stored total, so an attempt whose schedule now ended at 30 minutes still
+     * advertised 43 minutes remaining.
+     */
+    const totalSeconds = totalScheduledSeconds(next);
+
+    await db
+      .update(examSessions)
+      .set({ moduleSchedule: next, totalSeconds, lastSeenAt: new Date() })
+      .where(and(eq(examSessions.userId, userId), eq(examSessions.examId, examId)));
+
+    return { ok: true, schedule: next, totalSeconds };
+  } catch (err) {
+    void captureException(err, { tags: { action: rateKey }, extra: { examId } });
+    return { error: 'Əməliyyat alınmadı. Yenidən cəhd edin.' };
+  }
+}
+
+/**
+ * Hand back the rest of the current section and open the next one now.
+ *
+ * The player used to tell a candidate who had finished a section to wait for
+ * the clock, because the schedule was fixed for the life of the session. That
+ * is faithful to an exam hall and wrong for a practice product — and it made
+ * the analytics page's pace rating meaningless, since every attempt then ran
+ * for exactly the scheduled time.
+ *
+ * The schedule stays the single source of truth. This rewrites it once, on the
+ * server, and every derived thing — which module is open, what the content gate
+ * in `getSessionQuestions` will release, what a second tab computes — follows
+ * from the stored value without any of them changing.
+ *
+ * `expectedModuleIndex` is what the candidate believed they were finishing. A
+ * double click, or a click that raced the clock running out on its own, arrives
+ * with a stale index and is refused rather than silently closing whichever
+ * section happens to be open by then — which would skip a section outright.
+ */
+export async function finishCurrentModule(examId: string, expectedModuleIndex: number) {
+  return rescheduleSession(examId, 'finish-module', (schedule, elapsed) => {
+    const position = locateInSchedule(schedule, elapsed);
+    if (position.phase !== 'module') return null;
+    if (position.moduleIndex !== expectedModuleIndex) return null;
+    return finishModuleEarly(schedule, position.moduleIndex, elapsed);
+  });
+}
+
+/**
+ * End the running break and start the next section now.
+ *
+ * Same bargain as finishing a section early: the rest of the break is given up
+ * rather than moved onto the section that follows, so a candidate who skips it
+ * gains no working time for doing so. `expectedAfterModuleIndex` names the
+ * break being skipped — the module it FOLLOWS — so a click that lands after the
+ * break has already ended cannot fall through and close the next section.
+ */
+export async function skipCurrentBreak(examId: string, expectedAfterModuleIndex: number) {
+  return rescheduleSession(examId, 'skip-break', (schedule, elapsed) => {
+    const position = locateInSchedule(schedule, elapsed);
+    if (position.phase !== 'break') return null;
+    if (position.afterModuleIndex !== expectedAfterModuleIndex) return null;
+    return endBreakEarly(schedule, position.afterModuleIndex, elapsed);
+  });
+}
+
 export async function saveSessionProgress(
   examId: string,
   draft: {
@@ -383,12 +596,11 @@ export async function saveSessionProgress(
   }
 
   try {
-    await dbConnect();
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
     // Clamp every field before it is stored, exactly as grading does with a
     // submission: this is client-supplied data written straight to a document.
-    const answers: ISessionAnswer[] = draft.answers
+    const answers: SessionAnswer[] = draft.answers
       .slice(0, MAX_PROGRESS_ANSWERS)
       .filter(a => a && typeof a.questionId === 'string' && a.questionId.length <= 64)
       .map(a => ({
@@ -427,24 +639,39 @@ export async function saveSessionProgress(
      */
     const now = new Date();
     const base = baseUpdatedAt ? new Date(baseUpdatedAt) : null;
-    const res = await ExamSessionModel.updateOne(
-      {
-        userId,
-        examId,
-        // No base means the client started from a session with no stored draft;
-        // it may only create the first one.
-        ...(base && !Number.isNaN(base.getTime())
-          ? { 'progress.updatedAt': base }
-          : { progress: { $exists: false } }),
-      },
-      { $set: { progress: { answers, flagged, currentIdx, updatedAt: now }, lastSeenAt: now } },
-    );
+    const hasBase = !!base && !Number.isNaN(base.getTime());
 
-    if (res.matchedCount === 1) return { ok: true, updatedAt: now.toISOString() };
+    /*
+     * The guard reads the draft's own timestamp back out of the JSONB.
+     *
+     * `progress->>'updatedAt'` is the ISO string written by the previous save;
+     * casting both sides to timestamptz compares instants rather than text, so
+     * a differently-formatted-but-equal timestamp still matches. With no base,
+     * the client started from a session holding no draft and may only create
+     * the first one — `progress IS NULL` says exactly that.
+     */
+    const guard = hasBase
+      ? sql`(${examSessions.progress}->>'updatedAt')::timestamptz = ${base!.toISOString()}::timestamptz`
+      : sql`${examSessions.progress} IS NULL`;
+
+    const written = await db
+      .update(examSessions)
+      .set({
+        progress: { answers, flagged, currentIdx, updatedAt: now.toISOString() },
+        lastSeenAt: now,
+      })
+      .where(and(liveSession(userId, examId), guard))
+      .returning({ id: examSessions.id });
+
+    if (written.length === 1) return { ok: true, updatedAt: now.toISOString() };
 
     // Nothing matched for one of two reasons, and they are not the same: the
     // attempt is gone (submitted, restarted, expired), or this draft is stale.
-    const exists = await ExamSessionModel.exists({ userId, examId });
+    const [exists] = await db
+      .select({ id: examSessions.id })
+      .from(examSessions)
+      .where(liveSession(userId, examId))
+      .limit(1);
     if (!exists) return { error: 'Session tapılmadı.' };
 
     return { stale: true };

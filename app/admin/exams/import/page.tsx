@@ -81,6 +81,18 @@ export default function ImportExamPage() {
         <p className="m-0 mt-3.5 text-body text-ink-soft">
           AI tərəfindən yaradılmış məlumat bazasına uyğun <code className="font-mono text-sm">.json</code> faylını yükləyin.
         </p>
+        {/*
+          Re-import is the supported way to revise a paper, and it is not
+          obvious from the form alone — the same file with the same `examId`
+          updates in place rather than being refused or duplicated. Saying so
+          here matters because the alternative an admin would otherwise reach
+          for is deleting the exam, which cascades the whole question bank.
+        */}
+        <p className="m-0 mt-2.5 text-note text-ink-mute">
+          Eyni <code className="font-mono text-xs">examId</code> ilə yenidən yükləsəniz, mövcud imtahan
+          yenilənir: sualların ID-ləri qorunur, ona görə köhnə nəticələrin təhlili işlək qalır.
+          Aktiv imtahan yayımdan çıxarılmır.
+        </p>
       </header>
 
       <div className="space-y-5">
@@ -156,7 +168,7 @@ export default function ImportExamPage() {
             </>
           ) : (
             <>
-              İmtahanı verilənlər bazasına yaz <ButtonArrow />
+              İmtahanı yaz / yenilə <ButtonArrow />
             </>
           )}
         </Button>

@@ -10,7 +10,7 @@ import MathText from '@/components/ui/MathText';
 import PassageText from '@/components/ui/PassageText';
 import { reevaluatePendingWriting } from '@/lib/actions/results';
 import { formatOverallScore, formatModuleScore } from '@/lib/domain/scoring';
-import { isReviewStale } from '@/lib/domain/review-join';
+import { buildReviewItems } from '@/lib/domain/review-items';
 import { formatAzDate } from '@/lib/shared/az-date';
 import {
   CheckCircle2, XCircle, MinusCircle, Clock, ChevronDown,
@@ -41,18 +41,22 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   const [expandedPassages, setExpandedPassages] = useState<Set<string>>(new Set());
   const [recheckPending, startRecheck] = useTransition();
 
-  const answerMap = new Map(result.answers.map(a => [a.questionId, a]));
-
   /*
-   * Can this attempt still be joined to the question bank at all?
+   * The attempt drives the review; the live bank only enriches it.
    *
-   * Re-importing an exam replaces every question document, and with it every
-   * id, so results recorded beforehand point at questions that no longer
-   * exist. The join then misses on every lookup and each question renders as
-   * unanswered and wrong — underneath the header still showing the score the
-   * candidate genuinely earned. See `isReviewStale`.
+   * This used to iterate the live questions and look each answer up by id — a
+   * join that a re-import or a deletion breaks, at which point every question
+   * rendered as unanswered and wrong beneath the score the candidate had
+   * actually earned, so the page blacked the whole breakdown out instead.
+   *
+   * `saveExamResult` snapshots what was asked onto each answer row, so the
+   * breakdown no longer depends on the join: a missing question costs its
+   * explanation, not the review. See `lib/domain/review-items.ts`.
    */
-  const reviewStale = isReviewStale(result.answers, questions);
+  const items = useMemo(
+    () => buildReviewItems(result.answers, questions),
+    [result.answers, questions],
+  );
   const hasAnswers = result.answers.length > 0;
   const hasPendingWriting = result.answers.some(a => a.writingPending);
 
@@ -91,26 +95,21 @@ export default function ReviewClient({ exam, questions, result }: Props) {
   const moduleGroups = exam.modules.map((mod, modIdx) => ({
     mod,
     modIdx,
-    qs: questions.filter(q => q.moduleIndex === modIdx),
+    qs: items.filter(it => it.moduleIndex === modIdx),
     moduleScore: result.moduleScores.find(m => m.moduleIndex === modIdx),
   }));
 
-  // Passages are authored once, on the first question of their group — carry
-  // the most recent passage forward within the module (matches the exam player).
-  const passageByQuestion = useMemo(() => {
-    const map = new Map<string, string>();
-    let lastPassage = '';
-    let lastModule = -1;
-    for (const q of questions) {
-      if (q.moduleIndex !== lastModule) {
-        lastModule = q.moduleIndex;
-        lastPassage = '';
-      }
-      if (q.passage) lastPassage = q.passage;
-      if (lastPassage) map.set(q.id, lastPassage);
-    }
+  /*
+   * Flat, one-based numbering across the whole paper — the number the candidate
+   * saw while sitting it. Taken from the answer order rather than from
+   * `questions.indexOf`, which was a full scan per card and, once the bank had
+   * moved on, returned -1 and printed "Sual 0".
+   */
+  const numberByKey = useMemo(() => {
+    const map = new Map<string, number>();
+    items.forEach((it, i) => map.set(it.key, i + 1));
     return map;
-  }, [questions]);
+  }, [items]);
 
   const score = result.score;
   const scoreColor = score >= 80 ? 'text-ok' : score >= 60 ? 'text-warn' : 'text-error';
@@ -206,10 +205,10 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                 const c = ms.pending
                   ? 'bg-bg/15 text-bg/70 border-bg/25'
                   : ms.scorePercent >= 80
-                  ? 'bg-green-100 text-green-800 border-green-200'
+                  ? 'bg-correct/10 text-correct border-correct/25'
                   : ms.scorePercent >= 60
-                  ? 'bg-amber-100 text-amber-800 border-amber-200'
-                  : 'bg-red-100 text-red-800 border-red-200';
+                  ? 'bg-warn/10 text-warn border-warn/25'
+                  : 'bg-error/10 text-error border-error/25';
                 return (
                   <span key={ms.moduleIndex} className={`text-xs font-bold px-3 py-1 rounded-full border ${c}`}>
                     {ms.moduleName}: {formatModuleScore(result.examType, ms)}
@@ -241,11 +240,11 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
         {/* Writing still being graded (auto — no manual action for the student) */}
         {hasPendingWriting && (
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-purple-200 bg-purple-50 px-5 py-4">
-            <RotateCcw size={16} className={`shrink-0 text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-rule bg-surface-2 px-5 py-4">
+            <RotateCcw size={16} className={`shrink-0 text-ink-soft ${recheckPending ? 'animate-spin' : ''}`} />
             <div>
-              <p className="text-sm font-semibold text-purple-900">Esseniz yoxlanılır</p>
-              <p className="text-sm text-purple-700">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal hazır olduqda avtomatik yenilənəcək — bu səhifəni bir azdan yeniləyin.</p>
+              <p className="text-sm font-semibold text-ink">Esseniz yoxlanılır</p>
+              <p className="text-sm text-ink-soft">Yazı hissəsi süni intellekt tərəfindən qiymətləndirilir. Ümumi bal hazır olduqda avtomatik yenilənəcək — bu səhifəni bir azdan yeniləyin.</p>
             </div>
           </div>
         )}
@@ -288,62 +287,49 @@ export default function ReviewClient({ exam, questions, result }: Props) {
             )}
 
             {/* Questions */}
-            {reviewStale ? (
-              /*
-                Say what happened instead of rendering a review that contradicts
-                the score above it. The scores themselves are stored on the
-                result and remain accurate, so they stay on screen.
-              */
-              <div className="rounded-card border border-warn bg-warn/8 p-5">
-                <div className="mb-2 flex items-center gap-2">
-                  <TriangleAlert size={16} className="shrink-0 text-warn" />
-                  <p className="m-0 text-sm font-medium text-ink">
-                    Sual-sual baxış bu cəhd üçün əlçatan deyil
-                  </p>
-                </div>
-                <p className="m-0 text-sm leading-relaxed">
-                  Bu cəhddən sonra imtahanın sual bankı yenilənib, ona görə cavablarınızı
-                  hazırkı suallarla uyğunlaşdırmaq mümkün deyil. Yuxarıdakı bal və bölmə
-                  nəticələri isə cəhdinizlə birlikdə saxlanılıb və dəqiqdir.
-                </p>
-              </div>
-            ) : (
             <div className="space-y-4">
               {moduleGroups[activeModule]?.qs.map((q) => {
-                const answer = answerMap.get(q.id);
-                const globalIdx = questions.indexOf(q);
-                const userChoice = answer?.userAnswer ?? -1;
+                const answer = q.answer;
+                const questionNo = numberByKey.get(q.key) ?? 0;
+                const userChoice = answer.userAnswer;
                 const isWriting = q.type === 'writing';
-                const isUnanswered = !isWriting && userChoice === -1 && !answer?.userAnswerText;
-                const isCorrect = answer?.isCorrect ?? false;
-                const timeSecs = answer?.timeSeconds ?? 0;
-                const questionPassage = passageByQuestion.get(q.id) ?? '';
+                const isUnanswered = !isWriting && userChoice === -1 && !answer.userAnswerText;
+                const isCorrect = answer.isCorrect;
+                const timeSecs = answer.timeSeconds;
+                const questionPassage = q.passage;
                 const hasPassage = !!questionPassage;
-                const passageExpanded = expandedPassages.has(q.id);
+                const passageExpanded = expandedPassages.has(q.key);
 
                 const cardBorder = isWriting
-                  ? 'border-purple-200'
+                  ? 'border-rule'
                   : isUnanswered
                   ? 'border-rule'
                   : isCorrect
-                  ? 'border-green-200'
-                  : 'border-red-200';
+                  ? 'border-correct/25'
+                  : 'border-error/25';
 
+                /*
+                  Tints are DERIVED from the semantic tokens rather than picked
+                  from Tailwind's palette, so they cannot drift away from the
+                  ✓/✗ marks sitting on top of them. The page previously mixed
+                  the two: `text-ok` (#2F5C3E) on the icon and `bg-green-50`
+                  behind it, which are different greens.
+                */
                 const headerBg = isWriting
-                  ? 'bg-purple-50 border-purple-100'
+                  ? 'bg-accent-soft border-rule'
                   : isUnanswered
                   ? 'bg-surface-2 border-rule'
                   : isCorrect
-                  ? 'bg-green-50 border-green-100'
-                  : 'bg-red-50 border-red-100';
+                  ? 'bg-correct/8 border-correct/20'
+                  : 'bg-error/8 border-error/20';
 
                 return (
-                  <div key={q.id} className={`bg-surface rounded-2xl border overflow-hidden ${cardBorder}`}>
+                  <div key={q.key} className={`bg-surface rounded-2xl border overflow-hidden ${cardBorder}`}>
                     {/* Question header */}
                     <div className={`px-5 py-3 flex items-center justify-between border-b ${headerBg}`}>
                       <div className="flex items-center gap-3">
                         {isWriting
-                          ? <FileText size={16} className="text-purple-600" />
+                          ? <FileText size={16} className="text-ink-soft" />
                           : isUnanswered
                           ? <MinusCircle size={16} className="text-ink-mute" />
                           : isCorrect
@@ -351,7 +337,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           : <XCircle size={16} className="text-error" />
                         }
                         <span className="text-xs font-medium text-ink-soft">
-                          Sual {globalIdx + 1}
+                          Sual {questionNo}
                           {q.type === 'open' && ' (Açıq)'}
                           {q.type === 'matching' && ' (Uyğunlaşdırma)'}
                           {q.type === 'writing' && ' (Yazı)'}
@@ -362,9 +348,9 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           placed three of four correctly earns 3 — the tick/cross
                           alone would report that as a flat wrong answer.
                         */}
-                        {(answer?.marks ?? 1) > 1 && (
+                        {answer.marks > 1 && (
                           <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-xs tabular-nums text-ink-soft">
-                            {answer?.earnedMarks ?? 0} / {answer?.marks} bal
+                            {answer.earnedMarks} / {answer.marks} bal
                           </span>
                         )}
                       </div>
@@ -376,7 +362,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                         )}
                         {hasPassage && (
                           <button
-                            onClick={() => togglePassage(q.id)}
+                            onClick={() => togglePassage(q.key)}
                             className="flex items-center gap-1 text-xs font-medium text-ink-soft hover:text-ink transition-colors"
                           >
                             Mətn
@@ -387,6 +373,27 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                     </div>
 
                     <div className="p-5">
+                      {/*
+                        Nothing renderable survives for this one.
+
+                        Only reachable for an attempt filed BEFORE the answer
+                        snapshot shipped whose question has since been deleted
+                        or re-imported. Everything filed since carries its own
+                        stem and options, so it renders from the attempt alone.
+                        Scoped to the single question rather than blacking out
+                        the whole breakdown, which is what used to happen.
+                      */}
+                      {q.unavailable ? (
+                        <div className="flex items-start gap-2.5 rounded-xl border border-warn bg-warn/8 px-4 py-3">
+                          <TriangleAlert size={15} className="mt-0.5 shrink-0 text-warn" />
+                          <p className="m-0 text-sm leading-relaxed text-ink">
+                            Bu sual imtahan bankından silinib və cəhdiniz onun mətnini
+                            saxlamayıb, ona görə burada göstərilə bilmir. Cavabınız və balınız
+                            isə yuxarıdakı nəticəyə daxildir.
+                          </p>
+                        </div>
+                      ) : (
+                      <>
                       {/* Passage (collapsible) */}
                       {hasPassage && passageExpanded && (
                         <div className="passage-body mb-4 p-4 bg-surface-2 rounded-xl border border-rule text-ink-soft max-h-48 overflow-y-auto">
@@ -406,24 +413,50 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                           {q.options.map((opt, i) => {
                             const isUserChoice = userChoice === i;
                             const isCorrectOption = q.correctIndex === i;
+
+                            /*
+                              Semantic tokens, not Tailwind's palette. The badge
+                              used to be `bg-green-500 text-white`, which is
+                              2.28:1 — a WCAG 1.4.3 failure that the project's
+                              own `--color-correct` (7.7:1 against `bg`) fixes
+                              outright. Same story for the red at 3.76:1.
+                            */
                             let cls = 'border-rule bg-surface-2 text-ink-soft';
-                            if (isCorrectOption) cls = 'border-green-400 bg-green-50 text-green-800';
-                            else if (isUserChoice && !isCorrectOption) cls = 'border-red-400 bg-red-50 text-red-800';
+                            if (isCorrectOption) cls = 'border-correct bg-correct/8 text-ink';
+                            else if (isUserChoice && !isCorrectOption) cls = 'border-error bg-error/8 text-ink';
+
+                            /*
+                              The tick, the cross and the colour were the ONLY
+                              things saying which option was right and which the
+                              candidate picked — and every icon here is
+                              `aria-hidden`, so a screen reader read four
+                              indistinguishable options (WCAG 1.4.1, Use of
+                              Colour). This is that information as text.
+                            */
+                            const marker = isCorrectOption && isUserChoice
+                              ? 'Sizin cavabınız — düzgün'
+                              : isCorrectOption
+                              ? 'Düzgün cavab'
+                              : isUserChoice
+                              ? 'Sizin cavabınız — yanlış'
+                              : null;
+
                             return (
                               <div key={i} className={`flex items-start gap-3 px-4 py-3 rounded-xl border-2 ${cls}`}>
                                 <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                   isCorrectOption
-                                    ? 'bg-green-500 text-white'
+                                    ? 'bg-correct text-bg'
                                     : isUserChoice
-                                    ? 'bg-red-500 text-white'
+                                    ? 'bg-error text-bg'
                                     : 'bg-surface border border-rule text-ink-mute'
                                 }`}>
                                   {OPTION_LABELS[i]}
                                 </span>
                                 <div className="text-sm flex-1 pt-0.5">
+                                  {marker && <span className="sr-only">{marker}. </span>}
                                   <MathText text={opt} className="leading-relaxed" />
                                 </div>
-                                {isCorrectOption && <CheckCircle2 size={15} className="text-ok shrink-0 mt-0.5" />}
+                                {isCorrectOption && <CheckCircle2 size={15} className="text-correct shrink-0 mt-0.5" />}
                                 {isUserChoice && !isCorrectOption && <XCircle size={15} className="text-error shrink-0 mt-0.5" />}
                               </div>
                             );
@@ -432,30 +465,30 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       )}
 
                       {/* Matching review */}
-                      {q.type === 'matching' && q.matchItems && q.matchItems.length > 0 && (
+                      {q.type === 'matching' && q.matchItems.length > 0 && (
                         <div className="space-y-2 mb-4">
                           {(() => {
                             let userMatches: number[] = [];
                             try {
-                              if (answer?.userAnswerText) userMatches = JSON.parse(answer.userAnswerText);
+                              if (answer.userAnswerText) userMatches = JSON.parse(answer.userAnswerText);
                             } catch { /* ignore */ }
-                            return q.matchItems!.map((item, idx) => {
+                            return q.matchItems.map((item, idx) => {
                               const userPick = userMatches[idx] ?? -1;
-                              const correctPick = q.correctMatching?.[idx] ?? -1;
+                              const correctPick = q.correctMatching[idx] ?? -1;
                               const itemCorrect = userPick === correctPick;
                               const cls = userPick === -1
                                 ? 'border-rule bg-surface-2'
                                 : itemCorrect
-                                ? 'border-green-400 bg-green-50'
-                                : 'border-red-400 bg-red-50';
+                                ? 'border-correct bg-correct/8'
+                                : 'border-error bg-error/8';
                               return (
                                 <div key={idx} className={`flex items-start gap-3 px-4 py-3 rounded-xl border-2 ${cls}`}>
                                   <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                     itemCorrect
-                                      ? 'bg-green-500 text-white'
+                                      ? 'bg-correct text-bg'
                                       : userPick === -1
                                       ? 'bg-surface border border-rule text-ink-mute'
-                                      : 'bg-red-500 text-white'
+                                      : 'bg-error text-bg'
                                   }`}>
                                     {idx + 1}
                                   </span>
@@ -484,21 +517,21 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                         leaving no way to tell a wrong answer from a typo.
                       */}
                       {q.type === 'open' && (() => {
-                        const typed    = (answer?.userAnswerText ?? '').trim();
-                        const accepted = (q.openAnswers ?? []).filter(a => a.trim());
+                        const typed    = answer.userAnswerText.trim();
+                        const accepted = q.openAnswers.filter(a => a.trim());
                         return (
                           <div className="space-y-2 mb-4">
                             <div className={`px-4 py-3 rounded-xl border-2 ${
                               !typed ? 'border-rule bg-surface-2'
-                                : isCorrect ? 'border-green-400 bg-green-50'
-                                : 'border-red-400 bg-red-50'
+                                : isCorrect ? 'border-correct bg-correct/8'
+                                : 'border-error bg-error/8'
                             }`}>
                               <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-1.5 flex items-center gap-1.5">
                                 <Pencil size={11} /> Sizin cavabınız
                               </p>
                               {typed ? (
                                 <p className={`text-sm font-medium m-0 whitespace-pre-wrap ${
-                                  isCorrect ? 'text-green-800' : 'text-red-800'
+                                  isCorrect ? 'text-ink' : 'text-ink'
                                 }`}>
                                   {typed}
                                 </p>
@@ -508,12 +541,12 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                             </div>
 
                             {accepted.length > 0 && (
-                              <div className="px-4 py-3 rounded-xl border-2 border-green-400 bg-green-50">
+                              <div className="px-4 py-3 rounded-xl border-2 border-correct bg-correct/8">
                                 <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-1.5 flex items-center gap-1.5">
                                   <CheckCircle2 size={11} className="text-ok" />
                                   {accepted.length > 1 ? 'Qəbul edilən cavablar' : 'Doğru cavab'}
                                 </p>
-                                <p className="text-sm font-medium text-green-800 m-0">
+                                <p className="text-sm font-medium text-ink m-0">
                                   {accepted.join('  ·  ')}
                                 </p>
                               </div>
@@ -525,11 +558,11 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                       {/* Writing: student essay + AI feedback */}
                       {q.type === 'writing' && (() => {
                         const writingAnswer = answer;
-                        const essay = writingAnswer?.userAnswerText ?? '';
-                        const bandScore = writingAnswer?.writingScore;
-                        const wordCount = writingAnswer?.writingWordCount;
-                        const criteria = writingAnswer?.writingCriteria ?? [];
-                        const aiFeedback = writingAnswer?.aiFeedback;
+                        const essay = writingAnswer.userAnswerText;
+                        const bandScore = writingAnswer.writingScore;
+                        const wordCount = writingAnswer.writingWordCount;
+                        const criteria = writingAnswer.writingCriteria ?? [];
+                        const aiFeedback = writingAnswer.aiFeedback;
                         const bandColor = bandScore !== undefined
                           ? bandScore >= 7 ? 'text-ok' : bandScore >= 5 ? 'text-warn' : 'text-error'
                           : 'text-ink-mute';
@@ -549,27 +582,27 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                             )}
 
                             {/* Essay awaiting grading (auto) */}
-                            {essay && writingAnswer?.writingPending && (
-                              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                            {essay && writingAnswer.writingPending && (
+                              <div className="p-4 bg-surface-2 border border-rule rounded-xl">
                                 <div className="flex items-center gap-2">
-                                  <RotateCcw size={14} className={`text-purple-600 ${recheckPending ? 'animate-spin' : ''}`} />
-                                  <p className="text-sm font-medium text-purple-900">Esseniz yoxlanılır…</p>
+                                  <RotateCcw size={14} className={`text-ink-soft ${recheckPending ? 'animate-spin' : ''}`} />
+                                  <p className="text-sm font-medium text-ink">Esseniz yoxlanılır…</p>
                                 </div>
-                                {aiFeedback && <p className="text-sm text-purple-800 leading-relaxed mt-2">{aiFeedback}</p>}
+                                {aiFeedback && <p className="text-sm text-ink leading-relaxed mt-2">{aiFeedback}</p>}
                               </div>
                             )}
 
                             {/* AI band score */}
-                            {!writingAnswer?.writingPending && bandScore !== undefined && (
-                              <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                            {!writingAnswer.writingPending && bandScore !== undefined && (
+                              <div className="p-4 bg-surface-2 border border-rule rounded-xl">
                                 <div className="flex items-center justify-between mb-3">
                                   {/* One colour only. This carried `text-ink-mute` as well —
                                       inherited from the shared label class string — and rendered
-                                      purple purely because Tailwind emits `text-purple-700` later
+                                      purple purely because Tailwind emits `text-ink-soft` later
                                       in the stylesheet than `text-ink-mute`. Correct by accident
                                       is not correct: reordering the theme would have silently
                                       turned this label grey. */}
-                                  <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-purple-700">AI Qiymətləndirməsi</p>
+                                  <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-soft">AI Qiymətləndirməsi</p>
                                   <span className={`font-display text-2xl font-bold ${bandColor}`}>
                                     {bandScore.toFixed(1)} <span className="text-sm font-medium text-ink-mute">/ 9</span>
                                   </span>
@@ -580,7 +613,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                     {criteria.map((c, ci) => (
                                       <div key={ci} className="flex items-start gap-2">
                                         <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
-                                          c.score >= 7 ? 'bg-green-100 text-green-700' : c.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'
+                                          c.score >= 7 ? 'bg-correct/10 text-correct' : c.score >= 5 ? 'bg-warn/10 text-warn' : 'bg-error/10 text-error'
                                         }`}>
                                           {c.score}
                                         </span>
@@ -594,7 +627,7 @@ export default function ReviewClient({ exam, questions, result }: Props) {
                                 )}
 
                                 {aiFeedback && (
-                                  <p className="text-sm text-purple-900 leading-relaxed border-t border-purple-200 pt-3">{aiFeedback}</p>
+                                  <p className="text-sm text-ink leading-relaxed border-t border-rule pt-3">{aiFeedback}</p>
                                 )}
                               </div>
                             )}
@@ -618,22 +651,39 @@ export default function ReviewClient({ exam, questions, result }: Props) {
 
                       {/* Explanation */}
                       {q.explanation && (
-                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                        <div className="mt-3 p-3 bg-surface-2 border border-rule rounded-xl">
                           {/* This one was actually broken: `text-ink-mute` is emitted AFTER
-                              `text-blue-600`, so it won, and the heading rendered grey inside a
+                              `text-ink-soft`, so it won, and the heading rendered grey inside a
                               blue card whose border and body text are both blue. */}
-                          <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-blue-600 mb-1">İzahat</p>
-                          <div className="text-xs text-blue-900 leading-relaxed">
+                          <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-soft mb-1">İzahat</p>
+                          <div className="text-xs text-ink leading-relaxed">
                             <MathText text={q.explanation} className="leading-relaxed" />
                           </div>
                         </div>
+                      )}
+
+                      {/*
+                        The question has since left the bank, so the extras that
+                        are NOT snapshotted — the explanation, the accepted open
+                        answers, the matching key — cannot be shown. What was
+                        asked and how it was marked come from the attempt and
+                        are above, unaffected. Said plainly so a missing
+                        explanation does not read as an empty one.
+                      */}
+                      {q.questionMissing && (
+                        <p className="m-0 mt-3 text-xs leading-relaxed text-ink-mute">
+                          Bu sual imtahan bankında dəyişdirilib və ya silinib — izahat və
+                          cavab açarı əlçatan deyil. Yuxarıdakı sual mətni və cavabınız
+                          cəhdinizdən olduğu kimi saxlanılıb.
+                        </p>
+                      )}
+                      </>
                       )}
                     </div>
                   </div>
                 );
               })}
             </div>
-            )}
           </>
         )}
       </div>

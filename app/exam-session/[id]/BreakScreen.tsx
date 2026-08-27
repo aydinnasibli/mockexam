@@ -2,6 +2,7 @@
 
 import { Coffee, ArrowRight } from 'lucide-react';
 import { MONO_SECTION } from '@/components/ui/type-styles';
+import Button from '@/components/ui/Button';
 import ModuleIcon from './ModuleIcon';
 
 /**
@@ -21,10 +22,17 @@ import ModuleIcon from './ModuleIcon';
  * at z-90: opened before a break, it ended up BEHIND an opaque overlay with its
  * close button unreachable until the break ended.
  *
- * Deliberately not dismissible. A candidate cannot start the next section early
- * in any of the exams this platform mocks, and letting them skip ahead here
- * would put them on a different schedule from the server's — which is the one
- * that decides when their answers stop counting.
+ * Skippable, but only through the server. A real exam hall does not let a
+ * candidate start the next section early, and this screen used to say so —
+ * which left someone who did not want a ten-minute break watching a countdown
+ * with nothing to do. `onSkip` asks the SERVER to end the break and rewrite the
+ * session schedule; the overlay then closes because the schedule says the next
+ * module is open, not because a local flag dismissed it. That is the same rule
+ * that kept this undismissable before: the candidate is never on a different
+ * clock from the one deciding when their answers stop counting.
+ *
+ * The break time is forfeited rather than moved onto the next section, so
+ * skipping buys nothing but an earlier start — which is why the button says so.
  */
 
 interface Props {
@@ -35,6 +43,9 @@ interface Props {
   nextModuleMinutes: number;
   /** Seconds left in the break. */
   remaining: number;
+  /** Ends the break on the server. Omitted for a session with no schedule. */
+  onSkip?: () => void;
+  skipping?: boolean;
 }
 
 function formatClock(seconds: number) {
@@ -45,7 +56,7 @@ function formatClock(seconds: number) {
 
 export default function BreakScreen({
   finishedModuleName, nextModuleName, nextModuleType,
-  nextModuleQuestionCount, nextModuleMinutes, remaining,
+  nextModuleQuestionCount, nextModuleMinutes, remaining, onSkip, skipping = false,
 }: Props) {
   return (
     <div
@@ -91,9 +102,27 @@ export default function BreakScreen({
           <ArrowRight size={17} className="shrink-0 text-ink-mute" aria-hidden="true" />
         </div>
 
-        <p className="mt-5 m-0 text-sm text-ink-mute">
-          Növbəti bölmə fasilə bitən kimi avtomatik başlayacaq.
-        </p>
+        {onSkip ? (
+          <>
+            <Button
+              size="none"
+              className="mt-6 w-full gap-2 rounded-xl px-5 py-3 text-sm disabled:opacity-60"
+              onClick={onSkip}
+              disabled={skipping}
+            >
+              {skipping ? 'Başladılır...' : `«${nextModuleName}» bölməsinə keç`}
+              <ArrowRight size={17} aria-hidden="true" />
+            </Button>
+            <p className="mt-3 m-0 text-sm text-ink-mute">
+              Qalan fasilə vaxtı itiriləcək — növbəti bölməyə əlavə olunmur.
+              Gözləsəniz, bölmə fasilə bitən kimi avtomatik başlayacaq.
+            </p>
+          </>
+        ) : (
+          <p className="mt-5 m-0 text-sm text-ink-mute">
+            Növbəti bölmə fasilə bitən kimi avtomatik başlayacaq.
+          </p>
+        )}
       </div>
     </div>
   );

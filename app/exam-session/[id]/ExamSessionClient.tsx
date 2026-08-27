@@ -11,6 +11,8 @@ import { motion } from 'framer-motion';
 import { saveExamResult } from '@/lib/actions/results';
 import {
   beginExamSession,
+  finishCurrentModule,
+  skipCurrentBreak,
   peekExamSession,
   restartExamSession,
   saveSessionProgress,
@@ -30,10 +32,12 @@ import {
   Sigma,
   Calculator as CalculatorIcon,
   Trash2,
+  FastForward,
 } from 'lucide-react';
 import BriefingScreen from './BriefingScreen';
 import ResumeScreen from './ResumeScreen';
 import SubmitConfirmDialog from './SubmitConfirmDialog';
+import FinishModuleDialog from './FinishModuleDialog';
 import QuestionGrid from './QuestionGrid';
 import StrictAudioPlayer from './StrictAudioPlayer';
 import QuestionCard from './QuestionCard';
@@ -79,7 +83,7 @@ import {
   type Highlight,
   type TextPos,
 } from '@/lib/domain/passage-highlights';
-import type { IModuleWindow } from '@/lib/models/ExamSession';
+import type { ModuleWindow as IModuleWindow } from '@/lib/db/schema';
 import type { PublicExam } from '@/lib/db/exams';
 import type {
   SessionQuestion,
@@ -161,6 +165,9 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
   const [flagged, setFlagged]           = useState<Set<string>>(new Set());
   const [showGrid, setShowGrid]         = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
+  const [showFinishModule, setShowFinishModule] = useState(false);
+  const [finishingModule, setFinishingModule]   = useState(false);
+  const [skippingBreak, setSkippingBreak]       = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [showPassage, setShowPassage] = useState(false);
@@ -1303,22 +1310,106 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
     && !screens.some(sc => sc.moduleIndex > activeModule);
 
   /*
-   * Escape closes the two dismissible overlays — the question navigator and the
-   * submit confirmation. Both were mouse-only: a keyboard user who opened the
+   * ── Finishing a section early ─────────────────────────────────────────────
+   *
+   * The counts and the clock for the section the candidate is actually sitting,
+   * used by the confirmation so they can see what they are giving up before
+   * they give it up.
+   */
+  const moduleQuestions = useMemo(
+    () => (activeModule === null ? [] : questions.filter(q => q.moduleIndex === activeModule)),
+    [questions, activeModule],
+  );
+  const moduleAnsweredCount = useMemo(
+    () => countAnswered(moduleQuestions, answerState),
+    [moduleQuestions, answerState],
+  );
+  const nextModuleName = useMemo(() => {
+    if (activeModule === null) return '';
+    const nextIdx = screens.find(sc => sc.moduleIndex > activeModule)?.moduleIndex;
+    return nextIdx === undefined ? '' : (exam.modules[nextIdx]?.name ?? '');
+  }, [screens, activeModule, exam.modules]);
+
+  /*
+   * Hand the rest of the section back.
+   *
+   * The server rewrites the stored schedule and returns it; adopting that
+   * return value rather than computing a new one here keeps the client a reader
+   * of the server's timing, which is the property the whole scheduling model
+   * rests on. A `stale` reply means the clock beat the click — the section had
+   * already closed on its own — and needs no message, because the derived state
+   * has already moved the candidate on.
+   */
+  /*
+   * Adopt a rewritten schedule from the server.
+   *
+   * Both, together: `totalSeconds` is derived from the schedule, and the header
+   * clock reads the total while the phase reads the windows. Adopting one
+   * without the other makes them disagree for a frame. A `stale` reply needs no
+   * message — the clock beat the click, and the derived state has already moved
+   * the candidate to wherever they now belong.
+   */
+  const adoptSchedule = useCallback(
+    (res: { schedule: IModuleWindow[]; totalSeconds: number } | { stale: true } | { error: string }) => {
+      if ('schedule' in res) {
+        setSchedule(res.schedule);
+        setServerTotalSeconds(res.totalSeconds);
+      } else if ('error' in res) {
+        toast.error(res.error);
+      }
+    },
+    [],
+  );
+
+  const handleFinishModule = useCallback(async () => {
+    if (activeModule === null || finishingModule) return;
+    setFinishingModule(true);
+    try {
+      adoptSchedule(await finishCurrentModule(exam.id, activeModule));
+    } finally {
+      setFinishingModule(false);
+      setShowFinishModule(false);
+    }
+  }, [activeModule, finishingModule, exam.id, adoptSchedule]);
+
+  /*
+   * Skip the rest of the break.
+   *
+   * The overlay closes because the SERVER moved the schedule on and `position`
+   * now reports a module — never because a local flag dismissed it. Keeping
+   * that direction is what stops a skipped break putting the candidate on a
+   * different clock from the one grading them.
+   */
+  const handleSkipBreak = useCallback(async () => {
+    if (!onBreak || skippingBreak) return;
+    setSkippingBreak(true);
+    try {
+      adoptSchedule(await skipCurrentBreak(exam.id, onBreak.afterModuleIndex));
+    } finally {
+      setSkippingBreak(false);
+    }
+  }, [onBreak, skippingBreak, exam.id, adoptSchedule]);
+
+  /*
+   * Escape closes the dismissible overlays — the question navigator, the submit
+   * confirmation and the finish-section confirmation. Both were mouse-only: a keyboard user who opened the
    * navigator mid-exam had no way back to the paper except tabbing to the close
    * button. The module hand-over card is deliberately excluded; it is an
    * acknowledgement, not something to dismiss by reflex.
    */
   useEffect(() => {
-    if (!showGrid && !showConfirm) return;
+    if (!showGrid && !showConfirm && !showFinishModule) return;
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape') return;
       setShowGrid(false);
       setShowConfirm(false);
+      // Cancelling is always safe here; the section is only closed once the
+      // server has accepted it, and `finishingModule` gates a second attempt.
+      setShowFinishModule(false);
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [showGrid, showConfirm]);
+  }, [showGrid, showConfirm, showFinishModule]);
 
   /*
    * This is an early return, so it renders none of the player's chrome — which
@@ -1452,10 +1543,11 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
       {/*
         ── Scheduled break ──
         Its own window in the session schedule, so the countdown here is the
-        BREAK's and none of it comes out of the next module's time. Not
-        dismissible: no exam this platform mocks lets a candidate start the next
-        section early, and skipping ahead would put the candidate on a different
-        clock from the server's.
+        BREAK's and none of it comes out of the next module's time. Skippable
+        only through the server: `onSkip` rewrites the stored schedule and this
+        overlay then closes because `position` reports a module again, never
+        because a local flag dismissed it — so a candidate who skips is still on
+        exactly the clock the server grades them against.
       */}
       {onBreak && (() => {
         const finished = exam.modules[onBreak.afterModuleIndex];
@@ -1469,6 +1561,8 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
             nextModuleQuestionCount={questions.filter(q => q.moduleIndex === onBreak.nextModuleIndex).length}
             nextModuleMinutes={next.durationMinutes}
             remaining={onBreak.remaining}
+            onSkip={schedule ? handleSkipBreak : undefined}
+            skipping={skippingBreak}
           />
         );
       })()}
@@ -1558,7 +1652,7 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
               /* The urgent tint is `rgba(162,58,46,.08)` verbatim, not `bg-error/8`:
                  --color-error is #8C3A2B (140,58,43), a different red, so a token
                  swap here would silently restyle the last five minutes of an exam. */
-              className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-full transition-all ${
+              className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 border rounded-full transition-colors ${
                 displayRemaining < 300
                   ? 'animate-pulse border-error bg-[rgba(162,58,46,0.08)]'
                   : 'border-rule bg-surface'
@@ -1624,7 +1718,7 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
           <div className="h-0.5 w-full bg-rule-soft">
             <div
               // A computed percentage cannot be a utility class; the colour can.
-              className="h-full bg-ink transition-all duration-500 ease-out"
+              className="h-full bg-ink transition-[width] duration-500 ease-out"
               style={{ width: `${(answeredCount / questions.length) * 100}%` }}
             />
           </div>
@@ -1643,6 +1737,19 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
           totalQuestions={questions.length}
           onGoTo={goTo}
           onClose={() => setShowGrid(false)}
+        />
+      )}
+
+      {showFinishModule && activeModule !== null && (
+        <FinishModuleDialog
+          moduleName={exam.modules[activeModule]?.name ?? 'Bölmə'}
+          nextModuleName={nextModuleName}
+          answeredCount={moduleAnsweredCount}
+          totalQuestions={moduleQuestions.length}
+          remainingLabel={formatTime(Math.max(0, Math.round(position?.phase === 'module' ? position.remaining : 0)))}
+          busy={finishingModule}
+          onCancel={() => setShowFinishModule(false)}
+          onConfirm={handleFinishModule}
         />
       )}
 
@@ -1804,7 +1911,7 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
                   </div>
                   <div className="rounded-card border border-rule bg-surface p-7">
                     <p className="font-sans text-xs leading-normal font-medium tracking-[0.08em] uppercase text-ink-mute mb-3">Bu Modulun Sualları</p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {questions
                         .filter(q => q.moduleIndex === current?.moduleIndex)
                         .map(q => {
@@ -1816,7 +1923,7 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
                             <button
                               key={q.id}
                               onClick={() => goTo(idx)}
-                              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                              className={`w-9 h-9 rounded-lg text-xs font-medium transition-colors ${
                                 isCurrent ? 'ring-2 ring-offset-1' : ''
                               } ${
                                 isAnswered
@@ -2053,7 +2160,7 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
                 onClick={() => goToScreen(-1)}
                 disabled={atFirstScreen}
                 aria-label={isBlockScreen ? 'Əvvəlki hissə' : 'Əvvəlki sual'}
-                className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium text-ink">
+                className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium text-ink">
                 <ChevronLeft size={18} aria-hidden="true" />
                 <span className="hidden sm:inline">Əvvəlki</span>
               </button>
@@ -2076,17 +2183,44 @@ export default function ExamSessionClient({ exam, questionMeta }: Props) {
                   <span className="hidden sm:inline">Bitir</span>
                   <ChevronRight size={18} aria-hidden="true" />
                 </Button>
-              ) : atLastScreen ? (
+              ) : atLastScreen && isFinalModule ? (
                 /*
-                  End of the module's screens, with time still on its clock. The
-                  section closes when the clock closes it — so say that, rather
-                  than showing a dead grey button the candidate reads as a bug.
+                  The last section, with time still on its clock. There is no
+                  next section to open, so the only move left is the submit in
+                  the header — say that rather than showing a second button
+                  competing with it.
                 */
                 <span className="max-w-[45%] text-right text-xs leading-tight text-ink-mute">
-                  {isFinalModule
-                    ? 'Son bölmə. Cavablarınızı yoxlayın.'
-                    : 'Bölmə vaxtı bitəndə növbəti bölmə açılacaq.'}
+                  Son bölmə. Cavablarınızı yoxlayın.
                 </span>
+              ) : atLastScreen ? (
+                /*
+                  End of the section's screens with time to spare.
+
+                  This used to read "the section opens when its clock closes",
+                  which is what a real exam hall does and the wrong answer for a
+                  practice product: a candidate who had finished sat watching a
+                  countdown with nothing to do, and the analytics page's pace
+                  rating was meaningless because every attempt then ran for
+                  exactly the scheduled time. The confirmation spells out that
+                  the remaining minutes are forfeited rather than carried over.
+                */
+                <Button size="none" className="gap-1.5 rounded-xl px-4 py-2 text-sm md:gap-2 md:px-6"
+                  onClick={() => setShowFinishModule(true)}
+                  aria-label="Bölməni bitir və növbəti bölməyə keç"
+                >
+                  {/*
+                    Label stays visible at every width, and the icon is
+                    FastForward rather than ChevronRight, because the button it
+                    replaces on the last screen sits in the same corner as
+                    "Növbəti". Both hidden behind `sm:` and both carrying a
+                    chevron, the two were pixel-identical below 640px — an
+                    irreversible action wearing the costume of the one a
+                    candidate has already tapped a dozen times.
+                  */}
+                  <span className="whitespace-nowrap">Bölməni bitir</span>
+                  <FastForward size={17} aria-hidden="true" />
+                </Button>
               ) : (
                 <Button size="none" className="gap-1.5 rounded-xl px-4 py-2 text-sm md:gap-2 md:px-6"
                   onClick={() => goToScreen(1)}

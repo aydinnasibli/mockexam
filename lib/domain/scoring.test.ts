@@ -475,3 +475,54 @@ describe('computeAuthenticScores — writing tasks are per module', () => {
     expect(r.moduleBands[1]).toBe(6.5);
   });
 });
+
+/*
+ * General Training grades Reading on its own, stricter table.
+ *
+ * Every IELTS paper used to convert on the Academic table, which over-reported
+ * the band for every General Training candidate — and the catalog ships
+ * `ielts-general-1`, so this was live. The variant now comes from an explicit
+ * field on the exam rather than being inferred from its title.
+ */
+describe('IELTS General Training reading', () => {
+  it('needs more correct answers than Academic for the same band', () => {
+    // The mid-range is where the gap bites: 23 correct is a Band 6 on Academic
+    // and only a Band 5 on General Training.
+    expect(ieltsReadingBand(23, 40, 'academic')).toBe(6);
+    expect(ieltsReadingBand(23, 40, 'general')).toBe(5);
+
+    expect(ieltsReadingBand(30, 40, 'academic')).toBe(7);
+    expect(ieltsReadingBand(30, 40, 'general')).toBe(6);
+  });
+
+  it('never reports a HIGHER band than Academic at any raw score', () => {
+    for (let raw = 0; raw <= 40; raw++) {
+      expect(ieltsReadingBand(raw, 40, 'general'))
+        .toBeLessThanOrEqual(ieltsReadingBand(raw, 40, 'academic'));
+    }
+  });
+
+  it('defaults to Academic when no variant is given', () => {
+    expect(ieltsReadingBand(23, 40)).toBe(ieltsReadingBand(23, 40, 'academic'));
+  });
+
+  it('awards 9 only for a perfect paper', () => {
+    expect(ieltsReadingBand(40, 40, 'general')).toBe(9);
+    expect(ieltsReadingBand(39, 40, 'general')).toBe(8.5);
+  });
+
+  it('leaves Listening untouched — one paper serves both editions', () => {
+    expect(ieltsSectionBand('listening', 30, 40, undefined, 'general'))
+      .toBe(ieltsSectionBand('listening', 30, 40, undefined, 'academic'));
+  });
+
+  it('flows through computeAuthenticScores from the exam variant', () => {
+    const params = {
+      examType: 'ielts',
+      modules: [{ type: 'reading' }],
+      moduleScores: [{ moduleIndex: 0, correct: 30, total: 40 }],
+    };
+    expect(computeAuthenticScores({ ...params, variant: 'academic' }).moduleBands[0]).toBe(7);
+    expect(computeAuthenticScores({ ...params, variant: 'general' }).moduleBands[0]).toBe(6);
+  });
+});

@@ -23,7 +23,33 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const exams = await getActiveExams();
+  /*
+   * Degrade to an empty catalog rather than failing the build.
+   *
+   * This was the last build-time database read without a fallback — `sitemap.ts`
+   * and both `generateStaticParams` already have one — so a build against an
+   * unreachable database died here. That is not only CI: a Neon cold start
+   * during a deploy would take the whole deploy with it.
+   *
+   * Reported rather than swallowed, because the degraded page is a real one: it
+   * renders with no programs, and `revalidate` above means it stays that way
+   * for up to an hour before ISR regenerates it.
+   */
+  const exams = await getActiveExams().catch((err: unknown) => {
+    /*
+     * `console.error`, NOT `captureException`.
+     *
+     * `captureException` resolves a distinct id through `auth()`, which reads
+     * cookies — and a cookie read inside a statically prerendered page opts the
+     * page out of static rendering entirely. Reporting the failure that way
+     * turned this route from ISR into a dynamic one whenever the build happened
+     * to hit this branch, which is a worse outcome than the failure it reports.
+     *
+     * Vercel surfaces build and ISR-regeneration logs, so this is still visible.
+     */
+    console.error('[home] could not load exams; rendering an empty catalog:', err);
+    return [];
+  });
 
   /*
    * Everything the page says about a program — the index strip's status, the

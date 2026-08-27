@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, ArrowRight } from 'lucide-react';
-import dbConnect from '@/lib/infra/mongodb';
-import ExamModel from '@/lib/models/Exam';
-import QuestionModel from '@/lib/models/Question';
+import { count, eq } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { exams as examsTable, questions as questionsTable } from '@/lib/db/schema';
 import ExamForm from '../../ExamForm';
 import AdminPageHeader from '../../../PageHeader';
 import { requireAdminPage } from '@/lib/infra/admin';
@@ -18,10 +18,9 @@ export default async function EditExamPage({ params }: Props) {
   await requireAdminPage();
   const { id } = await params;
 
-  await dbConnect();
-  const [exam, questionCount] = await Promise.all([
-    ExamModel.findOne({ examId: id }).lean(),
-    QuestionModel.countDocuments({ examId: id }),
+  const [[exam], [{ n: questionCount }]] = await Promise.all([
+    db.select().from(examsTable).where(eq(examsTable.id, id)).limit(1),
+    db.select({ n: count() }).from(questionsTable).where(eq(questionsTable.examId, id)),
   ]);
   if (!exam) notFound();
 
@@ -59,9 +58,10 @@ export default async function EditExamPage({ params }: Props) {
         defaultValues={{
           title:       exam.title,
           type:        exam.type,
+          variant:     exam.variant,
           description: exam.description,
           tag:         exam.tag,
-          price:       exam.price,
+          price:       Number(exam.price),
           features:    exam.features.length > 0 ? exam.features : [''],
           isActive:    exam.isActive,
           modules:     exam.modules.map(m => ({

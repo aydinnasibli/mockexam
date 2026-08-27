@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { createExam, updateExam, type ActionResult } from '@/lib/actions/admin';
 import type { ParsedModule } from '@/lib/domain/exam-modules';
-import { MODULE_TYPES, EXAM_TYPES } from '@/lib/domain/exam-types';
+import { MODULE_TYPES, EXAM_TYPES, EXAM_VARIANTS, variantAffectsScoring } from '@/lib/domain/exam-types';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
 
@@ -225,6 +225,7 @@ export interface ExamFormDefaults {
   examId?: string;
   title?: string;
   type?: string;
+  variant?: string;
   description?: string;
   tag?: string;
   price?: number;
@@ -257,6 +258,7 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
   }, [state]);
 
   const [examType, setExamType] = useState(defaultValues?.type ?? 'sat');
+  const [variant, setVariant] = useState(defaultValues?.variant ?? 'academic');
   const [tag, setTag] = useState(defaultValues?.tag ?? TYPE_DEFAULTS['sat'].tag);
   const [description, setDescription] = useState(defaultValues?.description ?? '');
 
@@ -357,6 +359,31 @@ export default function ExamForm({ mode, examId, defaultValues }: Props) {
               {EXAM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </Field>
+          {/*
+            Only IELTS grades on two different tables, so the control appears
+            only where it changes anything. A hidden input carries the value for
+            every other type, because the column is NOT NULL — leaving the field
+            out of the payload entirely would post an empty string.
+          */}
+          {variantAffectsScoring(examType) ? (
+            <Field
+              label="Variant *"
+              hint="Reading bal cədvəlini seçir. General Training eyni bal üçün daha çox doğru cavab tələb edir."
+              htmlFor="exam-variant"
+            >
+              <select
+                id="exam-variant" name="variant"
+                value={variant}
+                onChange={e => setVariant(e.target.value)}
+                className="input-field"
+                required
+              >
+                {EXAM_VARIANTS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
+              </select>
+            </Field>
+          ) : (
+            <input type="hidden" name="variant" value="academic" />
+          )}
           <Field label="Başlıq *" className="sm:col-span-2" htmlFor="exam-title">
             <input type="text" id="exam-title" name="title" defaultValue={defaultValues?.title ?? ''} placeholder="Digital SAT Full Mock #4" required className="input-field" />
           </Field>

@@ -10,6 +10,7 @@
 // raw→band conversions for a 40-question section. SAT uses a linear raw→scaled
 // approximation (the official per-form equating curves are not public); swap in
 // an official table here if you have one.
+import type { ExamVariant } from '@/lib/domain/exam-types';
 
 /** Round to the nearest half-band, IELTS-style (x.25 rounds up to x.5). */
 export function roundHalfBand(x: number): number {
@@ -27,6 +28,23 @@ const IELTS_LISTENING: BandRow[] = [
 const IELTS_ACADEMIC_READING: BandRow[] = [
   [39, 9], [37, 8.5], [35, 8], [33, 7.5], [30, 7], [27, 6.5], [23, 6],
   [19, 5.5], [15, 5], [13, 4.5], [10, 4], [8, 3.5], [6, 3], [4, 2.5], [3, 2], [1, 1], [0, 0],
+];
+
+/**
+ * General Training Reading converts on its OWN, markedly stricter table.
+ *
+ * GT texts are easier, so the same band demands more correct answers: Band 6 is
+ * 30 here against 23 on Academic, and Band 7 is 34 against 30. Grading every
+ * IELTS paper on the Academic table therefore over-reported every General
+ * Training candidate by roughly a band through the middle of the range — and
+ * the catalog ships `ielts-general-1`, so this was live.
+ *
+ * Which table applies is decided by `exam.variant`, an explicit field on the
+ * exam rather than something inferred from its title. See `EXAM_VARIANTS`.
+ */
+const IELTS_GENERAL_READING: BandRow[] = [
+  [40, 9], [39, 8.5], [38, 8], [36, 7.5], [34, 7], [32, 6.5], [30, 6],
+  [27, 5.5], [23, 5], [19, 4.5], [15, 4], [12, 3.5], [9, 3], [6, 2.5], [4, 2], [1, 1], [0, 0],
 ];
 
 function rawToBand(table: BandRow[], raw: number): number {
@@ -64,8 +82,13 @@ export function ieltsListeningBand(correct: number, total = 40): number {
   return rawToBand(IELTS_LISTENING, scaleRawTo40(correct, total));
 }
 
-export function ieltsReadingBand(correct: number, total = 40): number {
-  return rawToBand(IELTS_ACADEMIC_READING, scaleRawTo40(correct, total));
+export function ieltsReadingBand(
+  correct: number,
+  total = 40,
+  variant: ExamVariant = 'academic',
+): number {
+  const table = variant === 'general' ? IELTS_GENERAL_READING : IELTS_ACADEMIC_READING;
+  return rawToBand(table, scaleRawTo40(correct, total));
 }
 
 /** One graded writing task, tagged with the task type declared on the question. */
@@ -102,9 +125,11 @@ export function ieltsSectionBand(
   correct: number,
   total = 40,
   writingTasks?: WritingTaskBand[],
+  variant: ExamVariant = 'academic',
 ): number | null {
+  // Listening is one paper for both editions; only Reading differs.
   if (moduleType === 'listening') return ieltsListeningBand(correct, total);
-  if (moduleType === 'reading')   return ieltsReadingBand(correct, total);
+  if (moduleType === 'reading')   return ieltsReadingBand(correct, total, variant);
   if (moduleType === 'writing')   return ieltsWritingBand(writingTasks ?? []);
   return null;
 }
@@ -152,8 +177,10 @@ export function computeAuthenticScores(params: {
    * shape today, and the failure would have been silent when one did.
    */
   writingTasks?: WritingTaskBand[];
+  /** IELTS only: Academic and General Training use different Reading tables. */
+  variant?: ExamVariant;
 }): AuthenticScores {
-  const { examType, modules, moduleScores, writingTasks = [] } = params;
+  const { examType, modules, moduleScores, writingTasks = [], variant = 'academic' } = params;
   const moduleBands: Record<number, number> = {};
 
   if (examType === 'ielts') {
@@ -186,7 +213,7 @@ export function computeAuthenticScores(params: {
         );
         if (!ms.pending) band = ieltsWritingBand(mine);
       } else {
-        band = ieltsSectionBand(type, ms.correct, ms.total);
+        band = ieltsSectionBand(type, ms.correct, ms.total, undefined, variant);
       }
       if (band !== null) {
         moduleBands[ms.moduleIndex] = band;
