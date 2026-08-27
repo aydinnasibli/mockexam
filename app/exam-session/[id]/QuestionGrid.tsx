@@ -79,7 +79,7 @@ export default function QuestionGrid({
                 {mod.name}
                 {locked && <Lock size={11} aria-hidden="true" />}
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {qs.map(q => {
                   const globalIdx = indexById.get(q.id) ?? 0;
                   const answered  = isQuestionAnswered(q, answerState);
@@ -92,7 +92,7 @@ export default function QuestionGrid({
                       disabled={locked}
                       aria-current={isCurrent ? 'true' : undefined}
                       aria-label={`Sual ${globalIdx + 1}${answered ? ' — cavablandırılıb' : ' — cavablandırılmayıb'}${isFlagged ? ', işarələnib' : ''}${locked ? ', bu bölmə bağlıdır' : ''}`}
-                      className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                      className={`w-9 h-9 rounded-lg text-xs font-medium transition-colors ${
                         isCurrent ? 'ring-2 ring-offset-1' : ''
                       } ${locked ? 'cursor-not-allowed' : ''} ${
                         answered

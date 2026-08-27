@@ -201,7 +201,7 @@ export default function StrictAudioPlayer(
           </div>
           <div className="relative h-1 w-full overflow-hidden rounded-full bg-rule-soft">
             <div
-              className="absolute left-0 top-0 h-full rounded-full bg-ink transition-all duration-300 ease-linear"
+              className="absolute left-0 top-0 h-full rounded-full bg-ink transition-[width] duration-300 ease-linear"
               // A computed percentage cannot be a utility class; the colour can.
               style={{ width: `${progress}%` }}
             />

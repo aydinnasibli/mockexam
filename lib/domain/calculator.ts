@@ -146,8 +146,6 @@ const FUNCTIONS: Record<string, Fn> = {
   max:   { arity: 2, apply: ([a, b]) => Math.max(a, b) },
 };
 
-export const FUNCTION_NAMES = Object.keys(FUNCTIONS);
-
 // ── Parser ──────────────────────────────────────────────────────────────────
 //
 //   expr    := term (('+' | '-') term)*

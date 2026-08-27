@@ -101,12 +101,12 @@ function QuestionCard({
               <button
                 key={i}
                 onClick={() => onSelect(q.id, i)}
-                className={`flex w-full items-start gap-3 rounded-xl border-[1.5px] p-3 text-left transition-all md:gap-4 md:p-4 ${
+                className={`flex w-full items-start gap-3 rounded-xl border-[1.5px] p-3 text-left transition-colors md:gap-4 md:p-4 ${
                   selected ? 'border-ink bg-ink/4' : 'border-rule bg-surface'
                 }`}
               >
                 <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium transition-all md:h-7 md:w-7 ${
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors md:h-7 md:w-7 ${
                     selected ? 'bg-ink text-bg' : 'bg-surface-2 text-ink-soft'
                   }`}
                 >

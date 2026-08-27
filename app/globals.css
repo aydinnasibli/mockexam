@@ -42,7 +42,12 @@
      dashboard and admin keep resolving it. */
   --color-correct: #2F5C3E;
   --color-ok:      #2F5C3E;
-  --color-warn:    #B8732B;
+  /* Was #B8732B, which measured 3.80 / 3.63 / 3.40:1 against white, bg and
+     surface-2 — below the WCAG AA 4.5:1 minimum, and `text-warn` is real
+     reading text in 25 places (score bands, "questions missing" counts, the
+     PENDING purchase state). #96591F is the lightest ochre that clears 4.5:1
+     on all three, by the same rule applied to `ink-mute` above. */
+  --color-warn:    #96591F;
   --color-error:   #8C3A2B;
 
   /* ── Fonts ───────────────────────────────────────────────

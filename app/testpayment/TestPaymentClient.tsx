@@ -42,7 +42,7 @@ function Pill({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-        ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+        ok ? 'bg-correct/8 text-correct' : 'bg-error/8 text-error'
       }`}
     >
       {ok ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
@@ -169,7 +169,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
             </code>
           </div>
           {!configOk && (
-            <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+            <div className="mt-4 flex items-start gap-2 rounded-lg bg-warn/8 p-3 text-xs text-ink-soft">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               Açarlar tam deyil. <code>.env.local</code>-da EPOINT_PUBLIC_KEY və EPOINT_PRIVATE_KEY
               təyin edin, sonra dev serveri yenidən başladın.
@@ -181,8 +181,8 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
           <section
             className={`mb-6 flex items-center gap-2 rounded-xl border p-4 text-sm ${
               returnedResult === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-red-200 bg-red-50 text-red-800'
+                ? 'border-correct/25 bg-correct/8 text-ink'
+                : 'border-error/25 bg-error/8 text-ink'
             }`}
           >
             {returnedResult === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
@@ -266,7 +266,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
           {createResult && (
             <div className="mt-5 space-y-4">
               {!createResult.ok && (
-                <p className="flex items-center gap-2 text-sm font-semibold text-red-700">
+                <p className="flex items-center gap-2 text-sm font-semibold text-error">
                   <XCircle size={15} /> {createResult.error}
                 </p>
               )}
@@ -327,7 +327,7 @@ export default function TestPaymentClient({ config, returnedResult, returnedOrde
           {statusResult && (
             <div className="mt-4">
               {!statusResult.ok && (
-                <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-red-700">
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-error">
                   <XCircle size={15} /> {statusResult.error}
                 </p>
               )}

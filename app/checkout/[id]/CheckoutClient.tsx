@@ -66,13 +66,13 @@ export default function CheckoutClient({ exam }: Props) {
           </div>
 
           {status === 'unconfigured' && (
-            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-6">
+            <div className="bg-warn/8 border border-warn/30 rounded-2xl p-6">
               <div className="flex items-start gap-3 mb-4">
-                <Settings className="text-amber-500 shrink-0" size={20} />
-                <h3 className="font-bold text-amber-900">Epoint konfiqurasiya tələb olunur</h3>
+                <Settings className="text-warn shrink-0" size={20} />
+                <h3 className="font-bold text-ink">Epoint konfiqurasiya tələb olunur</h3>
               </div>
-              <p className="text-sm text-amber-800 mb-4 leading-relaxed">Epoint mühit dəyişənləri konfiqurasiya edilməyib.</p>
-              <button onClick={() => setStatus('idle')} className="mt-2 text-sm text-amber-700 underline">Geri</button>
+              <p className="text-sm text-ink-soft mb-4 leading-relaxed">Epoint mühit dəyişənləri konfiqurasiya edilməyib.</p>
+              <button onClick={() => setStatus('idle')} className="mt-2 text-sm text-warn underline">Geri</button>
             </div>
           )}
 
@@ -119,12 +119,12 @@ export default function CheckoutClient({ exam }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
-                  <UserLock className="text-amber-500 mx-auto" size={40} />
-                  <h3 className="font-bold text-amber-900 text-lg mt-3 mb-2">Hesaba daxil olmaq lazımdır</h3>
-                  <p className="text-sm text-amber-800/80 mb-6 leading-relaxed">Ödəniş etmək üçün əvvəlcə hesabınıza daxil olun.</p>
+                <div className="bg-warn/8 border border-warn/25 rounded-2xl p-8 text-center">
+                  <UserLock className="text-warn mx-auto" size={40} />
+                  <h3 className="font-bold text-ink text-lg mt-3 mb-2">Hesaba daxil olmaq lazımdır</h3>
+                  <p className="text-sm text-ink-soft mb-6 leading-relaxed">Ödəniş etmək üçün əvvəlcə hesabınıza daxil olun.</p>
                   <SignInButton mode="modal">
-                    <button className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold shadow hover:bg-amber-600 transition-colors">Daxil ol / Qeydiyyat</button>
+                    <button className="w-full py-3 bg-ink text-bg rounded-xl font-bold shadow hover:bg-ink-hover transition-colors">Daxil ol / Qeydiyyat</button>
                   </SignInButton>
                 </div>
               )}
