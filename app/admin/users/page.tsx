@@ -16,7 +16,9 @@ interface Props {
 export default async function AdminUsersPage({ searchParams }: Props) {
   await requireAdminPage();
   const { page: pageStr = '1' } = await searchParams;
-  const page   = Math.max(1, parseInt(pageStr, 10));
+  // `Math.max(1, NaN)` is NaN, which reached the query as an invalid OFFSET
+  // and crashed the page on `?page=abc`.
+  const page   = Math.max(1, Number.parseInt(pageStr, 10) || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
   const clerk = await clerkClient();

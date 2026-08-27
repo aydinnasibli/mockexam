@@ -1,7 +1,7 @@
 import 'server-only';
 
 import OpenAI from 'openai';
-import type { WritingTaskType } from '@/lib/models/Question';
+import type { WritingTaskType } from '@/lib/domain/question-types';
 import { captureException, captureMessage } from '@/lib/infra/observability';
 
 /*

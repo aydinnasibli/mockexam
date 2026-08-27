@@ -1,9 +1,9 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/infra/mongodb';
-import ExamSessionModel, { type IExamSession } from '@/lib/models/ExamSession';
-import PlayedAudioModel from '@/lib/models/PlayedAudio';
+import { and, eq, gt, sql } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { examSessions, playedAudio } from '@/lib/db/schema';
 import { isRateLimited } from '@/lib/infra/rate-limit';
 import { captureException } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
@@ -31,22 +31,46 @@ export async function checkAudioPlayed(
   }
 
   try {
-    await dbConnect();
     // Checked here as everywhere else. The queries below are already scoped to
     // this user so nothing leaked without it, but a gate present on every
     // neighbour and absent on one stops being harmless the moment someone
     // reuses the function — the same argument `getSessionClock` makes.
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
-    const session = await ExamSessionModel.findOne({ userId, examId }).lean();
+    const [session] = await db
+      .select({ id: examSessions.id })
+      .from(examSessions)
+      .where(and(
+        eq(examSessions.userId, userId),
+        eq(examSessions.examId, examId),
+        gt(examSessions.expiresAt, new Date()),
+      ))
+      .limit(1);
     if (!session) return { error: 'Session tapılmadı.' };
 
-    // The durable record is authoritative; it outlives a restart, which is the
-    // whole point (see PlayedAudio). The session's own list is still consulted
-    // so an attempt already in flight when this shipped keeps its spent tracks.
-    const durable = await PlayedAudioModel.exists({ userId, examId, audioUrl });
-    const legacy = ((session as IExamSession).playedAudioUrls ?? []).includes(audioUrl);
-    return { alreadyPlayed: !!durable || legacy };
+    /*
+     * `expires_at > now()` is not an optimisation — it is the rule.
+     *
+     * Postgres has no TTL index, so nothing deletes a lapsed claim at the
+     * moment it lapses; a sweep reclaims the space later. Correctness therefore
+     * has to live in the read, and this is strictly tighter than the Mongo TTL
+     * it replaces, whose monitor ran on a 60-second cycle and left an expired
+     * claim readable — and a spent track re-claimable — for up to a minute.
+     *
+     * The legacy `playedAudioUrls` check is gone: those entries were promoted
+     * to real rows in this table by the backfill, so there is one authority.
+     */
+    const [durable] = await db
+      .select({ id: playedAudio.id })
+      .from(playedAudio)
+      .where(and(
+        eq(playedAudio.userId, userId),
+        eq(playedAudio.examId, examId),
+        eq(playedAudio.audioUrl, audioUrl),
+        gt(playedAudio.expiresAt, new Date()),
+      ))
+      .limit(1);
+    return { alreadyPlayed: !!durable };
   } catch (err) {
     void captureException(err, { tags: { action: 'checkAudioPlayed' } });
     return { error: 'Server xətası.' };
@@ -73,41 +97,57 @@ export async function markAudioPlayed(
   }
 
   try {
-    await dbConnect();
     // The session check below already implies this — a session cannot exist
     // without `beginExamSession` having verified access — but stating it keeps
     // the two audio actions identically gated rather than one relying on a
     // transitive guarantee the other spells out.
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
-    // A track can only be claimed against a real attempt.
-    const session = await ExamSessionModel.findOne({ userId, examId }).select('playedAudioUrls').lean();
+    // A track can only be claimed against a real, unexpired attempt.
+    const [session] = await db
+      .select({ id: examSessions.id })
+      .from(examSessions)
+      .where(and(
+        eq(examSessions.userId, userId),
+        eq(examSessions.examId, examId),
+        gt(examSessions.expiresAt, new Date()),
+      ))
+      .limit(1);
     if (!session) return { error: 'Session tapılmadı.' };
 
-    // Already spent by an attempt that predates the durable record.
-    if (((session as IExamSession).playedAudioUrls ?? []).includes(audioUrl)) {
-      return { alreadyPlayed: true };
-    }
-
     /*
-     * The claim is the INSERT.
+     * The claim is the INSERT, and the whole rule is this one statement.
      *
-     * A unique index on {userId, examId, audioUrl} means exactly one concurrent
-     * caller can succeed and every other gets a duplicate-key error — the
-     * database decides, not a read-then-write in application code, which is
-     * what let two tabs both be told the track was still available.
+     * The unique index on (user_id, exam_id, audio_url) means exactly one
+     * concurrent caller can win — the database decides, not a read-then-write
+     * in application code, which is what let two tabs both be told the track
+     * was still available.
      *
-     * And because this record is not the session, `restartExamSession` no
-     * longer refunds the listen: deleting the attempt leaves the claim standing
-     * until its TTL expires.
+     * The conditional DO UPDATE folds expiry into the same atomic step:
+     *   no row            → INSERT succeeds, returns an id       → first play
+     *   row, expired      → the WHERE holds, claim is renewed    → first play
+     *   row, still live   → the WHERE fails, nothing returned    → already played
+     * Expressing it as a returned row rather than a caught duplicate-key
+     * exception means the success path is no longer the one that throws.
+     *
+     * And because this record is not the session, `restartExamSession` cannot
+     * refund the listen: deleting the attempt leaves the claim standing.
      */
-    try {
-      await PlayedAudioModel.create({ userId, examId, audioUrl, playedAt: new Date() });
-      return { alreadyPlayed: false };
-    } catch (err) {
-      if ((err as { code?: number }).code === 11000) return { alreadyPlayed: true };
-      throw err;
-    }
+    const now = new Date();
+    const claimed = await db
+      .insert(playedAudio)
+      .values({ userId, examId, audioUrl, playedAt: now })
+      .onConflictDoUpdate({
+        target: [playedAudio.userId, playedAudio.examId, playedAudio.audioUrl],
+        set: {
+          playedAt: now,
+          expiresAt: sql`now() + interval '24 hours'`,
+        },
+        setWhere: sql`${playedAudio.expiresAt} <= now()`,
+      })
+      .returning({ id: playedAudio.id });
+
+    return { alreadyPlayed: claimed.length === 0 };
 
   } catch (err) {
     void captureException(err, { tags: { action: 'markAudioPlayed' } });

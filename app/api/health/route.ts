@@ -1,15 +1,24 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import mongoose from 'mongoose';
-import dbConnect from '@/lib/infra/mongodb';
+import { sql } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
 import { isRateLimited } from '@/lib/infra/rate-limit';
 
-// Mongoose needs the Node.js runtime; never cache — every probe must be live.
+// Never cache — every probe must be live.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Cap the probe so the endpoint responds fast even if Mongo hangs
-// (its default server-selection timeout is 30s).
+/*
+ * Cap the probe so the endpoint responds fast even if the database is
+ * unreachable.
+ *
+ * This mattered more under Mongo, whose driver defaulted to a 30-second
+ * server-selection timeout while it hunted for a reachable replica. The HTTP
+ * driver has no topology to discover and no connection to establish — a probe
+ * is one request — but the ceiling stays, because Neon's compute can be
+ * resuming from scale-to-zero and a health check should report slow rather
+ * than hang.
+ */
 const PROBE_TIMEOUT_MS = 5_000;
 const NO_STORE = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -25,12 +34,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 async function isDatabaseHealthy(): Promise<boolean> {
   try {
     await withTimeout(
-      (async () => {
-        await dbConnect();
-        const db = mongoose.connection.db;
-        if (!db) throw new Error('no active mongo connection');
-        await db.admin().command({ ping: 1 });
-      })(),
+      db.execute(sql`SELECT 1`),
       PROBE_TIMEOUT_MS,
     );
     return true;

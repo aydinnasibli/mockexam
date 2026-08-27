@@ -115,3 +115,60 @@ export async function isRateLimited(key: string, limit: number, windowMs: number
     return isRateLimitedInProcess(key, limit, windowMs);
   }
 }
+
+/* ── Named tiers ─────────────────────────────────────────────────────────────
+ *
+ * The limits above each call site used to be bare numbers, which made it
+ * impossible to answer "is this endpoint protected, and by how much?" without
+ * reading every action. These tiers give the common cases one definition and
+ * one place to tune.
+ *
+ * A handful of call sites deliberately keep explicit numbers instead — the
+ * audio pair, exam submission, the writing re-grader — because their budgets
+ * were reasoned about individually and the reasoning is documented there. A
+ * tier would flatten that into a number nobody could question.
+ */
+export const RATE_LIMIT_TIERS = {
+  /** Authenticated reads that hit the database but return little. */
+  read: { limit: 120, windowMs: 60_000 },
+  /** Authenticated reads that return a whole paper or answer key. */
+  readHeavy: { limit: 30, windowMs: 60_000 },
+  /** Authenticated mutations owned by the user (settings, drafts). */
+  write: { limit: 30, windowMs: 60_000 },
+  /** Ordinary admin console actions. Role-gated already; this bounds a
+   *  compromised or scripted admin session rather than a stranger. */
+  admin: { limit: 60, windowMs: 60_000 },
+  /** Admin actions that rewrite a lot at once: import, seed, resync. */
+  adminHeavy: { limit: 10, windowMs: 60_000 },
+  /** Anything that spends money per call — paid model, payment creation. */
+  expensive: { limit: 5, windowMs: 5 * 60_000 },
+  /** Unauthenticated surfaces keyed by IP. */
+  publicIp: { limit: 60, windowMs: 60_000 },
+} as const;
+
+export type RateLimitTier = keyof typeof RATE_LIMIT_TIERS;
+
+/**
+ * Tier-based wrapper around `isRateLimited`.
+ *
+ * `scope` names the endpoint and `id` the actor, so keys stay unique per
+ * action rather than sharing one bucket across everything a user does.
+ */
+export async function limited(tier: RateLimitTier, scope: string, id: string): Promise<boolean> {
+  const { limit, windowMs } = RATE_LIMIT_TIERS[tier];
+  return isRateLimited(`${scope}:${id}`, limit, windowMs);
+}
+
+/**
+ * Best-effort client IP for keying unauthenticated limits.
+ *
+ * Trusts `x-forwarded-for` because Vercel sets it and strips any client-sent
+ * value at the edge. Falls back to a shared 'unknown' bucket, which is the
+ * conservative direction: unattributable traffic shares one budget rather than
+ * getting an unlimited one each.
+ */
+export function clientIp(h: Headers): string {
+  const fwd = h.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0]!.trim();
+  return h.get('x-real-ip') ?? 'unknown';
+}

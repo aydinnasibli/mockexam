@@ -9,19 +9,6 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
-    # `/` and the admin pages prerender content read from Mongo, so the build
-    # genuinely needs a reachable database. An empty one is enough.
-    services:
-      mongodb:
-        image: mongo:8
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand(\"ping\")'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -43,11 +30,23 @@ jobs:
         run: npm test
 
       - name: Build
-        # MONGODB_URI points at the service container above — the build queries
-        # it. The Clerk keys only need to be well-formed; the CSP is derived
-        # from the publishable key at build time. Real values live in the host.
+        # DATABASE_URL must be SET, not reachable.
+        #
+        # `lib/infra/db.ts` throws at module scope when it is missing, and every
+        # page imports it transitively — so without this the build dies while
+        # collecting page data, long before any query runs. (That is what the
+        # MongoDB service container here used to paper over; nothing has read
+        # Mongo since the Neon migration.)
+        #
+        # Every build-time database read degrades to empty when the host cannot
+        # be reached — see `getActiveExams` callers — so a placeholder is all CI
+        # needs. `test/integration/db-env.test.ts` pins the module-scope
+        # contract this relies on.
+        #
+        # The Clerk keys only need to be well-formed: the CSP is derived from
+        # the publishable key at build time. Real values live in the host.
         env:
-          MONGODB_URI: mongodb://localhost:27017/ci
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA
           CLERK_SECRET_KEY: sk_test_ci_placeholder
         run: npm run build

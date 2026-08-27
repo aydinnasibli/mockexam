@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
-import { isRateLimited } from '@/lib/infra/rate-limit';
+import { isRateLimited, clientIp } from '@/lib/infra/rate-limit';
 import { captureException, captureMessage } from '@/lib/infra/observability';
 
 const schema = z.object({
@@ -14,12 +14,6 @@ const schema = z.object({
 });
 
 export type ContactResult = { ok: true } | { ok: false; error: string };
-
-function clientIp(h: Headers): string {
-  const fwd = h.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0]!.trim();
-  return h.get('x-real-ip') ?? 'unknown';
-}
 
 /**
  * Makes a visitor-supplied string safe to interpolate into a mail header.

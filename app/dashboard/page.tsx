@@ -1,6 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import { getActiveExams } from '@/lib/db/exams';
+import { getAllExams } from '@/lib/db/exams';
 import { getUserResults } from '@/lib/db/results';
 import { getUserSettings } from '@/lib/actions/settings';
 import { formatOverallScore } from '@/lib/domain/scoring';
@@ -84,15 +84,26 @@ export default async function DashboardPage({
     }
   }
 
+  /*
+   * The WHOLE catalog, not just the active part.
+   *
+   * A purchased exam that an admin has since deactivated must stay on its
+   * buyer's dashboard — filtering through the active catalog made both the exam
+   * and its entire result history vanish from the page of the person who paid
+   * for it. `exploreExams` re-applies the active filter below, so nothing off
+   * sale is ever offered.
+   */
   const [allExams, results, purchasedIds, userSettings] = await Promise.all([
-    getActiveExams(),
+    getAllExams(),
     getUserResults(user.id),
     ownedExamIds(user.id),
     getUserSettings(),
   ]);
 
-  const purchasedExams = allExams.filter(e => purchasedIds.includes(e.id));
-  const exploreExams   = allExams.filter(e => !purchasedIds.includes(e.id)).slice(0, 3);
+  const owned = new Set(purchasedIds);
+  const purchasedExams = allExams.filter(e => owned.has(e.id));
+  // Only what is actually on sale can be explored.
+  const exploreExams   = allExams.filter(e => e.isActive && !owned.has(e.id)).slice(0, 3);
 
   const lastResultByExam = new Map<string, (typeof results)[0]>();
   for (const r of results) {
@@ -103,10 +114,10 @@ export default async function DashboardPage({
    * Only results whose exam still exists.
    *
    * Each of these links to a review page that resolves the exam and calls
-   * `notFound()` when it is gone — so an attempt on a deleted exam rendered as
-   * a dead link on the candidate's own dashboard. The analytics page never had
-   * the problem because it derives its list from the live catalog; this one
-   * took the results straight from the database.
+   * `notFound()` when it is gone — so an attempt on a DELETED exam rendered as
+   * a dead link on the candidate's own dashboard. `allExams` now includes
+   * inactive ones, so merely taking an exam off sale no longer erases the
+   * candidate's history of sitting it; only a real deletion does.
    */
   const liveExamIds = new Set(allExams.map(e => e.id));
   const recentResults = results.filter(r => liveExamIds.has(r.examId)).slice(0, 6);

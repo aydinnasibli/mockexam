@@ -1,6 +1,7 @@
 import 'server-only';
-import dbConnect from '@/lib/infra/mongodb';
-import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { examResults, examAnswers, type ModuleScore } from '@/lib/db/schema';
 
 /**
  * Cap on how many attempts a single listing loads. Well above any realistic
@@ -8,10 +9,31 @@ import ExamResult, { type IExamResult } from '@/lib/models/ExamResult';
  */
 const MAX_RESULTS = 500;
 
-/** Fields needed for a summary — deliberately excludes the heavy `answers` array. */
-const SUMMARY_FIELDS =
-  'examId examTitle examTag examType attemptNumber completedAt durationSeconds ' +
-  'totalQuestions score overallBand totalScaled rwScaled mathScaled moduleScores';
+/**
+ * Fields a summary is built from.
+ *
+ * This used to be a Mongoose projection string whose entire job was excluding
+ * the `answers` array — every answer record and every essay, in the same
+ * document. Answers are their own table now, so a summary simply does not join
+ * them and the heavy data is not merely unselected but unreachable.
+ */
+const summaryColumns = {
+  id:              examResults.id,
+  examId:          examResults.examId,
+  examTitle:       examResults.examTitle,
+  examTag:         examResults.examTag,
+  examType:        examResults.examType,
+  attemptNumber:   examResults.attemptNumber,
+  completedAt:     examResults.completedAt,
+  durationSeconds: examResults.durationSeconds,
+  totalQuestions:  examResults.totalQuestions,
+  score:           examResults.score,
+  overallBand:     examResults.overallBand,
+  totalScaled:     examResults.totalScaled,
+  rwScaled:        examResults.rwScaled,
+  mathScaled:      examResults.mathScaled,
+  moduleScores:    examResults.moduleScores,
+};
 
 export interface ModuleScoreSummary {
   moduleIndex: number;
@@ -63,37 +85,58 @@ export interface AnswerDetail {
   writingCriteria?: WritingCriterionDetail[];
   aiFeedback?: string;
   writingPending?: boolean;
+  /**
+   * What the candidate was actually asked, snapshotted when the attempt was
+   * filed. Empty only for attempts migrated from Mongo whose question had
+   * already been destroyed by a re-import — see `questionId` below.
+   */
+  qStem: string;
+  qOptions: string[];
+  qPassage: string;
+  /**
+   * Null when the question this answer refers to no longer exists.
+   *
+   * The review page must render these as unavailable rather than as a wrong
+   * answer. `lib/domain/review-items.ts` merges the two, so a missing
+   * question costs its explanation rather than the whole breakdown.
+   */
+  questionMissing: boolean;
 }
 
 export interface ResultDetail extends ResultSummary {
   answers: AnswerDetail[];
 }
 
-/** The subset of an ExamResult document a summary is built from. */
-type SummarySource = Pick<
-  IExamResult,
-  | 'examId' | 'examTitle' | 'examTag' | 'examType' | 'attemptNumber' | 'completedAt'
-  | 'durationSeconds' | 'totalQuestions' | 'score' | 'overallBand' | 'totalScaled'
-  | 'rwScaled' | 'mathScaled' | 'moduleScores'
-> & { _id: unknown };
+/**
+ * Derived from the table rather than from `summaryColumns`, so nullability is
+ * carried through — a column-map lookup reports the base data type and quietly
+ * drops the `| null` that every optional column actually has.
+ */
+type SummaryRow = Pick<typeof examResults.$inferSelect, keyof typeof summaryColumns>;
 
-function mapSummary(d: SummarySource): ResultSummary {
+/**
+ * `score`, `overallBand` and `writingScore` are `numeric`, which the driver
+ * returns as strings — numeric is arbitrary precision and has no lossless JS
+ * number to decode into. Every consumer treats them as numbers, so the
+ * conversion happens once, here.
+ */
+function mapSummary(d: SummaryRow): ResultSummary {
   return {
-    id:              String(d._id),
+    id:              d.id,
     examId:          d.examId,
     examTitle:       d.examTitle,
     examTag:         d.examTag,
-    examType:        d.examType,
+    examType:        d.examType ?? undefined,
     attemptNumber:   d.attemptNumber,
     completedAt:     d.completedAt.toISOString(),
     durationSeconds: d.durationSeconds,
     totalQuestions:  d.totalQuestions,
-    score:           d.score,
-    overallBand:     d.overallBand,
-    totalScaled:     d.totalScaled,
-    rwScaled:        d.rwScaled,
-    mathScaled:      d.mathScaled,
-    moduleScores:    (d.moduleScores ?? []).map((m: ModuleScoreSummary) => ({
+    score:           Number(d.score),
+    overallBand:     d.overallBand == null ? undefined : Number(d.overallBand),
+    totalScaled:     d.totalScaled ?? undefined,
+    rwScaled:        d.rwScaled ?? undefined,
+    mathScaled:      d.mathScaled ?? undefined,
+    moduleScores:    (d.moduleScores ?? []).map((m: ModuleScore) => ({
       moduleIndex:  m.moduleIndex,
       moduleName:   m.moduleName,
       correct:      m.correct,
@@ -106,23 +149,23 @@ function mapSummary(d: SummarySource): ResultSummary {
 }
 
 export async function getUserResults(userId: string): Promise<ResultSummary[]> {
-  await dbConnect();
-  const docs = await ExamResult.find({ userId })
-    .select(SUMMARY_FIELDS)
-    .sort({ completedAt: -1 })
-    .limit(MAX_RESULTS)
-    .lean();
-  return docs.map(mapSummary);
+  const rows = await db
+    .select(summaryColumns)
+    .from(examResults)
+    .where(eq(examResults.userId, userId))
+    .orderBy(desc(examResults.completedAt))
+    .limit(MAX_RESULTS);
+  return rows.map(mapSummary);
 }
 
 export async function getExamResults(userId: string, examId: string): Promise<ResultSummary[]> {
-  await dbConnect();
-  const docs = await ExamResult.find({ userId, examId })
-    .select(SUMMARY_FIELDS)
-    .sort({ completedAt: -1 })
-    .limit(MAX_RESULTS)
-    .lean();
-  return docs.map(mapSummary);
+  const rows = await db
+    .select(summaryColumns)
+    .from(examResults)
+    .where(and(eq(examResults.userId, userId), eq(examResults.examId, examId)))
+    .orderBy(desc(examResults.completedAt))
+    .limit(MAX_RESULTS);
+  return rows.map(mapSummary);
 }
 
 export async function getResultDetail(
@@ -130,28 +173,48 @@ export async function getResultDetail(
   examId: string,
   attemptNumber: number,
 ): Promise<ResultDetail | null> {
-  await dbConnect();
-  const doc = await ExamResult.findOne({ userId, examId, attemptNumber }).lean();
-  if (!doc) return null;
+  const [result] = await db
+    .select(summaryColumns)
+    .from(examResults)
+    .where(and(
+      eq(examResults.userId, userId),
+      eq(examResults.examId, examId),
+      eq(examResults.attemptNumber, attemptNumber),
+    ))
+    .limit(1);
+  if (!result) return null;
+
+  // Ordered by module then insertion, which reproduces the order the embedded
+  // array preserved implicitly.
+  const answers = await db
+    .select()
+    .from(examAnswers)
+    .where(eq(examAnswers.resultId, result.id))
+    .orderBy(asc(examAnswers.moduleIndex), asc(examAnswers.id));
+
   return {
-    ...mapSummary(doc),
-    answers: (doc.answers ?? []).map((a) => ({
-      questionId:      a.questionId,
-      moduleIndex:     a.moduleIndex,
-      userAnswer:      a.userAnswer,
-      userAnswerText:  a.userAnswerText ?? '',
+    ...mapSummary(result),
+    answers: answers.map(a => ({
+      questionId:       a.questionId ?? '',
+      moduleIndex:      a.moduleIndex,
+      userAnswer:       a.userAnswer,
+      userAnswerText:   a.userAnswerText,
       // Attempts saved before per-item marking have neither field; a single
       // mark scored by `isCorrect` reproduces exactly what they used to show.
-      marks:           a.marks ?? 1,
-      earnedMarks:     a.earnedMarks ?? (a.isCorrect ? 1 : 0),
-      correctIndex:    a.correctIndex,
-      isCorrect:       a.isCorrect,
-      timeSeconds:     a.timeSeconds,
-      writingScore:    a.writingScore,
-      writingWordCount:a.writingWordCount,
-      writingCriteria: a.writingCriteria,
-      aiFeedback:      a.aiFeedback,
-      writingPending:  a.writingPending,
+      marks:            a.marks ?? 1,
+      earnedMarks:      a.earnedMarks ?? (a.isCorrect ? 1 : 0),
+      correctIndex:     a.correctIndex,
+      isCorrect:        a.isCorrect,
+      timeSeconds:      a.timeSeconds,
+      writingScore:     a.writingScore == null ? undefined : Number(a.writingScore),
+      writingWordCount: a.writingWordCount ?? undefined,
+      writingCriteria:  a.writingCriteria ?? undefined,
+      aiFeedback:       a.aiFeedback ?? undefined,
+      writingPending:   a.writingPending,
+      qStem:            a.qStem,
+      qOptions:         a.qOptions,
+      qPassage:         a.qPassage,
+      questionMissing:  a.questionId === null,
     })),
   };
 }

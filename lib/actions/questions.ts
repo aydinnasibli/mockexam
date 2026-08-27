@@ -2,15 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import mongoose from 'mongoose';
-import dbConnect from '@/lib/infra/mongodb';
-import QuestionModel, { type QuestionType, type WritingTaskType } from '@/lib/models/Question';
-import ExamResult from '@/lib/models/ExamResult';
-import ExamSessionModel from '@/lib/models/ExamSession';
+import { and, asc, eq, gt, inArray, lt, sql } from 'drizzle-orm';
+import { db, txDb } from '@/lib/infra/db';
+import { questions as questionsTable, examSessions, examResults } from '@/lib/db/schema';
+import type { QuestionType, WritingTaskType } from '@/lib/domain/question-types';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import { isModuleOpen, totalScheduledSeconds } from '@/lib/domain/exam-timing';
 import { validateQuestion } from '@/lib/domain/question-validation';
-import { checkRole } from '@/lib/infra/admin';
+import { requireAdminAction } from '@/lib/infra/admin';
 import {
   isAllowedMediaUrl,
   INVALID_IMAGE_URL_MESSAGE,
@@ -18,7 +17,7 @@ import {
 } from '@/lib/shared/media';
 import { captureException } from '@/lib/infra/observability';
 import { hasExamAccess } from '@/lib/db/entitlements';
-import { isRateLimited } from '@/lib/infra/rate-limit';
+import { isRateLimited, limited } from '@/lib/infra/rate-limit';
 import { syncExamTotals, revalidateExam } from '@/lib/db/exam-totals';
 
 export interface QuestionData {
@@ -100,11 +99,105 @@ export interface SessionQuestionContent {
 export type SessionQuestion = SessionQuestionMeta & SessionQuestionContent;
 
 async function requireAdmin() {
-  if (!(await checkRole('admin'))) throw new Error('Unauthorized');
+  await requireAdminAction('questions', 'admin', 'Unauthorized');
 }
 
+/**
+ * Bounds the id before it reaches a query.
+ *
+ * Was `mongoose.isValidObjectId`. Question ids are now plain `text`: rows
+ * carried over from Mongo keep their 24-character ObjectId hex, and rows
+ * created since take a uuid. Both are accepted; anything else is rejected here
+ * rather than becoming a query for a row that cannot exist.
+ */
+const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function validId(id: string): boolean {
-  return mongoose.isValidObjectId(id);
+  return OBJECT_ID_RE.test(id) || UUID_RE.test(id);
+}
+
+/**
+ * A question row as the admin and review screens want it.
+ *
+ * Postgres reports an absent nullable column as `null`; every interface in this
+ * codebase spells that `undefined`. Converting once here keeps the distinction
+ * from leaking into two near-identical mappers that then drift.
+ */
+function toQuestionData(d: typeof questionsTable.$inferSelect): QuestionData {
+  return {
+    id:              d.id,
+    examId:          d.examId,
+    moduleIndex:     d.moduleIndex,
+    order:           d.order,
+    type:            d.type,
+    blockId:         d.blockId,
+    passage:         d.passage,
+    audioUrl:        d.audioUrl,
+    imageUrl:        d.imageUrl,
+    stem:            d.stem,
+    options:         d.options,
+    openAnswers:     d.openAnswers,
+    correctIndex:    d.correctIndex,
+    matchItems:      d.matchItems,
+    correctMatching: d.correctMatching,
+    explanation:     d.explanation,
+    writingTaskType: d.writingTaskType ?? undefined,
+    minWords:        d.minWords ?? undefined,
+    maxWords:        d.maxWords ?? undefined,
+    rubric:          d.rubric,
+  };
+}
+
+/**
+ * Renumber one module's questions to 0..n-1 in the given id order.
+ *
+ * Done in two passes inside a transaction, and it has to be.
+ * `(exam_id, module_index, order)` is UNIQUE — that key is what lets the JSON
+ * importer upsert instead of delete-and-reinsert, which is the fix for the
+ * orphaned-question-id bug. But it also means a permutation cannot be written
+ * row by row: assigning position 1 to a question while the current occupant of
+ * position 1 has not moved yet violates the index mid-statement, whichever
+ * order the rows are processed in.
+ *
+ * Pass one parks every row in negative space (`order → -order - 1`), which is
+ * collision-free because the originals were unique. Pass two writes the final
+ * positions into the now-empty non-negative range. A deferrable constraint
+ * would express this more directly, but Postgres cannot use a deferrable
+ * constraint as an `ON CONFLICT` arbiter, and the importer needs that far more
+ * than this needs the shortcut.
+ *
+ * Interactive because the two passes must not be observable apart — this is one
+ * of the few places `txDb()` is the right tool rather than the habitual one.
+ */
+async function repackModuleOrders(
+  examId: string,
+  moduleIndex: number,
+  orderedIds: string[],
+): Promise<void> {
+  if (orderedIds.length === 0) return;
+  const { db: tx, close } = txDb();
+  try {
+    await tx.transaction(async trx => {
+      const scope = and(
+        eq(questionsTable.examId, examId),
+        eq(questionsTable.moduleIndex, moduleIndex),
+      );
+      await trx
+        .update(questionsTable)
+        .set({ order: sql`-${questionsTable.order} - 1` })
+        .where(and(scope, inArray(questionsTable.id, orderedIds)));
+
+      for (const [i, id] of orderedIds.entries()) {
+        await trx
+          .update(questionsTable)
+          .set({ order: i })
+          .where(and(scope, eq(questionsTable.id, id)));
+      }
+    });
+  } finally {
+    await close();
+  }
 }
 
 /**
@@ -120,7 +213,10 @@ export async function getSessionQuestionMeta(examId: string): Promise<SessionQue
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  await dbConnect();
+  // Ships the identity, module and block of every question in the paper. Cheap
+  // per call, but it is the map of the whole exam, so it is not unmetered.
+  if (await limited('readHeavy', 'meta', userId)) throw new Error('Rate limited');
+
   if (!(await hasExamAccess(userId, examId))) throw new Error('Exam not purchased');
 
   /*
@@ -158,27 +254,47 @@ export async function getSessionQuestionMeta(examId: string): Promise<SessionQue
    * what the candidate sees identical to what they were signed up for. Without
    * a session — the pre-start briefing — the live bank is the right answer.
    */
-  const session = await ExamSessionModel.findOne({ userId, examId })
-    .select('moduleSchedule')
-    .lean();
+  const [session] = await db
+    .select({ moduleSchedule: examSessions.moduleSchedule })
+    .from(examSessions)
+    .where(and(
+      eq(examSessions.userId, userId),
+      eq(examSessions.examId, examId),
+      gt(examSessions.expiresAt, new Date()),
+    ))
+    .limit(1);
   const scheduled = session?.moduleSchedule;
   const scheduledModules = Array.isArray(scheduled) && scheduled.length > 0
     ? new Set(scheduled.map(w => w.moduleIndex))
     : null;
 
-  const docs = await QuestionModel.find({ examId, moduleIndex: { $lt: moduleCount } })
-    .select('_id examId moduleIndex order type blockId audioUrl')
-    .sort({ moduleIndex: 1, order: 1 })
-    .lean();
+  // Only the skeleton columns are selected — no stem, no options, no passage.
+  // Withholding the text IS the enforcement; clamping navigation is a courtesy.
+  const docs = await db
+    .select({
+      id:          questionsTable.id,
+      examId:      questionsTable.examId,
+      moduleIndex: questionsTable.moduleIndex,
+      order:       questionsTable.order,
+      type:        questionsTable.type,
+      blockId:     questionsTable.blockId,
+      audioUrl:    questionsTable.audioUrl,
+    })
+    .from(questionsTable)
+    .where(and(
+      eq(questionsTable.examId, examId),
+      lt(questionsTable.moduleIndex, moduleCount),
+    ))
+    .orderBy(asc(questionsTable.moduleIndex), asc(questionsTable.order));
 
   return docs
     .filter(d => !scheduledModules || scheduledModules.has(d.moduleIndex))
     .map(d => ({
-      id:          String(d._id),
+      id:          d.id,
       examId:      d.examId,
       moduleIndex: d.moduleIndex,
       order:       d.order,
-      type:        d.type,
+      type:        d.type as QuestionType,
       blockId:     d.blockId ?? '',
       hasAudio:    !!d.audioUrl,
     }));
@@ -213,12 +329,17 @@ export async function getModuleQuestionContent(
   }
 
   try {
-    await dbConnect();
     if (!(await hasExamAccess(userId, examId))) return { error: 'Not purchased' };
 
-    const session = await ExamSessionModel.findOne({ userId, examId })
-      .select('startedAt moduleSchedule')
-      .lean();
+    const [session] = await db
+      .select({ startedAt: examSessions.startedAt, moduleSchedule: examSessions.moduleSchedule })
+      .from(examSessions)
+      .where(and(
+        eq(examSessions.userId, userId),
+        eq(examSessions.examId, examId),
+        gt(examSessions.expiresAt, new Date()),
+      ))
+      .limit(1);
     if (!session) return { error: 'İmtahan başlamayıb.' };
 
     const schedule = session.moduleSchedule;
@@ -245,22 +366,40 @@ export async function getModuleQuestionContent(
       }
     }
 
-    const docs = await QuestionModel.find({ examId, moduleIndex })
-      .select('_id passage audioUrl imageUrl stem options matchItems writingTaskType minWords maxWords rubric')
-      .sort({ order: 1 })
-      .lean();
+    // Still no answer key: correctIndex, openAnswers, correctMatching and
+    // explanation are all withheld from a module the candidate is sitting.
+    const docs = await db
+      .select({
+        id:              questionsTable.id,
+        passage:         questionsTable.passage,
+        audioUrl:        questionsTable.audioUrl,
+        imageUrl:        questionsTable.imageUrl,
+        stem:            questionsTable.stem,
+        options:         questionsTable.options,
+        matchItems:      questionsTable.matchItems,
+        writingTaskType: questionsTable.writingTaskType,
+        minWords:        questionsTable.minWords,
+        maxWords:        questionsTable.maxWords,
+        rubric:          questionsTable.rubric,
+      })
+      .from(questionsTable)
+      .where(and(
+        eq(questionsTable.examId, examId),
+        eq(questionsTable.moduleIndex, moduleIndex),
+      ))
+      .orderBy(asc(questionsTable.order));
 
     return docs.map(d => ({
-      id:              String(d._id),
+      id:              d.id,
       passage:         d.passage ?? '',
       audioUrl:        d.audioUrl ?? '',
       imageUrl:        d.imageUrl ?? '',
       stem:            d.stem,
       options:         d.options ?? [],
       matchItems:      d.matchItems ?? [],
-      writingTaskType: d.writingTaskType,
-      minWords:        d.minWords,
-      maxWords:        d.maxWords,
+      writingTaskType: d.writingTaskType as WritingTaskType | undefined,
+      minWords:        d.minWords ?? undefined,
+      maxWords:        d.maxWords ?? undefined,
       rubric:          d.rubric ?? '',
     }));
   } catch (err) {
@@ -278,7 +417,14 @@ export async function getExamQuestionsForReview(
   if (!userId) throw new Error('Unauthorized');
   if (!Number.isInteger(attemptNumber) || attemptNumber < 1) throw new Error('Invalid attempt');
 
-  await dbConnect();
+  /*
+   * The only endpoint that returns correct answers, explanations and the full
+   * question text — the answer key for a paper this candidate can retake. It is
+   * already gated on having filed this specific attempt, but a filed attempt
+   * should not double as an unmetered scraping endpoint for the bank.
+   */
+  if (await limited('readHeavy', 'review', userId)) throw new Error('Rate limited');
+
   if (!(await hasExamAccess(userId, examId))) throw new Error('Exam not purchased');
 
   /*
@@ -295,66 +441,40 @@ export async function getExamQuestionsForReview(
    * is written and displayed but never enforced — and whether retakes should be
    * limited, or the key withheld while retakes remain, is a product decision.
    */
-  const attempt = await ExamResult.exists({ userId, examId, attemptNumber });
+  const [attempt] = await db
+    .select({ id: examResults.id })
+    .from(examResults)
+    .where(and(
+      eq(examResults.userId, userId),
+      eq(examResults.examId, examId),
+      eq(examResults.attemptNumber, attemptNumber),
+    ))
+    .limit(1);
   if (!attempt) throw new Error('No such attempt');
 
   // Scoped to the live module list for the same reason `getSessionQuestionMeta`
   // is: a question stranded by a later module edit was never sat, and showing
   // it in the review would present work the candidate never had a chance to do.
   const reviewExam = await getExamByIdAdmin(examId);
-  const docs = await QuestionModel.find({ examId, moduleIndex: { $lt: reviewExam?.modules.length ?? 0 } })
-    .sort({ moduleIndex: 1, order: 1 })
-    .lean();
-  return docs.map(d => ({
-    id:              String(d._id),
-    examId:          d.examId,
-    moduleIndex:     d.moduleIndex,
-    order:           d.order,
-    type:            d.type,
-    blockId:         d.blockId ?? '',
-    passage:         d.passage ?? '',
-    audioUrl:        d.audioUrl ?? '',
-    imageUrl:        d.imageUrl ?? '',
-    stem:            d.stem,
-    options:         d.options ?? [],
-    openAnswers:     d.openAnswers ?? [],
-    correctIndex:    d.correctIndex ?? -1,
-    matchItems:      d.matchItems ?? [],
-    correctMatching: d.correctMatching ?? [],
-    explanation:     d.explanation ?? '',
-    writingTaskType: d.writingTaskType,
-    minWords:        d.minWords,
-    maxWords:        d.maxWords,
-    rubric:          d.rubric ?? '',
-  }));
+  const docs = await db
+    .select()
+    .from(questionsTable)
+    .where(and(
+      eq(questionsTable.examId, examId),
+      lt(questionsTable.moduleIndex, reviewExam?.modules.length ?? 0),
+    ))
+    .orderBy(asc(questionsTable.moduleIndex), asc(questionsTable.order));
+  return docs.map(toQuestionData);
 }
 
 export async function getExamQuestions(examId: string): Promise<QuestionData[]> {
   await requireAdmin();
-  await dbConnect();
-  const docs = await QuestionModel.find({ examId }).sort({ moduleIndex: 1, order: 1 }).lean();
-  return docs.map(d => ({
-    id:              String(d._id),
-    examId:          d.examId,
-    moduleIndex:     d.moduleIndex,
-    order:           d.order,
-    type:            d.type,
-    blockId:         d.blockId ?? '',
-    passage:         d.passage ?? '',
-    audioUrl:        d.audioUrl ?? '',
-    imageUrl:        d.imageUrl ?? '',
-    stem:            d.stem,
-    options:         d.options ?? [],
-    openAnswers:     d.openAnswers ?? [],
-    correctIndex:    d.correctIndex ?? -1,
-    matchItems:      d.matchItems ?? [],
-    correctMatching: d.correctMatching ?? [],
-    explanation:     d.explanation ?? '',
-    writingTaskType: d.writingTaskType,
-    minWords:        d.minWords,
-    maxWords:        d.maxWords,
-    rubric:          d.rubric ?? '',
-  }));
+  const docs = await db
+    .select()
+    .from(questionsTable)
+    .where(eq(questionsTable.examId, examId))
+    .orderBy(asc(questionsTable.moduleIndex), asc(questionsTable.order));
+  return docs.map(toQuestionData);
 }
 
 export async function addQuestion(data: {
@@ -395,16 +515,29 @@ export async function addQuestion(data: {
     // the denominator, and can never earn their marks.
     const invalid = validateQuestion(data);
     if (invalid) return { error: invalid };
-    await dbConnect();
-
-    const count = await QuestionModel.countDocuments({ examId: data.examId, moduleIndex: data.moduleIndex });
-    const doc = await QuestionModel.create({ ...data, order: count });
+    /*
+     * The new question's position is chosen by the INSERT itself.
+     *
+     * The old path counted the module's questions and then inserted at that
+     * number — a read-then-write two admins could both win, producing a
+     * duplicate `order`. The sub-select makes the choice part of the same
+     * statement, and the UNIQUE (exam_id, module_index, order) index is the
+     * backstop if two inserts still race.
+     */
+    const [doc] = await db
+      .insert(questionsTable)
+      .values({
+        ...data,
+        order: sql`(SELECT coalesce(max(q."order") + 1, 0) FROM questions q
+                     WHERE q.exam_id = ${data.examId} AND q.module_index = ${data.moduleIndex})`,
+      })
+      .returning({ id: questionsTable.id });
     // The bank changed, so the exam's advertised totals did too.
     await syncExamTotals(data.examId);
     revalidatePath(`/admin/exams/${data.examId}/questions`);
     // The bank changed, so the catalog AND this exam's detail page are stale.
     revalidateExam(data.examId);
-    return { id: String(doc._id) };
+    return { id: doc.id };
   } catch (err) {
     void captureException(err, { tags: { action: 'addQuestion' } });
     return { error: 'Server xətası.' };
@@ -438,20 +571,32 @@ export async function updateQuestion(
     await requireAdmin();
     if (!isAllowedMediaUrl(data.imageUrl)) return { error: INVALID_IMAGE_URL_MESSAGE };
     if (!isAllowedMediaUrl(data.audioUrl)) return { error: INVALID_AUDIO_URL_MESSAGE };
-    await dbConnect();
-
-    // Validate the document as it WILL BE, not as the patch describes it: a
-    // partial update that only changes `type` still has to leave a gradable
-    // question behind, and the fields deciding that may be untouched ones.
-    const existing = await QuestionModel.findById(id).lean();
+    // Validate the row as it WILL BE, not as the patch describes it: a partial
+    // update that only changes `type` still has to leave a gradable question
+    // behind, and the fields deciding that may be untouched ones.
+    const [existing] = await db
+      .select()
+      .from(questionsTable)
+      .where(eq(questionsTable.id, id))
+      .limit(1);
     if (!existing) return { error: 'Not found' };
-    const invalid = validateQuestion({ ...existing, ...data });
+    const invalid = validateQuestion({ ...toQuestionData(existing), ...data });
     if (invalid) return { error: invalid };
 
-    // `runValidators` so a partial update is held to the same schema rules as a
-    // create — without it, an edit could write a question `type` or
-    // `writingTaskType` the enum does not allow.
-    const doc = await QuestionModel.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    // Undefined keys would otherwise be written as NULL, turning "leave this
+    // alone" into "clear this". Mongoose's $set ignored them; SQL does not.
+    const patch = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined),
+    );
+
+    // The enum values `runValidators` used to police are now CHECK constraints,
+    // so an out-of-range `type` or `writingTaskType` is refused by the database
+    // whichever path writes it.
+    const [doc] = await db
+      .update(questionsTable)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(questionsTable.id, id))
+      .returning({ examId: questionsTable.examId });
     if (!doc) return { error: 'Not found' };
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     return { ok: true };
@@ -465,11 +610,25 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
   if (!validId(id)) return { error: 'Invalid question ID' };
   try {
     await requireAdmin();
-    await dbConnect();
-    const doc = await QuestionModel.findByIdAndDelete(id);
+    const [doc] = await db
+      .delete(questionsTable)
+      .where(eq(questionsTable.id, id))
+      .returning({ examId: questionsTable.examId, moduleIndex: questionsTable.moduleIndex });
     if (!doc) return { error: 'Not found' };
-    const remaining = await QuestionModel.find({ examId: doc.examId, moduleIndex: doc.moduleIndex }).sort({ order: 1 });
-    await Promise.all(remaining.map((q, i) => QuestionModel.updateOne({ _id: q._id }, { order: i })));
+
+    // Close the gap the delete left. Sequential and transactional rather than
+    // the old Promise.all: with a UNIQUE order per module, concurrent renumbers
+    // collide with each other.
+    const remaining = await db
+      .select({ id: questionsTable.id })
+      .from(questionsTable)
+      .where(and(
+        eq(questionsTable.examId, doc.examId),
+        eq(questionsTable.moduleIndex, doc.moduleIndex),
+      ))
+      .orderBy(asc(questionsTable.order));
+    await repackModuleOrders(doc.examId, doc.moduleIndex, remaining.map(q => q.id));
+
     await syncExamTotals(doc.examId);
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
     revalidateExam(doc.examId);
@@ -480,20 +639,49 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
   }
 }
 
+/** Ceiling on one module's bank; the importer caps a whole paper at 500. */
+const MAX_MODULE_QUESTIONS = 500;
+
 export async function reorderQuestions(
   examId: string,
   moduleIndex: number,
   orderedIds: string[]
 ): Promise<{ ok: true } | { error: string }> {
+  if (!Array.isArray(orderedIds)) return { error: 'Invalid question list' };
+  if (orderedIds.length > MAX_MODULE_QUESTIONS) return { error: 'Çox sayda sual göndərildi.' };
   if (orderedIds.some(id => !validId(id))) return { error: 'Invalid question ID in list' };
+  if (new Set(orderedIds).size !== orderedIds.length) return { error: 'Təkrarlanan sual ID.' };
   try {
     await requireAdmin();
-    await dbConnect();
+
+    /*
+     * The list must be a PERMUTATION of the module, not a subset.
+     *
+     * `repackModuleOrders` parks the listed rows in negative space and then
+     * writes 0..n-1 back. Any row it was not given keeps its original
+     * non-negative `order`, so a partial list collides with it on
+     * `questions_slot_key` and the transaction aborts — surfacing to the admin
+     * as a bare "Server xətası" for what is really a malformed request. Saying
+     * so up front also stops a stale client silently renumbering a module it
+     * has an out-of-date view of.
+     */
+    const existing = await db
+      .select({ id: questionsTable.id })
+      .from(questionsTable)
+      .where(and(
+        eq(questionsTable.examId, examId),
+        eq(questionsTable.moduleIndex, moduleIndex),
+      ));
+    const inModule = new Set(existing.map(q => q.id));
+    if (orderedIds.length !== inModule.size || orderedIds.some(id => !inModule.has(id))) {
+      return {
+        error: 'Sual siyahısı köhnəlib — səhifəni yeniləyib yenidən cəhd edin.',
+      };
+    }
+
     // Scoped to the exam and module being reordered, so an id belonging to a
     // different exam cannot have its `order` rewritten by passing it in here.
-    await Promise.all(orderedIds.map((id, i) =>
-      QuestionModel.updateOne({ _id: id, examId, moduleIndex }, { order: i }),
-    ));
+    await repackModuleOrders(examId, moduleIndex, orderedIds);
     revalidatePath(`/admin/exams/${examId}/questions`);
     return { ok: true };
   } catch (err) {

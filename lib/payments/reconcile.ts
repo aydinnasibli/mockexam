@@ -1,7 +1,8 @@
 // Reads the Epoint merchant keys and calls the payment API.
 import 'server-only';
-import dbConnect from '@/lib/infra/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { and, eq, notInArray, sql } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { purchases } from '@/lib/db/schema';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import { signRequest, EPOINT_STATUS_URL } from '@/lib/payments/epoint';
 import { captureException, captureMessage } from '@/lib/infra/observability';
@@ -21,9 +22,11 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
  * anything other than an Epoint-confirmed `success` with a matching amount.
  */
 export async function reconcilePurchase(userId: string, examId: string): Promise<boolean> {
-  await dbConnect();
-
-  const purchase = await Purchase.findOne({ userId, examId }).lean();
+  const [purchase] = await db
+    .select()
+    .from(purchases)
+    .where(and(eq(purchases.userId, userId), eq(purchases.examId, examId)))
+    .limit(1);
   if (!purchase) return false;
   if (purchase.status === 'COMPLETED') return true;
   // A refunded purchase stays revoked; a PENDING one with a transaction id can
@@ -71,45 +74,62 @@ export async function reconcilePurchase(userId: string, examId: string): Promise
 
     // Grant access. The status guard avoids racing the webhook and never
     // re-completes a purchase that was meanwhile refunded.
-    try {
-      const completed = await Purchase.findOneAndUpdate(
-        { userId, examId, status: { $nin: ['COMPLETED', 'REFUNDED'] } },
-        {
-          $set: {
-            status: 'COMPLETED',
-            transactionId: purchase.transactionId,
-            amountCents: expectedCents,
-            currency: 'AZN',
-          },
-          $addToSet: { orderHistory: purchase.transactionId },
-        },
-        { new: true },
-      );
+    const [completed] = await db
+      .update(purchases)
+      .set({
+        status: 'COMPLETED',
+        transactionId: purchase.transactionId,
+        amountCents: expectedCents,
+        currency: 'AZN',
+        orderHistory: sql`CASE WHEN ${purchases.orderHistory} @> ARRAY[${purchase.transactionId}]::text[]
+                               THEN ${purchases.orderHistory}
+                               ELSE array_append(${purchases.orderHistory}, ${purchase.transactionId}) END`,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(purchases.userId, userId),
+        eq(purchases.examId, examId),
+        notInArray(purchases.status, ['COMPLETED', 'REFUNDED']),
+      ))
+      .returning({ id: purchases.id });
 
-      /*
-       * Report the sale HERE too.
-       *
-       * This was the only completion path that never emitted
-       * `purchaseCompleted`, so every purchase the reconciler rescued was
-       * invisible to revenue reporting — and since it runs whenever the webhook
-       * did not land, that is not a rare path. Gated on the update actually
-       * transitioning a row, exactly as the webhook gates on its `before`
-       * status, so a second reconcile cannot double-count.
-       */
-      if (completed) {
-        void trackEvent(ANALYTICS_EVENTS.purchaseCompleted, userId, {
-          examId,
-          examTitle:  exam.title,
-          examType:   exam.type,
-          revenueAzn: expectedCents / 100,
-          transaction: purchase.transactionId,
-          via: 'reconcile',
-        });
-      }
-    } catch (err) {
-      if ((err as { code?: number }).code !== 11000) throw err;
+    /*
+     * Report the sale HERE too.
+     *
+     * This was the only completion path that never emitted
+     * `purchaseCompleted`, so every purchase the reconciler rescued was
+     * invisible to revenue reporting — and since it runs whenever the webhook
+     * did not land, that is not a rare path. Gated on the update actually
+     * transitioning a row, so a second reconcile cannot double-count.
+     */
+    if (completed) {
+      void trackEvent(ANALYTICS_EVENTS.purchaseCompleted, userId, {
+        examId,
+        examTitle:  exam.title,
+        examType:   exam.type,
+        revenueAzn: expectedCents / 100,
+        transaction: purchase.transactionId,
+        via: 'reconcile',
+      });
+      return true;
     }
-    return true;
+
+    /*
+     * Nothing transitioned, so report what is actually true.
+     *
+     * This used to `return true` regardless. The guard excludes REFUNDED, so a
+     * refund landing between the read at the top and this write meant the row
+     * was revoked while the caller was told the purchase was confirmed. Only
+     * the UI flag was affected — `hasExamAccess` re-reads the database — but it
+     * is still the wrong answer, and re-reading it costs one query on a path
+     * that has already made an outbound API call.
+     */
+    const [current] = await db
+      .select({ status: purchases.status })
+      .from(purchases)
+      .where(and(eq(purchases.userId, userId), eq(purchases.examId, examId)))
+      .limit(1);
+    return current?.status === 'COMPLETED';
   } catch (err) {
     void captureException(err, { tags: { fn: 'reconcilePurchase' }, extra: { examId } });
     return false;

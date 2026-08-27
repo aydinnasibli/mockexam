@@ -1,6 +1,7 @@
 import 'server-only';
-import dbConnect from '@/lib/infra/mongodb';
-import QuestionModel from '@/lib/models/Question';
+import { and, asc, eq, gte, sql } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { questions } from '@/lib/db/schema';
 
 /** One question from an exam's bank, printed as the public specimen. */
 export interface SampleQuestion {
@@ -25,26 +26,36 @@ export interface SampleQuestion {
  * the panel entirely rather than printing an illustration from another exam.
  */
 export async function getSampleQuestion(examId: string): Promise<SampleQuestion | null> {
-  await dbConnect();
-
-  const q = await QuestionModel
-    .findOne({
-      examId,
-      type: 'mcq',
-      correctIndex: { $gte: 0 },
-      'options.1': { $exists: true },
+  const [q] = await db
+    .select({
+      stem:         questions.stem,
+      options:      questions.options,
+      correctIndex: questions.correctIndex,
+      explanation:  questions.explanation,
+      passage:      questions.passage,
+      moduleIndex:  questions.moduleIndex,
     })
-    .sort({ moduleIndex: 1, order: 1 })
-    .lean();
+    .from(questions)
+    .where(and(
+      eq(questions.examId, examId),
+      eq(questions.type, 'mcq'),
+      gte(questions.correctIndex, 0),
+      // Mongo expressed "has a second option" as `'options.1': {$exists: true}`.
+      // Said directly: the question must offer a choice at all, not a single
+      // lettered answer the panel would render as a non-question.
+      sql`cardinality(${questions.options}) >= 2`,
+    ))
+    .orderBy(asc(questions.moduleIndex), asc(questions.order))
+    .limit(1);
 
   if (!q) return null;
 
   return {
-    stem:        q.stem,
-    options:     q.options ?? [],
+    stem:         q.stem,
+    options:      q.options ?? [],
     correctIndex: q.correctIndex,
-    explanation: q.explanation ?? '',
-    passage:     q.passage ?? '',
-    moduleIndex: q.moduleIndex,
+    explanation:  q.explanation ?? '',
+    passage:      q.passage ?? '',
+    moduleIndex:  q.moduleIndex,
   };
 }

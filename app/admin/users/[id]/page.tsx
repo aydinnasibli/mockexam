@@ -3,11 +3,9 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/infra/mongodb';
-import Purchase from '@/lib/models/Purchase';
-import ExamResult from '@/lib/models/ExamResult';
-import ExamSessionModel from '@/lib/models/ExamSession';
-import ExamModel from '@/lib/models/Exam';
+import { and, asc, avg, count, desc, eq, gt, sum } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { exams as examsTable, examSessions, examResults, purchases as purchasesTable } from '@/lib/db/schema';
 import { ADMIN_GRANT_PREFIX } from '@/lib/domain/exam-types';
 import { GrantAccessForm, RevokeAccessButton } from './AccessManager';
 import { requireAdminPage } from '@/lib/infra/admin';
@@ -37,13 +35,13 @@ const scoreTone70 = (score: number) => scoreTone(score, 70, 40);
 
 /** Snapshot elapsed time per session at request time (server component renders once per request). */
 function buildSessionViews(
-  sessions: Array<{ _id: unknown; examId: string; startedAt: Date; totalSeconds: number }>,
+  sessions: Array<{ id: string; examId: string; startedAt: Date; totalSeconds: number }>,
 ) {
   const now = Date.now();
   return sessions.map((s) => {
     const elapsed = Math.floor((now - new Date(s.startedAt).getTime()) / 1000);
     return {
-      id: String(s._id),
+      id: s.id,
       examId: s.examId,
       startedAt: s.startedAt,
       totalSeconds: s.totalSeconds,
@@ -61,27 +59,65 @@ export default async function AdminUserDetailPage({ params }: Props) {
   const user = await clerk.users.getUser(userId).catch(() => null);
   if (!user) notFound();
 
-  await dbConnect();
   // Bounded + projected: an ExamResult carries the full answers array (including
   // essay text), so loading every attempt unprojected would pull megabytes per
   // page view. The page only needs the summary fields and the aggregate totals.
   const [purchases, results, sessions, allExams, resultTotals] = await Promise.all([
-    Purchase.find({ userId }).sort({ createdAt: -1 }).limit(MAX_ROWS).lean(),
-    ExamResult.find({ userId })
-      .select('examId examTitle examTag examType attemptNumber completedAt durationSeconds totalQuestions score overallBand totalScaled moduleScores')
-      .sort({ completedAt: -1 })
-      .limit(MAX_ROWS)
-      .lean(),
-    ExamSessionModel.find({ userId }).limit(MAX_ROWS).lean(),
-    ExamModel.find().select('examId title price isActive').sort({ title: 1 }).limit(MAX_EXAMS).lean(),
+    db.select()
+      .from(purchasesTable)
+      .where(eq(purchasesTable.userId, userId))
+      .orderBy(desc(purchasesTable.createdAt))
+      .limit(MAX_ROWS),
+    db.select({
+        examId: examResults.examId,
+        examTitle: examResults.examTitle,
+        examTag: examResults.examTag,
+        examType: examResults.examType,
+        attemptNumber: examResults.attemptNumber,
+        completedAt: examResults.completedAt,
+        durationSeconds: examResults.durationSeconds,
+        totalQuestions: examResults.totalQuestions,
+        score: examResults.score,
+        overallBand: examResults.overallBand,
+        totalScaled: examResults.totalScaled,
+        moduleScores: examResults.moduleScores,
+      })
+      .from(examResults)
+      .where(eq(examResults.userId, userId))
+      .orderBy(desc(examResults.completedAt))
+      .limit(MAX_ROWS),
+    db.select()
+      .from(examSessions)
+      .where(and(eq(examSessions.userId, userId), gt(examSessions.expiresAt, new Date())))
+      .limit(MAX_ROWS),
+    db.select({
+        examId: examsTable.id,
+        title: examsTable.title,
+        price: examsTable.price,
+        isActive: examsTable.isActive,
+      })
+      .from(examsTable)
+      .orderBy(asc(examsTable.title))
+      .limit(MAX_EXAMS),
     // Averages must cover every attempt, not just the page's worth.
-    ExamResult.aggregate<{ count: number; avgScore: number; totalSeconds: number }>([
-      { $match: { userId } },
-      { $group: { _id: null, count: { $sum: 1 }, avgScore: { $avg: '$score' }, totalSeconds: { $sum: '$durationSeconds' } } },
-    ]),
+    // The $group pipeline, as the aggregate it always was.
+    db.select({
+        count: count(),
+        avgScore: avg(examResults.score),
+        totalSeconds: sum(examResults.durationSeconds),
+      })
+      .from(examResults)
+      .where(eq(examResults.userId, userId)),
   ]);
 
-  const totals = resultTotals[0] ?? { count: 0, avgScore: 0, totalSeconds: 0 };
+  // `avg`/`sum` return numeric, which the driver hands back as a string, and
+  // both are NULL when the user has no attempts at all.
+  const agg = resultTotals[0];
+  const totals = {
+    count:        agg?.count ?? 0,
+    avgScore:     Number(agg?.avgScore ?? 0),
+    totalSeconds: Number(agg?.totalSeconds ?? 0),
+  };
 
   const sessionViews = buildSessionViews(sessions);
 
@@ -91,7 +127,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
   );
   const grantableExams = allExams
     .filter((e) => !ownedExamIds.has(e.examId))
-    .map((e) => ({ examId: e.examId, title: e.title, price: e.price, isActive: e.isActive }));
+    .map((e) => ({ examId: e.examId, title: e.title, price: Number(e.price), isActive: e.isActive }));
 
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Ad yoxdur';
   const email = user.emailAddresses[0]?.emailAddress ?? '—';
@@ -234,7 +270,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
                   // Legacy purchase docs may lack transactionId
                   const isGrant = (p.transactionId ?? '').startsWith(ADMIN_GRANT_PREFIX);
                   return (
-                    <tr key={String(p._id)}>
+                    <tr key={p.id}>
                       <td className="font-medium text-ink">
                         {examTitles.get(p.examId) ?? p.examId}
                       </td>
@@ -298,15 +334,15 @@ export default async function AdminUserDetailPage({ params }: Props) {
               </thead>
               <tbody>
                 {results.map((r) => (
-                  <tr key={String(r._id)}>
+                  <tr key={`${r.examId}-${r.attemptNumber}`}>
                     <td className="text-ink-soft">
                       <p className="m-0 font-medium text-ink">{r.examTitle}</p>
                       <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase text-ink-mute m-0 mt-1">{r.examTag}</p>
                     </td>
                     <td className="num text-ink">{r.attemptNumber}</td>
                     <td className="text-ink-soft">
-                      <Tag tone={scoreTone70(r.score)} className="font-mono tabular-nums">
-                        {r.score}%
+                      <Tag tone={scoreTone70(Number(r.score))} className="font-mono tabular-nums">
+                        {Number(r.score)}%
                       </Tag>
                     </td>
                     <td className="text-ink-soft">

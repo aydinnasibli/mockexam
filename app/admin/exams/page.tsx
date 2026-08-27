@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import dbConnect from '@/lib/infra/mongodb';
-import ExamModel from '@/lib/models/Exam';
+import { desc, ilike, or } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { exams as examsTable } from '@/lib/db/schema';
 import ExamSearch from './ExamSearch';
 import ExamRowActions from './ExamRowActions';
 import AdminPageHeader from '../PageHeader';
@@ -15,8 +16,15 @@ interface Props {
 }
 
 /** Escape all regex special characters so user input is treated as a literal string. */
-function escapeRegex(str: string) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Neutralise the two LIKE wildcards so a search term is matched literally.
+ *
+ * Replaces `escapeRegex`, which had to defuse the whole regex metacharacter set
+ * — and with it the possibility of a pathological pattern pinning the server.
+ * LIKE has exactly two special characters, so there is far less to get wrong.
+ */
+function escapeLike(str: string) {
+  return str.replace(/[\\%_]/g, '\\$&');
 }
 
 export default async function AdminExamsPage({ searchParams }: Props) {
@@ -24,17 +32,27 @@ export default async function AdminExamsPage({ searchParams }: Props) {
   const { q = '' } = await searchParams;
   const safeQ = q.slice(0, 100); // cap length too
 
-  await dbConnect();
-  const query = safeQ
-    ? {
-        $or: [
-          { examId: { $regex: escapeRegex(safeQ), $options: 'i' } },
-          { title: { $regex: escapeRegex(safeQ), $options: 'i' } },
-          { type: { $regex: escapeRegex(safeQ), $options: 'i' } },
-        ],
-      }
-    : {};
-  const exams = await ExamModel.find(query).sort({ createdAt: -1 }).lean();
+  /*
+   * ILIKE with an escaped pattern, not a regex.
+   *
+   * The Mongo version built a case-insensitive $regex per field and had to
+   * escape the input so a user's `.` or `*` could not become a pattern — and a
+   * pathological one could pin the server. `ilike` takes a LIKE pattern, where
+   * only `%` and `_` are special, so `escapeLike` is a three-character job and
+   * there is no backtracking to weaponise.
+   */
+  const pattern = safeQ ? `%${escapeLike(safeQ)}%` : null;
+  const exams = await db
+    .select()
+    .from(examsTable)
+    .where(pattern
+      ? or(
+          ilike(examsTable.id, pattern),
+          ilike(examsTable.title, pattern),
+          ilike(examsTable.type, pattern),
+        )
+      : undefined)
+    .orderBy(desc(examsTable.createdAt));
   const activeCount = exams.filter((e) => e.isActive).length;
 
   return (
@@ -89,15 +107,15 @@ export default async function AdminExamsPage({ searchParams }: Props) {
               </thead>
               <tbody>
                 {exams.map((exam) => (
-                  <tr key={exam.examId}>
-                    <td className="num text-xs text-ink-mute">{exam.examId}</td>
+                  <tr key={exam.id}>
+                    <td className="num text-xs text-ink-mute">{exam.id}</td>
                     <td className="font-medium text-ink">{exam.title}</td>
                     {/* The five per-type pastels this column used to carry
                         (blue/green/purple/orange/rose) were the only place in
                         the product colour was used decoratively rather than
                         semantically. */}
                     <td className="text-ink-soft"><Tag tone="accent">{exam.tag}</Tag></td>
-                    <td className="num text-ink">{exam.price} ₼</td>
+                    <td className="num text-ink">{Number(exam.price)} ₼</td>
                     <td className="num text-ink">{exam.durationMinutes} dəq</td>
                     <td className="num text-ink">{exam.totalQuestions}</td>
                     <td className="text-ink-soft">
@@ -113,7 +131,7 @@ export default async function AdminExamsPage({ searchParams }: Props) {
                     </td>
                     <td className="text-ink-soft">
                       {/* Client component handles toggle + delete */}
-                      <ExamRowActions examId={exam.examId} isActive={exam.isActive} />
+                      <ExamRowActions examId={exam.id} isActive={exam.isActive} />
                     </td>
                   </tr>
                 ))}

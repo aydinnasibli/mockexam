@@ -2,8 +2,9 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
-import dbConnect from '@/lib/infra/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { and, eq, ne } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { purchases } from '@/lib/db/schema';
 import { getExamById } from '@/lib/db/exams';
 import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/payments/epoint';
 import { isRateLimited } from '@/lib/infra/rate-limit';
@@ -34,12 +35,18 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
     };
   }
 
-  await dbConnect();
-
   const exam = await getExamById(examId);
   if (!exam) return { error: 'Exam not found' };
 
-  const existing = await Purchase.findOne({ userId, examId, status: 'COMPLETED' });
+  const [existing] = await db
+    .select({ examId: purchases.examId })
+    .from(purchases)
+    .where(and(
+      eq(purchases.userId, userId),
+      eq(purchases.examId, examId),
+      eq(purchases.status, 'COMPLETED'),
+    ))
+    .limit(1);
   if (existing) return { alreadyPurchased: true };
 
   const headersList = await headers();
@@ -91,22 +98,33 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
     // here must never block the redirect to the bank page.
     if (result.transaction) {
       try {
-        await Purchase.findOneAndUpdate(
-          { userId, examId, status: { $ne: 'COMPLETED' } },
-          {
-            $set: {
+        // `setWhere` keeps a COMPLETED purchase untouched: a re-entered
+        // checkout must never downgrade access someone already paid for.
+        await db
+          .insert(purchases)
+          .values({
+            userId, examId,
+            transactionId: result.transaction,
+            amountCents: Math.round(exam.price * 100),
+            currency: 'AZN',
+            status: 'PENDING',
+          })
+          .onConflictDoUpdate({
+            target: [purchases.userId, purchases.examId],
+            set: {
               transactionId: result.transaction,
               amountCents: Math.round(exam.price * 100),
               currency: 'AZN',
               status: 'PENDING',
+              updatedAt: new Date(),
             },
-          },
-          { upsert: true, new: true },
-        );
+            setWhere: ne(purchases.status, 'COMPLETED'),
+          });
       } catch (err) {
-        if ((err as { code?: number }).code !== 11000) {
-          void captureException(err, { tags: { action: 'createCheckoutSession', step: 'pending' } });
-        }
+        // The upsert above cannot raise a duplicate-key error, so anything
+        // thrown here is real. (This used to filter out Mongo's `11000`, a code
+        // no Postgres driver produces.)
+        void captureException(err, { tags: { action: 'createCheckoutSession', step: 'pending' } });
       }
     }
 

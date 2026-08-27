@@ -1,7 +1,9 @@
 'use server';
 
 import { headers } from 'next/headers';
+import { auth } from '@clerk/nextjs/server';
 import { checkRole } from '@/lib/infra/admin';
+import { limited } from '@/lib/infra/rate-limit';
 import {
   signRequest,
   verifySignature,
@@ -41,7 +43,14 @@ export type CreateTestPaymentResult =
   | { ok: false; error: string; response?: Record<string, unknown> };
 
 async function requireAdmin(): Promise<string | null> {
-  return (await checkRole('admin')) ? null : 'Bu səhifə yalnız admin üçündür.';
+  if (!(await checkRole('admin'))) return 'Bu səhifə yalnız admin üçündür.';
+  // These create real Epoint transactions against the live gateway, so they
+  // are budgeted like anything else that spends money.
+  const { userId } = await auth();
+  if (userId && await limited('expensive', 'testpay', userId)) {
+    return 'Çox tez-tez sınaq etdiniz. Bir az gözləyin.';
+  }
+  return null;
 }
 
 async function resolveAppUrl(): Promise<string> {

@@ -1,10 +1,12 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/infra/mongodb';
-import UserSettings from '@/lib/models/UserSettings';
-import { isExamType } from '@/lib/domain/exam-types';
+import { eq } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { userSettings } from '@/lib/db/schema';
+import { isExamType, type ExamType } from '@/lib/domain/exam-types';
 import { captureException } from '@/lib/infra/observability';
+import { limited } from '@/lib/infra/rate-limit';
 
 export interface UserSettingsData {
   targetExamDate: string | null;
@@ -14,13 +16,22 @@ export interface UserSettingsData {
 export async function getUserSettings(): Promise<UserSettingsData | null> {
   const { userId } = await auth();
   if (!userId) return null;
+  // Returns null rather than an error: this is a preference read that the
+  // dashboard renders around, and a throttled one must degrade, not break it.
+  if (await limited('read', 'settings-get', userId)) return null;
   try {
-    await dbConnect();
-    const doc = await UserSettings.findOne({ userId }).lean();
-    if (!doc) return { targetExamDate: null, targetExamType: null };
+    const [row] = await db
+      .select({
+        targetExamDate: userSettings.targetExamDate,
+        targetExamType: userSettings.targetExamType,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId))
+      .limit(1);
+    if (!row) return { targetExamDate: null, targetExamType: null };
     return {
-      targetExamDate: doc.targetExamDate ?? null,
-      targetExamType: doc.targetExamType ?? null,
+      targetExamDate: row.targetExamDate ?? null,
+      targetExamType: row.targetExamType ?? null,
     };
   } catch (err) {
     // Read-only preference; never let it take down the dashboard render.
@@ -29,7 +40,7 @@ export async function getUserSettings(): Promise<UserSettingsData | null> {
   }
 }
 
-/** The schema stores the target date as 'YYYY-MM-DD'; the form is an <input type="date">. */
+/** The column stores the target date as 'YYYY-MM-DD'; the form is an <input type="date">. */
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function saveUserSettings(
@@ -37,11 +48,14 @@ export async function saveUserSettings(
 ): Promise<{ ok: true } | { error: string }> {
   const { userId } = await auth();
   if (!userId) return { error: 'Unauthorized' };
+  if (await limited('write', 'settings-save', userId)) {
+    return { error: 'Çox tez-tez yadda saxladınız. Bir az gözləyin.' };
+  }
 
   const { targetExamDate, targetExamType } = data;
 
   if (targetExamDate) {
-    // Format first: `new Date()` accepts plenty of strings the schema does not,
+    // Format first: `new Date()` accepts plenty of strings the column does not,
     // and the dashboard countdown parses whatever is stored here.
     if (!ISO_DATE_RE.test(targetExamDate)) return { error: 'Invalid date' };
     if (Number.isNaN(new Date(targetExamDate).getTime())) return { error: 'Invalid date' };
@@ -50,32 +64,30 @@ export async function saveUserSettings(
     return { error: 'Invalid exam type' };
   }
 
-  // Mongoose strips `undefined` values out of an update, so `$set: { field:
-  // undefined }` was a no-op — clearing a target date or type silently did
-  // nothing and the dashboard kept counting down. Cleared fields go to $unset.
-  const $set: Record<string, string> = {};
-  const $unset: Record<string, ''> = {};
-
-  if (targetExamDate) $set.targetExamDate = targetExamDate;
-  else if (targetExamDate !== undefined) $unset.targetExamDate = '';
-
-  if (targetExamType) $set.targetExamType = targetExamType;
-  else if (targetExamType !== undefined) $unset.targetExamType = '';
-
-  const update = {
-    ...(Object.keys($set).length ? { $set } : {}),
-    ...(Object.keys($unset).length ? { $unset } : {}),
+  /*
+   * Clearing a field is just writing NULL.
+   *
+   * This used to need a hand-built $set/$unset pair, because Mongoose strips
+   * `undefined` out of an update — so `$set: { targetExamDate: undefined }` was
+   * a silent no-op and clearing a target date left the dashboard counting down
+   * to it for ever. SQL has no such hole: NULL is a value like any other, and
+   * `undefined` is normalised to it here at the one boundary that sees both.
+   */
+  const values = {
+    targetExamDate: targetExamDate || null,
+    targetExamType: (targetExamType || null) as ExamType | null,
   };
-  // Nothing to write — never send an empty update document to the driver.
-  if (Object.keys(update).length === 0) return { ok: true };
 
   try {
-    await dbConnect();
-    await UserSettings.findOneAndUpdate(
-      { userId },
-      update,
-      { upsert: true, returnDocument: 'after' },
-    );
+    // The primary key decides insert-or-update, so there is no read-then-write
+    // for two tabs to race.
+    await db
+      .insert(userSettings)
+      .values({ userId, ...values })
+      .onConflictDoUpdate({
+        target: userSettings.userId,
+        set: { ...values, updatedAt: new Date() },
+      });
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'saveUserSettings' } });

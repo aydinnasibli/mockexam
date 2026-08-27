@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import dbConnect from '@/lib/infra/mongodb';
-import ExamModel from '@/lib/models/Exam';
+import { eq } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { exams as examsTable } from '@/lib/db/schema';
 import { getExamQuestions } from '@/lib/actions/questions';
 import QuestionManager from './QuestionManager';
 import AdminPageHeader from '../../../PageHeader';
@@ -21,8 +22,11 @@ export default async function ExamQuestionsPage({ params }: Props) {
   await requireAdminPage();
   const { id } = await params;
 
-  await dbConnect();
-  const exam = await ExamModel.findOne({ examId: id }).lean();
+  const [exam] = await db
+    .select()
+    .from(examsTable)
+    .where(eq(examsTable.id, id))
+    .limit(1);
   if (!exam) notFound();
 
   const questions = await getExamQuestions(id);

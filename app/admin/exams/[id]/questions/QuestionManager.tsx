@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { addQuestion, updateQuestion, deleteQuestion, reorderQuestions } from '@/lib/actions/questions';
 import type { QuestionData } from '@/lib/actions/questions';
-import type { QuestionType, WritingTaskType } from '@/lib/models/Question';
+import type { QuestionType, WritingTaskType } from '@/lib/domain/question-types';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
 

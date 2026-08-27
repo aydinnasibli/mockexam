@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
-import dbConnect from '@/lib/infra/mongodb';
-import Purchase from '@/lib/models/Purchase';
-import ExamModel from '@/lib/models/Exam';
+
+import { count, desc, eq, sum } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { exams as examsTable, purchases as purchasesTable } from '@/lib/db/schema';
 import SeedButton from './SeedButton';
 import ResyncTotalsButton from './ResyncTotalsButton';
 import AdminPageHeader from './PageHeader';
@@ -13,7 +14,6 @@ import Button, { ButtonArrow } from '@/components/ui/Button';
 export const metadata = { title: 'Admin Paneli' };
 
 async function getStats() {
-  await dbConnect();
   const [
     completedPurchases,
     totalPurchases,
@@ -22,15 +22,18 @@ async function getStats() {
     revenueAgg,
     recentPurchases,
   ] = await Promise.all([
-    Purchase.countDocuments({ status: 'COMPLETED' }),
-    Purchase.countDocuments(),
-    ExamModel.countDocuments({ isActive: true }),
-    ExamModel.countDocuments(),
-    Purchase.aggregate([
-      { $match: { status: 'COMPLETED' } },
-      { $group: { _id: null, total: { $sum: '$amountCents' } } },
-    ]),
-    Purchase.find({ status: 'COMPLETED' }).sort({ createdAt: -1 }).limit(5).lean(),
+    db.select({ n: count() }).from(purchasesTable).where(eq(purchasesTable.status, 'COMPLETED')).then(r => r[0].n),
+    db.select({ n: count() }).from(purchasesTable).then(r => r[0].n),
+    db.select({ n: count() }).from(examsTable).where(eq(examsTable.isActive, true)).then(r => r[0].n),
+    db.select({ n: count() }).from(examsTable).then(r => r[0].n),
+    db.select({ total: sum(purchasesTable.amountCents) })
+      .from(purchasesTable)
+      .where(eq(purchasesTable.status, 'COMPLETED')),
+    db.select()
+      .from(purchasesTable)
+      .where(eq(purchasesTable.status, 'COMPLETED'))
+      .orderBy(desc(purchasesTable.createdAt))
+      .limit(5),
   ]);
 
   const clerk = await clerkClient();
@@ -42,7 +45,7 @@ async function getStats() {
     totalPurchases,
     activeExams,
     totalExams,
-    totalRevenueCents: revenueAgg[0]?.total ?? 0,
+    totalRevenueCents: Number(revenueAgg[0]?.total ?? 0),
     recentPurchases,
   };
 }
@@ -111,7 +114,7 @@ export default async function AdminOverviewPage() {
                 </thead>
                 <tbody>
                   {stats.recentPurchases.map((p) => (
-                    <tr key={String(p._id)}>
+                    <tr key={p.id}>
                       <td className="num text-xs text-ink-mute">…{p.userId.slice(-8)}</td>
                       <td className="font-medium text-ink">{p.examId}</td>
                       <td className="num text-ink">{(p.amountCents / 100).toFixed(2)} {p.currency}</td>

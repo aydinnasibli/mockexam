@@ -66,3 +66,24 @@ export function validateModules(raw: unknown): ParsedModule[] | { error: string 
   }
   return modules;
 }
+
+/**
+ * The totals an exam DECLARES, summed from its authored module rows.
+ *
+ * Lived on the Mongoose model, which made a pure function reachable only by
+ * importing a database model — and would have taken it down with that model.
+ * It is domain arithmetic over a module list and belongs beside the validator
+ * that produces one.
+ *
+ * These are the authored figures, not the delivered ones: `syncExamTotals`
+ * replaces them with what the real question bank produces as soon as there is
+ * a bank to count. See `lib/db/exam-totals.ts`.
+ */
+export function computeExamTotals(
+  modules: Pick<ParsedModule, 'questions' | 'durationMinutes' | 'breakAfterMinutes'>[],
+) {
+  return {
+    totalQuestions:  modules.reduce((s, m) => s + (m.questions ?? 0), 0),
+    durationMinutes: modules.reduce((s, m) => s + m.durationMinutes + (m.breakAfterMinutes ?? 0), 0),
+  };
+}

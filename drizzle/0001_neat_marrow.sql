@@ -1,0 +1,2 @@
+ALTER TABLE "exams" ADD COLUMN "variant" text DEFAULT 'academic' NOT NULL;--> statement-breakpoint
+ALTER TABLE "exams" ADD CONSTRAINT "exams_variant_check" CHECK ("exams"."variant" IN ('academic', 'general'));

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import dbConnect from '@/lib/infra/mongodb';
-import Purchase from '@/lib/models/Purchase';
+import { count, desc } from 'drizzle-orm';
+import { db } from '@/lib/infra/db';
+import { purchases as purchasesTable } from '@/lib/db/schema';
 import AdminPageHeader from '../PageHeader';
 import { requireAdminPage } from '@/lib/infra/admin';
 
@@ -16,13 +17,18 @@ interface Props {
 export default async function AdminPurchasesPage({ searchParams }: Props) {
   await requireAdminPage();
   const { page: pageStr = '1' } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr, 10));
+  // `Math.max(1, NaN)` is NaN, which reached the query as an invalid OFFSET
+  // and crashed the page on `?page=abc`.
+  const page = Math.max(1, Number.parseInt(pageStr, 10) || 1);
   const skip = (page - 1) * PAGE_SIZE;
 
-  await dbConnect();
-  const [purchases, total] = await Promise.all([
-    Purchase.find().sort({ createdAt: -1 }).skip(skip).limit(PAGE_SIZE).lean(),
-    Purchase.countDocuments(),
+  const [purchases, [{ n: total }]] = await Promise.all([
+    db.select()
+      .from(purchasesTable)
+      .orderBy(desc(purchasesTable.createdAt))
+      .offset(skip)
+      .limit(PAGE_SIZE),
+    db.select({ n: count() }).from(purchasesTable),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -68,7 +74,7 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
                 </thead>
                 <tbody>
                   {purchases.map((p) => (
-                    <tr key={String(p._id)}>
+                    <tr key={p.id}>
                       <td className="num max-w-35 truncate text-xs text-ink-mute">
                         {p.transactionId}
                       </td>
@@ -78,15 +84,37 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
                       <td className="text-ink-soft">
                         {/* A dot and a word, the way the home page marks an
                             open programme — not a filled icon in a fourth red. */}
-                        {p.status === 'COMPLETED' ? (
-                          <span className="flex items-center gap-2 text-note whitespace-nowrap text-ok">
-                            <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> Tamamlandı
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-2 text-note whitespace-nowrap text-error">
-                            <span className="h-1.5 w-1.5 rounded-full bg-error" aria-hidden /> Uğursuz
-                          </span>
-                        )}
+                        {/*
+                            Four statuses, not two. This branched only on
+                            COMPLETED, so a PENDING payment mid-reconcile and a
+                            processed REFUND both rendered in red as "Uğursuz"
+                            on the revenue screen.
+                        */}
+                        {(() => {
+                          const label = {
+                            COMPLETED: 'Tamamlandı',
+                            PENDING:   'Gözləyir',
+                            REFUNDED:  'Geri qaytarıldı',
+                            FAILED:    'Uğursuz',
+                          }[p.status] ?? p.status;
+                          const tone = {
+                            COMPLETED: 'text-ok',
+                            PENDING:   'text-warn',
+                            REFUNDED:  'text-ink-soft',
+                            FAILED:    'text-error',
+                          }[p.status] ?? 'text-ink-soft';
+                          const dot = {
+                            COMPLETED: 'bg-ok',
+                            PENDING:   'bg-warn',
+                            REFUNDED:  'bg-ink-faint',
+                            FAILED:    'bg-error',
+                          }[p.status] ?? 'bg-ink-faint';
+                          return (
+                            <span className={`flex items-center gap-2 text-note whitespace-nowrap ${tone}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden /> {label}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="num text-xs whitespace-nowrap text-ink-mute">
                         {new Date(p.createdAt).toLocaleString('az-AZ')}
