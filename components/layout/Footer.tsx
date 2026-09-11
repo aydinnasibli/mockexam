@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
+import { CONTENT_TYPES, EXAM_CONTENT, typePath } from '@/lib/domain/exam-content';
 
 
 /**
@@ -8,10 +9,30 @@ import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
  * yet — it renders as plain muted text rather than a link, so the footer never
  * advertises a route that 404s.
  */
+/*
+ * The exam-type column is DERIVED, not typed out.
+ *
+ * These hub pages are the site's search entry points, and until now nothing
+ * linked to them from every page — they existed in the sitemap and nowhere
+ * else, which is how a page ends up "Discovered — currently not indexed".
+ * A footer link on every public page is the cheapest permanent crawl path
+ * there is, and building it from `EXAM_CONTENT` means the driving-licence and
+ * magistratura hubs appeared here the moment their records were written,
+ * without anyone remembering to come back to this file.
+ */
+const EXAM_LINKS = CONTENT_TYPES.map((type) => ({
+  label: EXAM_CONTENT[type]!.shortLabel,
+  href: typePath(type),
+}));
+
 const COLUMNS: Array<{
   title: string;
   links: Array<{ label: string; href: string | null; prefetch?: false }>;
 }> = [
+  {
+    title: "İmtahanlar",
+    links: EXAM_LINKS,
+  },
   {
     title: "Platforma",
     links: [
@@ -77,7 +98,7 @@ export default function Footer() {
         </div>
 
         {/* Tier 2 — descriptor and link columns */}
-        <div className="grid grid-cols-2 gap-10 border-t border-rule pt-10 pb-12 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12 lg:pb-14">
+        <div className="grid grid-cols-2 gap-10 border-t border-rule pt-10 pb-12 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr] lg:gap-10 lg:pb-14">
           <div className="col-span-2 lg:col-span-1">
             <p className="m-0 max-w-80 text-body leading-[1.65] text-ink-soft">
               Akademik imtahan hazırlığı — rəsmi format, ölçülə bilən tərəqqi, hər sualın

@@ -63,13 +63,24 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/*
+ * No search-console verification meta tags here, deliberately.
+ *
+ * Domain ownership is already proven by other means: Google is verified through
+ * DNS on the domain property, and Bing inherited that verification when the
+ * property was imported from Search Console. A `<meta>` tag is only one of
+ * several accepted methods, and it is the one this site does not use.
+ *
+ * If a tool ever needs the HTML-tag method, Next takes it as
+ * `metadata.verification` — add it there rather than hand-writing a tag.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
     template: '%s — Testcentre',
     default: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
   },
-  description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+  description: 'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
   // NOTE: deliberately no `alternates.canonical` here. Metadata is inherited by
   // every segment that doesn't override it, so a canonical on the root layout
   // silently points new pages at the homepage and folds them out of the index.
@@ -80,12 +91,12 @@ export const metadata: Metadata = {
     url: BASE_URL,
     siteName: 'Testcentre',
     title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
-    description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+    description: 'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
-    description: 'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+    description: 'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
   },
   robots: {
     index: true,
@@ -101,10 +112,24 @@ export const metadata: Metadata = {
  * There is deliberately no `telephone`: the previous value (+994-12-555-14-88)
  * was a placeholder that appears nowhere else on the site, and a phone number
  * in structured data that contradicts the contact page is worse than none.
- * Add it back here and on /contact together, or not at all. Same for `sameAs` —
- * an empty array carries no meaning, so it is omitted until there are real
- * profiles to list.
+ * Add it back here and on /contact together, or not at all.
+ *
+ * `sameAs` now carries the Instagram profile. It is not decoration: it is what
+ * lets a search engine treat "Testcentre" as an ENTITY rather than a word on
+ * one unverifiable domain, by asserting that this site and that account are the
+ * same organisation. Answer engines weigh that heavily before naming a business
+ * — a name that resolves to several corroborating profiles is one they will
+ * repeat, and a name that exists at exactly one URL is one they hedge about.
+ *
+ * Every entry must be an account this organisation genuinely controls. A dead
+ * or mistaken URL here is worse than an empty list, because it asserts an
+ * identity that cannot be corroborated. Add LinkedIn, Facebook and a Wikidata
+ * item to SAME_AS as they come into existence.
  */
+const SAME_AS = [
+  'https://www.instagram.com/testcentreaz',
+];
+
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'EducationalOrganization',
@@ -113,7 +138,8 @@ const organizationSchema = {
   logo: `${BASE_URL}/icon`,
   image: `${BASE_URL}/opengraph-image`,
   description:
-    'SAT, IELTS, TOEFL və DİM imtahanlarına hazırlıq üçün rəsmi formata uyğun sınaq imtahanları.',
+    'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hazırlıq üçün rəsmi formata uyğun sınaq imtahanları.',
+  sameAs: SAME_AS,
   areaServed: 'AZ',
   address: {
     '@type': 'PostalAddress',

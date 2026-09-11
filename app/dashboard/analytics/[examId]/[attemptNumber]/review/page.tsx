@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { hasExamAccess } from '@/lib/db/entitlements';
+import { examPath } from '@/lib/domain/exam-content';
 import { getResultDetail } from '@/lib/db/results';
 import { getExamByIdAdmin } from '@/lib/db/exams';
 import { getExamQuestionsForReview } from '@/lib/actions/questions';
@@ -25,7 +26,13 @@ export default async function ReviewPage({ params }: Props) {
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
 
-  if (!(await hasExamAccess(userId, examId))) redirect(`/exams/${examId}`);
+  // Fetched together: the denial redirect needs the exam's type to build its
+  // canonical `/exams/<type>/<id>` path.
+  const [access, exam] = await Promise.all([
+    hasExamAccess(userId, examId),
+    getExamByIdAdmin(examId),
+  ]);
+  if (!access) redirect(exam ? examPath(exam) : '/exams');
 
   /*
    * The live bank is OPTIONAL here.
@@ -36,8 +43,7 @@ export default async function ReviewPage({ params }: Props) {
    * unguarded meant a refresh-happy candidate got an error page instead of the
    * review they had already earned. Degrade to the snapshot instead.
    */
-  const [exam, result, questions] = await Promise.all([
-    getExamByIdAdmin(examId),
+  const [result, questions] = await Promise.all([
     getResultDetail(userId, examId, attemptNumber),
     getExamQuestionsForReview(examId, attemptNumber).catch(() => []),
   ]);

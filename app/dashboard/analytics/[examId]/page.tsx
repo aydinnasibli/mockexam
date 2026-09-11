@@ -5,6 +5,7 @@ import { getExamResults } from '@/lib/db/results';
 import { getExamById } from '@/lib/db/exams';
 import { formatOverallScore, formatModuleScore, roundHalfBand, pickBestAttempt } from '@/lib/domain/scoring';
 import { hasExamAccess } from '@/lib/db/entitlements';
+import { examPath } from '@/lib/domain/exam-content';
 import { ArrowLeft } from 'lucide-react';
 import type { ResultSummary } from '@/lib/db/results';
 import Button, { ButtonArrow } from '@/components/ui/Button';
@@ -80,12 +81,20 @@ export default async function ExamAnalyticsPage({ params }: Props) {
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
 
-  if (!(await hasExamAccess(userId, examId))) redirect(`/exams/${examId}`);
-
-  const [exam, results] = await Promise.all([
+  /*
+   * The exam is fetched ALONGSIDE the access check, not after it, because the
+   * denial redirect needs it: papers live at `/exams/<type>/<id>` and the type
+   * is only on the record. Sending a denied visitor to the legacy `/exams/<id>`
+   * would work — it permanently redirects — but it would spend a round trip to
+   * land somewhere this page already knew.
+   */
+  const [access, exam] = await Promise.all([
+    hasExamAccess(userId, examId),
     getExamById(examId),
-    getExamResults(userId, examId),
   ]);
+  if (!access) redirect(exam ? examPath(exam) : '/exams');
+
+  const results = await getExamResults(userId, examId);
 
   if (!exam) notFound();
 

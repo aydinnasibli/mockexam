@@ -1,29 +1,52 @@
 import type { Metadata } from 'next';
 import 'katex/dist/katex.min.css';
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getActiveExams, getExamById, type PublicExam } from '@/lib/db/exams';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { getActiveExamsForPrerender, getExamById, type PublicExam } from '@/lib/db/exams';
 import { getSampleQuestion } from '@/lib/db/questions';
-import { BASE_URL, SITE_NAME, clampDescription, jsonLd, pageMetadata } from '@/lib/shared/seo';
+import {
+  BASE_URL, EXAM_TRAIL_ROOT, SITE_NAME, breadcrumbSchema, clampDescription, jsonLd, pageMetadata,
+  type Crumb,
+} from '@/lib/shared/seo';
+import Breadcrumb from '@/components/ui/Breadcrumb';
 import { examTypeLabel } from '@/lib/domain/exam-types';
+import { examContent, examPath, typeForSlug, typePath, typeSlug } from '@/lib/domain/exam-content';
+import { firstExamFreeEnabled } from '@/lib/db/free-claim';
 import { renderMath } from '@/lib/shared/render-math';
 import FadeUp from '@/components/ui/FadeUp';
 import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import StructureBar from '@/components/ui/StructureBar';
-import { SCORE_SCALE, examCodes, missingSections, pad2, shortTypeLabel, structureOf, upperLabel } from '../structure';
+import { SCORE_SCALE, examCodes, missingSections, pad2, shortTypeLabel, structureOf, upperLabel } from '../../structure';
 import PurchaseCard from './PurchaseCard';
 import { MONO_LABEL } from '@/components/ui/type-styles';
 
 /**
- * Prerender every active exam at build time; anything added later is rendered
- * on demand and then cached (`dynamicParams` defaults to true). Combined with
- * moving the purchase check into a client component, this takes the page off
- * the "uncacheable, two Mongo queries per request" path it was on.
+ * Prerender every active paper under its own type.
+ *
+ * Returns BOTH segments, fully paired. This function is called once, with an
+ * empty `params` — `[type]/page.tsx` is a sibling leaf, not an ancestor
+ * segment, so its own `generateStaticParams` never feeds this one. (Next does
+ * fan a child out across parent params, but only when the parent is a LAYOUT
+ * in this route's tree. There is no layout at `[type]`.)
+ *
+ * Which makes the obvious-looking `filter((e) => typeSlug(e.type) ===
+ * params.type)` a trap worth naming: `params.type` is `undefined` here, every
+ * exam filters out, and an empty return leaves Next with no complete param set
+ * for the route. It does not warn — it silently prerenders NOTHING and every
+ * paper falls back to on-demand rendering. Measured: 0 prerendered paper routes
+ * against the 4 this returns.
  */
 export async function generateStaticParams() {
   try {
-    const exams = await getActiveExams();
-    return exams.map((exam) => ({ id: exam.id }));
+    // The build's shared catalog snapshot, so the papers prerendered here are
+    // exactly the papers the pages render from. See `getActiveExamsForPrerender`.
+    const exams = await getActiveExamsForPrerender();
+    return exams.map((exam) => ({
+      // The type SEGMENT is the slug, not the raw stored value: `general_english`
+      // lives under `/exams/english-level/`, and an underscore has no business
+      // in a URL.
+      type: typeSlug(exam.type),
+      id: exam.id,
+    }));
   } catch {
     // No database at build time (CI): defer every path to first request.
     return [];
@@ -33,8 +56,11 @@ export async function generateStaticParams() {
 export const revalidate = 3600;
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ type: string; id: string }>;
 }
+
+/** Shorter than this is a label, not a description. See `examDescription`. */
+const MIN_USEFUL_DESCRIPTION = 60;
 
 /**
  * A usable meta description for an exam.
@@ -44,9 +70,6 @@ interface Props {
  * value that shipped as the page's entire meta description. Anything too short
  * to be a sentence gets the generated fallback instead.
  */
-const MIN_USEFUL_DESCRIPTION = 60;
-
-
 function examDescription(exam: PublicExam): string {
   const stored = exam.description?.trim() ?? '';
   const generated =
@@ -58,17 +81,25 @@ function examDescription(exam: PublicExam): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { type, id } = await params;
+
+  // An unknown type segment cannot name a real paper; checking it first avoids
+  // a database read for a URL that is already wrong.
+  if (!typeForSlug(type)) return {};
+
   const exam = await getExamById(id);
-  if (!exam) return {};
+  // No metadata for a mismatched type segment: that URL permanently redirects,
+  // and describing it would advertise a canonical we are about to move away from.
+  if (!exam || examPath(exam) !== `/exams/${type}/${id}`) return {};
 
   return pageMetadata({
     title: exam.title,
     description: examDescription(exam),
-    path: `/exams/${id}`,
+    path: examPath(exam),
     socialTitle: `${exam.title} — ${SITE_NAME}`,
-    ogImagePath: `/exams/${id}/opengraph-image`,
-    ogImageAlt: `${exam.title} — ${exam.totalQuestions} sual, ${exam.durationMinutes} dəqiqə`,
+    // `opengraph-image.tsx` next door. Its URL carries a hash suffix that only
+    // Next can compute, so Next is left to write the tags.
+    ownOgImage: true,
   });
 }
 
@@ -94,16 +125,47 @@ function passageExcerpt(passage: string): string {
   return stop > PASSAGE_EXCERPT * 0.6 ? `${window.slice(0, stop + 1)} […]` : `${window.trimEnd()}…`;
 }
 
-export default async function ExamDetails({ params }: Props) {
-  const { id } = await params;
-  const exam = await getExamById(id);
+export default async function ExamPaper({ params }: Props) {
+  const { type, id } = await params;
+  if (!typeForSlug(type)) notFound();
 
+  const exam = await getExamById(id);
   if (!exam) notFound();
 
+  /*
+   * The paper, insisted upon through its OWN type segment.
+   *
+   * `/exams/sat/ielts-academic-1` describes a paper that does not exist. Served
+   * as-is it would be a second working URL for the same content — a duplicate
+   * competing with the real one and splitting whatever ranking it earns, which
+   * is the precise failure this whole restructure exists to remove.
+   *
+   * A mismatch is a permanent redirect rather than a 404: the paper is real and
+   * the visitor should still reach it, while search engines are told plainly
+   * which URL counts.
+   */
+  if (examPath(exam) !== `/exams/${type}/${id}`) permanentRedirect(examPath(exam));
+
+  return <ExamDetails exam={exam} />;
+}
+
+/**
+ * The paper itself. Takes the resolved exam rather than an id: the route above
+ * has already loaded it to check the type segment, and re-reading it here would
+ * be a second database round-trip for a record already in hand.
+ */
+async function ExamDetails({ exam }: { exam: PublicExam }) {
   const totalBreak = exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
   const examTime = exam.durationMinutes - totalBreak;
   const description = examDescription(exam);
   const structure = structureOf(exam);
+
+  /** This paper's canonical path — the same one `generateMetadata` pins. */
+  const url = examPath(exam);
+
+  // Sections this paper does not simulate. Computed once: it is read twice
+  // below, and it walks the module list each time.
+  const absentSections = missingSections(exam.type, exam.modules);
 
   // The specimen comes from this exam's own bank; `moduleIndex` names the
   // module it sits in, when the exam still declares one at that index. The
@@ -111,12 +173,21 @@ export default async function ExamDetails({ params }: Props) {
   // sequence they were two round-trips where one wait would do.
   const [sample, allExams] = await Promise.all([
     getSampleQuestion(exam.id),
-    getActiveExams(),
+    // The prerender-aware read, as the rule in its own docblock requires: this
+    // page prerenders and this call reads the catalog. `getActiveExams()` here
+    // would fail a build that got its params through and then lost the database
+    // — and the only thing riding on it is the display CODE, which already has
+    // a per-type fallback below.
+    getActiveExamsForPrerender(),
   ]);
   const sampleModule = sample ? exam.modules[sample.moduleIndex]?.name?.trim() : undefined;
 
   // The code is the one the catalog register prints, so a visitor arriving from
   // /exams sees the same identifier in the breadcrumb.
+  // Short form: the breadcrumb bar sets 10px mono, where "General English
+  // (CEFR)" would wrap the row.
+  const typeLabel = examContent(exam.type)?.shortLabel ?? shortTypeLabel(exam.type, examTypeLabel(exam.type));
+
   const code = examCodes(allExams, (type) => shortTypeLabel(type, examTypeLabel(type))).get(exam.id)
     ?? shortTypeLabel(exam.type, examTypeLabel(exam.type));
 
@@ -130,15 +201,23 @@ export default async function ExamDetails({ params }: Props) {
     scale ? { value: scale, label: 'maksimum bal' } : { value: '∞', label: 'cəhd' },
   ];
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Ana səhifə', item: BASE_URL },
-      { '@type': 'ListItem', position: 2, name: 'İmtahanlar', item: `${BASE_URL}/exams` },
-      { '@type': 'ListItem', position: 3, name: exam.title, item: `${BASE_URL}/exams/${id}` },
-    ],
-  };
+  /*
+   * Four levels, not three. The paper genuinely sits under its type now, and
+   * saying so is the point of nesting the route: it declares the topical
+   * relationship between `/exams/ielts` and this paper, which a flat trail
+   * could only imply. The type step is also the only internal link from a paper
+   * back up to its programme page, which is what gives those pages a crawl path
+   * from somewhere other than the footer.
+   *
+   * `short` on the last step: the bar sets 10px mono in one non-wrapping row,
+   * where a full paper title would run off the end — so it prints the code the
+   * register uses while the schema carries the real title.
+   */
+  const trail: Crumb[] = [
+    ...EXAM_TRAIL_ROOT,
+    { name: typeLabel, path: typePath(exam.type) },
+    { name: exam.title, short: code, path: url },
+  ];
 
   /*
    * These pages sell a named product at a fixed price with instant delivery,
@@ -154,8 +233,21 @@ export default async function ExamDetails({ params }: Props) {
     description,
     category: `${examTypeLabel(exam.type)} sınaq imtahanı`,
     brand: { '@type': 'Brand', name: SITE_NAME },
-    url: `${BASE_URL}/exams/${id}`,
-    image: `${BASE_URL}/exams/${id}/opengraph-image`,
+    url: `${BASE_URL}${url}`,
+    /*
+     * The SITE card, not this paper's own.
+     *
+     * The per-paper card is a metadata-file route, and because this page sits
+     * in a route group its URL carries a hash suffix Next derives at build
+     * time (`getMetadataRouteSuffix`). Page code cannot know that suffix, and
+     * the obvious `${url}/opengraph-image` is a 404 — which is what this line
+     * used to emit. Reproducing Next's hashing here would be worse: it would
+     * work until the day the route moved, then break silently again. The
+     * site-wide card is a real 1200×630 image at a stable path, so Product
+     * keeps a resolvable `image` and the per-paper card still reaches every
+     * social platform through the `og:image` Next writes for us.
+     */
+    image: `${BASE_URL}/opengraph-image`,
     sku: exam.id,
     offers: {
       '@type': 'Offer',
@@ -163,8 +255,42 @@ export default async function ExamDetails({ params }: Props) {
       priceCurrency: 'AZN',
       availability: 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
-      url: `${BASE_URL}/exams/${id}`,
+      url: `${BASE_URL}${url}`,
       seller: { '@type': 'Organization', name: SITE_NAME },
+    },
+  };
+
+  /*
+   * `Product` says this is a thing for sale; `Course` says what it actually is.
+   * Both belong on the page — Google reads education rich results off Course,
+   * and an answer engine asked "IELTS sınaq imtahanı hardan tapa bilərəm"
+   * matches an educational program, not a SKU.
+   *
+   * Every value is derived from the paper's own record. `courseWorkload` is the
+   * exam's real duration in ISO 8601, and `courseMode: 'online'` is simply true.
+   * Nothing here is asserted that the page does not already state.
+   */
+  const courseSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: exam.title,
+    description,
+    url: `${BASE_URL}${url}`,
+    inLanguage: 'az',
+    provider: { '@type': 'EducationalOrganization', name: SITE_NAME, url: BASE_URL },
+    about: `${examTypeLabel(exam.type)} imtahanına hazırlıq`,
+    hasCourseInstance: {
+      '@type': 'CourseInstance',
+      courseMode: 'online',
+      courseWorkload: `PT${exam.durationMinutes}M`,
+      inLanguage: 'az',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: exam.price,
+      priceCurrency: 'AZN',
+      availability: 'https://schema.org/InStock',
+      url: `${BASE_URL}${url}`,
     },
   };
 
@@ -172,29 +298,18 @@ export default async function ExamDetails({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbSchema(trail)) }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(productSchema) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(courseSchema) }}
+      />
 
-        {/* ── Breadcrumb ── */}
-        <div className="border-b border-rule">
-          {/* `py-2 -my-2` on the links, not on the bar: 10px mono type gives a
-              15px-tall hit box, under the 24px WCAG 2.5.8 minimum. The padding
-              raises it to 31px and the negative margin cancels the padding in
-              the flex row, so the bar's height is unchanged. */}
-          <div className={`${MONO_LABEL} shell flex items-center gap-2.5 py-3.25 text-ink-mute`}>
-            {/* Also -mx-1 px-1 here: "Ana" is only 22px WIDE, so this link
-                failed the target minimum on width rather than height. */}
-            <Link href="/" className="-mx-1 -my-2 px-1 py-2 transition-colors hover:text-ink">Ana</Link>
-            <span aria-hidden>/</span>
-            <Link href="/exams" className="-my-2 py-2 transition-colors hover:text-ink">Kataloq</Link>
-            <span aria-hidden>/</span>
-            <span className="text-ink">{code}</span>
-          </div>
-        </div>
+        <Breadcrumb trail={trail} />
 
         <div className="shell pt-10 pb-24 lg:pt-16 lg:pb-28">
           <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1fr_360px] lg:gap-18">
@@ -316,10 +431,10 @@ export default async function ExamDetails({ params }: Props) {
                     being simulated, and burying it would be the kind of thing a
                     candidate finds out at the worst possible moment.
                   */}
-                  {missingSections(exam.type, exam.modules).length > 0 && (
+                  {absentSections.length > 0 && (
                     <p className="mt-5 text-body text-ink-soft">
                       <span className={`${MONO_LABEL} mr-2 text-ink-mute`}>Qeyd</span>
-                      Bu sınaqda {missingSections(exam.type, exam.modules).join(', ')} bölməsi yoxdur.
+                      Bu sınaqda {absentSections.join(', ')} bölməsi yoxdur.
                       Qalan bölmələr tam formatda verilir və bal yalnız həmin bölmələr üzrə hesablanır.
                     </p>
                   )}
@@ -411,6 +526,7 @@ export default async function ExamDetails({ params }: Props) {
                 examId={exam.id}
                 price={exam.price}
                 features={exam.features}
+                promoActive={firstExamFreeEnabled()}
               />
             </div>
           </div>

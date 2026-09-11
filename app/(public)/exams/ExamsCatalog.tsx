@@ -1,9 +1,7 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
 import type { PublicExam } from '@/lib/db/exams';
 import { EXAM_TYPES, examTypeLabel, isExamType } from '@/lib/domain/exam-types';
+import { examPath, typePath } from '@/lib/domain/exam-content';
 import StructureBar from '@/components/ui/StructureBar';
 import {
   BREAK_FILL,
@@ -48,11 +46,38 @@ function numberWord(n: number): string {
 
 interface Props {
   exams: PublicExam[];
-  initialType?: string;
+  /**
+   * The type this view is filtered to, or 'all'. Comes from the ROUTE, not from
+   * component state.
+   *
+   * This used to be `useState` seeded by `?type=`, which meant the server sent
+   * the same markup for every filter and only the browser knew which one was
+   * open — so the filtered views could not be indexed, and the address bar had
+   * to be patched with `history.pushState` to stay honest. Reading it from the
+   * route deletes both problems and the client bundle with them: nothing in
+   * this component is interactive any more, so it renders on the server.
+   */
+  activeType?: string;
+  /**
+   * Render the masthead headline as a `<p>`, because something further down
+   * this page carries the `<h1>`.
+   *
+   * The headline is built from INVENTORY — "Bir IELTS sınağı açıqdır." — which
+   * is the right thing for the register to say and the wrong thing for a page
+   * to be titled: it restates stock, not subject, and it rewrites itself the
+   * day a second paper is published. On a type page the editorial block below
+   * opens with the programme's real name, so that is the heading, and this one
+   * steps down to the label it always was.
+   *
+   * Off by default, and the caller passes it only when it KNOWS the editorial
+   * block is rendering. `/exams` has nothing below it, and neither does a type
+   * that has papers but no copy yet — demoting either would leave the document
+   * with no `h1` at all, which is worse than an inventory-flavoured one.
+   */
+  demoteHeadline?: boolean;
 }
 
-export default function ExamsCatalog({ exams, initialType }: Props) {
-  const [activeType, setActiveType] = useState<string>(initialType ?? 'all');
+export default function ExamsCatalog({ exams, activeType = 'all', demoteHeadline = false }: Props) {
 
   // Tabs follow EXAM_TYPES order rather than database order, so the tab row,
   // the register order and the generated codes all agree with each other.
@@ -60,8 +85,9 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
   const types: string[] = EXAM_TYPES.map((t) => t.value).filter((t) => presentTypes.has(t));
   for (const t of presentTypes) if (!types.includes(t)) types.push(t);
 
-  // A `?type=` landing page for a type with no exams still gets its own tab,
-  // otherwise the masthead would show no active tab at all for that URL.
+  // A type page for a type with no papers yet — `/exams/sat`, which serves on
+  // its editorial copy alone — still gets its own tab, otherwise the masthead
+  // would show no active tab at all on the page the visitor is standing on.
   const tabTypes = activeType !== 'all' && !types.includes(activeType) && isExamType(activeType)
     ? [...types, activeType]
     : types;
@@ -77,19 +103,6 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
       .map((t) => PLANNED_PILL_LABEL[t.value] ?? t.label),
     ...PLANNED_EXTRA,
   ];
-
-  /**
-   * Filtering is client-side, but the URL has to follow it: `/exams?type=sat`
-   * is a distinct landing page with its own title, description and canonical,
-   * and until now clicking a filter left the address bar on /exams so those
-   * pages were unreachable and unshareable. `history.pushState` integrates
-   * with the Next router and updates the URL without a server round-trip.
-   */
-  function selectType(type: string) {
-    setActiveType(type);
-    if (typeof window === 'undefined') return;
-    window.history.pushState(null, '', type === 'all' ? '/exams' : `/exams?type=${type}`);
-  }
 
   const listed = exams
     .filter((exam) => activeType === 'all' || exam.type === activeType)
@@ -123,6 +136,8 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
         tail: 'açıqdır.',
       };
 
+  const Headline = demoteHeadline ? 'p' : 'h1';
+
   return (
     <>
       {/* ── Ink masthead ── */}
@@ -132,11 +147,14 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
           <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:gap-20 lg:items-end">
             <div>
               <div className={`${MONO_LABEL} mb-6 text-bg/50 lg:mb-7`}>Kataloq</div>
-              <h1 className="m-0 text-display-sm font-light leading-[0.94] tracking-[-0.045em] text-bg sm:text-6xl lg:text-hero">
+              {/* Same element, same classes, one level of document outline
+                  apart — see `demoteHeadline`. Nothing about the rendering
+                  changes; only what the page claims to be about. */}
+              <Headline className="m-0 text-display-sm font-light leading-[0.94] tracking-[-0.045em] text-bg sm:text-6xl lg:text-hero">
                 {headline.lead}
                 <br />
                 {headline.tail}
-              </h1>
+              </Headline>
             </div>
 
             {planned.length > 0 && (
@@ -169,11 +187,10 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
               const isActive = activeType === type;
 
               return (
-                <button
+                <Link
                   key={type}
-                  type="button"
-                  onClick={() => selectType(type)}
-                  aria-pressed={isActive}
+                  href={type === 'all' ? '/exams' : typePath(type)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex shrink-0 items-baseline gap-2.5 whitespace-nowrap px-6.5 transition-colors duration-150 ${
                     isActive
                       ? 'rounded-t-btn bg-bg pt-4 pb-3.75 text-ink'
@@ -189,7 +206,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
                   <span className={`font-mono text-xs tabular-nums ${isActive ? 'text-ink-mute' : 'text-bg/55'}`}>
                     {pad2(count)}
                   </span>
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -221,7 +238,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             <p className="m-0 mb-7 text-base text-ink-soft">
               Digər proqramların sınaqları kataloqda açıqdır.
             </p>
-            <Button variant="ghost" type="button" onClick={() => selectType('all')}>
+            <Button variant="ghost" href="/exams">
               Bütün sınaqlar
             </Button>
           </div>
@@ -244,7 +261,7 @@ export default function ExamsCatalog({ exams, initialType }: Props) {
             return (
               <Link
                 key={exam.id}
-                href={`/exams/${exam.id}`}
+                href={examPath(exam)}
                 className={`group grid gap-y-5 border-b py-7 transition-colors duration-150 hover:bg-surface
                             xl:grid-cols-[112px_1fr_360px_156px] xl:items-center xl:gap-x-10 xl:gap-y-0 xl:py-9.5
                             ${isLast ? 'border-ink' : 'border-rule'}`}

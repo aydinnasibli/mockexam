@@ -445,6 +445,34 @@ export const userSettings = pgTable('user_settings', {
   ),
 ]);
 
+/* ------------------------------------------------------------- free claims */
+
+/**
+ * The one free paper a candidate may take, ever.
+ *
+ * A separate table rather than a flag on `purchases`, and `userId` as the
+ * PRIMARY KEY rather than a plain column, because that is what makes the rule
+ * enforceable instead of merely intended. "Give away one exam per person" is a
+ * counting rule, and counting rules lose races: two clicks a few milliseconds
+ * apart both read zero prior claims under READ COMMITTED, and both insert. A
+ * single-row-per-user key moves the arbitration into Postgres, where the second
+ * writer loses deterministically.
+ *
+ * The grant it authorises is still an ordinary COMPLETED row in `purchases`, so
+ * every existing gate — `hasExamAccess`, the dashboard, the session player —
+ * keeps working with no knowledge that this table exists. `examId` is recorded
+ * here too, so "which paper did they take for free" is answerable without
+ * joining on a transaction-id prefix.
+ */
+export const freeClaims = pgTable('free_claims', {
+  userId: text('user_id').primaryKey(),
+  examId: text('exam_id').notNull().references(() => exams.id, { onDelete: 'restrict' }),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  // Answers "how many free papers has each exam given away" without a scan.
+  index('free_claims_exam_idx').on(t.examId),
+]);
+
 /* ------------------------------------------------------------------ types */
 
 export type Exam = typeof exams.$inferSelect;
@@ -457,6 +485,7 @@ export type ExamAnswer = typeof examAnswers.$inferSelect;
 export type NewExamAnswer = typeof examAnswers.$inferInsert;
 export type ExamSession = typeof examSessions.$inferSelect;
 export type NewExamSession = typeof examSessions.$inferInsert;
+export type FreeClaim = typeof freeClaims.$inferSelect;
 export type Purchase = typeof purchases.$inferSelect;
 export type NewPurchase = typeof purchases.$inferInsert;
 export type PlayedAudio = typeof playedAudio.$inferSelect;

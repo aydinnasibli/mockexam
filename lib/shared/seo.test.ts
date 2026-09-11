@@ -1,5 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { clampDescription, jsonLd, pageMetadata } from './seo';
+import { CANONICAL_ORIGIN, clampDescription, jsonLd, pageMetadata, siteOrigin } from './seo';
+
+describe('siteOrigin', () => {
+  it('is the www origin when nothing is configured', () => {
+    expect(CANONICAL_ORIGIN).toBe('https://www.testcentre.az');
+    expect(siteOrigin(undefined)).toBe(CANONICAL_ORIGIN);
+    expect(siteOrigin('')).toBe(CANONICAL_ORIGIN);
+  });
+
+  /**
+   * Every URL on the site is `${BASE_URL}${path}`. A trailing slash left in the
+   * environment variable would double up into `//exams` in the sitemap, the
+   * breadcrumbs and every IndexNow ping.
+   */
+  it.each([
+    ['https://www.testcentre.az/', 'https://www.testcentre.az'],
+    ['https://www.testcentre.az/exams', 'https://www.testcentre.az'],
+    ['https://WWW.Testcentre.AZ', 'https://www.testcentre.az'],
+    ['http://localhost:3000/', 'http://localhost:3000'],
+  ])('reduces %s to a bare origin', (configured, origin) => {
+    expect(siteOrigin(configured)).toBe(origin);
+  });
+
+  it.each(['not a url', 'localhost:3000'])('falls back on the unusable value %j', (configured) => {
+    expect(siteOrigin(configured)).toBe(CANONICAL_ORIGIN);
+  });
+});
 
 describe('jsonLd', () => {
   /**
@@ -84,18 +110,46 @@ describe('pageMetadata', () => {
     expect(meta.openGraph?.title).toBe('İmtahanlar — Testcentre');
   });
 
-  it('honours an explicit socialTitle and a page-specific og image', () => {
+  it('honours an explicit socialTitle', () => {
     const custom = pageMetadata({
       title: 'SAT',
       description: 'd',
-      path: '/exams/sat-mock-1',
+      path: '/exams/ielts/sat-mock-1',
       socialTitle: 'Custom',
-      ogImagePath: '/exams/sat-mock-1/opengraph-image',
-      ogImageAlt: 'SAT',
     });
     expect(custom.openGraph?.title).toBe('Custom');
-    expect(custom.openGraph?.images).toEqual([
-      expect.objectContaining({ url: '/exams/sat-mock-1/opengraph-image', alt: 'SAT' }),
-    ]);
+  });
+
+  /**
+   * `ownOgImage` must leave the `images` KEY absent, not set it to `undefined`.
+   *
+   * Next gates the file-convention merge on
+   * `source.openGraph.hasOwnProperty('images')` (`mergeStaticMetadata`), so an
+   * explicit `undefined` blocks the colocated image exactly as a real value
+   * would, and the page ships with no social image at all. `toEqual` cannot see
+   * that difference — `hasOwnProperty` is the assertion.
+   */
+  describe('ownOgImage', () => {
+    const own = pageMetadata({
+      title: 'IELTS Academic — Practice Test 1',
+      description: 'd',
+      path: '/exams/ielts/ielts-academic-1',
+      ownOgImage: true,
+    });
+
+    it('omits the openGraph images key so the colocated file supplies it', () => {
+      expect(Object.hasOwn(own.openGraph!, 'images')).toBe(false);
+    });
+
+    it('omits the twitter images key for the same reason', () => {
+      expect(Object.hasOwn(own.twitter!, 'images')).toBe(false);
+    });
+
+    it('still restates every other social field', () => {
+      expect(own.openGraph?.title).toBe('IELTS Academic — Practice Test 1 — Testcentre');
+      expect(own.alternates?.canonical).toBe('/exams/ielts/ielts-academic-1');
+      const tw = own.twitter;
+      expect(tw && 'card' in tw ? tw.card : undefined).toBe('summary_large_image');
+    });
   });
 });

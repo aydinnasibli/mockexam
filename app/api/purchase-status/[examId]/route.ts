@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { reconcilePurchase } from '@/lib/payments/reconcile';
 import { isRateLimited } from '@/lib/infra/rate-limit';
+import { canClaimFree } from '@/lib/db/free-claim';
 
 const paramsSchema = z.object({
   examId: z.string().min(1),
@@ -28,8 +29,22 @@ export async function GET(
     return NextResponse.json({ confirmed: false }, { status: 429 });
   }
 
-  // Returns true if the purchase is already COMPLETED, and also actively
-  // reconciles a PENDING one against Epoint's get-status as a webhook fallback.
-  const confirmed = await reconcilePurchase(userId, parsed.data.examId);
-  return NextResponse.json({ confirmed });
+  /*
+   * Returns true if the purchase is already COMPLETED, and also actively
+   * reconciles a PENDING one against Epoint's get-status as a webhook fallback.
+   *
+   * `canClaim` rides along on this response rather than getting an endpoint of
+   * its own: the exam page is statically prerendered, so per-user state cannot
+   * be baked in and has to arrive from somewhere after paint. The purchase card
+   * already makes exactly this one request, and the two answers are read
+   * together — showing a "free" button to someone who has spent their claim is
+   * the same bug as showing a buy button to someone who already owns the paper.
+   *
+   * Both reads are independent, so they go out together rather than in sequence.
+   */
+  const [confirmed, canClaim] = await Promise.all([
+    reconcilePurchase(userId, parsed.data.examId),
+    canClaimFree(userId),
+  ]);
+  return NextResponse.json({ confirmed, canClaim });
 }

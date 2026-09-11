@@ -16,7 +16,17 @@ export const EXAM_TYPES = [
   { value: 'sat',              label: 'SAT' },
   { value: 'ielts',            label: 'IELTS' },
   { value: 'toefl',            label: 'TOEFL' },
-  { value: 'dim',              label: 'DİM' },
+  /*
+   * The stored value stays `dim`; only the label moved.
+   *
+   * DİM is the agency that administers the paper, not the paper's name, and
+   * nobody searches for an agency — the queries are "buraxılış imtahanı" and
+   * "qəbul imtahanı". Renaming the VALUE would be a data migration for no gain,
+   * so the search-facing wording lives in the label and in `exam-content.ts`.
+   */
+  { value: 'dim',              label: 'Buraxılış / Qəbul' },
+  { value: 'masters',          label: 'Magistratura' },
+  { value: 'driving',          label: 'Sürücülük vəsiqəsi' },
   { value: 'gre',              label: 'GRE' },
   { value: 'general_english',  label: 'General English (CEFR)' },
 ] as const;

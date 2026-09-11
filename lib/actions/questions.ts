@@ -532,11 +532,13 @@ export async function addQuestion(data: {
                      WHERE q.exam_id = ${data.examId} AND q.module_index = ${data.moduleIndex})`,
       })
       .returning({ id: questionsTable.id });
-    // The bank changed, so the exam's advertised totals did too.
-    await syncExamTotals(data.examId);
+    // The bank changed, so the exam's advertised totals did too. The sync hands
+    // back the paper's id and type, which is what `revalidateExam` needs to
+    // name its URL — no second read for a column already on the row it read.
+    const exam = await syncExamTotals(data.examId);
     revalidatePath(`/admin/exams/${data.examId}/questions`);
     // The bank changed, so the catalog AND this exam's detail page are stale.
-    revalidateExam(data.examId);
+    revalidateExam(exam);
     return { id: doc.id };
   } catch (err) {
     void captureException(err, { tags: { action: 'addQuestion' } });
@@ -629,9 +631,9 @@ export async function deleteQuestion(id: string): Promise<{ ok: true } | { error
       .orderBy(asc(questionsTable.order));
     await repackModuleOrders(doc.examId, doc.moduleIndex, remaining.map(q => q.id));
 
-    await syncExamTotals(doc.examId);
+    const exam = await syncExamTotals(doc.examId);
     revalidatePath(`/admin/exams/${doc.examId}/questions`);
-    revalidateExam(doc.examId);
+    revalidateExam(exam);
     return { ok: true };
   } catch (err) {
     void captureException(err, { tags: { action: 'deleteQuestion' } });

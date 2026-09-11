@@ -1,5 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
 import { exams, type Exam, type ExamModule } from '@/lib/db/schema';
@@ -91,6 +92,98 @@ export const getActiveExams = cache(async function getActiveExams(): Promise<Pub
     .orderBy(desc(exams.createdAt));
   return rows.map(toPublicExam);
 });
+
+/**
+ * `getActiveExams` for a page that PRERENDERS, tolerating an unreachable
+ * database only while the build runs.
+ *
+ * CI builds with `DATABASE_URL` set to a placeholder that resolves to nothing
+ * (see `.github/workflows/ci.yml`), so a static page that queries the catalog
+ * has to survive the query failing or the build cannot finish. A bare
+ * `.catch(() => [])` buys that — and quietly sells something far more
+ * expensive, because these pages carry `revalidate = 3600`: one blip during a
+ * background revalidation renders "Sınaqlar hazırlanır." over an empty register
+ * and Next stores that as a perfectly good page for the next hour.
+ *
+ * Letting the error through at request time is what we actually want. A failed
+ * ISR revalidation leaves the last good copy in place and retries; a failed
+ * cold render is a 500, which is honest and, unlike an empty catalog, not
+ * cached.
+ *
+ * `NEXT_PHASE` is set to `PHASE_PRODUCTION_BUILD` by `next build` and by
+ * nothing else, so the two cases are genuinely distinguishable. `next build`
+ * sets it before it forks the static-render workers and those inherit
+ * `process.env`, so it is visible where the prerendering actually happens.
+ *
+ * Use this from the RENDER body of every page that prerenders the catalog. A
+ * page that reaches for `getActiveExams().catch(() => [])` on its own gets the
+ * CI build it wanted and the poisoned hour it did not.
+ *
+ * `generateStaticParams` uses it as well. It only ever runs during a build, so
+ * it always takes the tolerant branch — and an empty param list is safe there,
+ * because it defers every page to first request rather than caching anything
+ * wrong. See `buildCatalog` below for why it must not read the catalog itself.
+ */
+export async function getActiveExamsForPrerender(): Promise<PublicExam[]> {
+  if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) return getActiveExams();
+  buildCatalog ??= readBuildCatalog();
+  return buildCatalog;
+}
+
+/**
+ * The catalog as one BUILD process sees it: read once, shared by every page
+ * that process prerenders.
+ *
+ * Module scope is safe here and only here. `next build` forks short-lived
+ * workers that exit when the build does, so this never outlives the build — and
+ * the runtime branch above never touches it, so a deployed server still reads
+ * fresh data on every render and every ISR regeneration.
+ *
+ * Three reasons for reading once:
+ *
+ * Consistency. The homepage price rail, the catalog, seven type pages, the
+ * sitemap and llms.txt all describe the same inventory. Read separately, a paper
+ * published mid-build can appear on some of them and not others; read once, the
+ * whole build agrees with itself.
+ *
+ * Cost. Each of those pages used to issue its own identical query — a dozen or
+ * more per worker for one table that does not change during a build.
+ *
+ * And a hang. With CI's placeholder `DATABASE_URL` (host `127.0.0.1`), the Neon
+ * HTTP driver derives the endpoint `https://api.0.0.1/sql`, which is not a valid
+ * URL, so the query throws before any request is made. Outside Next that simply
+ * rejects, every time. Inside a prerender it rejects the FIRST time — and every
+ * later query in the same worker then never settles, so the pages behind it hit
+ * the 60-second static-generation timeout and the build fails. That was
+ * reproduced, not inferred: traced per call, with an unresolvable host (a plain
+ * network error) building cleanly. One read per process never makes the second
+ * call, so the build no longer depends on that behaviour.
+ *
+ * `generateStaticParams` goes through here too, for the same reasons: the list of
+ * papers that get prerendered should be the same list those pages render from.
+ */
+let buildCatalog: Promise<PublicExam[]> | undefined;
+
+function readBuildCatalog(): Promise<PublicExam[]> {
+  return getActiveExams().catch((err: unknown) => {
+    /*
+     * `console.error`, NOT `captureException`.
+     *
+     * `captureException` resolves a distinct id through `auth()`, which reads
+     * cookies — and a cookie read inside a statically prerendered page opts the
+     * page out of static rendering entirely. Reporting the failure that way
+     * would turn every page calling this from ISR into a dynamic one on the
+     * builds where it fires, which is worse than the failure it reports.
+     *
+     * Silence is not an option either: this branch ships a build whose catalog
+     * pages are empty, and that has to be legible in the build log rather than
+     * discovered in production. Vercel surfaces build and ISR-regeneration logs.
+     * Logged once per build process now, rather than once per page.
+     */
+    console.error('[exams] build-time catalog read failed; prerendering empty:', err);
+    return [];
+  });
+}
 
 /** Returns a single active exam by its id, or null. */
 export const getExamById = cache(async function getExamById(examId: string): Promise<PublicExam | null> {

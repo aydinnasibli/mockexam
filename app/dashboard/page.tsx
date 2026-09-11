@@ -13,6 +13,7 @@ import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import MyExamsList, { type MyExamRow } from './MyExamsList';
 
 import { examTypeLabel } from '@/lib/domain/exam-types';
+import { examPath, typePath } from '@/lib/domain/exam-content';
 import Button, { ButtonArrow } from '@/components/ui/Button';
 import Tag, { scoreTone } from '@/components/ui/Tag';
 
@@ -361,7 +362,7 @@ export default async function DashboardPage({
                     const examMinutes = exam.durationMinutes - exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
                     return (
                       <StaggerItem key={exam.id}>
-                        <Link href={`/exams/${exam.id}`}
+                        <Link href={examPath(exam)}
                           className="panel group flex h-full flex-col p-4.5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-ink-faint hover:shadow-md">
                           <div className="mb-3.5 flex items-start justify-between gap-3">
                             <Tag tone="accent">{exam.tag}</Tag>
@@ -406,7 +407,7 @@ export default async function DashboardPage({
                 <p className="font-mono text-caption font-normal tracking-[0.14em] uppercase mt-5 m-0 border-t border-bg/16 pt-3 text-ink-mute">{countdown.dateStr}</p>
                 {countdown.days <= 14 && (
                   <Link
-                    href={`/exams?type=${countdown.type}`}
+                    href={typePath(countdown.type)}
                     className="mt-5 inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-bg px-5 py-3 text-note font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
                   >
                     Sınaqlara bax <span aria-hidden>→</span>

@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import { withPostHogConfig } from "@posthog/nextjs-config";
+// Relative, not `@/`: the tsconfig path alias is not applied when Next loads
+// this file. These modules are plain data with no runtime dependencies.
+import { CONTENT_TYPES, typePath } from "./lib/domain/exam-content";
+import { BASE_URL, CANONICAL_ORIGIN } from "./lib/shared/seo";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -52,6 +56,24 @@ if (!isDev && !fapi) {
     'without it the deployed app would block Clerk and authentication would fail.',
   );
 }
+/*
+ * Every canonical, `og:url`, sitemap entry and JSON-LD `url` is built on
+ * BASE_URL, and NEXT_PUBLIC_APP_URL overrides it. Set that to the apex, or to a
+ * `*.vercel.app` host, and every page silently declares a canonical that is a
+ * redirect or a duplicate — nothing errors, and it surfaces weeks later as
+ * Search Console choosing its own canonicals.
+ *
+ * Checked on `VERCEL_ENV`, not `NODE_ENV`: preview deployments are production
+ * builds too, and they are entitled to point at themselves.
+ */
+if (process.env.VERCEL_ENV === 'production' && BASE_URL !== CANONICAL_ORIGIN) {
+  throw new Error(
+    `NEXT_PUBLIC_APP_URL resolves to ${BASE_URL}, but a production build must use ${CANONICAL_ORIGIN}. ` +
+    'It is the origin of every canonical URL, sitemap entry and structured-data URL on the site; ' +
+    'unset it or set it to the canonical origin.',
+  );
+}
+
 const clerkHosts = [
   'https://*.accounts.dev',
   // Clerk's bot / abuse-and-fraud protection hosts, required by Clerk's CSP guide
@@ -107,12 +129,79 @@ const nextConfig: NextConfig = {
     ],
   },
   // PostHog's ingest endpoints depend on trailing slashes; Next's default
-  // trailing-slash redirect would break event capture through the proxy.
+  // trailing-slash redirect would break event capture through the proxy. It is
+  // restored for everything else in `redirects()` below.
   skipTrailingSlashRedirect: true,
   // NOTE: `experimental.serverSourceMaps: true` was measured here and made no
   // difference under Turbopack — same 310 uploaded source-map pairs, same 27
   // "empty sourcemap" warnings from PostHog's uploader. Left off rather than
   // carrying an experimental flag that buys nothing.
+  /*
+   * Legacy `/exams?type=…` → the type's own route.
+   *
+   * Handled here rather than in the page so that `/exams` needs no
+   * `searchParams` at all — reading those makes a route dynamic, and this one
+   * is a register that should sit on the CDN. Moving the rule up here is what
+   * turns the catalog from a per-request database query back into a static page.
+   *
+   * `permanent: true` emits 308, not 301. Next uses 308 deliberately so the
+   * request METHOD survives the hop; Google has treated the two as the same
+   * signal for years, and the apex→www redirect in front of this app is already
+   * a 308.
+   *
+   * DERIVED from `CONTENT_TYPES`, not written out. An earlier draft hardcoded
+   * the map on the theory that it described a frozen set of past URLs — and
+   * promptly got that set wrong in both directions: `masters` and `driving`
+   * were linked as `?type=` from the homepage and the dashboard countdown and
+   * were missing, while `gre` was listed and 308'd to `/exams/gre`, which 404s
+   * because GRE has no hub. The invariant that actually holds is simpler —
+   * redirect a legacy filter URL to that type's hub IF it has one — and a type
+   * has a hub exactly when it has an `EXAM_CONTENT` record. Types without one
+   * are deliberately absent: `/exams` already answers them correctly with a 200,
+   * and pointing `/exams` at itself would be a redirect loop.
+   *
+   * Next appends unmatched query params to the destination, so this lands on
+   * `/exams/sat?type=sat`. Harmless — the page ignores `searchParams` and pins
+   * its canonical to `/exams/sat` — and not worth dropping to middleware to
+   * strip one inert parameter.
+   */
+  async redirects() {
+    return [
+      ...CONTENT_TYPES.map((type) => ({
+        source: '/exams',
+        has: [{ type: 'query' as const, key: 'type', value: type }],
+        destination: typePath(type),
+        permanent: true,
+      })),
+      /*
+       * `/exams/` → `/exams`: Next's own trailing-slash redirect, minus `/relay`.
+       *
+       * `skipTrailingSlashRedirect` above turns Next's rule off for the WHOLE
+       * site, not just the PostHog proxy it was meant for, and every page then
+       * answered 200 at two URLs — `/exams` and `/exams/`, `/sitemap.xml` and
+       * `/sitemap.xml/`. The canonical tag was the only thing reconciling them,
+       * and a canonical is a hint; a 308 is not.
+       *
+       * Excluded, and why:
+       * - `relay/` — the PostHog ingest paths that need their slash kept, the
+       *   reason the flag is set at all.
+       * - `api/` — callers are machines. Vercel's cron does not follow
+       *   redirects and Epoint's webhook cannot be assumed to, so a
+       *   slash-terminated URL configured in either would silently stop being
+       *   delivered. They are disallowed in robots.txt, so there is no search
+       *   benefit to trade against that.
+       *
+       * Listed AFTER the `?type=` rules, which also match `/exams/`, so a
+       * legacy `/exams/?type=sat` reaches its hub in one hop rather than two.
+       * `next.config.test.ts` pins both lists.
+       */
+      {
+        source: '/:path((?!relay/|api/)(?:[^/]+/)*[^/]+)/',
+        destination: '/:path',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       // Static assets (posthog-js bundle, session-replay recorder, toolbar)

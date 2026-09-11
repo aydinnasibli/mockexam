@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
+import { useAuth, useClerk } from '@clerk/nextjs';
+import { toast } from 'sonner';
+import { claimFreeExamAction } from '@/lib/actions/free-exam';
 import { MONO_LABEL } from '@/components/ui/type-styles';
 
 /**
@@ -40,11 +43,30 @@ interface Props {
   examId: string;
   price: number;
   features: string[];
+  /**
+   * Whether the first-paper-free promotion is running.
+   *
+   * Resolved on the SERVER at render time, so it is present in the prerendered
+   * HTML and the promotional CTA costs no layout shift. Per-user eligibility
+   * (`canClaim`) arrives later and only ever swaps the button's TEXT, never its
+   * geometry — the same discipline the ownership states already follow.
+   */
+  promoActive: boolean;
 }
 
-export default function PurchaseCard({ examId, price, features }: Props) {
+export default function PurchaseCard({ examId, price, features, promoActive }: Props) {
   const { isSignedIn, isLoaded } = useAuth();
+  const { redirectToSignIn } = useClerk();
+  const router = useRouter();
   const [hasPurchased, setHasPurchased] = useState(false);
+  /*
+   * `null` = not yet known. Distinct from `false` on purpose: a signed-in user
+   * whose eligibility has not come back yet must not have the free CTA yanked
+   * away mid-read, and a signed-OUT visitor never gets an answer at all — the
+   * promo stays advertised for them, and clicking it sends them to sign-in.
+   */
+  const [canClaim, setCanClaim] = useState<boolean | null>(null);
+  const [claiming, startClaim] = useTransition();
 
   useEffect(() => {
     // Anonymous visitors never own the exam, and /api/purchase-status sits
@@ -59,6 +81,7 @@ export default function PurchaseCard({ examId, price, features }: Props) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.confirmed) setHasPurchased(true);
+        if (typeof data?.canClaim === 'boolean') setCanClaim(data.canClaim);
       })
       .catch(() => {
         // Network failure or abort: leave the buy CTA in place. Showing the
@@ -68,6 +91,42 @@ export default function PurchaseCard({ examId, price, features }: Props) {
 
     return () => controller.abort();
   }, [examId, isLoaded, isSignedIn]);
+
+  /*
+   * Advertise the free paper unless we positively know this user has spent
+   * their claim. `canClaim === null` (still loading, or signed out) counts as
+   * eligible so the CTA is stable from first paint — the server action is the
+   * thing that actually decides, and it re-checks everything.
+   */
+  const showFree = promoActive && !hasPurchased && canClaim !== false;
+
+  const onClaim = () => {
+    // Signed-out visitors see the promo too; the account is what the claim is
+    // recorded against, so collect it first and return them here.
+    if (isLoaded && !isSignedIn) {
+      // `window.location.pathname` rather than a rebuilt URL: this card only
+      // ever renders on the paper's own page, so where the visitor already is
+      // IS the place to send them back to — and it cannot drift out of step
+      // with the route the way a hand-assembled path can.
+      void redirectToSignIn({ redirectUrl: window.location.pathname });
+      return;
+    }
+
+    startClaim(async () => {
+      const result = await claimFreeExamAction(examId);
+      if (result.ok) {
+        setHasPurchased(true);
+        setCanClaim(false);
+        toast.success('Sınaq hesabınıza əlavə edildi.');
+        router.refresh();
+      } else {
+        // A refusal is usually "you already used it" — reflect that in the CTA
+        // rather than leaving a button that will fail the same way again.
+        setCanClaim(false);
+        toast.error(result.error);
+      }
+    });
+  };
 
   return (
     <>
@@ -104,19 +163,41 @@ export default function PurchaseCard({ examId, price, features }: Props) {
             hosted sign-in on another origin, which fails CORS and logs two
             console errors on every view of this page.
           */}
-          <Link
-            href={hasPurchased ? '/dashboard' : `/checkout/${examId}`}
-            prefetch={hasPurchased ? undefined : false}
-            className="group flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
-          >
-            {hasPurchased ? 'Panelə keç' : 'Giriş əldə et'}
-            <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
-          </Link>
+          {showFree ? (
+            /*
+              A button, not a Link, and styled with the SAME class string as the
+              anchor below rather than a shared variant: the two render at
+              identical size, so swapping between them when eligibility resolves
+              moves nothing on the page.
+            */
+            <button
+              type="button"
+              disabled={claiming}
+              onClick={onClaim}
+              className="group flex w-full items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px disabled:opacity-60"
+            >
+              {claiming ? 'Təyin edilir…' : 'Pulsuz al'}
+              <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+            </button>
+          ) : (
+            <Link
+              href={hasPurchased ? '/dashboard' : `/checkout/${examId}`}
+              prefetch={hasPurchased ? undefined : false}
+              className="group flex items-center justify-center gap-2.5 rounded-full bg-bg px-6 py-3.75 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface active:translate-y-px"
+            >
+              {hasPurchased ? 'Panelə keç' : 'Giriş əldə et'}
+              <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+            </Link>
+          )}
         </div>
 
         <div className="border-t border-bg/12 bg-bg/5 px-6.5 pt-4 pb-5">
           <p className={`${MONO_LABEL} m-0 text-caption tracking-[0.12em] text-bg/55`}>
-            {hasPurchased ? 'giriş açıqdır · kabinetdə' : 'güvənli ödəniş · dərhal giriş'}
+            {hasPurchased
+              ? 'giriş açıqdır · kabinetdə'
+              : showFree
+                ? 'ilk sınaq pulsuz · dərhal giriş'
+                : 'güvənli ödəniş · dərhal giriş'}
           </p>
         </div>
       </div>

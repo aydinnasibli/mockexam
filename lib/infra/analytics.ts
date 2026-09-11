@@ -19,6 +19,7 @@ export const ANALYTICS_EVENTS = {
   checkoutStarted:   'checkout_started',
   purchaseCompleted: 'purchase_completed',
   purchaseRefunded:  'purchase_refunded',
+  freeExamClaimed:   'free_exam_claimed',
   examStarted:       'exam_started',
   examSubmitted:     'exam_submitted',
   writingGraded:     'writing_graded',

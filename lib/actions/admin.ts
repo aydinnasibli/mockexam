@@ -158,7 +158,7 @@ export async function createExam(_prev: ActionResult, formData: FormData): Promi
     return { error: 'Server xətası baş verdi.' };
   }
 
-  revalidateExam(rawExamId);
+  revalidateExam({ id: rawExamId, type: fields.type });
   redirect('/admin/exams');
 }
 
@@ -182,6 +182,10 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
 
   const { totalQuestions, durationMinutes } = computeExamTotals(modules);
 
+  // Set inside the try, read after it — `revalidateExam` runs outside, because
+  // the `redirect` that follows it throws a signal a catch block would swallow.
+  let previousType: string | undefined;
+
   try {
     /*
      * Refuse an edit that would strand questions.
@@ -194,13 +198,33 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
      * the admin, who can move or delete the questions deliberately; doing it
      * for them would mean destroying authored work on a form submit.
      */
-    const [{ n: stranded }] = await db
-      .select({ n: count() })
-      .from(questionsTable)
-      .where(and(
-        eq(questionsTable.examId, examId),
-        gte(questionsTable.moduleIndex, modules.length),
-      ));
+    /*
+     * The type BEFORE the edit, read alongside the guard rather than after it.
+     *
+     * An edit is allowed to move a paper to another type, and that retires a
+     * URL: `/exams/<old type>/<id>` starts serving a 308. The old type is only
+     * knowable here — one statement later the column holds the new value and
+     * `RETURNING` hands back the row as it now is, not as it was.
+     *
+     * Independent of the stranded-questions count, so the two are awaited
+     * together rather than one behind the other.
+     */
+    const [[{ n: stranded }], [current]] = await Promise.all([
+      db
+        .select({ n: count() })
+        .from(questionsTable)
+        .where(and(
+          eq(questionsTable.examId, examId),
+          gte(questionsTable.moduleIndex, modules.length),
+        )),
+      db
+        .select({ type: examsTable.type })
+        .from(examsTable)
+        .where(eq(examsTable.id, examId))
+        .limit(1),
+    ]);
+    previousType = current?.type;
+
     if (stranded > 0) {
       return {
         error: `Bu dəyişiklik ${stranded} sualı modulsuz qoyardı. `
@@ -228,18 +252,48 @@ export async function updateExam(examId: string, _prev: ActionResult, formData: 
     return { error: 'Server xətası baş verdi.' };
   }
 
-  revalidateExam(examId);
+  /*
+   * `fields.type` is what the UPDATE above just wrote, so it names the paper's
+   * URL as it exists from this moment on.
+   *
+   * When the edit MOVED the paper, the URL it moved away from is submitted too.
+   * That old URL now answers 308 rather than 200, which is a change in its own
+   * right — and the only announcement of it search engines will get, since
+   * nothing links there any more.
+   */
+  const paper = { id: examId, type: fields.type };
+  revalidateExam(
+    // Inline rather than via a boolean flag: the comparison is what narrows
+    // `previousType` from `string | undefined` to a usable `string`.
+    previousType !== undefined && previousType !== fields.type
+      ? [paper, { id: examId, type: previousType }]
+      : paper,
+  );
   redirect('/admin/exams');
 }
 
 export async function toggleExamActive(examId: string, newActive: boolean): Promise<ActionResult> {
   try {
     await requireAdmin();
-    await db
+    // `returning` rather than a follow-up read: deactivating is precisely when
+    // a lookup would come back empty, and the paper's URL is what IndexNow has
+    // to be told about. The write itself is the last moment the type is free.
+    const [exam] = await db
       .update(examsTable)
       .set({ isActive: newActive, updatedAt: new Date() })
-      .where(eq(examsTable.id, examId));
-    revalidateExam(examId);
+      .where(eq(examsTable.id, examId))
+      .returning({ id: examsTable.id, type: examsTable.type });
+    /*
+     * The same not-found contract `updateExam` and `deleteExam` already keep,
+     * which the `returning` above is what finally makes checkable here.
+     *
+     * Toggling a paper another tab had already deleted used to update zero rows
+     * and report "Deaktiv edildi" — the admin list refreshes from the server, so
+     * the row then vanished under a success toast saying it had been changed.
+     */
+    if (!exam) return { error: 'İmtahan tapılmadı.' };
+
+    revalidateExam(exam);
     return {};
   } catch (err) {
     void captureException(err, { tags: { action: 'toggleExamActive' } });
@@ -322,13 +376,17 @@ export async function deleteExam(examId: string): Promise<ActionResult> {
      * above are no longer the only thing standing between an admin and a
      * candidate's history — the database refuses it too.
      */
+    // The type comes back from the DELETE itself. It is the only chance to
+    // learn it: a moment later there is no row to read at any privilege level,
+    // and `/exams/<type>/<id>` — the URL that just started 404ing, and the one
+    // search engines most need submitted — cannot be rebuilt from the id.
     const [exam] = await db
       .delete(examsTable)
       .where(eq(examsTable.id, examId))
-      .returning({ id: examsTable.id });
+      .returning({ id: examsTable.id, type: examsTable.type });
     if (!exam) return { error: 'İmtahan tapılmadı.' };
 
-    revalidateExam(examId);
+    revalidateExam(exam);
     return {};
   } catch (err) {
     void captureException(err, { tags: { action: 'deleteExam' } });

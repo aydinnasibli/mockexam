@@ -11,6 +11,7 @@ import { checkRole } from '@/lib/infra/admin';
 import { limited } from '@/lib/infra/rate-limit';
 import { validateModules } from '@/lib/domain/exam-modules';
 import { isExamType, isExamVariant } from '@/lib/domain/exam-types';
+import type { ExamRef } from '@/lib/domain/exam-content';
 import { validateQuestion } from '@/lib/domain/question-validation';
 import {
   isAllowedMediaUrl,
@@ -76,6 +77,10 @@ export async function importExamFromJson(
   parsedJson: unknown,
 ): Promise<{ error: string } | undefined> {
   let examId: string;
+  // Set inside the try, read after it — `revalidateExam` has to run outside,
+  // because the `redirect` that follows it throws a control-flow signal a
+  // catch block would swallow.
+  let examRef: ExamRef | null = null;
 
   try {
     if (!(await checkRole('admin'))) return { error: 'Forbidden' };
@@ -336,14 +341,15 @@ export async function importExamFromJson(
     }
 
     // `computeExamTotals` above wrote the DECLARED totals; replace them with
-    // the ones this bank actually produces.
-    await syncExamTotals(examId);
+    // the ones this bank actually produces. The sync also hands back the
+    // paper's type, which `revalidateExam` needs below to name its URL.
+    examRef = await syncExamTotals(examId);
   } catch (err) {
     void captureException(err, { tags: { action: 'importExamFromJson' } });
     return { error: 'Fayl yüklənərkən daxili server xətası baş verdi.' };
   }
 
   // Next.js redirect must be outside try-catch to function correctly
-  revalidateExam(examId);
+  revalidateExam(examRef);
   redirect(`/admin/exams/${examId}/questions`); // Redirect straight to the questions view
 }

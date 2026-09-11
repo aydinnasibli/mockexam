@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Testcentre — Akademik imtahan hazırlığı',
     short_name: 'Testcentre',
     description:
-      'SAT, IELTS, TOEFL və DİM imtahanlarına rəsmi formata uyğun sınaq imtahanları.',
+      'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına rəsmi formata uyğun sınaq imtahanları.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

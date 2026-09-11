@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
-import { getActiveExams } from '@/lib/db/exams';
-import { pageMetadata } from '@/lib/shared/seo';
+import { getActiveExamsForPrerender } from '@/lib/db/exams';
+import { examPath } from '@/lib/domain/exam-content';
+import { BASE_URL, SITE_NAME, faqSchema, jsonLd, pageMetadata } from '@/lib/shared/seo';
+import { HOME_FAQ } from '@/lib/domain/home-faq';
 import HomeContent, { type ProgramData } from './HomeContent';
 
 // The per-type exam counts are read at build time. Without this the page is
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
   ...pageMetadata({
     title: HOME_TITLE,
     description:
-      'SAT, IELTS, TOEFL və DİM imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+      'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
     path: '/',
     socialTitle: HOME_TITLE,
   }),
@@ -22,34 +24,36 @@ export const metadata: Metadata = {
   title: { absolute: HOME_TITLE },
 };
 
+/*
+ * `WebSite` is what Google's site-name system reads, and only from the home
+ * page — without it the result header falls back to a guess, typically the
+ * bare domain. `url` must be the canonical home page, so it is built on the
+ * same origin as the canonical tag rather than restated.
+ */
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: BASE_URL,
+  inLanguage: 'az',
+};
+
 export default async function Page() {
   /*
-   * Degrade to an empty catalog rather than failing the build.
+   * Degrade to an empty catalog at BUILD time, and only at build time.
    *
-   * This was the last build-time database read without a fallback — `sitemap.ts`
-   * and both `generateStaticParams` already have one — so a build against an
-   * unreachable database died here. That is not only CI: a Neon cold start
-   * during a deploy would take the whole deploy with it.
+   * A build against an unreachable database used to die here, which is not only
+   * a CI concern: a Neon cold start during a deploy would take the whole deploy
+   * with it. But the unconditional `.catch(() => [])` that fixed that also
+   * applied at request time, and this page carries `revalidate = 3600` — so one
+   * blip during a background revalidation rendered a homepage with no programs
+   * and ISR stored it as a perfectly good page for the next hour.
    *
-   * Reported rather than swallowed, because the degraded page is a real one: it
-   * renders with no programs, and `revalidate` above means it stays that way
-   * for up to an hour before ISR regenerates it.
+   * `getActiveExamsForPrerender` draws that line: swallow during `next build`,
+   * throw at request time, where a failed revalidation leaves the last good
+   * copy in place and retries. See its docblock.
    */
-  const exams = await getActiveExams().catch((err: unknown) => {
-    /*
-     * `console.error`, NOT `captureException`.
-     *
-     * `captureException` resolves a distinct id through `auth()`, which reads
-     * cookies — and a cookie read inside a statically prerendered page opts the
-     * page out of static rendering entirely. Reporting the failure that way
-     * turned this route from ISR into a dynamic one whenever the build happened
-     * to hit this branch, which is a worse outcome than the failure it reports.
-     *
-     * Vercel surfaces build and ISR-regeneration logs, so this is still visible.
-     */
-    console.error('[home] could not load exams; rendering an empty catalog:', err);
-    return [];
-  });
+  const exams = await getActiveExamsForPrerender();
 
   /*
    * Everything the page says about a program — the index strip's status, the
@@ -59,12 +63,25 @@ export default async function Page() {
    */
   const byType: Record<string, ProgramData> = {};
   for (const exam of exams) {
-    const entry = byType[exam.type] ?? { count: 0, minPrice: exam.price, titles: [], firstId: exam.id };
+    const entry = byType[exam.type] ?? { count: 0, minPrice: exam.price, titles: [], firstPath: examPath(exam) };
     entry.count += 1;
     entry.minPrice = Math.min(entry.minPrice, exam.price);
     entry.titles.push(exam.title);
     byType[exam.type] = entry;
   }
 
-  return <HomeContent byType={byType} totalExams={exams.length} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(websiteSchema) }}
+      />
+      {/* The §05 block on this page renders exactly these questions. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(faqSchema(HOME_FAQ)) }}
+      />
+      <HomeContent byType={byType} totalExams={exams.length} />
+    </>
+  );
 }

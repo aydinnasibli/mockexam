@@ -3,12 +3,15 @@ import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
 import WipeBar from "@/components/ui/WipeBar";
 import { MONO_LABEL, MONO_SECTION } from '@/components/ui/type-styles';
+import { HOME_FAQ } from '@/lib/domain/home-faq';
+import { typePath } from '@/lib/domain/exam-content';
 
 export interface ProgramData {
   count: number;
   minPrice: number;
   titles: string[];
-  firstId: string;
+  /** Full path to the single paper, when a programme has exactly one. */
+  firstPath: string;
 }
 
 interface Props {
@@ -70,20 +73,20 @@ const COMPARISON = [
   { criterion: "Bal proqnozu",   ours: "rəsmi cədvəl", theirs: "təxmini"     },
 ];
 
-/** Carried over from the review carousel this section replaces. */
-const REVIEWS = [
-  { score: "1480", delta: "▲ 200", quote: "Hər səhvim üçün ayrı izahat gördüm.", name: "Aysel Məmmədova", place: "Boğaziçi" },
-  { score: "7.5",  delta: "▲ 1.5", quote: "İki ayda 6.0-dan çıxdım.",            name: "Kərim Hüseynov",  place: "Edinburq" },
-  { score: "1540", delta: "▲ 160", quote: "Hər cəhddə fərqli zəif nöqtə.",       name: "Tural Əliyev",    place: "MIT" },
-];
+/*
+ * DISABLED — placeholder testimonials, not real candidates. See the §05 note
+ * in the JSX below before restoring; this array and that section go back
+ * together, and only with results a real person actually reported.
+ *
+ * /** Carried over from the review carousel this section replaces. *\/
+ * const REVIEWS = [
+ *   { score: "1480", delta: "▲ 200", quote: "Hər səhvim üçün ayrı izahat gördüm.", name: "Aysel Məmmədova", place: "Boğaziçi" },
+ *   { score: "7.5",  delta: "▲ 1.5", quote: "İki ayda 6.0-dan çıxdım.",            name: "Kərim Hüseynov",  place: "Edinburq" },
+ *   { score: "1540", delta: "▲ 160", quote: "Hər cəhddə fərqli zəif nöqtə.",       name: "Tural Əliyev",    place: "MIT" },
+ * ];
+ */
 
-const FAQ = [
-  { q: "Bal necə hesablanır?",      a: "Rəsmi çevirmə cədvəli ilə — SAT-da şkala, IELTS-də band." },
-  { q: "Təkrar cəhd olur?",         a: "Limitsiz. Hər cəhd ayrı hesabatla saxlanılır." },
-  { q: "Abunəlik var?",             a: "Yox. Bir sınaq — bir ödəniş, müddətsiz giriş." },
-  { q: "Sınaq yarımçıq qalarsa?",   a: "Sessiya serverdə qalır, vaxt rəsmi qaydada davam edir." },
-  { q: "Yazı hissəsi qiymətlənir?", a: "Rəsmi rubrika üzrə, hər kriteriya ayrı balla." },
-];
+const FAQ = HOME_FAQ;
 
 /** Section head: mono number in the left rail, heading in the right. */
 function SectionHead({ n, children, className = "" }: { n: string; children: React.ReactNode; className?: string }) {
@@ -328,7 +331,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               return count > 0 && program.type ? (
                 <Link
                   key={program.code}
-                  href={`/exams?type=${program.type}`}
+                  href={typePath(program.type)}
                   className={`${cellClass} transition-colors duration-150 hover:bg-surface-3`}
                 >
                   {body}
@@ -637,7 +640,23 @@ export default function HomeContent({ byType, totalExams }: Props) {
           </SectionHead>
         </section>
 
-        {/* ── §05 RƏYLƏR ── */}
+        {/*
+          ── §05 RƏYLƏR — DEVRE XARİCİ / DISABLED ──
+
+          The three testimonials this section rendered were placeholders: the
+          names, scores and destinations (Boğaziçi, Edinburq, MIT) were never
+          supplied by real candidates, but the markup presented them as records.
+          Publishing invented results is a trust and consumer-protection problem
+          on its own, and it also blocks the Product `aggregateRating` / `Review`
+          structured data we want on the exam pages — marking up fabricated
+          reviews is what Google issues manual penalties for.
+
+          To re-activate, all four steps together:
+            1. restore the `REVIEWS` array above with real, attributable results
+            2. uncomment this section
+            3. renumber the FAQ section below back to 06
+            4. only THEN add Review / aggregateRating JSON-LD to the exam pages
+
         <section className="border-t border-rule bg-surface-2">
           <div className="shell py-20 lg:py-24">
             <SectionHead n="05">
@@ -675,10 +694,11 @@ export default function HomeContent({ byType, totalExams }: Props) {
             </SectionHead>
           </div>
         </section>
+        */}
 
-        {/* ── §06 FAQ ── */}
+        {/* ── §05 FAQ ── */}
         <section id="suallar" className="shell scroll-mt-5 py-20 lg:py-28">
-          <SectionHead n="06">
+          <SectionHead n="05">
             <div className="grid gap-8 lg:grid-cols-[300px_1fr] lg:gap-18">
               <h2 className={H2}>Suallar.</h2>
               <StaggerContainer>
@@ -727,7 +747,7 @@ export default function HomeContent({ byType, totalExams }: Props) {
               <StaggerContainer className="min-w-0">
                 {openPrograms.map((program, i) => {
                   const data = byType[program.type as string];
-                  const href = data.count === 1 ? `/exams/${data.firstId}` : `/exams?type=${program.type}`;
+                  const href = data.count === 1 ? data.firstPath : typePath(program.type as string);
                   return (
                     <StaggerItem key={program.code}>
                     <Link
