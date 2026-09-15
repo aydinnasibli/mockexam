@@ -6,8 +6,10 @@ import StructureBar from '@/components/ui/StructureBar';
 import {
   BREAK_FILL,
   SCORE_SCALE,
+  catalogTypes,
   examCodes,
   pad2,
+  registerOrder,
   shortTypeLabel,
   structureOf,
   upperLabel,
@@ -81,9 +83,8 @@ export default function ExamsCatalog({ exams, activeType = 'all', demoteHeadline
 
   // Tabs follow EXAM_TYPES order rather than database order, so the tab row,
   // the register order and the generated codes all agree with each other.
-  const presentTypes = new Set(exams.map((e) => e.type));
-  const types: string[] = EXAM_TYPES.map((t) => t.value).filter((t) => presentTypes.has(t));
-  for (const t of presentTypes) if (!types.includes(t)) types.push(t);
+  const types = catalogTypes(exams);
+  const presentTypes = new Set(types);
 
   // A type page for a type with no papers yet — `/exams/sat`, which serves on
   // its editorial copy alone — still gets its own tab, otherwise the masthead
@@ -104,12 +105,8 @@ export default function ExamsCatalog({ exams, activeType = 'all', demoteHeadline
     ...PLANNED_EXTRA,
   ];
 
-  const listed = exams
-    .filter((exam) => activeType === 'all' || exam.type === activeType)
-    .sort((a, b) => {
-      const byType = types.indexOf(a.type) - types.indexOf(b.type);
-      return byType !== 0 ? byType : (codes.get(a.id) ?? '').localeCompare(codes.get(b.id) ?? '');
-    });
+  // The same order the page's `ItemList` JSON-LD states. See `registerOrder`.
+  const listed = registerOrder(exams, activeType);
 
   // The strip describes what any purchase includes, so it falls back to the
   // whole catalog when a filter happens to match nothing.

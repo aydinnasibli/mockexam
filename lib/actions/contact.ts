@@ -1,7 +1,7 @@
 'use server';
 
 import { headers } from 'next/headers';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { z } from 'zod';
 import { isRateLimited, clientIp } from '@/lib/infra/rate-limit';
 import { captureException, captureMessage } from '@/lib/infra/observability';
@@ -14,6 +14,10 @@ const schema = z.object({
 });
 
 export type ContactResult = { ok: true } | { ok: false; error: string };
+
+// Resend's shared sender. It only delivers to the address that owns the
+// Resend account, so production needs CONTACT_FROM on a verified domain.
+const DEFAULT_FROM = 'Testcentre əlaqə <onboarding@resend.dev>';
 
 /**
  * Makes a visitor-supplied string safe to interpolate into a mail header.
@@ -44,32 +48,29 @@ export async function sendContactMessage(input: {
     return { ok: false, error: 'Çox tez-tez mesaj göndərdiniz. Bir az sonra yenidən cəhd edin.' };
   }
 
-  // Gmail account + 16-char App Password (Google 2-Step Verification required).
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  const to = process.env.CONTACT_TO ?? user;
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.CONTACT_TO;
+  const from = process.env.CONTACT_FROM || DEFAULT_FROM;
 
-  if (!user || !pass) {
+  if (!apiKey || !to) {
     void captureMessage('Contact form mail is not configured', { level: 'error' });
     return { ok: false, error: 'Mesaj göndərmə xidməti hazırda əlçatan deyil. Zəhmət olmasa e-poçt ilə yazın.' };
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-    });
-
     const headerName = headerSafe(name);
-    await transporter.sendMail({
-      // Gmail forces From to the authenticated account; the visitor's address
-      // goes in Reply-To so a reply reaches them directly.
-      from: `"Testcentre əlaqə" <${user}>`,
+    // The SDK reports API failures (bad key, unverified domain) in `error`
+    // rather than throwing; the catch below only sees network faults.
+    const { error } = await new Resend(apiKey).emails.send({
+      from,
       to,
-      replyTo: { name: headerName, address: email },
+      // The visitor's address goes in Reply-To so a reply reaches them directly.
+      // headerSafe strips quotes, so the quoted display name can't break out.
+      replyTo: `"${headerName}" <${email}>`,
       subject: headerSafe(`[Əlaqə: ${subject}] ${headerName}`),
       text: `Ad: ${name}\nE-poçt: ${email}\nMövzu: ${subject}\n\n${message}`,
     });
+    if (error) throw new Error(`Resend ${error.name}: ${error.message}`);
 
     return { ok: true };
   } catch (err) {

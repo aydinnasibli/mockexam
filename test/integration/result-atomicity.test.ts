@@ -81,7 +81,7 @@ vi.mock('@/lib/infra/observability', () => ({
 }));
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
 
-const { db, resetDb, seedExam } = await import('@/test/pg');
+const { db, resetDb, seedExam, seedUser } = await import('@/test/pg');
 const { examResults, examAnswers, questions, purchases } = await import('@/lib/db/schema');
 const { saveExamResult } = await import('@/lib/actions/results');
 
@@ -101,6 +101,7 @@ beforeEach(async () => {
   failAnswers.on = false;
   await resetDb();
   await seedExam(EXAM);
+  await seedUser(USER);
   await db.insert(purchases).values({
     userId: USER, examId: EXAM, transactionId: 'txn', amountCents: 1500, status: 'COMPLETED',
   });

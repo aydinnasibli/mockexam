@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CANONICAL_ORIGIN, clampDescription, jsonLd, pageMetadata, siteOrigin } from './seo';
+import {
+  BASE_URL, CANONICAL_ORIGIN, ORGANIZATION_ID, ORGANIZATION_REF, WEBSITE_ID, absoluteUrl,
+  breadcrumbSchema, clampDescription, entitySchema, itemListSchema, jsonLd, pageMetadata,
+  siteOrigin, webPageSchema,
+} from './seo';
 
 describe('siteOrigin', () => {
   it('is the www origin when nothing is configured', () => {
@@ -24,6 +28,103 @@ describe('siteOrigin', () => {
 
   it.each(['not a url', 'localhost:3000'])('falls back on the unusable value %j', (configured) => {
     expect(siteOrigin(configured)).toBe(CANONICAL_ORIGIN);
+  });
+});
+
+describe('absoluteUrl', () => {
+  it('builds on the site origin', () => {
+    expect(absoluteUrl('/exams/ielts')).toBe(`${BASE_URL}/exams/ielts`);
+  });
+
+  /** The home page is the bare origin — the same form its canonical tag takes. */
+  it('maps the root path to the bare origin, not a trailing slash', () => {
+    expect(absoluteUrl('/')).toBe(BASE_URL);
+  });
+
+  it('is what breadcrumbs are built on', () => {
+    const trail = breadcrumbSchema([{ name: 'Ana səhifə', path: '/' }, { name: 'X', path: '/exams' }]);
+    expect(trail.itemListElement.map((c) => c.item)).toEqual([BASE_URL, `${BASE_URL}/exams`]);
+  });
+});
+
+/**
+ * The entity graph. Every reference to the organisation or the site must carry
+ * the SAME `@id` — that identity is the whole point of these helpers, and a
+ * typo in one of them splits the graph back into anonymous nodes without any
+ * validator objecting.
+ */
+describe('entity graph', () => {
+  it('names the organisation and the site by fragment on the home URL', () => {
+    expect(ORGANIZATION_ID).toBe(`${BASE_URL}/#organization`);
+    expect(WEBSITE_ID).toBe(`${BASE_URL}/#website`);
+  });
+
+  it('references the organisation by id, and still says who it is', () => {
+    expect(ORGANIZATION_REF).toMatchObject({ '@id': ORGANIZATION_ID, name: 'Testcentre', url: BASE_URL });
+  });
+
+  describe('webPageSchema', () => {
+    const page = webPageSchema({
+      type: 'CollectionPage',
+      path: '/exams/ielts',
+      name: 'IELTS sınaq imtahanları',
+      description: 'd',
+    });
+
+    it('identifies the page by its own canonical URL', () => {
+      expect(page.url).toBe(`${BASE_URL}/exams/ielts`);
+      expect(page['@id']).toBe(`${BASE_URL}/exams/ielts#webpage`);
+    });
+
+    it('ties the page to the one site node', () => {
+      expect(page.isPartOf['@id']).toBe(WEBSITE_ID);
+    });
+
+    it('omits about and mainEntity when there is nothing to say', () => {
+      expect(Object.hasOwn(page, 'about')).toBe(false);
+      expect(Object.hasOwn(page, 'mainEntity')).toBe(false);
+    });
+
+    it('defaults to a plain WebPage', () => {
+      expect(webPageSchema({ path: '/x', name: 'x', description: 'x' })['@type']).toBe('WebPage');
+    });
+  });
+
+  describe('itemListSchema', () => {
+    const list = itemListSchema([
+      { name: 'IELTS 1', path: '/exams/ielts/a' },
+      { name: 'IELTS 2', path: '/exams/ielts/b' },
+    ]);
+
+    it('numbers positions from 1, in the order given', () => {
+      expect(list.itemListElement.map((i) => [i.position, i.name])).toEqual([
+        [1, 'IELTS 1'],
+        [2, 'IELTS 2'],
+      ]);
+    });
+
+    it('gives every item an absolute URL', () => {
+      expect(list.itemListElement.map((i) => i.url)).toEqual([
+        `${BASE_URL}/exams/ielts/a`,
+        `${BASE_URL}/exams/ielts/b`,
+      ]);
+      expect(list.numberOfItems).toBe(2);
+    });
+  });
+
+  describe('entitySchema', () => {
+    it('carries sameAs when there is somewhere to point', () => {
+      expect(entitySchema({ name: 'SAT', sameAs: ['https://en.wikipedia.org/wiki/SAT'] })).toEqual({
+        '@type': 'Thing',
+        name: 'SAT',
+        sameAs: ['https://en.wikipedia.org/wiki/SAT'],
+      });
+    });
+
+    it('omits an empty sameAs rather than emitting []', () => {
+      expect(Object.hasOwn(entitySchema({ name: 'x', sameAs: [] }), 'sameAs')).toBe(false);
+      expect(Object.hasOwn(entitySchema({ name: 'x' }), 'sameAs')).toBe(false);
+    });
   });
 });
 

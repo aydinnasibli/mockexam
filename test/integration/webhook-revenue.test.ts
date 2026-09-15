@@ -60,7 +60,7 @@ vi.mock('@/lib/infra/observability', () => ({
   captureMessage: async () => {},
 }));
 
-const { db, resetDb, seedExam } = await import('@/test/pg');
+const { db, resetDb, seedExam, seedUser } = await import('@/test/pg');
 const { purchases } = await import('@/lib/db/schema');
 const { encodeOrderId } = await import('@/lib/payments/epoint');
 const { POST } = await import('@/app/api/webhooks/epoint/route');
@@ -123,6 +123,7 @@ describe('epoint webhook — revenue reporting', () => {
   });
 
   it('upgrades a PENDING purchase written at checkout', async () => {
+    await seedUser(USER);
     await db.insert(purchases).values({
       userId: USER, examId: EXAM, transactionId: 'TXN-1',
       amountCents: 1500, status: 'PENDING',
@@ -136,6 +137,7 @@ describe('epoint webhook — revenue reporting', () => {
 
   it('validates the amount against the price quoted at checkout, not the live one', async () => {
     // Bought at 15, exam repriced to 25 mid-payment.
+    await seedUser(USER);
     await db.insert(purchases).values({
       userId: USER, examId: EXAM, transactionId: 'TXN-1',
       amountCents: 1500, status: 'PENDING',

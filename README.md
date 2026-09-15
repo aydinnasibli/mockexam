@@ -91,6 +91,9 @@ Create `.env.local` in the project root:
 # Clerk — https://dashboard.clerk.com
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 CLERK_SECRET_KEY=sk_...
+# Signing secret of the webhook endpoint that keeps `users` in sync
+# (see "User sync" below)
+CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 
 # MongoDB Atlas connection string
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/mockexam
@@ -106,10 +109,11 @@ OPENAI_API_KEY=sk-...
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
 
-# Contact form (Gmail account + 16-char App Password)
-EMAIL_USER=...
-EMAIL_PASS=...
+# Contact form — Resend (https://resend.com/api-keys)
+RESEND_API_KEY=re_...
 CONTACT_TO=...
+# Sender on a domain verified in Resend (defaults to onboarding@resend.dev)
+CONTACT_FROM=...
 
 # PostHog — product analytics + error tracking (EU cloud)
 NEXT_PUBLIC_POSTHOG_KEY=phc_...
@@ -139,6 +143,21 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 > from the publishable key, so it follows automatically — but the key must be
 > present at build time.
 
+> **User sync.** Clerk owns sign-in; the `users` table is a local copy that
+> every user-owned table references. A Clerk webhook keeps it current: in the
+> Clerk Dashboard go to Webhooks → Add Endpoint, set the URL to
+> `https://<your-domain>/api/webhooks/clerk`, subscribe to `user.created`,
+> `user.updated` and `user.deleted`, and put the endpoint's signing secret in
+> `CLERK_WEBHOOK_SIGNING_SECRET`. Deleting an account in Clerk removes that
+> person's results, sessions, audio claims and settings and clears their
+> profile; their purchases are kept as payment records.
+>
+> After applying the migration that creates the table, copy existing accounts
+> across with `node --env-file=.env.local scripts/sync-clerk-users.mjs` (a dry
+> run), then again with `--confirm`. To receive webhooks locally, expose the dev
+> server through a tunnel (for example `ngrok http 3000`) and register that URL
+> on your Clerk development instance.
+
 **3. Run the dev server**
 
 ```bash
@@ -158,6 +177,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run typecheck` | Run TypeScript with no emit |
 | `npm test` | Run the unit tests (Vitest) |
 | `npm run verify` | Typecheck + lint + test — what CI runs |
+| `node --env-file=.env.local scripts/sync-clerk-users.mjs` | Copy Clerk accounts into `users` (dry run; `--confirm` writes) |
 
 ## Exam & Module Types
 

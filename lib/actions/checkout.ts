@@ -6,6 +6,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
 import { purchases } from '@/lib/db/schema';
 import { getExamById } from '@/lib/db/exams';
+import { ensureUser } from '@/lib/db/users';
 import { signRequest, encodeOrderId, EPOINT_REQUEST_URL } from '@/lib/payments/epoint';
 import { isRateLimited } from '@/lib/infra/rate-limit';
 import { captureException, captureMessage } from '@/lib/infra/observability';
@@ -98,6 +99,7 @@ export async function createCheckoutSession(examId: string): Promise<CheckoutRes
     // here must never block the redirect to the bank page.
     if (result.transaction) {
       try {
+        await ensureUser(userId);
         // `setWhere` keeps a COMPLETED purchase untouched: a re-entered
         // checkout must never downgrade access someone already paid for.
         await db

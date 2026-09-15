@@ -2,6 +2,7 @@ import 'server-only';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
 import { freeClaims, purchases } from '@/lib/db/schema';
+import { ensureUser } from '@/lib/db/users';
 
 /**
  * `transactionId` prefix marking a purchase created by the first-free promotion
@@ -82,6 +83,8 @@ export async function claimFreeExam(userId: string, examId: string): Promise<Cla
     ))
     .limit(1);
   if (owned) return { ok: false, reason: 'already_owned' };
+
+  await ensureUser(userId);
 
   // The arbitration. An empty result means someone (possibly this user, in a
   // parallel request) already holds the single row.

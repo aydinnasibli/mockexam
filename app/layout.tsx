@@ -8,7 +8,10 @@ import RouteTransition from "@/components/ui/RouteTransition";
 import NavProgress from "@/components/ui/NavProgress";
 import PostHogIdentify from "@/components/PostHogIdentify";
 import CookieNotice from "@/components/ui/CookieNotice";
-import { BASE_URL, jsonLd } from "@/lib/shared/seo";
+import {
+  BASE_URL, ORGANIZATION_ID, SITE_ALTERNATE_NAME, SITE_NAME, entitySchema, jsonLd,
+} from "@/lib/shared/seo";
+import { CONTENT_TYPES, EXAM_CONTENT } from "@/lib/domain/exam-content";
 import "./globals.css";
 
 /*
@@ -107,7 +110,21 @@ export const metadata: Metadata = {
 
 /*
  * `logo` points at the square app icon, not the 1200×630 opengraph banner —
- * Google reads this field as the organisation's actual mark.
+ * Google reads this field as the organisation's actual mark. Specifically at
+ * the 512px one (`app/icon1.tsx`): it pointed at `/icon`, which is the 32px
+ * favicon, and Google's Organization guidance sets a 112×112 floor for a logo.
+ * The dimensions are stated so a consumer need not fetch the image to know it
+ * qualifies.
+ *
+ * `@id` is the node every `provider`, `seller` and `publisher` on the site
+ * points back to — see `ORGANIZATION_ID`.
+ *
+ * `knowsAbout` names the exams the organisation covers, as the SAME entity
+ * nodes the hub pages are `about`, sameAs links and all — so the organisation,
+ * its hubs and its papers all point at one IELTS rather than three strings.
+ * That consistency is what lets a machine reader connect "Testcentre" to the
+ * subjects it publishes on. Derived from `EXAM_CONTENT`, so a new programme
+ * joins it by having a hub, with nothing to remember here.
  *
  * There is deliberately no `telephone`: the previous value (+994-12-555-14-88)
  * was a placeholder that appears nowhere else on the site, and a phone number
@@ -133,14 +150,30 @@ const SAME_AS = [
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'EducationalOrganization',
-  name: 'Testcentre',
+  '@id': ORGANIZATION_ID,
+  name: SITE_NAME,
+  alternateName: SITE_ALTERNATE_NAME,
   url: BASE_URL,
-  logo: `${BASE_URL}/icon`,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${BASE_URL}/icon1`,
+    width: 512,
+    height: 512,
+  },
   image: `${BASE_URL}/opengraph-image`,
   description:
     'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hazırlıq üçün rəsmi formata uyğun sınaq imtahanları.',
+  email: 'testcentreaz@proton.me',
   sameAs: SAME_AS,
-  areaServed: 'AZ',
+  knowsAbout: CONTENT_TYPES.map((type) => entitySchema(EXAM_CONTENT[type]!.entity)),
+  knowsLanguage: 'az',
+  // A Country node, not the bare 'AZ' this used to carry: as text, "AZ" is as
+  // much Arizona as Azerbaijan to a parser that has to guess.
+  areaServed: {
+    '@type': 'Country',
+    name: 'Azerbaijan',
+    sameAs: 'https://www.wikidata.org/wiki/Q227',
+  },
   address: {
     '@type': 'PostalAddress',
     addressLocality: 'Bakı',

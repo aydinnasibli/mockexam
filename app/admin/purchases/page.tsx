@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { count, desc } from 'drizzle-orm';
+import { count, desc, eq, getTableColumns } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
-import { purchases as purchasesTable } from '@/lib/db/schema';
+import { purchases as purchasesTable, users } from '@/lib/db/schema';
 import AdminPageHeader from '../PageHeader';
+import PurchaserLabel from '../PurchaserLabel';
 import { requireAdminPage } from '@/lib/infra/admin';
 
 export const metadata = { title: 'Satışlar — Admin' };
@@ -23,8 +24,15 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
   const skip = (page - 1) * PAGE_SIZE;
 
   const [purchases, [{ n: total }]] = await Promise.all([
-    db.select()
+    // The purchaser's email comes from the local `users` copy, in the same
+    // query. LEFT JOIN, so the revenue list can never lose a row to the join.
+    db.select({
+      ...getTableColumns(purchasesTable),
+      email: users.email,
+      userDeletedAt: users.deletedAt,
+    })
       .from(purchasesTable)
+      .leftJoin(users, eq(users.id, purchasesTable.userId))
       .orderBy(desc(purchasesTable.createdAt))
       .offset(skip)
       .limit(PAGE_SIZE),
@@ -78,7 +86,9 @@ export default async function AdminPurchasesPage({ searchParams }: Props) {
                       <td className="num max-w-35 truncate text-xs text-ink-mute">
                         {p.transactionId}
                       </td>
-                      <td className="num text-xs text-ink-mute">…{p.userId.slice(-10)}</td>
+                      <td>
+                        <PurchaserLabel userId={p.userId} email={p.email} deletedAt={p.userDeletedAt} />
+                      </td>
                       <td className="font-medium text-ink">{p.examId}</td>
                       <td className="num text-ink">{(p.amountCents / 100).toFixed(2)} {p.currency}</td>
                       <td className="text-ink-soft">

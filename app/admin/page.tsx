@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { clerkClient } from '@clerk/nextjs/server';
 
-import { count, desc, eq, sum } from 'drizzle-orm';
+import { count, desc, eq, getTableColumns, sum } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
-import { exams as examsTable, purchases as purchasesTable } from '@/lib/db/schema';
+import { exams as examsTable, purchases as purchasesTable, users } from '@/lib/db/schema';
 import SeedButton from './SeedButton';
 import ResyncTotalsButton from './ResyncTotalsButton';
 import AdminPageHeader from './PageHeader';
+import PurchaserLabel from './PurchaserLabel';
 import { requireAdminPage } from '@/lib/infra/admin';
 import Button, { ButtonArrow } from '@/components/ui/Button';
 
@@ -29,8 +30,13 @@ async function getStats() {
     db.select({ total: sum(purchasesTable.amountCents) })
       .from(purchasesTable)
       .where(eq(purchasesTable.status, 'COMPLETED')),
-    db.select()
+    db.select({
+      ...getTableColumns(purchasesTable),
+      email: users.email,
+      userDeletedAt: users.deletedAt,
+    })
       .from(purchasesTable)
+      .leftJoin(users, eq(users.id, purchasesTable.userId))
       .where(eq(purchasesTable.status, 'COMPLETED'))
       .orderBy(desc(purchasesTable.createdAt))
       .limit(5),
@@ -115,7 +121,9 @@ export default async function AdminOverviewPage() {
                 <tbody>
                   {stats.recentPurchases.map((p) => (
                     <tr key={p.id}>
-                      <td className="num text-xs text-ink-mute">…{p.userId.slice(-8)}</td>
+                      <td>
+                        <PurchaserLabel userId={p.userId} email={p.email} deletedAt={p.userDeletedAt} />
+                      </td>
                       <td className="font-medium text-ink">{p.examId}</td>
                       <td className="num text-ink">{(p.amountCents / 100).toFixed(2)} {p.currency}</td>
                       <td className="num text-xs text-ink-mute">

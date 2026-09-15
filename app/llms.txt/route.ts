@@ -81,6 +81,15 @@ ${examLines || '- Hazırda açıq sınaq yoxdur.'}
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
+      /*
+       * Readable, not rankable. This file restates the site in plain text, and
+       * indexed it becomes a thin duplicate that can surface in a results page
+       * instead of the hub it summarises. `noindex` keeps it out of search
+       * indexes; it does nothing to the agents this file is for, which fetch it
+       * directly rather than finding it through a search result. `follow` so
+       * the links in it still count as links.
+       */
+      'X-Robots-Tag': 'noindex, follow',
     },
   });
 }

@@ -1,4 +1,5 @@
 import type { PublicExam } from '@/lib/db/exams';
+import { EXAM_TYPES } from '@/lib/domain/exam-types';
 
 /**
  * The proportional structure diagram, shared by the catalog register and the
@@ -177,6 +178,39 @@ export function shortTypeLabel(type: string, fallback: string): string {
 
 export function pad2(n: number): string {
   return String(n).padStart(2, '0');
+}
+
+/**
+ * The types present in a catalog, in `EXAM_TYPES` order, with any stored type
+ * that list does not know appended after it. This is the tab order and the
+ * register's grouping order.
+ */
+export function catalogTypes(exams: readonly PublicExam[]): string[] {
+  const present = new Set(exams.map((e) => e.type));
+  const types: string[] = EXAM_TYPES.map((t) => t.value).filter((t) => present.has(t));
+  for (const t of present) if (!types.includes(t)) types.push(t);
+  return types;
+}
+
+/**
+ * The papers a register lists, in the order it lists them: grouped by type in
+ * `catalogTypes` order, and within a type in catalog order — which is the order
+ * `examCodes` numbers them in, so `SAT—01` precedes `SAT—02`.
+ *
+ * One function because two things must agree on it. The register renders this
+ * order, and the page's `ItemList` JSON-LD states it as `position` — a claim
+ * about the visible list that a second copy of the sort would eventually make
+ * false.
+ *
+ * A stable sort on type alone, rather than the old comparison of code strings:
+ * the codes are assigned in catalog order, so the two orders are the same —
+ * except that string comparison put `SAT—100` before `SAT—99`.
+ */
+export function registerOrder(exams: readonly PublicExam[], activeType = 'all'): PublicExam[] {
+  const types = catalogTypes(exams);
+  return exams
+    .filter((exam) => activeType === 'all' || exam.type === activeType)
+    .sort((a, b) => types.indexOf(a.type) - types.indexOf(b.type));
 }
 
 /**

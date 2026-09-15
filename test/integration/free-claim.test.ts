@@ -21,7 +21,7 @@ vi.mock('@/lib/infra/db', async () => {
   return { db, txDb: () => ({ db, close: async () => {} }) };
 });
 
-const { db, resetDb, seedExam } = await import('@/test/pg');
+const { db, resetDb, seedExam, seedUser } = await import('@/test/pg');
 const { freeClaims, purchases } = await import('@/lib/db/schema');
 const { claimFreeExam, canClaimFree, claimedExamId } = await import('@/lib/db/free-claim');
 
@@ -90,6 +90,7 @@ describe('first exam free', () => {
   it('is resumable: retrying the SAME paper re-runs the grant', async () => {
     // Simulates a caller that won the claim but died before writing the
     // purchase. Without this, the claim is burned on a paper they cannot open.
+    await seedUser(USER);
     await db.insert(freeClaims).values({ userId: USER, examId: EXAM_A });
     expect(await purchaseRow(EXAM_A)).toBeUndefined();
 
@@ -98,6 +99,7 @@ describe('first exam free', () => {
   });
 
   it('never downgrades a paper the user already paid for', async () => {
+    await seedUser(USER);
     await db.insert(purchases).values({
       userId: USER,
       examId: EXAM_A,

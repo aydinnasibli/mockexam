@@ -1,5 +1,18 @@
+import type { Metadata } from 'next';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import DashboardShell from './DashboardShell';
+
+/*
+ * `noindex` for every page under the dashboard, as `/admin` and `/checkout`
+ * already declare. It is defence in depth, not the main control: robots.txt
+ * keeps compliant crawlers from fetching these at all — and a crawler that
+ * never fetches a page never sees its meta tags either. This covers the agents
+ * that ignore robots.txt, and any signed-in session a tool happens to crawl
+ * through.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Fetched server-side so the sidebar renders with real user data on first

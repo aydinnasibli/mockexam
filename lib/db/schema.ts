@@ -56,6 +56,47 @@ const inList = (values: readonly string[]) => {
 const PURCHASE_STATUSES = ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'] as const;
 export type PurchaseStatus = typeof PURCHASE_STATUSES[number];
 
+/* ------------------------------------------------------------------ users */
+
+/**
+ * The local copy of a Clerk account.
+ *
+ * Clerk stays the source of truth for identity and sign-in. This row exists so
+ * every table holding a `user_id` has something real to reference, and so a
+ * purchase can be joined to an email in SQL instead of one Backend API call per
+ * row. `app/api/webhooks/clerk/route.ts` keeps it current;
+ * `scripts/sync-clerk-users.mjs` seeds it.
+ *
+ * Every profile column is nullable because a row can exist before its profile
+ * does. Clerk delivers `user.created` asynchronously, and someone can sign up
+ * and reach checkout before it lands — so `ensureUser` inserts the bare id first
+ * and the webhook fills the rest in.
+ *
+ * An account deleted in Clerk becomes a TOMBSTONE — profile nulled, `deleted_at`
+ * set — rather than disappearing. Its purchases are payment records that must
+ * outlive the account (hence RESTRICT on `purchases.user_id`), and the tombstone
+ * is what stops a late `user.updated` from writing the profile back.
+ */
+export const users = pgTable('users', {
+  // Clerk's `user_…` id — the same string every other table already stores.
+  id: text('id').primaryKey(),
+  email: text('email'),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  imageUrl: text('image_url'),
+  clerkCreatedAt: timestamp('clerk_created_at', { withTimezone: true }),
+  /*
+   * Clerk's own `updated_at`, and the ordering guard for every sync. Svix
+   * retries failed deliveries and promises no order, so a write only applies
+   * when it is at least as new as what is stored. NULL means "never synced",
+   * which anything from Clerk supersedes.
+   */
+  clerkUpdatedAt: timestamp('clerk_updated_at', { withTimezone: true }),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /* ------------------------------------------------------------------ exams */
 
 /**
@@ -174,7 +215,13 @@ export interface ModuleScore {
 
 export const examResults = pgTable('exam_results', {
   id: text('id').primaryKey().default(newId),
-  userId: text('user_id').notNull(),
+  /*
+   * CASCADE, as on every table recording what a user did. Account deletion does
+   * not depend on it — `deleteUserData` removes these rows itself and keeps the
+   * `users` row as a tombstone — but it means a hard purge of a users row can
+   * never strand this data.
+   */
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   // RESTRICT, not CASCADE: a filed attempt is a record of something a candidate
   // paid for and sat. `deleteExam` guarded this with a countDocuments() check
   // the application had to remember to run; now the database enforces it.
@@ -316,7 +363,7 @@ export interface SessionProgress {
 
 export const examSessions = pgTable('exam_sessions', {
   id: text('id').primaryKey().default(newId),
-  userId: text('user_id').notNull(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   examId: text('exam_id').notNull().references(() => exams.id, { onDelete: 'cascade' }),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
   totalSeconds: integer('total_seconds').notNull(),
@@ -351,7 +398,9 @@ export const examSessions = pgTable('exam_sessions', {
 
 export const purchases = pgTable('purchases', {
   id: text('id').primaryKey().default(newId),
-  userId: text('user_id').notNull(),
+  // RESTRICT: a payment record outlives the account. Deletion tombstones the
+  // `users` row instead of removing it — see `deleteUserData`.
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
   // RESTRICT: an exam somebody has paid for cannot be deleted out from under
   // the purchase record.
   examId: text('exam_id').notNull().references(() => exams.id, { onDelete: 'restrict' }),
@@ -400,7 +449,7 @@ export const purchases = pgTable('purchases', {
  */
 export const playedAudio = pgTable('played_audio', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
-  userId: text('user_id').notNull(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   examId: text('exam_id').notNull().references(() => exams.id, { onDelete: 'cascade' }),
   audioUrl: text('audio_url').notNull(),
   playedAt: timestamp('played_at', { withTimezone: true }).notNull().defaultNow(),
@@ -433,7 +482,7 @@ export const playedAudio = pgTable('played_audio', {
 
 export const userSettings = pgTable('user_settings', {
   // The Clerk user id is the natural key; there was never a second row per user.
-  userId: text('user_id').primaryKey(),
+  userId: text('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
   targetExamDate: text('target_exam_date'),  // 'YYYY-MM-DD'
   targetExamType: text('target_exam_type').$type<ExamType>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -465,7 +514,7 @@ export const userSettings = pgTable('user_settings', {
  * joining on a transaction-id prefix.
  */
 export const freeClaims = pgTable('free_claims', {
-  userId: text('user_id').primaryKey(),
+  userId: text('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
   examId: text('exam_id').notNull().references(() => exams.id, { onDelete: 'restrict' }),
   claimedAt: timestamp('claimed_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => [
@@ -475,6 +524,8 @@ export const freeClaims = pgTable('free_claims', {
 
 /* ------------------------------------------------------------------ types */
 
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type Exam = typeof exams.$inferSelect;
 export type NewExam = typeof exams.$inferInsert;
 export type Question = typeof questions.$inferSelect;

@@ -2,6 +2,7 @@
 // by the sitemap, so it must stay importable from both.
 
 import { isExamType, type ExamType } from './exam-types';
+import type { Entity } from '../shared/seo';
 
 /**
  * The editorial record behind one exam type's hub page.
@@ -30,8 +31,15 @@ import { isExamType, type ExamType } from './exam-types';
  *
  * So those slots stay empty until a human fills them from the current official
  * source, and `HubSection` below simply renders nothing for an empty array.
- * The international formats (IELTS, SAT, TOEFL, CEFR) are stable, published in
- * English by the boards themselves, and are stated here.
+ * The international formats (IELTS, SAT, TOEFL, CEFR) are published in English
+ * by the boards themselves, and are stated here.
+ *
+ * Published is not the same as stable. TOEFL iBT moved from a 0–120 total to a
+ * 1–6 band scale in January 2026, and this file went on describing the old
+ * scale — on the page whose FAQ is marked up for answer engines to quote. When
+ * a board announces a format change, these records are part of shipping it:
+ * re-read the board's own page and update the facts, the scoring and the FAQ
+ * together.
  */
 export interface ExamTypeContent {
   /**
@@ -64,13 +72,16 @@ export interface ExamTypeContent {
   /** Rendered as <details> AND emitted as FAQPage JSON-LD. */
   faq: ReadonlyArray<{ q: string; a: string }>;
   /**
-   * schema.org class for this program.
+   * The exam itself, as an entity that exists outside this site.
    *
-   * `Course` is the right fit for preparation with an assessment attached;
-   * `EducationalOccupationalProgram` is for a qualification that licenses you
-   * to do something, which is what a driving licence actually is.
+   * Emitted as the hub page's `about`, as each paper's Course `about`, and in
+   * the organisation's `knowsAbout`, so every page on a programme resolves to
+   * the same thing. `sameAs` carries the Wikipedia article and Wikidata item,
+   * each confirmed through Wikipedia's own API (article → `wikibase_item`)
+   * rather than typed from memory. The Azerbaijani exams have no entry there
+   * to point at, so they carry a name only — see `entitySchema`.
    */
-  schemaType: 'Course' | 'EducationalOccupationalProgram';
+  entity: Entity;
 }
 
 /**
@@ -130,7 +141,13 @@ export const EXAM_CONTENT: Partial<Record<ExamType, ExamTypeContent>> = {
         a: 'Limitsiz. Hər cəhd ayrıca hesabatla saxlanılır, beləliklə tərəqqinizi cəhddən cəhdə müqayisə edə bilirsiniz.',
       },
     ],
-    schemaType: 'Course',
+    entity: {
+      name: 'IELTS',
+      sameAs: [
+        'https://en.wikipedia.org/wiki/International_English_Language_Testing_System',
+        'https://www.wikidata.org/wiki/Q490396',
+      ],
+    },
   },
 
   sat: {
@@ -168,39 +185,63 @@ export const EXAM_CONTENT: Partial<Record<ExamType, ExamTypeContent>> = {
         a: 'Math bölməsində sınaq daxilində kalkulyator mövcuddur — rəsmi imtahandakı kimi.',
       },
     ],
-    schemaType: 'Course',
+    entity: {
+      name: 'SAT',
+      sameAs: ['https://en.wikipedia.org/wiki/SAT', 'https://www.wikidata.org/wiki/Q334113'],
+    },
   },
 
+  /*
+   * The January 2026 format, from ETS's own description of the test: four
+   * section scores and an overall score on a 1–6 scale, the overall being the
+   * mean of the four rounded to the nearest half band, with a comparable 0–120
+   * overall reported alongside for a two-year transition.
+   *
+   * The description used to promise a "0–120 şkalası üzrə bal". That was wrong
+   * twice over: the scale had changed, and this platform never produced one —
+   * `SCORE_SCALE` in `exams/structure.ts` records that TOEFL attempts report a
+   * plain percentage. The third scoring paragraph now says so, the same way a
+   * paper page states a missing Speaking section before anyone pays.
+   */
   toefl: {
     slug: 'toefl',
     shortLabel: 'TOEFL',
     h1: 'TOEFL sınaq imtahanları',
     metaTitle: 'TOEFL sınaq imtahanı — onlayn, rəsmi formatda',
     metaDescription:
-      'TOEFL imtahanına hazırlıq üçün rəsmi formata uyğun onlayn sınaqlar. Dörd bölmə, vaxt limiti, 0–120 şkalası üzrə bal və hər sual üçün izahat.',
+      'TOEFL iBT imtahanına hazırlıq üçün rəsmi formata uyğun onlayn sınaqlar. Bölmə quruluşu, vaxt limiti, bölmə üzrə nəticə və hər sual üçün izahat.',
     intro: [
-      'TOEFL (Test of English as a Foreign Language) akademik mühitdə ingilis dili biliyini ölçən imtahandır və dünya üzrə universitetlərin böyük hissəsi tərəfindən qəbul edilir. Yekun bal 0–120 aralığındadır.',
+      'TOEFL iBT (Test of English as a Foreign Language) akademik mühitdə ingilis dili biliyini ölçən imtahandır və dünya üzrə universitetlərin böyük hissəsi tərəfindən qəbul edilir. 2026-cı ilin yanvarından nəticə 1–6 band şkalası ilə verilir.',
       'Testcentre-dəki TOEFL sınaqları rəsmi imtahanın bölmə quruluşunu və vaxt limitlərini təkrarlayır, nəticə isə hər bölmə üzrə ayrıca göstərilir.',
     ],
     facts: [
-      { label: 'Şkala', value: '0–120' },
-      { label: 'Bölmələr', value: 'Reading, Listening, Speaking, Writing' },
-      { label: 'Bölmə şkalası', value: 'Hər biri 0–30' },
+      { label: 'Şkala', value: '1–6 band, yarım bandlarla' },
+      { label: 'Bölmələr', value: 'Reading, Listening, Writing, Speaking' },
+      { label: 'Bölmə şkalası', value: 'Hər biri 1–6' },
+      { label: 'Keçid dövrü', value: '2028-ci ilin yanvarınadək 0–120 balı da verilir' },
     ],
     scoring: [
-      'Dörd bölmənin hər biri 0–30 aralığında qiymətləndirilir və bunların cəmi 0–120 aralığında yekun balı verir.',
+      'Dörd bölmənin hər biri 1–6 band şkalası ilə qiymətləndirilir. Ümumi bal dörd bölmə balının ortalamasıdır və ən yaxın yarım banda yuvarlaqlaşdırılır.',
+      '2026-cı ilin yanvarından sonrakı iki illik keçid dövründə nəticə ilə birlikdə müqayisəli 0–120 ümumi balı da verilir.',
+      'Testcentre-də TOEFL cəhdinin nəticəsi hələlik bu şkalalara çevrilmir: hər bölmə üzrə düzgün cavabların faizi göstərilir.',
     ],
     faq: [
       {
         q: 'TOEFL balı necə hesablanır?',
-        a: 'Hər bölmə 0–30 aralığında qiymətləndirilir və dörd bölmənin cəmi 0–120 aralığında yekun balı verir.',
+        a: '2026-cı ilin yanvarından dörd bölmənin hər biri 1–6 band şkalası ilə qiymətləndirilir, ümumi bal isə onların ortalamasıdır və ən yaxın yarım banda yuvarlaqlaşdırılır. Keçid dövründə müqayisəli 0–120 balı da verilir.',
       },
       {
         q: 'TOEFL, yoxsa IELTS?',
         a: 'Hər ikisi eyni məqsədlə tanınır. Seçim müraciət etdiyiniz qurumun tələbindən və hansı formatın sizə daha rahat gəldiyindən asılıdır — hər ikisinin sınağını keçərək müqayisə edə bilərsiniz.',
       },
     ],
-    schemaType: 'Course',
+    entity: {
+      name: 'TOEFL',
+      sameAs: [
+        'https://en.wikipedia.org/wiki/Test_of_English_as_a_Foreign_Language',
+        'https://www.wikidata.org/wiki/Q487425',
+      ],
+    },
   },
 
   general_english: {
@@ -232,7 +273,13 @@ export const EXAM_CONTENT: Partial<Record<ExamType, ExamTypeContent>> = {
         a: 'Təxmini uyğunluq var: B2 təqribən 5.5–6.5, C1 isə 7.0–8.0 band aralığına düşür. Bu dəqiq çevirmə deyil, istiqamətləndirici müqayisədir.',
       },
     ],
-    schemaType: 'Course',
+    entity: {
+      name: 'CEFR',
+      sameAs: [
+        'https://en.wikipedia.org/wiki/Common_European_Framework_of_Reference_for_Languages',
+        'https://www.wikidata.org/wiki/Q221385',
+      ],
+    },
   },
 
   /*
@@ -266,7 +313,7 @@ export const EXAM_CONTENT: Partial<Record<ExamType, ExamTypeContent>> = {
         a: 'Bəli, limitsiz. Hər cəhd ayrıca saxlanılır və nəticələri müqayisə edə bilirsiniz.',
       },
     ],
-    schemaType: 'Course',
+    entity: { name: 'Buraxılış və qəbul imtahanları' },
   },
 
   masters: {
@@ -292,7 +339,7 @@ export const EXAM_CONTENT: Partial<Record<ExamType, ExamTypeContent>> = {
         a: 'Sınağı göndərdikdən dərhal sonra — hər sual üçün izahat və mövzu üzrə zəif nöqtələrlə birlikdə.',
       },
     ],
-    schemaType: 'Course',
+    entity: { name: 'Magistratura qəbul imtahanı' },
   },
 
   driving: {
@@ -318,7 +365,7 @@ export const EXAM_CONTENT: Partial<Record<ExamType, ExamTypeContent>> = {
         a: 'Hər cəhddən sonra səhv cavablar mövzu üzrə qruplaşdırılır və hər biri üçün qaydanın izahatı verilir.',
       },
     ],
-    schemaType: 'EducationalOccupationalProgram',
+    entity: { name: 'Sürücülük vəsiqəsi imtahanı' },
   },
 };
 

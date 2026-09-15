@@ -40,7 +40,7 @@ vi.mock('next/navigation', () => ({
   redirect: (url: string) => { throw new Error(`NEXT_REDIRECT:${url}`); },
 }));
 
-const { db, resetDb } = await import('@/test/pg');
+const { db, resetDb, seedUser } = await import('@/test/pg');
 const { questions, exams, examResults, examAnswers } = await import('@/lib/db/schema');
 const { importExamFromJson } = await import('@/lib/actions/import');
 
@@ -138,6 +138,7 @@ describe('importExamFromJson — re-import', () => {
     const before = await bank();
 
     // A candidate sits the paper.
+    await seedUser('user_1');
     const [res] = await db.insert(examResults).values({
       userId: 'user_1', examId: EXAM, examTitle: 'IELTS Reimport', examTag: 'IELTS',
       attemptNumber: 1, startedAt: new Date(), completedAt: new Date(),

@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 import { withPostHogConfig } from "@posthog/nextjs-config";
+// A Next internal, as `next.config.test.ts` already relies on others: if an
+// upgrade moves it, this import fails the build loudly, which is the cue to find
+// where it went. Copying the pattern instead would drift silently.
+import { HTML_LIMITED_BOT_UA_RE } from "next/dist/shared/lib/router/utils/html-bots";
 // Relative, not `@/`: the tsconfig path alias is not applied when Next loads
 // this file. These modules are plain data with no runtime dependencies.
 import { CONTENT_TYPES, typePath } from "./lib/domain/exam-content";
 import { BASE_URL, CANONICAL_ORIGIN } from "./lib/shared/seo";
+import { AI_CRAWLERS } from "./lib/shared/crawlers";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -104,9 +109,31 @@ const csp = [
   "frame-ancestors 'none'",
 ].join('; ');
 
+/**
+ * User agents that get `<title>`, description and canonical in `<head>`,
+ * blocking, instead of streamed into `<body>` after the shell.
+ *
+ * Next's default list, EXTENDED with the AI crawlers robots.txt invites. Setting
+ * this option REPLACES the default rather than adding to it, so the default is
+ * spread back in first — dropping it would start streaming metadata to Bingbot,
+ * facebookexternalhit and WhatsApp, which is exactly the breakage the default
+ * exists to prevent. See `lib/shared/crawlers.ts` for why the AI agents need it.
+ *
+ * Only request-time renders consult this. Prerendered and ISR pages resolve
+ * their metadata before the first byte and are unaffected either way.
+ */
+const htmlLimitedBots = new RegExp(
+  [
+    HTML_LIMITED_BOT_UA_RE.source,
+    ...AI_CRAWLERS.map((agent) => agent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+  ].join('|'),
+  'i',
+);
+
 const nextConfig: NextConfig = {
   // Nothing gains from advertising the framework and version to a scanner.
   poweredByHeader: false,
+  htmlLimitedBots,
   images: {
     // Must stay in step with the `img-src` CSP directive below: a host allowed
     // here but not there (or vice versa) yields an image that 404s or is blocked.
@@ -186,10 +213,10 @@ const nextConfig: NextConfig = {
        * - `relay/` — the PostHog ingest paths that need their slash kept, the
        *   reason the flag is set at all.
        * - `api/` — callers are machines. Vercel's cron does not follow
-       *   redirects and Epoint's webhook cannot be assumed to, so a
-       *   slash-terminated URL configured in either would silently stop being
-       *   delivered. They are disallowed in robots.txt, so there is no search
-       *   benefit to trade against that.
+       *   redirects and neither webhook sender (Epoint, Clerk) can be assumed
+       *   to, so a slash-terminated URL configured in any of them would
+       *   silently stop being delivered. They are disallowed in robots.txt, so
+       *   there is no search benefit to trade against that.
        *
        * Listed AFTER the `?type=` rules, which also match `/exams/`, so a
        * legacy `/exams/?type=sat` reaches its hub in one hop rather than two.

@@ -6,11 +6,12 @@ import {
   examContent, examPath, typeForSlug, typePath, typeSlug, type ExamTypeContent,
 } from '@/lib/domain/exam-content';
 import {
-  BASE_URL, EXAM_TRAIL_ROOT, SITE_NAME, breadcrumbSchema, faqSchema, jsonLd, pageMetadata,
-  type Crumb,
+  EXAM_TRAIL_ROOT, breadcrumbSchema, entitySchema, faqSchema, itemListSchema, jsonLd,
+  pageMetadata, webPageSchema, type Crumb,
 } from '@/lib/shared/seo';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 import ExamsCatalog from '../ExamsCatalog';
+import { registerOrder } from '../structure';
 import TypeContent from './TypeContent';
 
 /**
@@ -177,25 +178,40 @@ export default async function ExamTypePage({ params }: Props) {
   const trail: Crumb[] = [...EXAM_TRAIL_ROOT, { name: content?.shortLabel ?? label, path }];
 
   /*
-   * `Course` — or `EducationalOccupationalProgram` for the driving licence,
-   * which qualifies you to do something rather than teaching you a subject.
-   * `Product` describes the thing being sold and is emitted per paper, not here.
+   * A `CollectionPage` ABOUT the exam, whose main entity is the list of its
+   * papers.
+   *
+   * This was a `Course` — an `EducationalOccupationalProgram` for driving — and
+   * the hub is neither. It is a register of practice papers with an explanation
+   * of the exam beneath it; the courses are the papers, and each carries its own
+   * Course and Product markup on its own page. Describing the hub as one more
+   * course gave a machine reader two "courses" per programme, neither linked to
+   * the other.
+   *
+   * `about` is where the page earns its topical claim. It points at the exam as
+   * an entity, with the Wikipedia and Wikidata `sameAs` from `EXAM_CONTENT`, so
+   * "IELTS" on this page resolves to the IELTS rather than to a string.
+   *
+   * The list follows the register's own order and is omitted, not emitted
+   * empty, for a programme with nothing on sale yet.
    */
-  const courseSchema = {
-    '@context': 'https://schema.org',
-    '@type': content?.schemaType ?? 'Course',
+  const papers = registerOrder(exams, type);
+  const collectionSchema = webPageSchema({
+    type: 'CollectionPage',
+    path,
     name: content?.h1 ?? `${label} sınaq imtahanları`,
     description:
       content?.metaDescription ?? `${label} imtahanına hazırlıq üçün sınaq imtahanları.`,
-    url: `${BASE_URL}${path}`,
-    inLanguage: 'az',
-    provider: { '@type': 'EducationalOrganization', name: SITE_NAME, url: BASE_URL },
-  };
+    about: entitySchema(content?.entity ?? { name: label }),
+    mainEntity: papers.length > 0
+      ? itemListSchema(papers.map((exam) => ({ name: exam.title, path: examPath(exam) })))
+      : undefined,
+  });
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbSchema(trail)) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(courseSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(collectionSchema) }} />
       {content && content.faq.length > 0 && (
         <script
           type="application/ld+json"

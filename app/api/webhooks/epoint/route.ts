@@ -4,6 +4,7 @@ import { and, eq, ne, sql } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
 import { purchases } from '@/lib/db/schema';
 import { getExamByIdAdmin } from '@/lib/db/exams';
+import { ensureUser } from '@/lib/db/users';
 import { verifySignature, decodeData, decodeOrderId } from '@/lib/payments/epoint';
 import { captureException, captureMessage } from '@/lib/infra/observability';
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/infra/analytics';
@@ -181,6 +182,13 @@ export async function POST(req: NextRequest) {
       }
 
       /*
+       * Not left to checkout. Its PENDING row is best-effort, so a paid order
+       * can arrive here for an account with no `users` row — and a foreign-key
+       * failure at this point would mean charged but not granted.
+       */
+      await ensureUser(userId);
+
+      /*
        * The upsert IS the idempotency gate.
        *
        * `setWhere` means a row already COMPLETED matches nothing, so RETURNING
@@ -277,6 +285,7 @@ export async function POST(req: NextRequest) {
        * when a protected row already existed — expected control flow expressed
        * as a caught exception. Here a protected row simply matches nothing.
        */
+      await ensureUser(userId);
       await db
         .insert(purchases)
         .values({

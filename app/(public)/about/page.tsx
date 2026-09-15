@@ -2,14 +2,30 @@ import type { Metadata } from 'next';
 import Link from "next/link";
 import FadeUp from "@/components/ui/FadeUp";
 import { StaggerContainer, StaggerItem } from "@/components/ui/StaggerChildren";
-import { pageMetadata } from "@/lib/shared/seo";
+import { ORGANIZATION_REF, jsonLd, pageMetadata, webPageSchema } from "@/lib/shared/seo";
 import { MONO_LABEL, MONO_SECTION } from '@/components/ui/type-styles';
+
+const DESCRIPTION =
+  'Testcentre tələbənin imtahan günündə heç bir sürprizlə qarşılaşmaması üçün qurulmuşdur — rəsmi format, ölçülə bilən tərəqqi və hər sualın arxasındakı izahat.';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Haqqımızda',
-  description:
-    'Testcentre tələbənin imtahan günündə heç bir sürprizlə qarşılaşmaması üçün qurulmuşdur — rəsmi format, ölçülə bilən tərəqqi və hər sualın arxasındakı izahat.',
+  description: DESCRIPTION,
   path: '/about',
+});
+
+/*
+ * `AboutPage` whose main entity is the organisation node. Google's guidance is
+ * to describe the organisation on the home page or on the page about it; the
+ * node itself is emitted site-wide by the root layout, and this is what marks
+ * THIS page as the one that describes it.
+ */
+const aboutSchema = webPageSchema({
+  type: 'AboutPage',
+  path: '/about',
+  name: 'Haqqımızda',
+  description: DESCRIPTION,
+  mainEntity: ORGANIZATION_REF,
 });
 
 const H2 = "m-0 text-heading-lg font-light leading-[1.04] tracking-[-0.035em] text-ink md:text-display-sm";
@@ -62,6 +78,7 @@ function SectionHead({ n, children, className = "" }: { n: string; children: Rea
 export default function AboutPage() {
   return (
     <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(aboutSchema) }} />
 
         {/* ── Statement ──
             Two columns and a floor. The statement used to sit alone in the left

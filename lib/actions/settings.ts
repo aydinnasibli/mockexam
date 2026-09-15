@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
 import { userSettings } from '@/lib/db/schema';
+import { ensureUser } from '@/lib/db/users';
 import { isExamType, type ExamType } from '@/lib/domain/exam-types';
 import { captureException } from '@/lib/infra/observability';
 import { limited } from '@/lib/infra/rate-limit';
@@ -79,6 +80,7 @@ export async function saveUserSettings(
   };
 
   try {
+    await ensureUser(userId);
     // The primary key decides insert-or-update, so there is no read-then-write
     // for two tabs to race.
     await db

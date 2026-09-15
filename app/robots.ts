@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { BASE_URL } from '@/lib/shared/seo';
+import { AI_CRAWLERS, AI_PERMISSION_TOKENS } from '@/lib/shared/crawlers';
 
 /**
  * Paths that are never worth a crawl, for any agent.
@@ -29,32 +30,23 @@ const DISALLOW = [
  * exam preparation in Azerbaijani, a language with very little authoritative
  * material online, and an answer engine that cites us reaches candidates who
  * would never have found the domain through a blue link. Training-corpus bots
- * (GPTBot, ClaudeBot, CCBot, Applebot-Extended, meta-externalagent) and
- * retrieval bots that fetch a page to answer a live question (OAI-SearchBot,
- * Claude-SearchBot, PerplexityBot, the -User agents) are both allowed for that
- * reason, and both are pointed at the same disallow list — an assistant has no
- * more business inside /dashboard than Googlebot does.
+ * (GPTBot, ClaudeBot, CCBot, meta-externalagent) and retrieval bots that fetch
+ * a page to answer a live question (OAI-SearchBot, Claude-SearchBot,
+ * PerplexityBot, the -User agents) are both allowed for that reason, and both
+ * are pointed at the same disallow list — an assistant has no more business
+ * inside /dashboard than Googlebot does.
  *
- * `Google-Extended` is NOT a crawler. It is a permission token controlling
- * whether content Googlebot already fetched may ground Gemini and AI Overviews.
- * Absent means allowed, so listing it changes nothing today; it is here so the
- * grant is recorded next to the others rather than being invisible.
+ * The list itself lives in `lib/shared/crawlers.ts`, because `next.config.ts`
+ * reads it too — see there for why.
  */
-const AI_AGENTS = [
-  'GPTBot',
-  'OAI-SearchBot',
-  'ChatGPT-User',
-  'ClaudeBot',
-  'Claude-SearchBot',
-  'Claude-User',
-  'PerplexityBot',
-  'Perplexity-User',
-  'Google-Extended',
-  'Applebot-Extended',
-  'CCBot',
-  'meta-externalagent',
-];
+const AI_AGENTS = [...AI_CRAWLERS, ...AI_PERMISSION_TOKENS];
 
+/*
+ * No `host`. It emitted a `Host:` line, which was a Yandex-only directive and
+ * which Yandex itself retired in 2018 in favour of reading redirects — Google
+ * never supported it. The apex→www 308 in front of this app is what actually
+ * names the preferred host, and the canonical tags repeat it on every page.
+ */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
@@ -62,6 +54,5 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: AI_AGENTS, allow: '/', disallow: DISALLOW },
     ],
     sitemap: `${BASE_URL}/sitemap.xml`,
-    host: BASE_URL,
   };
 }

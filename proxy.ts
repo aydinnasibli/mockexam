@@ -24,9 +24,9 @@ const isAdminRoute = createRouteMatcher([
 ]);
 
 /**
- * Webhook routes are intentionally public — Epoint calls them
+ * Webhook routes are intentionally public — Epoint and Clerk call them
  * server-to-server without user session cookies.
- * Security is handled by SHA1 signature verification inside the route.
+ * Each route authenticates its caller by verifying the request signature.
  */
 const isWebhookRoute = createRouteMatcher([
   '/api/webhooks(.*)',

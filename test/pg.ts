@@ -31,10 +31,35 @@ const TABLES = [
   'purchases',
   'questions',
   'user_settings',
+  'free_claims',
   'exams',
+  'users',
 ] as const;
 
+const MIGRATIONS_DIR = fileURLToPath(new URL('../drizzle/', import.meta.url));
+
 let migrated = false;
+
+/** Checked-in migration tags, in journal order. */
+export function migrationTags(): string[] {
+  const journal = JSON.parse(
+    readFileSync(`${MIGRATIONS_DIR}meta/_journal.json`, 'utf8'),
+  ) as { entries: { idx: number; tag: string }[] };
+  return [...journal.entries].sort((a, b) => a.idx - b.idx).map(entry => entry.tag);
+}
+
+/** The SQL of one migration file. */
+export function migrationSql(tag: string): string {
+  return readFileSync(`${MIGRATIONS_DIR}${tag}.sql`, 'utf8');
+}
+
+/** Apply one migration file to `target`, statement by statement. */
+export async function runMigration(target: PGlite, tag: string): Promise<void> {
+  for (const statement of migrationSql(tag).split('--> statement-breakpoint')) {
+    const trimmed = statement.trim();
+    if (trimmed) await target.exec(trimmed);
+  }
+}
 
 /**
  * Apply every checked-in migration, in journal order.
@@ -46,18 +71,7 @@ let migrated = false;
  */
 export async function applyMigration(): Promise<void> {
   if (migrated) return;
-  const dir = fileURLToPath(new URL('../drizzle/', import.meta.url));
-  const journal = JSON.parse(
-    readFileSync(`${dir}meta/_journal.json`, 'utf8'),
-  ) as { entries: { idx: number; tag: string }[] };
-
-  for (const entry of [...journal.entries].sort((a, b) => a.idx - b.idx)) {
-    const ddl = readFileSync(`${dir}${entry.tag}.sql`, 'utf8');
-    for (const statement of ddl.split('--> statement-breakpoint')) {
-      const trimmed = statement.trim();
-      if (trimmed) await client.exec(trimmed);
-    }
-  }
+  for (const tag of migrationTags()) await runMigration(client, tag);
   migrated = true;
 }
 
@@ -65,6 +79,33 @@ export async function applyMigration(): Promise<void> {
 export async function resetDb(): Promise<void> {
   await applyMigration();
   await db.execute(sql.raw(`TRUNCATE ${TABLES.join(', ')} RESTART IDENTITY CASCADE`));
+}
+
+/**
+ * `db.batch` for PGlite.
+ *
+ * Drizzle's PGlite driver has no `batch`; the Neon HTTP driver the app runs on
+ * sends one as a single transaction. This runs the same statements, in order,
+ * inside a PGlite transaction, so a test still sees all-or-nothing. Install it
+ * in a test's `@/lib/infra/db` mock with `Object.assign(db, { batch })`.
+ */
+export async function batch(
+  queries: readonly { toSQL(): { sql: string; params: unknown[] } }[],
+): Promise<void> {
+  await client.transaction(async tx => {
+    for (const query of queries) {
+      const { sql: text, params } = query.toSQL();
+      await tx.query(text, params);
+    }
+  });
+}
+
+/**
+ * A bare `users` row — exactly what `ensureUser` writes — for tests that insert
+ * user-owned rows directly rather than through the code that would create it.
+ */
+export async function seedUser(id: string): Promise<void> {
+  await db.insert(schema.users).values({ id });
 }
 
 /** A minimal exam row, since almost everything else foreign-keys to one. */

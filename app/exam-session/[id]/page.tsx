@@ -9,11 +9,14 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+/** A live exam session is private to one candidate. See `app/dashboard/layout.tsx`. */
+const PRIVATE = { robots: { index: false, follow: false } };
+
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const exam = await getExamByIdAdmin(id);
-  if (!exam) return {};
-  return { title: `${exam.title} — İmtahan` };
+  if (!exam) return PRIVATE;
+  return { ...PRIVATE, title: `${exam.title} — İmtahan` };
 }
 
 export default async function ExamSessionPage({ params }: Props) {

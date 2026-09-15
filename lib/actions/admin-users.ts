@@ -5,6 +5,7 @@ import { auth } from '@clerk/nextjs/server';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/infra/db';
 import { exams as examsTable, purchases } from '@/lib/db/schema';
+import { ensureUser } from '@/lib/db/users';
 import { checkRole } from '@/lib/infra/admin';
 import { ADMIN_GRANT_PREFIX } from '@/lib/domain/exam-types';
 import { captureException } from '@/lib/infra/observability';
@@ -34,6 +35,10 @@ export async function grantExamAccess(
 
     const note = `${ADMIN_GRANT_PREFIX} by ${adminId} at ${new Date().toISOString()}`;
     const grantTxn = `${ADMIN_GRANT_PREFIX}-${Date.now()}`;
+
+    // The target may never have written anything, in which case there is no
+    // `users` row yet for the purchase to reference.
+    await ensureUser(targetUserId);
 
     /*
      * Insert the grant, or convert an unpaid row into one — in a single

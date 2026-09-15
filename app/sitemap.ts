@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { getActiveExamsForPrerender } from '@/lib/db/exams';
-import { BASE_URL } from '@/lib/shared/seo';
+import { getActiveExamsForPrerender, type PublicExam } from '@/lib/db/exams';
+import { absoluteUrl } from '@/lib/shared/seo';
 import { CONTENT_TYPES, examPath, typePath } from '@/lib/domain/exam-content';
 
 /**
@@ -11,6 +11,51 @@ import { CONTENT_TYPES, examPath, typePath } from '@/lib/domain/exam-content';
  * published exam never reaches Google until someone happens to redeploy.
  */
 export const revalidate = 3600;
+
+/**
+ * The newest `updatedAt` among these papers, or undefined when there are none.
+ *
+ * The date a LISTING last changed is the date the newest thing on it changed:
+ * every mutation that alters what a register shows — a reprice, a retitle, a
+ * resynced question count — bumps the paper's `updatedAt` (see
+ * `syncExamTotals` and the admin actions). So this is a date the sitemap can
+ * stand behind, rather than one it made up.
+ */
+function newest(exams: readonly PublicExam[]): Date | undefined {
+  let latest: Date | undefined;
+  for (const exam of exams) {
+    if (!latest || exam.updatedAt > latest) latest = exam.updatedAt;
+  }
+  return latest;
+}
+
+/**
+ * One entry, with `lastModified` only when there is a true date to give.
+ *
+ * ── Why `lastmod` is so often ABSENT here ──
+ *
+ * Every entry used to carry `lastModified: new Date()`, regenerated hourly — so
+ * every hour the sitemap told Google that the privacy policy, the about page and
+ * the home page had all just changed. Google's documentation is explicit that it
+ * uses `lastmod` only when it is "consistently and verifiably accurate", and a
+ * crawler that finds the date moving on pages that did not is entitled to stop
+ * trusting it for the whole file — including the per-paper dates, which were
+ * true and are the ones worth trusting.
+ *
+ * So a date appears only where one is known: a paper's `updatedAt`, and for a
+ * listing the newest paper on it. The static pages change only when code does,
+ * and neither the build time nor "now" is the date their content changed; they
+ * go out with no date, which crawlers read as "no claim".
+ *
+ * ── Why there is no `changeFrequency` or `priority` ──
+ *
+ * Google ignores both, and says so. They were the values most likely to be
+ * wrong — `daily` on a register that changes when an admin publishes — for no
+ * benefit to anyone reading the file.
+ */
+function entry(path: string, lastModified?: Date): MetadataRoute.Sitemap[number] {
+  return lastModified ? { url: absoluteUrl(path), lastModified } : { url: absoluteUrl(path) };
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /*
@@ -24,13 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * regeneration instead leaves the previous sitemap served and retries.
    */
   const exams = await getActiveExamsForPrerender();
-
-  const examUrls: MetadataRoute.Sitemap = exams.map((exam) => ({
-    url: `${BASE_URL}${examPath(exam)}`,
-    lastModified: exam.updatedAt,
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }));
+  const catalogUpdated = newest(exams);
 
   /*
    * The type hubs — `/exams/ielts`, `/exams/driving` and friends.
@@ -43,65 +82,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    *
    * Listed whether or not a type currently has papers on sale. A hub carries
    * the format and scoring explanation for its exam, which is the part worth
-   * indexing and is true before the first paper is published.
+   * indexing and is true before the first paper is published. A hub with no
+   * papers has no date to give.
    */
-  const hubUrls: MetadataRoute.Sitemap = CONTENT_TYPES.map((type) => ({
-    url: `${BASE_URL}${typePath(type)}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.85,
-  }));
+  const hubUrls = CONTENT_TYPES.map((type) =>
+    entry(typePath(type), newest(exams.filter((exam) => exam.type === type))),
+  );
+
+  const examUrls = exams.map((exam) => entry(examPath(exam), exam.updatedAt));
 
   return [
-    {
-      url: BASE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${BASE_URL}/exams`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
+    // The home page renders the per-programme counts and prices, so it moves
+    // with the catalog.
+    entry('/', catalogUpdated),
+    entry('/exams', catalogUpdated),
     ...hubUrls,
-    {
-      url: `${BASE_URL}/about`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    },
-    {
-      url: `${BASE_URL}/contact`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
     ...examUrls,
-    {
-      url: `${BASE_URL}/legal/terms`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/legal/privacy`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/legal/cookies`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/legal/refund`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
+    entry('/about'),
+    entry('/contact'),
+    entry('/legal/terms'),
+    entry('/legal/privacy'),
+    entry('/legal/cookies'),
+    entry('/legal/refund'),
   ];
 }

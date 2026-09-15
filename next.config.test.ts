@@ -14,6 +14,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildCustomRoute } from 'next/dist/lib/build-custom-route';
 import type { Redirect } from 'next/dist/lib/load-custom-routes';
+import { shouldServeStreamingMetadata } from 'next/dist/server/lib/streaming-metadata';
 
 /** Any well-formed key: the config only derives the CSP's Clerk host from it. */
 const CLERK_KEY = `pk_test_${Buffer.from('clerk.example.com$').toString('base64')}`;
@@ -96,6 +97,7 @@ describe('redirects', () => {
     ['PostHog flags', '/relay/flags/'],
     ['the proxy root', '/relay/'],
     ['the payment webhook', '/api/webhooks/epoint/'],
+    ['the user-sync webhook', '/api/webhooks/clerk/'],
     ['the cron job', '/api/cron/sweep/'],
     ['a build asset', '/_next/static/chunks/'],
   ])('leaves %s alone', async (_label, path) => {
@@ -114,5 +116,51 @@ describe('redirects', () => {
   it('sends a legacy filter URL straight to its hub, not via the slash rule', async () => {
     expect((await redirectFor('/exams/?type=sat'))?.destination).toBe('/exams/sat');
     expect((await redirectFor('/exams?type=general_english'))?.destination).toBe('/exams/english-level');
+  });
+});
+
+/**
+ * Which user agents get metadata in `<head>` rather than streamed into `<body>`.
+ *
+ * Decided by Next's own `shouldServeStreamingMetadata`, fed the option the way
+ * the server feeds it — `loadConfig` stores a RegExp option as its `.source`
+ * string. `false` means blocking metadata in `<head>`.
+ */
+describe('htmlLimitedBots', () => {
+  async function streamsTo(userAgent: string): Promise<boolean> {
+    const bots = (await loadConfig()).htmlLimitedBots;
+    return shouldServeStreamingMetadata(userAgent, bots?.source);
+  }
+
+  it.each([
+    ['GPTBot', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)'],
+    ['OAI-SearchBot', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot'],
+    ['ChatGPT-User', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot'],
+    ['ClaudeBot', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)'],
+    ['PerplexityBot', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)'],
+  ])('gives %s metadata in <head>', async (_label, ua) => {
+    expect(await streamsTo(ua)).toBe(false);
+  });
+
+  /**
+   * The option REPLACES Next's default list. These are from that default; if
+   * they start streaming, the default was dropped rather than extended, and
+   * every link preview on WhatsApp and Facebook loses its title and image.
+   */
+  it.each([
+    ['Bingbot', 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)'],
+    ['facebookexternalhit', 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'],
+    ['WhatsApp', 'WhatsApp/2.23.20.0'],
+    ['Twitterbot', 'Twitterbot/1.0'],
+  ])('still gives %s metadata in <head>', async (_label, ua) => {
+    expect(await streamsTo(ua)).toBe(false);
+  });
+
+  it.each([
+    ['a desktop browser', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'],
+    // Googlebot renders JavaScript, which is why Next streams to it by design.
+    ['Googlebot', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
+  ])('leaves %s on streaming metadata', async (_label, ua) => {
+    expect(await streamsTo(ua)).toBe(true);
   });
 });

@@ -4,8 +4,8 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getActiveExamsForPrerender, getExamById, type PublicExam } from '@/lib/db/exams';
 import { getSampleQuestion } from '@/lib/db/questions';
 import {
-  BASE_URL, EXAM_TRAIL_ROOT, SITE_NAME, breadcrumbSchema, clampDescription, jsonLd, pageMetadata,
-  type Crumb,
+  BASE_URL, EXAM_TRAIL_ROOT, ORGANIZATION_REF, SITE_NAME, absoluteUrl, breadcrumbSchema,
+  clampDescription, entitySchema, jsonLd, pageMetadata, type Crumb,
 } from '@/lib/shared/seo';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 import { examTypeLabel } from '@/lib/domain/exam-types';
@@ -219,21 +219,27 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
     { name: exam.title, short: code, path: url },
   ];
 
+  const pageUrl = absoluteUrl(url);
+
   /*
    * These pages sell a named product at a fixed price with instant delivery,
    * which is exactly what Product/Offer describes — previously the only
    * structured data here was a breadcrumb, so none of that was machine-readable.
    * `priceValidUntil` is deliberately omitted: we have no scheduled price
    * change, and a stale date reads as an expired offer.
+   *
+   * The seller is the organisation NODE, by `@id`, not a second anonymous
+   * organisation that happens to share its name. See `ORGANIZATION_REF`.
    */
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
+    '@id': `${pageUrl}#product`,
     name: exam.title,
     description,
     category: `${examTypeLabel(exam.type)} sınaq imtahanı`,
     brand: { '@type': 'Brand', name: SITE_NAME },
-    url: `${BASE_URL}${url}`,
+    url: pageUrl,
     /*
      * The SITE card, not this paper's own.
      *
@@ -255,16 +261,25 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
       priceCurrency: 'AZN',
       availability: 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
-      url: `${BASE_URL}${url}`,
-      seller: { '@type': 'Organization', name: SITE_NAME },
+      url: pageUrl,
+      seller: ORGANIZATION_REF,
     },
   };
 
   /*
    * `Product` says this is a thing for sale; `Course` says what it actually is.
-   * Both belong on the page — Google reads education rich results off Course,
-   * and an answer engine asked "IELTS sınaq imtahanı hardan tapa bilərəm"
-   * matches an educational program, not a SKU.
+   * Both belong on the page — an answer engine asked "IELTS sınaq imtahanı
+   * hardan tapa bilərəm" matches an educational program, not a SKU.
+   *
+   * Not for a rich result: Google retired Course Info in 2025. The markup stays
+   * because it is still the most exact machine-readable statement of what the
+   * page offers, and because its required fields — `offers.category` among
+   * them — are kept anyway, so a consumer that validates strictly finds nothing
+   * missing.
+   *
+   * `about` is the exam as an entity, the same node the hub page is about, so a
+   * paper and its programme resolve to one IELTS. A type with no editorial
+   * record falls back to its name.
    *
    * Every value is derived from the paper's own record. `courseWorkload` is the
    * exam's real duration in ISO 8601, and `courseMode: 'online'` is simply true.
@@ -273,12 +288,14 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
   const courseSchema = {
     '@context': 'https://schema.org',
     '@type': 'Course',
+    '@id': `${pageUrl}#course`,
     name: exam.title,
     description,
-    url: `${BASE_URL}${url}`,
+    url: pageUrl,
     inLanguage: 'az',
-    provider: { '@type': 'EducationalOrganization', name: SITE_NAME, url: BASE_URL },
-    about: `${examTypeLabel(exam.type)} imtahanına hazırlıq`,
+    provider: ORGANIZATION_REF,
+    about: entitySchema(examContent(exam.type)?.entity ?? { name: examTypeLabel(exam.type) }),
+    isAccessibleForFree: exam.price === 0,
     hasCourseInstance: {
       '@type': 'CourseInstance',
       courseMode: 'online',
@@ -287,10 +304,11 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
     },
     offers: {
       '@type': 'Offer',
+      category: exam.price > 0 ? 'Paid' : 'Free',
       price: exam.price,
       priceCurrency: 'AZN',
       availability: 'https://schema.org/InStock',
-      url: `${BASE_URL}${url}`,
+      url: pageUrl,
     },
   };
 

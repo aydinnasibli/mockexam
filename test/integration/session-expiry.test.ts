@@ -45,7 +45,7 @@ vi.mock('@/lib/infra/observability', () => ({
   captureMessage: async () => {},
 }));
 
-const { db, resetDb, seedExam } = await import('@/test/pg');
+const { db, resetDb, seedExam, seedUser } = await import('@/test/pg');
 const { examSessions, questions, purchases } = await import('@/lib/db/schema');
 const { beginExamSession, peekExamSession } = await import('@/lib/actions/session');
 
@@ -69,6 +69,7 @@ async function seedLapsedSession() {
 beforeEach(async () => {
   await resetDb();
   await seedExam(EXAM);
+  await seedUser(USER);
   await db.insert(purchases).values({
     userId: USER, examId: EXAM, transactionId: 'txn-1',
     amountCents: 1500, status: 'COMPLETED',

@@ -42,7 +42,153 @@ export const BASE_URL = siteOrigin(process.env.NEXT_PUBLIC_APP_URL);
 
 export const SITE_NAME = 'Testcentre';
 
+/**
+ * The other name the site goes by, for `alternateName` on WebSite and
+ * Organization.
+ *
+ * Google's site-name system reads these two properties off the home page, and
+ * its Organization guidance asks for the SAME pair on both — which is why this
+ * is a constant rather than two literals. The domain is what the social cards
+ * print and what people type, so it is the name a search engine will otherwise
+ * guess at.
+ */
+export const SITE_ALTERNATE_NAME = 'testcentre.az';
+
 const DEFAULT_OG_ALT = 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması';
+
+/** `/exams` → `https://www.testcentre.az/exams`; `/` → the bare origin. */
+export function absoluteUrl(path: string): string {
+  return `${BASE_URL}${path === '/' ? '' : path}`;
+}
+
+/*
+ * ── The entity graph ──
+ *
+ * `@id` is how JSON-LD says "the same thing" across script tags and across
+ * pages. Before these existed, every Course `provider` and every Offer `seller`
+ * was its own anonymous node that merely shared the organisation's name, and a
+ * search engine or answer engine had to guess that they and the layout's
+ * EducationalOrganization were one entity. With a shared `@id` nothing is
+ * guessed: every page's markup resolves back to one organisation and one site.
+ *
+ * Fragments on the home URL are the convention. They are names, not pages, and
+ * never need to resolve to anything.
+ */
+export const ORGANIZATION_ID = `${BASE_URL}/#organization`;
+export const WEBSITE_ID = `${BASE_URL}/#website`;
+
+/**
+ * The organisation, as referenced from another node — `provider`, `seller`,
+ * `publisher`, `mainEntity`.
+ *
+ * Carries `name` and `url` beside the `@id` rather than the bare `{ '@id' }` the
+ * graph strictly needs. Nodes sharing an `@id` merge, so the extra fields cost
+ * nothing, and a consumer that reads one script tag in isolation — which most
+ * validators and many answer-engine extractors do — still sees WHO the provider
+ * is instead of an opaque IRI.
+ */
+export const ORGANIZATION_REF = {
+  '@type': 'EducationalOrganization',
+  '@id': ORGANIZATION_ID,
+  name: SITE_NAME,
+  url: BASE_URL,
+} as const;
+
+/** The site, as referenced from a page's `isPartOf`. See `ORGANIZATION_REF`. */
+export const WEBSITE_REF = {
+  '@type': 'WebSite',
+  '@id': WEBSITE_ID,
+  name: SITE_NAME,
+  url: BASE_URL,
+} as const;
+
+/**
+ * Something a page is ABOUT that exists outside this site — an exam, a
+ * framework.
+ *
+ * `sameAs` is the point of the type. "SAT" is a word with a dozen meanings and
+ * "IELTS" is one somebody else owns; pointing at the Wikipedia article and
+ * Wikidata item is what lets a search engine or an answer engine attach the
+ * page to the right entity instead of inferring one from the text. Every URL
+ * in it must be verified against the source, never typed from memory: a
+ * `sameAs` pointing at the wrong article asserts the wrong identity.
+ */
+export interface Entity {
+  name: string;
+  sameAs?: readonly string[];
+}
+
+export function entitySchema({ name, sameAs }: Entity) {
+  return {
+    '@type': 'Thing',
+    name,
+    // Omitted rather than emitted empty: an empty list says nothing, and some
+    // validators flag it.
+    ...(sameAs && sameAs.length > 0 ? { sameAs: [...sameAs] } : {}),
+  };
+}
+
+/**
+ * The page itself as a node: what kind of page, what it is about, what it
+ * contains, and which site it belongs to.
+ *
+ * The subtype does real work for a machine reader. `CollectionPage` says "this
+ * lists things", `AboutPage` says "this describes the organisation", and
+ * `isPartOf` ties every page back to the one WebSite, which is what turns a pile
+ * of pages into a site in the graph.
+ */
+export function webPageSchema({
+  type = 'WebPage',
+  path,
+  name,
+  description,
+  about,
+  mainEntity,
+}: {
+  type?: 'WebPage' | 'CollectionPage' | 'AboutPage' | 'ContactPage';
+  /** Root-relative, and the page's canonical path. */
+  path: string;
+  name: string;
+  description: string;
+  about?: object;
+  mainEntity?: object;
+}) {
+  const url = absoluteUrl(path);
+  return {
+    '@context': 'https://schema.org',
+    '@type': type,
+    '@id': `${url}#webpage`,
+    url,
+    name,
+    description,
+    inLanguage: 'az',
+    isPartOf: WEBSITE_REF,
+    ...(about ? { about } : {}),
+    ...(mainEntity ? { mainEntity } : {}),
+  };
+}
+
+/**
+ * An `ItemList` of pages, in the order the visitor sees them.
+ *
+ * `position` is a claim about the VISIBLE list, so callers must pass items in
+ * render order — `registerOrder` exists so the register and its markup sort the
+ * same way from one function. The summary-page shape (a URL per item, no nested
+ * entity) is the one Google documents for lists whose items have pages of
+ * their own; each paper's details live on its page, not here.
+ */
+export function itemListSchema(items: ReadonlyArray<{ name: string; path: string }>) {
+  return {
+    '@type': 'ItemList',
+    numberOfItems: items.length,
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      url: absoluteUrl(item.path),
+    })),
+  };
+}
 
 interface PageMetadataInput {
   /** Bare page title. The root layout's template appends " — Testcentre". */
@@ -202,7 +348,7 @@ export function breadcrumbSchema(trail: readonly Crumb[]) {
       '@type': 'ListItem',
       position: i + 1,
       name: crumb.name,
-      item: `${BASE_URL}${crumb.path === '/' ? '' : crumb.path}`,
+      item: absoluteUrl(crumb.path),
     })),
   };
 }
