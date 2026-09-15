@@ -13,7 +13,7 @@ export default function AdminError({ error, reset }: Props) {
   const posthog = usePostHog();
   useEffect(() => {
     posthog.captureException(error);
-  }, [error, posthog]);
+  }, [error, posthog])
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
