@@ -6,6 +6,7 @@ import {
 } from '@/lib/shared/seo';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 import ExamsCatalog from './ExamsCatalog';
+import ProgramIndex from './ProgramIndex';
 import { registerOrder } from './structure';
 
 /**
@@ -85,6 +86,8 @@ export default async function ExamsPage() {
         payload lands) or nothing yet — never a half-built one.
       */}
       <ExamsCatalog exams={exams} />
+      {/* The catalog only — a type page is itself one of the entries. */}
+      <ProgramIndex exams={exams} />
     </>
   );
 }

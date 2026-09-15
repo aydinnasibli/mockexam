@@ -9,7 +9,7 @@ import NavProgress from "@/components/ui/NavProgress";
 import PostHogIdentify from "@/components/PostHogIdentify";
 import CookieNotice from "@/components/ui/CookieNotice";
 import {
-  BASE_URL, ORGANIZATION_ID, SITE_ALTERNATE_NAME, SITE_NAME, entitySchema, jsonLd,
+  BASE_URL, HOME_URL, ORGANIZATION_ID, SITE_ALTERNATE_NAME, SITE_NAME, entitySchema, jsonLd,
 } from "@/lib/shared/seo";
 import { CONTENT_TYPES, EXAM_CONTENT } from "@/lib/domain/exam-content";
 import "./globals.css";
@@ -153,7 +153,7 @@ const organizationSchema = {
   '@id': ORGANIZATION_ID,
   name: SITE_NAME,
   alternateName: SITE_ALTERNATE_NAME,
-  url: BASE_URL,
+  url: HOME_URL,
   logo: {
     '@type': 'ImageObject',
     url: `${BASE_URL}/icon1`,

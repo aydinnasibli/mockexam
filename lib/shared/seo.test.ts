@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BASE_URL, CANONICAL_ORIGIN, ORGANIZATION_ID, ORGANIZATION_REF, WEBSITE_ID, absoluteUrl,
+  BASE_URL, CANONICAL_ORIGIN, HOME_URL, ORGANIZATION_ID, ORGANIZATION_REF, WEBSITE_ID, absoluteUrl,
   breadcrumbSchema, clampDescription, entitySchema, itemListSchema, jsonLd, pageMetadata,
   siteOrigin, webPageSchema,
 } from './seo';
@@ -36,14 +36,25 @@ describe('absoluteUrl', () => {
     expect(absoluteUrl('/exams/ielts')).toBe(`${BASE_URL}/exams/ielts`);
   });
 
-  /** The home page is the bare origin — the same form its canonical tag takes. */
-  it('maps the root path to the bare origin, not a trailing slash', () => {
-    expect(absoluteUrl('/')).toBe(BASE_URL);
+  /**
+   * The home page is the origin WITH its slash — the form `new URL()` writes,
+   * and so the form every `href="/"` resolves to. As the bare origin, the
+   * sitemap's home entry looked, to a crawler comparing strings, like a page
+   * nothing on the site links to. See `HOME_URL`.
+   */
+  it('maps the root path to the normalised home URL', () => {
+    expect(absoluteUrl('/')).toBe(HOME_URL);
+    expect(HOME_URL).toBe(new URL(BASE_URL).href);
+  });
+
+  it('never doubles the slash', () => {
+    expect(absoluteUrl('/')).not.toMatch(/\/\/$/);
+    expect(absoluteUrl('/exams')).not.toContain('//exams');
   });
 
   it('is what breadcrumbs are built on', () => {
     const trail = breadcrumbSchema([{ name: 'Ana səhifə', path: '/' }, { name: 'X', path: '/exams' }]);
-    expect(trail.itemListElement.map((c) => c.item)).toEqual([BASE_URL, `${BASE_URL}/exams`]);
+    expect(trail.itemListElement.map((c) => c.item)).toEqual([HOME_URL, `${BASE_URL}/exams`]);
   });
 });
 
@@ -55,12 +66,12 @@ describe('absoluteUrl', () => {
  */
 describe('entity graph', () => {
   it('names the organisation and the site by fragment on the home URL', () => {
-    expect(ORGANIZATION_ID).toBe(`${BASE_URL}/#organization`);
-    expect(WEBSITE_ID).toBe(`${BASE_URL}/#website`);
+    expect(ORGANIZATION_ID).toBe(`${HOME_URL}#organization`);
+    expect(WEBSITE_ID).toBe(`${HOME_URL}#website`);
   });
 
   it('references the organisation by id, and still says who it is', () => {
-    expect(ORGANIZATION_REF).toMatchObject({ '@id': ORGANIZATION_ID, name: 'Testcentre', url: BASE_URL });
+    expect(ORGANIZATION_REF).toMatchObject({ '@id': ORGANIZATION_ID, name: 'Testcentre', url: HOME_URL });
   });
 
   describe('webPageSchema', () => {

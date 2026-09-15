@@ -13,7 +13,7 @@ vi.mock('@/lib/db/exams', () => ({ getActiveExamsForPrerender: vi.fn() }));
 
 const { default: sitemap } = await import('./sitemap');
 const { getActiveExamsForPrerender } = await import('@/lib/db/exams');
-const { BASE_URL } = await import('@/lib/shared/seo');
+const { BASE_URL, HOME_URL } = await import('@/lib/shared/seo');
 const { CONTENT_TYPES, typePath } = await import('@/lib/domain/exam-content');
 
 const OLD = new Date('2026-03-01T00:00:00Z');
@@ -25,7 +25,7 @@ function paper(id: string, type: string, updatedAt: Date): PublicExam {
 
 /** The entry for a root-relative path. */
 async function entryFor(path: string) {
-  const url = path === '/' ? BASE_URL : `${BASE_URL}${path}`;
+  const url = path === '/' ? HOME_URL : `${BASE_URL}${path}`;
   return (await sitemap()).find((e) => e.url === url);
 }
 
@@ -88,5 +88,24 @@ describe('sitemap lastmod', () => {
     vi.mocked(getActiveExamsForPrerender).mockResolvedValue([]);
     const home = await entryFor('/');
     expect(home && Object.hasOwn(home, 'lastModified')).toBe(false);
+  });
+});
+
+describe('sitemap URLs', () => {
+  /**
+   * The home entry is the URL every `href="/"` resolves to. As the bare origin
+   * it read, to a crawler comparing strings, as a page the sitemap lists but
+   * nothing on the site links to. See `HOME_URL`.
+   */
+  it('lists the home page in its normalised, slashed form', async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).toContain(new URL(BASE_URL).href);
+    expect(urls).not.toContain(BASE_URL);
+  });
+
+  it('writes every other URL without a trailing slash', async () => {
+    for (const { url } of await sitemap()) {
+      if (url !== HOME_URL) expect(url.endsWith('/')).toBe(false);
+    }
   });
 });

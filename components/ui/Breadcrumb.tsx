@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import Link from 'next/link';
 import { MONO_LABEL } from '@/components/ui/type-styles';
 import type { Crumb } from '@/lib/shared/seo';
@@ -16,6 +15,11 @@ import type { Crumb } from '@/lib/shared/seo';
  * Rendered by the exam pages directly rather than by a layout: `/exams` and
  * `/exams/[type]` are two routes drawn by one component, and only the page
  * knows which type it is standing on.
+ *
+ * An ordered list, which is the markup the WAI-ARIA breadcrumb pattern uses: a
+ * trail IS a sequence, and the list lets a screen reader announce its length
+ * before reading it. Each separator sits inside its item and is hidden, so it is
+ * drawn but never read out between crumbs.
  */
 export default function Breadcrumb({ trail }: { trail: readonly Crumb[] }) {
   return (
@@ -29,12 +33,15 @@ export default function Breadcrumb({ trail }: { trail: readonly Crumb[] }) {
           rather than only to "Ana" as it once was: "Ana" is 22px and failed the
           minimum, but so would any short crumb, and the type labels here are
           data — "SAT" and "DİM" are already shorter than the label that
-          prompted the rule. */}
-      <div className={`${MONO_LABEL} shell flex items-center gap-2.5 py-3.25 text-ink-mute`}>
+          prompted the rule.
+
+          `role="list"`: Tailwind's preflight strips the list style, and Safari
+          stops exposing an unstyled list as a list unless the role is stated. */}
+      <ol role="list" className={`${MONO_LABEL} shell flex items-center gap-2.5 py-3.25 text-ink-mute`}>
         {trail.map((crumb, i) => {
           const isCurrent = i === trail.length - 1;
           return (
-            <Fragment key={crumb.path}>
+            <li key={crumb.path} className="flex items-center gap-2.5">
               {i > 0 && <span aria-hidden>/</span>}
               {isCurrent ? (
                 // The page you are on is text, not a self-link — and says so,
@@ -51,10 +58,10 @@ export default function Breadcrumb({ trail }: { trail: readonly Crumb[] }) {
                   {crumb.short ?? crumb.name}
                 </Link>
               )}
-            </Fragment>
+            </li>
           );
         })}
-      </div>
+      </ol>
     </nav>
   );
 }

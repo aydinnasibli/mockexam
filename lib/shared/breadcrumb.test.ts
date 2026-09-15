@@ -12,7 +12,7 @@
  * change cannot quietly reintroduce a trail that only half exists.
  */
 import { describe, it, expect } from 'vitest';
-import { BASE_URL, EXAM_TRAIL_ROOT, breadcrumbSchema, type Crumb } from './seo';
+import { BASE_URL, EXAM_TRAIL_ROOT, HOME_URL, breadcrumbSchema, type Crumb } from './seo';
 
 /** The trail `/exams/ielts/ielts-academic-1` builds. */
 const PAPER_TRAIL: Crumb[] = [
@@ -29,7 +29,7 @@ describe('breadcrumbSchema', () => {
 
   it('absolutises every path against BASE_URL', () => {
     expect(breadcrumbSchema(PAPER_TRAIL).itemListElement.map((i) => i.item)).toEqual([
-      BASE_URL,
+      HOME_URL,
       `${BASE_URL}/exams`,
       `${BASE_URL}/exams/ielts`,
       `${BASE_URL}/exams/ielts/ielts-academic-1`,
@@ -37,14 +37,16 @@ describe('breadcrumbSchema', () => {
   });
 
   /**
-   * `BASE_URL` carries no trailing slash, so a naive concat would emit
-   * `https://www.testcentre.az/` for the root crumb and a bare origin for every
-   * other. Google treats those as different URLs from the ones the pages
-   * actually canonicalise to.
+   * The root crumb is `HOME_URL` — the origin with its one slash, as `new URL()`
+   * writes it — and never a doubled `…az//`. The bare origin and the slashed
+   * form are one URL to Google but not to a crawler comparing strings, which is
+   * why every URL this site writes for the home page uses the form `href="/"`
+   * resolves to.
    */
-  it('does not double the slash on the root crumb', () => {
+  it('gives the root crumb the normalised home URL', () => {
     expect(breadcrumbSchema([{ name: 'Ana səhifə', path: '/' }]).itemListElement[0]!.item)
-      .toBe(BASE_URL);
+      .toBe(HOME_URL);
+    expect(HOME_URL).toBe(`${BASE_URL}/`);
   });
 
   /**

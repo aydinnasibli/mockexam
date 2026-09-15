@@ -141,7 +141,9 @@ export default function PurchaseCard({ examId, price, features, promoActive }: P
             </span>
           </div>
 
-          <div className="mb-5.5">
+          {/* Label/value pairs, so a description list: each value is read
+              with the term it answers — "Giriş: müddətsiz". */}
+          <dl className="m-0 mb-5.5">
             {TERMS.map((term, i) => (
               <div
                 key={term.label}
@@ -149,13 +151,13 @@ export default function PurchaseCard({ examId, price, features, promoActive }: P
                   i < TERMS.length - 1 ? 'border-b border-bg/10' : ''
                 }`}
               >
-                <span className="text-sm text-bg/55">{term.label}</span>
-                <span className="font-mono text-note text-bg">
+                <dt className="text-sm text-bg/55">{term.label}</dt>
+                <dd className="m-0 font-mono text-note text-bg">
                   {hasPurchased ? term.owned : term.value}
-                </span>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
 
           {/*
             prefetch={false} on checkout: it is auth-gated, so prefetching it for
@@ -204,13 +206,19 @@ export default function PurchaseCard({ examId, price, features, promoActive }: P
 
       {features.length > 0 && (
         <div className="mt-6">
-          <div className={`${MONO_LABEL} border-b border-ink pb-2.5 text-ink-mute`}>Daxildir</div>
-          {features.map((feature) => (
-            <div key={feature} className="flex items-center gap-2.5 border-b border-rule py-2.75">
-              <span className="font-mono text-xs text-correct" aria-hidden>✓</span>
-              <span className="text-sm text-ink">{feature}</span>
-            </div>
-          ))}
+          {/* A heading set as the same mono caption: it titles the list for a
+              screen reader's heading navigation as well as for the eye. */}
+          <h2 className={`${MONO_LABEL} border-b border-ink pb-2.5 text-ink-mute`}>Daxildir</h2>
+          {/* `role="list"`: preflight strips the list style, and Safari stops
+              exposing an unstyled list as a list unless the role is explicit. */}
+          <ul role="list">
+            {features.map((feature) => (
+              <li key={feature} className="flex items-center gap-2.5 border-b border-rule py-2.75">
+                <span className="font-mono text-xs text-correct" aria-hidden>✓</span>
+                <span className="text-sm text-ink">{feature}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

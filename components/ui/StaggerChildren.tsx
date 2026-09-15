@@ -12,10 +12,16 @@ import type { ReactNode } from 'react';
  * point where the eye follows the order without the last item feeling late —
  * eight rows finish in half a second.
  *
- * Wrap items in `StaggerItem`. Note that each `StaggerItem` renders a `div`, so
- * do not use it on the direct children of a grid that relies on `:last-child`
- * selectors or `display: contents` — reveal that whole block with `FadeUp`
- * instead.
+ * Wrap items in `StaggerItem`. Note that each `StaggerItem` renders a `div` by
+ * default, so do not use it on the direct children of a grid that relies on
+ * `:last-child` selectors or `display: contents` — reveal that whole block with
+ * `FadeUp` instead.
+ *
+ * `as` renders the pair as a real list — `ul` or `ol` around `li` — wherever the
+ * children genuinely are one, rather than a list-shaped stack of divs. A list
+ * container states `role="list"` itself: Tailwind's preflight strips the list
+ * style, and Safari stops exposing an unstyled list as a list unless the role is
+ * explicit.
  */
 const EASE_OUT_SOFT = [0.2, 0.7, 0.2, 1] as const;
 
@@ -31,33 +37,47 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT_SOFT } },
 };
 
+const CONTAINERS = { div: motion.div, ul: motion.ul, ol: motion.ol } as const;
+const ITEMS = { div: motion.div, li: motion.li } as const;
+
 interface ContainerProps {
   children: ReactNode;
   className?: string;
   delay?: number;
+  /** A list container pairs with `<StaggerItem as="li">`. */
+  as?: keyof typeof CONTAINERS;
 }
 
-export function StaggerContainer({ children, className, delay = 0 }: ContainerProps) {
+export function StaggerContainer({ children, className, delay = 0, as = 'div' }: ContainerProps) {
+  const Container = CONTAINERS[as];
   return (
-    <motion.div
+    <Container
       custom={delay}
       variants={containerVariants}
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: '-80px' }}
+      role={as === 'div' ? undefined : 'list'}
       className={className}
     >
       {children}
-    </motion.div>
+    </Container>
   );
 }
 
-export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
+interface ItemProps {
+  children: ReactNode;
+  className?: string;
+  as?: keyof typeof ITEMS;
+}
+
+export function StaggerItem({ children, className, as = 'div' }: ItemProps) {
+  const Item = ITEMS[as];
   return (
     // `js-reveal`: the hidden variant is serialised into the SSR HTML, so
     // without JS this item never becomes visible. See app/layout.tsx.
-    <motion.div variants={itemVariants} className={className ? `js-reveal ${className}` : 'js-reveal'}>
+    <Item variants={itemVariants} className={className ? `js-reveal ${className}` : 'js-reveal'}>
       {children}
-    </motion.div>
+    </Item>
   );
 }

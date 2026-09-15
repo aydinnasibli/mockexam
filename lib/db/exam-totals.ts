@@ -7,7 +7,7 @@ import { exams, questions } from '@/lib/db/schema';
 import { buildModuleSchedule, totalScheduledSeconds } from '@/lib/domain/exam-timing';
 import { captureException } from '@/lib/infra/observability';
 import { indexNowKey, submitToIndexNow } from '@/lib/infra/indexnow';
-import { BASE_URL } from '@/lib/shared/seo';
+import { absoluteUrl } from '@/lib/shared/seo';
 import { EXAM_PAPER_ROUTE, EXAM_TYPE_ROUTE } from '@/lib/shared/app-routes';
 import { CONTENT_TYPES, examPath, typePath, type ExamRef } from '@/lib/domain/exam-content';
 
@@ -210,11 +210,14 @@ function pingIndexNow(exam?: ExamRef | readonly ExamRef[] | null): void {
   const papers: readonly ExamRef[] =
     exam == null ? [] : Array.isArray(exam) ? exam : [exam as ExamRef];
 
+  // Built by `absoluteUrl`, as the sitemap's entries are, so every URL pinged is
+  // character for character the one the sitemap lists — the home page's
+  // included, which is `HOME_URL` and not the bare origin.
   const urls = [
-    BASE_URL,
-    `${BASE_URL}/exams`,
-    ...CONTENT_TYPES.map((type) => `${BASE_URL}${typePath(type)}`),
-    ...papers.map((paper) => `${BASE_URL}${examPath(paper)}`),
+    absoluteUrl('/'),
+    absoluteUrl('/exams'),
+    ...CONTENT_TYPES.map((type) => absoluteUrl(typePath(type))),
+    ...papers.map((paper) => absoluteUrl(examPath(paper))),
   ];
 
   try {

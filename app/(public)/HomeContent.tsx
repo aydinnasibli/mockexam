@@ -169,22 +169,25 @@ export default function HomeContent({ byType, totalExams }: Props) {
                   dividers ending at different heights. Stretching aligns the
                   numerals, which is the row a page about precision has to get
                   right. */}
-              <div className="mt-14 flex items-stretch border-t border-ink lg:mt-18">
-                <div className="flex-1 border-r border-rule pt-4.5 pr-4.5">
-                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">
-                    {String(totalExams).padStart(2, "0")}
+              {/* A description list — each numeral is the value of the label
+                  beneath it. `dt` must precede its `dd` in the markup, so each
+                  cell stacks in reverse to keep the numeral on top: the label
+                  is read first, the numeral drawn first. `justify-end` is the
+                  TOP of a reversed column, so the numerals still align. */}
+              <dl className="m-0 mt-14 flex items-stretch border-t border-ink lg:mt-18">
+                {[
+                  { value: String(totalExams).padStart(2, "0"), label: "Açıq sınaq",       cell: "border-r border-rule pr-4.5" },
+                  { value: "11",                                 label: "Analiz ölçüsü",    cell: "border-r border-rule px-4.5" },
+                  { value: "1:1",                                label: "Format uyğunluğu", cell: "pl-4.5" },
+                ].map((figure) => (
+                  <div key={figure.label} className={`flex flex-1 flex-col-reverse justify-end pt-4.5 ${figure.cell}`}>
+                    <dt className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</dt>
+                    <dd className="m-0 font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">
+                      {figure.value}
+                    </dd>
                   </div>
-                  <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>Açıq sınaq</div>
-                </div>
-                <div className="flex-1 border-r border-rule px-4.5 pt-4.5">
-                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">11</div>
-                  <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>Analiz ölçüsü</div>
-                </div>
-                <div className="flex-1 pt-4.5 pl-4.5">
-                  <div className="font-mono text-2xl font-light tracking-[-0.02em] tabular-nums text-ink lg:text-heading-lg">1:1</div>
-                  <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>Format uyğunluğu</div>
-                </div>
-              </div>
+                ))}
+              </dl>
             </div>
 
             {/* Interlocking product composition: the two cards overlap on the
@@ -305,41 +308,49 @@ export default function HomeContent({ byType, totalExams }: Props) {
 
         {/* ── PROGRAM INDEX ── */}
         <section className="border-t border-b border-ink border-b-rule bg-surface-2">
-          <FadeUp y={12} className="shell grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-            {PROGRAMS.map((program, i) => {
-              const data = program.type ? byType[program.type] : undefined;
-              const count = data?.count ?? 0;
-              const body = (
-                <>
-                  <span className={`font-mono text-lg tracking-[0.01em] ${count > 0 ? "text-ink" : "text-ink-mute"}`}>
-                    {program.code}
-                  </span>
-                  <span className={`${MONO_LABEL} flex items-center gap-1.75 tracking-[0.12em] ${count > 0 ? "text-ink" : "text-ink-mute"}`}>
-                    <span
-                      className={`h-1.25 w-1.25 rounded-full ${count > 0 ? "bg-correct" : "border border-ink-mute"}`}
-                      aria-hidden
-                    />
-                    {count > 0 ? `${count} sınaq` : "hazırlanır"}
-                  </span>
-                </>
-              );
+          <FadeUp y={12} className="shell">
+            {/* A list of the programmes. The rule between cells moves to the
+                item, where `last:` can still find the last one; the padding
+                stays on the cell's content, so a linked cell's hover fill still
+                runs edge to edge. `role="list"`: preflight strips the list
+                style, and Safari drops an unstyled list's semantics without it. */}
+            <ul role="list" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+              {PROGRAMS.map((program, i) => {
+                const data = program.type ? byType[program.type] : undefined;
+                const count = data?.count ?? 0;
+                const body = (
+                  <>
+                    <span className={`font-mono text-lg tracking-[0.01em] ${count > 0 ? "text-ink" : "text-ink-mute"}`}>
+                      {program.code}
+                    </span>
+                    <span className={`${MONO_LABEL} flex items-center gap-1.75 tracking-[0.12em] ${count > 0 ? "text-ink" : "text-ink-mute"}`}>
+                      <span
+                        className={`h-1.25 w-1.25 rounded-full ${count > 0 ? "bg-correct" : "border border-ink-mute"}`}
+                        aria-hidden
+                      />
+                      {count > 0 ? `${count} sınaq` : "hazırlanır"}
+                    </span>
+                  </>
+                );
 
-              const cellClass = `flex flex-col gap-2.5 border-r border-rule-strong py-5.5 last:border-r-0 ${
-                i === 0 ? "pr-5.5" : "px-5.5"
-              }`;
+                const cellClass = `flex h-full flex-col gap-2.5 py-5.5 ${i === 0 ? "pr-5.5" : "px-5.5"}`;
 
-              return count > 0 && program.type ? (
-                <Link
-                  key={program.code}
-                  href={typePath(program.type)}
-                  className={`${cellClass} transition-colors duration-150 hover:bg-surface-3`}
-                >
-                  {body}
-                </Link>
-              ) : (
-                <div key={program.code} className={cellClass}>{body}</div>
-              );
-            })}
+                return (
+                  <li key={program.code} className="border-r border-rule-strong last:border-r-0">
+                    {count > 0 && program.type ? (
+                      <Link
+                        href={typePath(program.type)}
+                        className={`${cellClass} transition-colors duration-150 hover:bg-surface-3`}
+                      >
+                        {body}
+                      </Link>
+                    ) : (
+                      <div className={cellClass}>{body}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </FadeUp>
         </section>
 
@@ -354,10 +365,12 @@ export default function HomeContent({ byType, totalExams }: Props) {
             <div className="relative">
               {/* The rule the three nodes sit on. */}
               <div className="absolute top-24 right-0 left-0 hidden h-px bg-rule lg:block" aria-hidden />
-              <StaggerContainer className="relative grid gap-12 md:grid-cols-3 lg:gap-10">
+              {/* An ordered list: the three stages are a sequence, and their
+                  order is part of what they say. */}
+              <StaggerContainer as="ol" className="relative grid gap-12 md:grid-cols-3 lg:gap-10">
 
                 {STEPS.map((step, i) => (
-                  <StaggerItem key={step.n}>
+                  <StaggerItem as="li" key={step.n}>
                     <div className="flex h-24 items-end pb-3.5" aria-hidden>
                       {i === 0 && (
                         <div className="flex items-end gap-1.5">
@@ -560,24 +573,30 @@ export default function HomeContent({ byType, totalExams }: Props) {
                     </div>
                     <div className="border-t border-rule bg-surface-2 px-5 pt-5.5 pb-6 lg:px-6">
                       <div className={`${MONO_SECTION} mb-4 text-caption text-ink-mute`}>Addım-addım</div>
-                      {[
-                        { n: "01", step: "3(−1)² = 3",     note: null },
-                        { n: "02", step: "−5(−1) = +5",    note: "← ən çox səhv" },
-                        { n: "03", step: "3 + 5 + 2 = 10", note: null },
-                      ].map((row, i, rows) => (
-                        <div
-                          key={row.n}
-                          className={`grid grid-cols-[26px_1fr] items-baseline gap-3.5 border-t border-rule-strong py-2.5 ${
-                            i === rows.length - 1 ? "border-b" : ""
-                          }`}
-                        >
-                          <span className="font-mono text-label text-ink-mute">{row.n}</span>
-                          <span className="font-mono text-body text-ink">
-                            {row.step}
-                            {row.note && <span className="ml-2 font-sans text-note text-error">{row.note}</span>}
-                          </span>
-                        </div>
-                      ))}
+                      {/* A worked solution is a sequence, so an ordered list.
+                          The printed "01–03" is the list's own numbering drawn
+                          in the design's type, so it is hidden rather than read
+                          twice. */}
+                      <ol role="list">
+                        {[
+                          { n: "01", step: "3(−1)² = 3",     note: null },
+                          { n: "02", step: "−5(−1) = +5",    note: "← ən çox səhv" },
+                          { n: "03", step: "3 + 5 + 2 = 10", note: null },
+                        ].map((row, i, rows) => (
+                          <li
+                            key={row.n}
+                            className={`grid grid-cols-[26px_1fr] items-baseline gap-3.5 border-t border-rule-strong py-2.5 ${
+                              i === rows.length - 1 ? "border-b" : ""
+                            }`}
+                          >
+                            <span aria-hidden className="font-mono text-label text-ink-mute">{row.n}</span>
+                            <span className="font-mono text-body text-ink">
+                              {row.step}
+                              {row.note && <span className="ml-2 font-sans text-note text-error">{row.note}</span>}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
                     </div>
                   </FadeUp>
 
@@ -616,26 +635,45 @@ export default function HomeContent({ byType, totalExams }: Props) {
           <SectionHead n="04">
             <h2 className={`${H2} mb-10 max-w-130 lg:mb-12`}>Kitabla fərq.</h2>
 
-            <FadeUp className="grid grid-cols-[1fr_100px_100px] border-t border-ink sm:grid-cols-[1fr_200px_200px]">
-              <div className="py-3.5" />
-              <div className={`${MONO_SECTION} bg-ink px-3 py-3.5 text-caption text-bg sm:px-5`}>Testcentre</div>
-              <div className={`${MONO_SECTION} px-3 py-3.5 text-caption text-ink-mute sm:px-5`}>Sərbəst</div>
-
-              {COMPARISON.map((row, i) => {
-                const last = i === COMPARISON.length - 1;
-                const rule = `border-t border-rule ${last ? "border-b" : ""}`;
-                return (
-                  <div key={row.criterion} className="contents">
-                    <div className={`${rule} py-4.5 pr-3 text-body text-ink sm:text-lede`}>{row.criterion}</div>
-                    <div className={`${rule} bg-surface-2 px-3 py-4.5 font-mono text-note text-correct sm:px-5 sm:text-body`}>
-                      ✓{row.ours && ` ${row.ours}`}
-                    </div>
-                    <div className={`${rule} px-3 py-4.5 font-mono text-note text-ink-mute sm:px-5 sm:text-body`}>
-                      ✗{row.theirs && ` ${row.theirs}`}
-                    </div>
-                  </div>
-                );
-              })}
+            {/* A table: criteria down the side, the two ways of preparing
+                across the top — the shape the grid of `display: contents` rows
+                only drew. `table-fixed` takes the two 100/200px columns from the
+                header cells, as the grid's tracks did, and `align-top` keeps a
+                wrapped criterion's neighbours on its first line. */}
+            <FadeUp>
+              <table className="w-full table-fixed border-t border-ink">
+                <caption className="sr-only">Testcentre ilə sərbəst hazırlığın müqayisəsi</caption>
+                <thead>
+                  <tr>
+                    <td className="py-3.5" />
+                    <th scope="col" className={`${MONO_SECTION} w-25 bg-ink px-3 py-3.5 text-left text-caption font-normal text-bg sm:w-50 sm:px-5`}>
+                      Testcentre
+                    </th>
+                    <th scope="col" className={`${MONO_SECTION} w-25 px-3 py-3.5 text-left text-caption font-normal text-ink-mute sm:w-50 sm:px-5`}>
+                      Sərbəst
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON.map((row, i) => {
+                    const last = i === COMPARISON.length - 1;
+                    const rule = `border-t border-rule align-top ${last ? "border-b" : ""}`;
+                    return (
+                      <tr key={row.criterion}>
+                        <th scope="row" className={`${rule} py-4.5 pr-3 text-left text-body font-normal text-ink sm:text-lede`}>
+                          {row.criterion}
+                        </th>
+                        <td className={`${rule} bg-surface-2 px-3 py-4.5 font-mono text-note text-correct sm:px-5 sm:text-body`}>
+                          ✓{row.ours && ` ${row.ours}`}
+                        </td>
+                        <td className={`${rule} px-3 py-4.5 font-mono text-note text-ink-mute sm:px-5 sm:text-body`}>
+                          ✗{row.theirs && ` ${row.theirs}`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </FadeUp>
           </SectionHead>
         </section>
@@ -744,12 +782,12 @@ export default function HomeContent({ byType, totalExams }: Props) {
               {/* Price rail — real programs, real prices. `min-w-0` keeps the
                   rail inside its grid column: a grid item defaults to
                   min-width:auto, so a long title would stretch the page. */}
-              <StaggerContainer className="min-w-0">
+              <StaggerContainer as="ul" className="min-w-0">
                 {openPrograms.map((program, i) => {
                   const data = byType[program.type as string];
                   const href = data.count === 1 ? data.firstPath : typePath(program.type as string);
                   return (
-                    <StaggerItem key={program.code}>
+                    <StaggerItem as="li" key={program.code}>
                     <Link
                       href={href}
                       className={`flex items-baseline justify-between gap-5 py-4.5 text-bg transition-opacity duration-150 hover:opacity-70 ${

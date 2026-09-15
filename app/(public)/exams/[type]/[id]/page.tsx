@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Fragment } from 'react';
 import 'katex/dist/katex.min.css';
 import { notFound, permanentRedirect } from 'next/navigation';
+import Link from 'next/link';
 import { getActiveExamsForPrerender, getExamById, type PublicExam } from '@/lib/db/exams';
 import { getSampleQuestion } from '@/lib/db/questions';
 import {
@@ -13,10 +15,10 @@ import { examContent, examPath, typeForSlug, typePath, typeSlug } from '@/lib/do
 import { firstExamFreeEnabled } from '@/lib/db/free-claim';
 import { renderMath } from '@/lib/shared/render-math';
 import FadeUp from '@/components/ui/FadeUp';
-import { StaggerContainer, StaggerItem } from '@/components/ui/StaggerChildren';
 import StructureBar from '@/components/ui/StructureBar';
 import { SCORE_SCALE, examCodes, missingSections, pad2, shortTypeLabel, structureOf, upperLabel } from '../../structure';
 import PurchaseCard from './PurchaseCard';
+import { hubTopics, paperAbout, siblingPapers, storedDescription } from './paper-copy';
 import { MONO_LABEL } from '@/components/ui/type-styles';
 
 /**
@@ -59,25 +61,22 @@ interface Props {
   params: Promise<{ type: string; id: string }>;
 }
 
-/** Shorter than this is a label, not a description. See `examDescription`. */
-const MIN_USEFUL_DESCRIPTION = 60;
-
 /**
  * A usable meta description for an exam.
  *
  * The old code was `exam.description || <generated>`, which only caught an
  * empty string — the live SAT exam stored the description "SAT", a truthy
  * value that shipped as the page's entire meta description. Anything too short
- * to be a sentence gets the generated fallback instead.
+ * to be a sentence gets the generated fallback instead. `storedDescription`
+ * draws that line, so the visible lede under the title draws it identically.
  */
 function examDescription(exam: PublicExam): string {
-  const stored = exam.description?.trim() ?? '';
   const generated =
     `${exam.title} — ${examTypeLabel(exam.type)} imtahanına hazırlıq üçün rəsmi formata uyğun sınaq. ` +
     `${exam.totalQuestions} sual, ${exam.durationMinutes} dəqiqə, ${exam.modules.length} modul. ` +
     `Dərhal nəticə və hər sual üçün izahat.`;
 
-  return clampDescription(stored.length >= MIN_USEFUL_DESCRIPTION ? stored : generated);
+  return clampDescription(storedDescription(exam) ?? generated);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -181,6 +180,13 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
     getActiveExamsForPrerender(),
   ]);
   const sampleModule = sample ? exam.modules[sample.moduleIndex]?.name?.trim() : undefined;
+
+  // What the page says about the paper in prose. Generated from the record —
+  // see `paper-copy.ts` for why nothing here is written per paper.
+  const lede = storedDescription(exam);
+  const [aboutContents, aboutAfterwards] = paperAbout(exam);
+  const hub = examContent(exam.type);
+  const siblings = siblingPapers(allExams, exam);
 
   // The code is the one the catalog register prints, so a visitor arriving from
   // /exams sees the same identifier in the breadcrumb.
@@ -344,13 +350,27 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
                 {exam.title}
               </h1>
 
-              {/* Key figures */}
-              <div className="mt-10 grid grid-cols-2 border-t border-ink sm:grid-cols-4 lg:mt-12">
+              {/* The paper's own description, as its author wrote it. It used
+                  to reach only the meta tag, where no candidate saw it and
+                  nothing reading the page did either. Omitted rather than
+                  generated when there is none: "Sınaq haqqında" below already
+                  says everything that can be derived. */}
+              {lede && (
+                <p className="m-0 mt-6 max-w-155 text-lede leading-[1.55] text-ink-soft lg:mt-8">
+                  {lede}
+                </p>
+              )}
+
+              {/* Key figures — a description list, each numeral the value of
+                  the label beneath it. `dt` must precede its `dd`, so each cell
+                  stacks in reverse to keep the numeral on top; `justify-end` is
+                  the top of a reversed column. */}
+              <dl className="m-0 mt-10 grid grid-cols-2 border-t border-ink sm:grid-cols-4 lg:mt-12">
                 {figures.map((figure, i) => (
                   <div
                     key={figure.label}
                     className={[
-                      'py-4.5',
+                      'flex flex-col-reverse justify-end py-4.5',
                       i === 0 ? 'pr-4.5' : 'px-4.5',
                       i < figures.length - 1 ? 'border-r border-rule' : '',
                       i < 2 ? 'border-b border-rule sm:border-b-0' : '',
@@ -358,90 +378,116 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
                       i === 3 ? 'border-r-0 pr-0' : '',
                     ].filter(Boolean).join(' ')}
                   >
-                    <div className="font-mono text-heading font-light tracking-[-0.03em] tabular-nums text-ink lg:text-heading-lg">
+                    <dt className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</dt>
+                    <dd className="m-0 font-mono text-heading font-light tracking-[-0.03em] tabular-nums text-ink lg:text-heading-lg">
                       {figure.value}
-                    </div>
-                    <div className={`${MONO_LABEL} mt-1.5 text-ink-mute`}>{figure.label}</div>
+                    </dd>
                   </div>
                 ))}
-              </div>
+              </dl>
 
               {/* ── Timeline ── */}
               {structure.total > 0 && (
-                <FadeUp className="mt-14 lg:mt-18">
-                  {/* Same wrap rule as the Nümunə heading below — this label is
-                      short today, but it is built from exam data too. */}
-                  <div className="mb-7 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">
-                      Vaxt xətti
-                    </h2>
-                    {totalBreak > 0 && (
-                      <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
-                        fasilə daxil {exam.durationMinutes}′
-                      </span>
-                    )}
-                  </div>
+                <section className="mt-14 lg:mt-18">
+                  <FadeUp>
+                    {/* Same wrap rule as the Nümunə heading below — this label is
+                        short today, but it is built from exam data too. */}
+                    <div className="mb-7 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">
+                        Vaxt xətti
+                      </h2>
+                      {totalBreak > 0 && (
+                        <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
+                          fasilə daxil {exam.durationMinutes}′
+                        </span>
+                      )}
+                    </div>
 
-                  <StructureBar
-                    blocks={structure.blocks}
-                    total={structure.total}
-                    heightClass="h-11 lg:h-14"
-                    gapClass="gap-0.75"
-                    labelBreaks
-                    figureClass="px-3.5 font-mono text-label"
-                  />
+                    <StructureBar
+                      blocks={structure.blocks}
+                      total={structure.total}
+                      heightClass="h-11 lg:h-14"
+                      gapClass="gap-0.75"
+                      labelBreaks
+                      figureClass="px-3.5 font-mono text-label"
+                    />
 
-                  {/* Labels track the same flex ratios, so each sits under its
-                      own block. */}
-                  <div className="mt-2.5 flex gap-0.75">
-                    {structure.blocks.map((block, i) => (
-                      <div key={i} className="min-w-1 overflow-hidden" style={{ flex: block.minutes }}>
-                        <span className={`${MONO_LABEL} block truncate text-ink-mute`}>{upperLabel(block.label)}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                </FadeUp>
+                    {/* Labels track the same flex ratios, so each sits under its
+                        own block. */}
+                    <div className="mt-2.5 flex gap-0.75">
+                      {structure.blocks.map((block, i) => (
+                        <div key={i} className="min-w-1 overflow-hidden" style={{ flex: block.minutes }}>
+                          <span className={`${MONO_LABEL} block truncate text-ink-mute`}>{upperLabel(block.label)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </FadeUp>
+                </section>
               )}
 
               {/* ── Module table ── */}
               {exam.modules.length > 0 && (
                 <div className="mt-14 lg:mt-18">
-                  <div className={`${MONO_LABEL} grid grid-cols-[32px_1fr_64px] gap-4 border-t border-ink pt-2.75 pb-2.75 text-ink-mute sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5`}>
-                    <span>№</span>
-                    <span>Modul</span>
-                    <span className="hidden text-right sm:block">Sual</span>
-                    <span className="text-right">Vaxt</span>
-                    <span className="hidden text-right sm:block">Sual/dəq</span>
-                  </div>
+                  {/*
+                    A real table. It was a grid of spans that only LOOKED like
+                    one, so a screen reader read a module's figures as loose
+                    numbers with no column to say which was the question count
+                    and which the time — and a search engine saw no table at all.
 
-                  <StaggerContainer>
-                  {exam.modules.map((mod, i) => (
-                    <StaggerItem key={i}>
-                      <div className="grid grid-cols-[32px_1fr_64px] items-center gap-4 border-b border-rule py-4 sm:grid-cols-[44px_1fr_92px_76px_110px] sm:gap-5">
-                        <span className="font-mono text-xs text-ink-mute">{pad2(i + 1)}</span>
-                        <span className="min-w-0 text-body font-medium text-ink sm:text-base">
-                          {mod.name}
-                        </span>
-                        <span className="hidden text-right font-mono text-sm text-ink-soft sm:block">
-                          {mod.questions > 0 ? mod.questions : '—'}
-                        </span>
-                        <span className="text-right font-mono text-sm text-ink">{mod.durationMinutes}′</span>
-                        <span className="hidden text-right font-mono text-sm text-ink-mute sm:block">
-                          {pace(mod.durationMinutes, mod.questions)}
-                        </span>
-                      </div>
-                      {mod.breakAfterMinutes > 0 && (
-                        <div className="grid grid-cols-[32px_1fr] gap-4 border-b border-rule bg-surface-2 py-2.75 sm:grid-cols-[44px_1fr] sm:gap-5">
-                          <span aria-hidden />
-                          <span className={`${MONO_LABEL} text-ink-mute`}>
-                            {mod.breakAfterMinutes}′ fasilə
-                          </span>
-                        </div>
-                      )}
-                    </StaggerItem>
-                  ))}
-                  </StaggerContainer>
+                    `table-fixed` takes the column widths from the header row,
+                    padding included, which reproduces the grid's tracks and
+                    gaps. The two optional columns are `display: none` below
+                    `sm`, so they create no column there. That is why a break row
+                    repeats the same five cells rather than spanning: a colspan
+                    sized for five columns would mint phantom columns on a phone.
+
+                    Revealed as one block rather than row by row — a staggered
+                    wrapper cannot sit between a `tbody` and its rows.
+                  */}
+                  <FadeUp>
+                    <table className="w-full table-fixed">
+                      <caption className="sr-only">Modullar üzrə sual sayı və vaxt bölgüsü</caption>
+                      <thead className={`${MONO_LABEL} text-ink-mute`}>
+                        <tr className="border-t border-ink">
+                          <th scope="col" className="w-12 py-2.75 pr-4 text-left font-normal sm:w-16 sm:pr-5">№</th>
+                          <th scope="col" className="py-2.75 text-left font-normal">Modul</th>
+                          <th scope="col" className="hidden w-28 py-2.75 pl-5 text-right font-normal sm:table-cell">Sual</th>
+                          <th scope="col" className="w-20 py-2.75 pl-4 text-right font-normal sm:w-24 sm:pl-5">Vaxt</th>
+                          <th scope="col" className="hidden w-32.5 py-2.75 pl-5 text-right font-normal sm:table-cell">Sual/dəq</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {exam.modules.map((mod, i) => (
+                          <Fragment key={i}>
+                            <tr className="border-b border-rule">
+                              <td className="py-4 pr-4 font-mono text-xs text-ink-mute sm:pr-5">{pad2(i + 1)}</td>
+                              <th scope="row" className="py-4 text-left text-body font-medium wrap-break-word text-ink sm:text-base">
+                                {mod.name}
+                              </th>
+                              <td className="hidden py-4 pl-5 text-right font-mono text-sm text-ink-soft sm:table-cell">
+                                {mod.questions > 0 ? mod.questions : '—'}
+                              </td>
+                              <td className="py-4 pl-4 text-right font-mono text-sm text-ink sm:pl-5">{mod.durationMinutes}′</td>
+                              <td className="hidden py-4 pl-5 text-right font-mono text-sm text-ink-mute sm:table-cell">
+                                {pace(mod.durationMinutes, mod.questions)}
+                              </td>
+                            </tr>
+                            {mod.breakAfterMinutes > 0 && (
+                              <tr className="border-b border-rule bg-surface-2">
+                                <td />
+                                <td className={`${MONO_LABEL} py-2.75 text-ink-mute`}>
+                                  {mod.breakAfterMinutes}′ fasilə
+                                </td>
+                                <td className="hidden sm:table-cell" />
+                                <td />
+                                <td className="hidden sm:table-cell" />
+                              </tr>
+                            )}
+                          </Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </FadeUp>
 
                   {/*
                     Stated before purchase, not discovered during the exam. A
@@ -459,82 +505,160 @@ async function ExamDetails({ exam }: { exam: PublicExam }) {
                 </div>
               )}
 
+              {/* ── About ──
+                  The paper in prose: what it contains, how the result is given,
+                  and where its programme is explained. Not revealed on scroll —
+                  it is text for reading, and it should be there without JS. */}
+              <section className="mt-14 lg:mt-18">
+                <h2 className="m-0 mb-6 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">
+                  Sınaq haqqında
+                </h2>
+                <div className="grid max-w-155 gap-4">
+                  <p className="m-0 text-base leading-[1.65] text-ink-soft">{aboutContents}</p>
+                  <p className="m-0 text-base leading-[1.65] text-ink-soft">{aboutAfterwards}</p>
+                  {hub && (
+                    <p className="m-0 text-base leading-[1.65] text-ink-soft">
+                      Bu imtahan növü üzrə {hubTopics(hub)}{' '}
+                      <Link
+                        href={typePath(exam.type)}
+                        className="text-ink underline decoration-ink-faint underline-offset-4 transition-colors duration-150 hover:decoration-ink"
+                      >
+                        {hub.h1}
+                      </Link>{' '}
+                      səhifəsindədir.
+                    </p>
+                  )}
+                </div>
+              </section>
+
               {/* ── Sample question ──
                   A real question from this exam's own bank — the first scorable
                   MCQ in module order — so an IELTS page shows an IELTS question.
                   The panel is omitted rather than filled with an illustration
                   when the bank holds nothing suitable. */}
               {sample && (
-                <FadeUp className="mt-14 lg:mt-18">
-                  {/* `flex-wrap` + a shrinkable label, not `shrink-0`: the module
-                      name is exam data, and a long one ("READING & WRITING —
-                      MODULE 1") measured 340px against the 327px mobile content
-                      column, pushing the whole document 92px wide at 390px. It
-                      still sits on the headline's baseline wherever it fits. */}
-                  <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">Nümunə</h2>
-                    <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
-                      {sampleModule ? `${upperLabel(sampleModule)} · ` : ''}
-                      {exam.totalQuestions} sualdan biri
-                    </span>
-                  </div>
+                <section className="mt-14 lg:mt-18">
+                  <FadeUp>
+                    {/* `flex-wrap` + a shrinkable label, not `shrink-0`: the module
+                        name is exam data, and a long one ("READING & WRITING —
+                        MODULE 1") measured 340px against the 327px mobile content
+                        column, pushing the whole document 92px wide at 390px. It
+                        still sits on the headline's baseline wherever it fits. */}
+                    <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <h2 className="m-0 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">Nümunə</h2>
+                      <span className={`${MONO_LABEL} min-w-0 text-ink-mute`}>
+                        {sampleModule ? `${upperLabel(sampleModule)} · ` : ''}
+                        {exam.totalQuestions} sualdan biri
+                      </span>
+                    </div>
 
-                  <div className={`grid overflow-hidden rounded-panel border border-rule bg-surface ${
-                    sample.explanation ? 'lg:grid-cols-[1fr_260px]' : ''
-                  }`}>
-                    <div className="border-b border-rule px-5 py-6 lg:border-r lg:border-b-0 lg:px-6">
-                      {/* Passage-based questions are unreadable without their
-                          text, but the panel is a specimen, not a reading task —
-                          so it carries the opening of the passage only. */}
-                      {sample.passage && (
-                        <div className="mb-5 border-l-2 border-rule pl-4">
-                          <div className={`${MONO_LABEL} mb-2 text-ink-mute`}>Mətn</div>
+                    <div className={`grid overflow-hidden rounded-panel border border-rule bg-surface ${
+                      sample.explanation ? 'lg:grid-cols-[1fr_260px]' : ''
+                    }`}>
+                      <div className="border-b border-rule px-5 py-6 lg:border-r lg:border-b-0 lg:px-6">
+                        {/* Passage-based questions are unreadable without their
+                            text, but the panel is a specimen, not a reading task —
+                            so it carries the opening of the passage only. */}
+                        {sample.passage && (
+                          <div className="mb-5 border-l-2 border-rule pl-4">
+                            <div className={`${MONO_LABEL} mb-2 text-ink-mute`}>Mətn</div>
+                            <p
+                              className="m-0 text-body leading-[1.6] text-ink-soft"
+                              dangerouslySetInnerHTML={{ __html: renderMath(passageExcerpt(sample.passage)) }}
+                            />
+                          </div>
+                        )}
+
+                        <p
+                          className="m-0 mb-5 text-lg leading-[1.45] text-ink"
+                          dangerouslySetInnerHTML={{ __html: renderMath(sample.stem) }}
+                        />
+
+                        {/* The options in order, A onwards. The correct one is
+                            announced as well as filled: its colour used to be
+                            the only thing that said which it was.
+                            `role="list"`: preflight strips the list style, and
+                            Safari drops an unstyled list's semantics without it. */}
+                        <ol role="list" className="grid gap-1.75 sm:grid-cols-2">
+                          {sample.options.map((option, i) => {
+                            const correct = i === sample.correctIndex;
+                            return (
+                              <li
+                                key={i}
+                                className={`flex items-baseline gap-3 rounded-btn border px-3.5 py-2.75 ${
+                                  correct ? 'border-correct bg-correct' : 'border-rule'
+                                }`}
+                              >
+                                <span className={`font-mono text-label ${correct ? 'text-bg/60' : 'text-ink-mute'}`}>
+                                  {OPTION_KEYS[i] ?? i + 1}
+                                </span>
+                                <span
+                                  className={`min-w-0 text-body ${correct ? 'text-bg' : 'text-ink'}`}
+                                  dangerouslySetInnerHTML={{ __html: renderMath(option) }}
+                                />
+                                {correct && <span className="sr-only">(düzgün cavab)</span>}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </div>
+
+                      {sample.explanation && (
+                        <div className="bg-surface-2 px-5 py-6 lg:px-5.5">
+                          <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>İzahat</div>
                           <p
-                            className="m-0 text-body leading-[1.6] text-ink-soft"
-                            dangerouslySetInnerHTML={{ __html: renderMath(passageExcerpt(sample.passage)) }}
+                            className="m-0 text-sm leading-[1.65] text-ink"
+                            dangerouslySetInnerHTML={{ __html: renderMath(sample.explanation) }}
                           />
                         </div>
                       )}
-
-                      <p
-                        className="m-0 mb-5 text-lg leading-[1.45] text-ink"
-                        dangerouslySetInnerHTML={{ __html: renderMath(sample.stem) }}
-                      />
-
-                      <div className="grid gap-1.75 sm:grid-cols-2">
-                        {sample.options.map((option, i) => {
-                          const correct = i === sample.correctIndex;
-                          return (
-                            <div
-                              key={i}
-                              className={`flex items-baseline gap-3 rounded-btn border px-3.5 py-2.75 ${
-                                correct ? 'border-correct bg-correct' : 'border-rule'
-                              }`}
-                            >
-                              <span className={`font-mono text-label ${correct ? 'text-bg/60' : 'text-ink-mute'}`}>
-                                {OPTION_KEYS[i] ?? i + 1}
-                              </span>
-                              <span
-                                className={`min-w-0 text-body ${correct ? 'text-bg' : 'text-ink'}`}
-                                dangerouslySetInnerHTML={{ __html: renderMath(option) }}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
                     </div>
+                  </FadeUp>
+                </section>
+              )}
 
-                    {sample.explanation && (
-                      <div className="bg-surface-2 px-5 py-6 lg:px-5.5">
-                        <div className={`${MONO_LABEL} mb-3.5 text-ink-mute`}>İzahat</div>
-                        <p
-                          className="m-0 text-sm leading-[1.65] text-ink"
-                          dangerouslySetInnerHTML={{ __html: renderMath(sample.explanation) }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </FadeUp>
+              {/* ── Other papers in this programme ──
+                  See `siblingPapers`: the links that tie one level to the next,
+                  and the next thing a candidate comparing papers wants. Only
+                  when there are siblings — a programme's single paper gets no
+                  empty heading. */}
+              {siblings.shown.length > 0 && (
+                <section className="mt-14 lg:mt-18">
+                  <h2 className="m-0 mb-6 text-2xl font-light tracking-[-0.03em] text-ink lg:text-heading-lg">
+                    Digər {typeLabel} sınaqları
+                  </h2>
+                  <ul role="list" className="border-t border-ink">
+                    {siblings.shown.map((paper) => {
+                      const paperMinutes = paper.durationMinutes -
+                        paper.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
+                      return (
+                        <li key={paper.id} className="border-b border-rule">
+                          <Link
+                            href={examPath(paper)}
+                            className="group flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-4"
+                          >
+                            <span className="min-w-0 text-base font-medium text-ink underline decoration-transparent underline-offset-4 transition-colors duration-150 group-hover:decoration-ink">
+                              {paper.title}
+                            </span>
+                            {/* The same three figures, in the same units, as the
+                                paper's row in the catalog. */}
+                            <span className={`${MONO_LABEL} shrink-0 text-ink-mute`}>
+                              {paper.totalQuestions} sual · {paperMinutes} dəq · {paper.price > 0 ? `${paper.price} ₼` : 'Pulsuz'}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {siblings.more && (
+                    <Link
+                      href={typePath(exam.type)}
+                      className={`${MONO_LABEL} mt-4 inline-block py-1 text-ink transition-colors duration-150 hover:text-accent-deep`}
+                    >
+                      Bütün {typeLabel} sınaqları <span aria-hidden>→</span>
+                    </Link>
+                  )}
+                </section>
               )}
             </div>
 

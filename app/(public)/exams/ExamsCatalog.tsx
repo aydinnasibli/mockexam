@@ -159,54 +159,65 @@ export default function ExamsCatalog({ exams, activeType = 'all', demoteHeadline
                 {/* /55 is the floor for 10px bone text on ink: /40 measured
                     3.71:1, under the 4.5:1 minimum this design already holds
                     `ink-mute` to on the bone surfaces. */}
-                <div className={`${MONO_LABEL} mb-3.5 text-bg/55`}>Hazırlanır</div>
-                <div className="flex flex-wrap gap-1.5">
+                <p id="catalog-planned" className={`${MONO_LABEL} mb-3.5 text-bg/55`}>Hazırlanır</p>
+                {/* Lists throughout this component carry `role="list"`:
+                    preflight strips the list style, and Safari stops exposing
+                    an unstyled list as a list unless the role is explicit. The
+                    ids are safe as literals — the catalog renders once per page. */}
+                <ul role="list" aria-labelledby="catalog-planned" className="flex flex-wrap gap-1.5">
                   {planned.map((label) => (
-                    <span
+                    <li
                       key={label}
                       className="rounded-full border border-bg/20 px-3.5 py-1.75 font-mono text-label tracking-[0.06em] text-bg/55"
                     >
                       {label}
-                    </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
           </div>
 
           {/* Tabs are flush with the band's bottom edge: the active one is
-              filled with the page background so the sheet below comes forward. */}
-          <div className="no-scrollbar mt-10 flex items-end overflow-x-auto lg:mt-14">
-            {['all', ...tabTypes].map((type) => {
-              const count = type === 'all'
-                ? exams.length
-                : exams.filter((e) => e.type === type).length;
-              const isActive = activeType === type;
+              filled with the page background so the sheet below comes forward.
 
-              return (
-                <Link
-                  key={type}
-                  href={type === 'all' ? '/exams' : typePath(type)}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`flex shrink-0 items-baseline gap-2.5 whitespace-nowrap px-6.5 transition-colors duration-150 ${
-                    isActive
-                      ? 'rounded-t-btn bg-bg pt-4 pb-3.75 text-ink'
-                      : 'pt-3.5 pb-3.25 text-bg/70 hover:text-bg'
-                  }`}
-                >
-                  <span className={`text-body ${isActive ? 'font-medium' : ''}`}>
-                    {type === 'all' ? 'Hamısı' : shortLabel(type)}
-                  </span>
-                  {/* The inactive count sits on ink; /45 measured 4.33:1 at
-                      12px, just under AA. A count the visitor is meant to read
-                      before choosing a filter has to clear it. */}
-                  <span className={`font-mono text-xs tabular-nums ${isActive ? 'text-ink-mute' : 'text-bg/55'}`}>
-                    {pad2(count)}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+              A labelled nav around a list: every tab is a link to a real route,
+              not a client-side filter, and `aria-current` already marks the
+              one this page is. */}
+          <nav aria-label="Proqramlar" className="mt-10 lg:mt-14">
+            <ul role="list" className="no-scrollbar flex items-end overflow-x-auto">
+              {['all', ...tabTypes].map((type) => {
+                const count = type === 'all'
+                  ? exams.length
+                  : exams.filter((e) => e.type === type).length;
+                const isActive = activeType === type;
+
+                return (
+                  <li key={type} className="shrink-0">
+                    <Link
+                      href={type === 'all' ? '/exams' : typePath(type)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`flex items-baseline gap-2.5 whitespace-nowrap px-6.5 transition-colors duration-150 ${
+                        isActive
+                          ? 'rounded-t-btn bg-bg pt-4 pb-3.75 text-ink'
+                          : 'pt-3.5 pb-3.25 text-bg/70 hover:text-bg'
+                      }`}
+                    >
+                      <span className={`text-body ${isActive ? 'font-medium' : ''}`}>
+                        {type === 'all' ? 'Hamısı' : shortLabel(type)}
+                      </span>
+                      {/* The inactive count sits on ink; /45 measured 4.33:1 at
+                          12px, just under AA. A count the visitor is meant to read
+                          before choosing a filter has to clear it. */}
+                      <span className={`font-mono text-xs tabular-nums ${isActive ? 'text-ink-mute' : 'text-bg/55'}`}>
+                        {pad2(count)}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
         </div>
       </div>
 
@@ -248,118 +259,128 @@ export default function ExamsCatalog({ exams, activeType = 'all', demoteHeadline
            * blink. The motion here lives in the timing diagrams, which draw
            * themselves inside rows that are already solid.
            */
-          listed.map((exam, i) => {
-            const structure = structureOf(exam);
-            const examMinutes = exam.durationMinutes -
-              exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
-            const sectionNoun = SECTION_NOUN[exam.type] ?? 'bölmə';
-            const isLast = i === listed.length - 1;
+          <ul role="list">
+            {listed.map((exam, i) => {
+              const structure = structureOf(exam);
+              const examMinutes = exam.durationMinutes -
+                exam.modules.reduce((s, m) => s + m.breakAfterMinutes, 0);
+              const sectionNoun = SECTION_NOUN[exam.type] ?? 'bölmə';
+              const isLast = i === listed.length - 1;
 
-            return (
-              <Link
-                key={exam.id}
-                href={examPath(exam)}
-                className={`group grid gap-y-5 border-b py-7 transition-colors duration-150 hover:bg-surface
-                            xl:grid-cols-[112px_1fr_360px_156px] xl:items-center xl:gap-x-10 xl:gap-y-0 xl:py-9.5
-                            ${isLast ? 'border-ink' : 'border-rule'}`}
-              >
-                {/* Code */}
-                <div className="flex items-center gap-3 xl:block">
-                  <span className="block font-mono text-note text-ink">{codes.get(exam.id)}</span>
-                  <span className="inline-flex rounded-full bg-surface-3 px-2.5 py-1 font-mono text-caption tracking-[0.12em] uppercase text-ink xl:mt-2.5">
-                    {shortLabel(exam.type)}
-                  </span>
-                </div>
-
-                {/* Title + figures */}
-                <div>
-                  <div className="text-title leading-[1.15] font-normal tracking-[-0.028em] text-ink xl:text-heading">
-                    {exam.title}
-                  </div>
-                  <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <span className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-subhead tabular-nums text-ink">{examMinutes}</span>
-                      <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">dəq</span>
-                    </span>
-                    <span className="h-4 w-px bg-rule-strong" />
-                    <span className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-subhead tabular-nums text-ink">{exam.totalQuestions}</span>
-                      <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">sual</span>
-                    </span>
-                    <span className="h-4 w-px bg-rule-strong" />
-                    <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">
-                      {exam.modules.length} {sectionNoun}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Structure diagram. Capped at the column width the design
-                    gives it, so the stacked row does not stretch a 34px bar
-                    across the whole page. */}
-                <div className="max-w-90">
-                  {structure.total > 0 && (
-                    <StructureBar
-                      blocks={structure.blocks}
-                      total={structure.total}
-                      heightClass="h-8.5"
-                      minFigureShare={MIN_FIGURE_SHARE}
-                    />
-                  )}
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
-                    {structure.bands.map((band) => (
-                      <span
-                        key={band.label}
-                        className="flex items-center gap-1.5 font-mono text-caption tracking-widest uppercase text-ink-mute"
-                      >
-                        <span className={`h-2 w-2 shrink-0 ${band.fill}`} />
-                        {upperLabel(band.label)}
-                      </span>
-                    ))}
-                    {structure.hasBreak && (
-                      <span className="flex items-center gap-1.5 font-mono text-caption tracking-widest uppercase text-ink-mute">
-                        <span className={`h-2 w-2 shrink-0 ${BREAK_FILL}`} />
-                        Fasilə
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center gap-4.5 xl:justify-end">
-                  <span className="font-mono text-title-lg tabular-nums text-ink">
-                    {exam.price > 0 ? `${exam.price} ₼` : 'Pulsuz'}
-                  </span>
-                  <span
-                    aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink text-sm text-ink transition-colors duration-200 group-hover:bg-ink group-hover:text-bg"
+              return (
+                <li key={exam.id}>
+                  <Link
+                    href={examPath(exam)}
+                    className={`group grid gap-y-5 border-b py-7 transition-colors duration-150 hover:bg-surface
+                                xl:grid-cols-[112px_1fr_360px_156px] xl:items-center xl:gap-x-10 xl:gap-y-0 xl:py-9.5
+                                ${isLast ? 'border-ink' : 'border-rule'}`}
                   >
-                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-                  </span>
-                </div>
-              </Link>
-            );
-          })
+                    {/* Code */}
+                    <div className="flex items-center gap-3 xl:block">
+                      <span className="block font-mono text-note text-ink">{codes.get(exam.id)}</span>
+                      <span className="inline-flex rounded-full bg-surface-3 px-2.5 py-1 font-mono text-caption tracking-[0.12em] uppercase text-ink xl:mt-2.5">
+                        {shortLabel(exam.type)}
+                      </span>
+                    </div>
+
+                    {/* Title + figures. The title is the row's heading, so the
+                        register can be walked paper by paper with a screen
+                        reader's heading keys. The whole row stays the link:
+                        the structure bar's per-block tooltips only work while
+                        nothing is layered over them, which rules out the
+                        stretched-link pattern here. */}
+                    <div>
+                      <h2 className="m-0 text-title leading-[1.15] font-normal tracking-[-0.028em] text-ink xl:text-heading">
+                        {exam.title}
+                      </h2>
+                      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-2">
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="font-mono text-subhead tabular-nums text-ink">{examMinutes}</span>
+                          <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">dəq</span>
+                        </span>
+                        <span className="h-4 w-px bg-rule-strong" />
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="font-mono text-subhead tabular-nums text-ink">{exam.totalQuestions}</span>
+                          <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">sual</span>
+                        </span>
+                        <span className="h-4 w-px bg-rule-strong" />
+                        <span className="font-mono text-label tracking-[0.12em] uppercase text-ink-mute">
+                          {exam.modules.length} {sectionNoun}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Structure diagram. Capped at the column width the design
+                        gives it, so the stacked row does not stretch a 34px bar
+                        across the whole page. */}
+                    <div className="max-w-90">
+                      {structure.total > 0 && (
+                        <StructureBar
+                          blocks={structure.blocks}
+                          total={structure.total}
+                          heightClass="h-8.5"
+                          minFigureShare={MIN_FIGURE_SHARE}
+                        />
+                      )}
+                      {/* The legend. Its swatches are decoration — the label
+                          beside each carries the meaning. */}
+                      <ul role="list" className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        {structure.bands.map((band) => (
+                          <li
+                            key={band.label}
+                            className="flex items-center gap-1.5 font-mono text-caption tracking-widest uppercase text-ink-mute"
+                          >
+                            <span aria-hidden className={`h-2 w-2 shrink-0 ${band.fill}`} />
+                            {upperLabel(band.label)}
+                          </li>
+                        ))}
+                        {structure.hasBreak && (
+                          <li className="flex items-center gap-1.5 font-mono text-caption tracking-widest uppercase text-ink-mute">
+                            <span aria-hidden className={`h-2 w-2 shrink-0 ${BREAK_FILL}`} />
+                            Fasilə
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Price */}
+                    <div className="flex items-center gap-4.5 xl:justify-end">
+                      <span className="font-mono text-title-lg tabular-nums text-ink">
+                        {exam.price > 0 ? `${exam.price} ₼` : 'Pulsuz'}
+                      </span>
+                      <span
+                        aria-hidden
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink text-sm text-ink transition-colors duration-200 group-hover:bg-ink group-hover:text-bg"
+                      >
+                        <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
 
         {/* ── What every purchase includes ── */}
         <div className="grid gap-6 pt-10 lg:grid-cols-[112px_1fr] lg:gap-10 lg:pt-14">
-          <div className={`${MONO_LABEL} text-ink-mute lg:pt-1.5`}>Hər sınağa</div>
-          <div className="grid grid-cols-2 gap-0.5 lg:grid-cols-4">
+          <p id="catalog-includes" className={`${MONO_LABEL} text-ink-mute lg:pt-1.5`}>Hər sınağa</p>
+          <ul role="list" aria-labelledby="catalog-includes" className="grid grid-cols-2 gap-0.5 lg:grid-cols-4">
             {[
               { figure: '11', label: 'ölçü üzrə analiz' },
               { figure: String(maxQuestions || exams.length), label: 'sual üçün izahat' },
               { figure: '∞', label: 'cəhd və baxış' },
             ].map((tile) => (
-              <div key={tile.label} className="bg-surface-2 px-5 pt-5.5 pb-6 lg:px-5.5">
+              <li key={tile.label} className="bg-surface-2 px-5 pt-5.5 pb-6 lg:px-5.5">
                 <div className="mb-3 font-mono text-title-lg font-light tabular-nums text-ink">{tile.figure}</div>
                 <div className="text-body text-ink">{tile.label}</div>
-              </div>
+              </li>
             ))}
-            <div className="bg-ink px-5 pt-5.5 pb-6 lg:px-5.5">
+            <li className="bg-ink px-5 pt-5.5 pb-6 lg:px-5.5">
               <div className="mb-3 font-mono text-title-lg font-light tabular-nums text-bg">{scoreScale}</div>
               <div className="text-body text-bg/70">bal proqnozu</div>
-            </div>
-          </div>
+            </li>
+          </ul>
         </div>
       </div>
     </>

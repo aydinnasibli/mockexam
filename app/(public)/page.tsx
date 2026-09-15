@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getActiveExamsForPrerender } from '@/lib/db/exams';
 import { examPath } from '@/lib/domain/exam-content';
 import {
-  BASE_URL, ORGANIZATION_REF, SITE_ALTERNATE_NAME, SITE_NAME, WEBSITE_ID, faqSchema, jsonLd,
+  HOME_URL, ORGANIZATION_REF, SITE_ALTERNATE_NAME, SITE_NAME, WEBSITE_ID, faqSchema, jsonLd,
   pageMetadata,
 } from '@/lib/shared/seo';
 import { HOME_FAQ } from '@/lib/domain/home-faq';
@@ -65,7 +65,7 @@ const websiteSchema = {
   '@id': WEBSITE_ID,
   name: SITE_NAME,
   alternateName: SITE_ALTERNATE_NAME,
-  url: BASE_URL,
+  url: HOME_URL,
   inLanguage: 'az',
   publisher: ORGANIZATION_REF,
 };

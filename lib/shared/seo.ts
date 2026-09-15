@@ -56,9 +56,29 @@ export const SITE_ALTERNATE_NAME = 'testcentre.az';
 
 const DEFAULT_OG_ALT = 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması';
 
-/** `/exams` → `https://www.testcentre.az/exams`; `/` → the bare origin. */
+/**
+ * The home page's URL, in the form a URL parser writes it:
+ * `https://www.testcentre.az/`.
+ *
+ * An origin with an empty path and the same origin with `/` are one URL (RFC
+ * 3986 §6.2.3), and `new URL()` serialises both with the slash — so that is
+ * what every `href="/"` on the site resolves to, and the form the sitemap has to
+ * use for a crawler comparing strings to see that the page it lists is the page
+ * every navbar, footer and breadcrumb links to. The bare origin this used to
+ * return is how a site audit came to report the home page as an orphan that
+ * nothing links to.
+ *
+ * The canonical TAG is the one place this does not reach: Next writes a root
+ * canonical as the bare origin whatever it is given
+ * (`resolveAbsoluteUrlWithPathname` in `next/dist/lib/metadata/resolvers`).
+ * Google treats the two forms as the same URL, so that difference is cosmetic.
+ * It is noted here so nobody "fixes" the sitemap back to match the tag.
+ */
+export const HOME_URL = `${BASE_URL}/`;
+
+/** `/exams` → `https://www.testcentre.az/exams`; `/` → `HOME_URL`. */
 export function absoluteUrl(path: string): string {
-  return `${BASE_URL}${path === '/' ? '' : path}`;
+  return path === '/' ? HOME_URL : `${BASE_URL}${path}`;
 }
 
 /*
@@ -74,8 +94,8 @@ export function absoluteUrl(path: string): string {
  * Fragments on the home URL are the convention. They are names, not pages, and
  * never need to resolve to anything.
  */
-export const ORGANIZATION_ID = `${BASE_URL}/#organization`;
-export const WEBSITE_ID = `${BASE_URL}/#website`;
+export const ORGANIZATION_ID = `${HOME_URL}#organization`;
+export const WEBSITE_ID = `${HOME_URL}#website`;
 
 /**
  * The organisation, as referenced from another node — `provider`, `seller`,
@@ -91,7 +111,7 @@ export const ORGANIZATION_REF = {
   '@type': 'EducationalOrganization',
   '@id': ORGANIZATION_ID,
   name: SITE_NAME,
-  url: BASE_URL,
+  url: HOME_URL,
 } as const;
 
 /** The site, as referenced from a page's `isPartOf`. See `ORGANIZATION_REF`. */
@@ -99,7 +119,7 @@ export const WEBSITE_REF = {
   '@type': 'WebSite',
   '@id': WEBSITE_ID,
   name: SITE_NAME,
-  url: BASE_URL,
+  url: HOME_URL,
 } as const;
 
 /**

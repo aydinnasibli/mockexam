@@ -40,7 +40,7 @@ vi.mock('@/lib/infra/indexnow', () => ({
 const { revalidateExam } = await import('@/lib/db/exam-totals');
 const { revalidatePath } = await import('next/cache');
 const { indexNowKey, submitToIndexNow } = await import('@/lib/infra/indexnow');
-const { BASE_URL } = await import('@/lib/shared/seo');
+const { BASE_URL, HOME_URL } = await import('@/lib/shared/seo');
 const { EXAM_PAPER_ROUTE, EXAM_TYPE_ROUTE } = await import('@/lib/shared/app-routes');
 
 /** The URL list handed to the single submission. */
@@ -87,7 +87,7 @@ describe('revalidateExam', () => {
     revalidateExam({ id: 'ielts-academic-1', type: 'ielts' });
     const urls = submitted();
 
-    expect(urls).toContain(BASE_URL);
+    expect(urls).toContain(HOME_URL);
     expect(urls).toContain(`${BASE_URL}/exams`);
     // Publishing or removing a paper changes its type's register either way.
     expect(urls).toContain(`${BASE_URL}/exams/ielts`);

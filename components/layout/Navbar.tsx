@@ -68,30 +68,34 @@ export default function Navbar({ showBulletin = true }: Props) {
               Absolutely centred rather than a flex sibling: as a sibling its
               position depended on the auth group's width, so the links slid
               sideways the moment Clerk resolved. */}
-          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-9 md:flex">
+          {/* A list inside the nav, so the landmark announces how many
+              destinations it holds. `role="list"` restores the semantics
+              Safari removes from a list whose style preflight has stripped. */}
+          <ul role="list" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-9 md:flex">
             {navLinks.map(({ href, label }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
               return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex flex-col items-center gap-1.25 text-note font-medium tracking-[0.005em] transition-colors duration-150 ${
-                    isActive ? "text-ink" : "text-ink-mute hover:text-ink"
-                  }`}
-                >
-                  {label}
-                  {/* The active marker is a rule under the label, not a pill.
-                      `data-nav-underline` lets the route transition draw it in
-                      from the left on arrival — see `.route-settle` in
-                      globals.css. */}
-                  <span
-                    data-nav-underline={isActive ? '' : undefined}
-                    className={`block h-px w-full ${isActive ? 'bg-ink' : 'bg-transparent'}`}
-                  />
-                </Link>
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`flex flex-col items-center gap-1.25 text-note font-medium tracking-[0.005em] transition-colors duration-150 ${
+                      isActive ? "text-ink" : "text-ink-mute hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                    {/* The active marker is a rule under the label, not a pill.
+                        `data-nav-underline` lets the route transition draw it in
+                        from the left on arrival — see `.route-settle` in
+                        globals.css. */}
+                    <span
+                      data-nav-underline={isActive ? '' : undefined}
+                      className={`block h-px w-full ${isActive ? 'bg-ink' : 'bg-transparent'}`}
+                    />
+                  </Link>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
           {/* ── Right: auth (desktop) + mobile hamburger ── */}
           <div className="flex items-center gap-2">
@@ -163,21 +167,28 @@ export default function Navbar({ showBulletin = true }: Props) {
             className="overflow-hidden border-b border-rule bg-bg md:hidden"
           >
             <div className="shell py-2">
-              {navLinks.map(({ href, label }) => {
-                const isActive = pathname === href || pathname.startsWith(href + '/');
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`block border-b border-rule py-3.5 text-base font-medium transition-colors last:border-b-0 ${
-                      isActive ? "text-ink" : "text-ink-soft hover:text-ink"
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
+              {/* Every item keeps its bottom rule. `last:border-b-0` sat on the
+                  links before, but the auth block below made none of them the
+                  last child, so it never applied — dropping it keeps the menu
+                  exactly as it rendered. */}
+              <ul role="list">
+                {navLinks.map(({ href, label }) => {
+                  const isActive = pathname === href || pathname.startsWith(href + '/');
+                  return (
+                    <li key={href} className="border-b border-rule">
+                      <Link
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`block py-3.5 text-base font-medium transition-colors ${
+                          isActive ? "text-ink" : "text-ink-soft hover:text-ink"
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
 
               {/* Same `isLoaded` gate as the desktop group: without it the
                   mobile menu shows "Daxil ol / Qeydiyyat" to a signed-in user

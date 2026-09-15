@@ -18,6 +18,21 @@ import type { StructureBlock } from '@/app/(public)/exams/structure';
  */
 const EASE_OUT_SOFT = [0.2, 0.7, 0.2, 1] as const;
 
+/**
+ * Draw a block once it is 60px inside the viewport — vertically only.
+ *
+ * The margin used to be `'-60px'`, which shrinks the observed root on all four
+ * sides. Every block starts at `scaleX: 0` from its left edge, so until it
+ * animates its box is a zero-width line at its left x — and the FIRST block's
+ * line sits on the page gutter, 16–30px from the viewport edge, inside the 60px
+ * the margin cut away. It never intersected, so it never drew: each paper's
+ * timeline showed its first module as a blank gap (measured on the General
+ * English A1 page: `transform: matrix(0, 0, 0, 1, 0, 0)` after a full scroll),
+ * as does any catalog row whose bar starts at the gutter. Only the vertical
+ * inset was ever wanted.
+ */
+const VIEWPORT = { once: true, margin: '-60px 0px' } as const;
+
 interface Props {
   blocks: StructureBlock[];
   /** Total minutes drawn, used to decide which blocks can carry a figure. */
@@ -59,7 +74,7 @@ export default function StructureBar({
             title={`${block.label} · ${block.minutes} dəq`}
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: '-60px' }}
+            viewport={VIEWPORT}
             transition={{ duration: 0.5, ease: EASE_OUT_SOFT, delay: i * 0.08 }}
           >
             {showFigure && (
@@ -67,7 +82,7 @@ export default function StructureBar({
                 className={`js-reveal ${figureClass} whitespace-nowrap ${block.figureClass}`}
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
-                viewport={{ once: true, margin: '-60px' }}
+                viewport={VIEWPORT}
                 transition={{ duration: 0.3, delay: i * 0.08 + 0.25 }}
               >
                 {block.minutes}′

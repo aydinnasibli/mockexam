@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
 import { CONTENT_TYPES, EXAM_CONTENT, typePath } from '@/lib/domain/exam-content';
+import SignedInOnly from './SignedInOnly';
 
 
 /**
@@ -25,35 +26,52 @@ const EXAM_LINKS = CONTENT_TYPES.map((type) => ({
   href: typePath(type),
 }));
 
+interface FooterLink {
+  label: string;
+  href: string | null;
+  /** Rendered only once Clerk reports a signed-in session. See the Platforma column. */
+  signedInOnly?: true;
+}
+
 const COLUMNS: Array<{
+  /** Builds the id of the heading that labels the column's list. */
+  id: string;
   title: string;
-  links: Array<{ label: string; href: string | null; prefetch?: false }>;
+  links: FooterLink[];
 }> = [
   {
+    id: "exams",
     title: "İmtahanlar",
     links: EXAM_LINKS,
   },
   {
+    id: "platform",
     title: "Platforma",
     links: [
       { label: "Sınaqlar", href: "/exams" },
       /*
-       * Prefetch off on both.
+       * Account pages, for a signed-in visitor only.
        *
-       * These sit in the footer of every public page, so Next prefetches them
-       * the moment the footer scrolls into view. For a signed-out visitor the
-       * proxy answers that RSC prefetch with a cross-origin redirect to Clerk,
-       * which CORS then blocks — four console errors per page view, a wasted
-       * round-trip each time, and a steady drip of junk into PostHog error
-       * tracking (`capture_exceptions` is on). Clicking still works: that is a
-       * full navigation, not a prefetch.
+       * To anyone else both links are a detour through Clerk's sign-in, and to
+       * a crawler they are two links on every public page into paths robots.txt
+       * disallows — which a site audit reports, on every crawl, as pages
+       * "blocked from crawling". `SignedInOnly` decides in the browser once
+       * Clerk has resolved, so neither link is in the prerendered HTML at all.
+       * (It is not Clerk's `<Show>`, which would make every page dynamic — see
+       * that component.)
+       *
+       * That also retires the `prefetch={false}` these used to carry. It
+       * existed because prefetching them for a signed-out visitor had the proxy
+       * answer the RSC request with a cross-origin redirect to Clerk, which CORS
+       * blocked. A signed-in visitor's prefetch simply succeeds.
        */
-      { label: "Kabinet", href: "/dashboard", prefetch: false },
-      { label: "Analitika", href: "/dashboard/analytics", prefetch: false },
+      { label: "Kabinet", href: "/dashboard", signedInOnly: true },
+      { label: "Analitika", href: "/dashboard/analytics", signedInOnly: true },
       { label: "Qiymətlər", href: null },
     ],
   },
   {
+    id: "company",
     title: "Şirkət",
     links: [
       { label: "Haqqımızda", href: "/about" },
@@ -63,6 +81,7 @@ const COLUMNS: Array<{
     ],
   },
   {
+    id: "legal",
     title: "Hüquqi",
     links: [
       { label: "İstifadə şərtləri", href: "/legal/terms" },
@@ -106,29 +125,43 @@ export default function Footer() {
             </p>
           </div>
 
-          {COLUMNS.map((column) => (
-            <div key={column.title}>
-              <div className={`${MONO_LABEL} mb-4.5 text-ink-mute`}>{column.title}</div>
-              <div className="flex flex-col gap-2.75">
-                {column.links.map((link) =>
-                  link.href ? (
-                    <Link
-                      key={link.label}
-                      href={link.href}
-                      prefetch={link.prefetch}
-                      className="-my-1 py-1 text-body text-ink-soft transition-colors duration-150 hover:text-ink"
-                    >
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <span key={link.label} className="text-body text-ink-mute">
-                      {link.label}
-                    </span>
-                  ),
-                )}
+          {COLUMNS.map((column) => {
+            const headingId = `footer-${column.id}`;
+            return (
+              <div key={column.id}>
+                <p id={headingId} className={`${MONO_LABEL} mb-4.5 text-ink-mute`}>{column.title}</p>
+                {/* A list named by its column title, so assistive technology
+                    announces "İmtahanlar, list, 7 items" rather than a run of
+                    unrelated links. `role="list"` is not redundant here:
+                    Tailwind's preflight sets `list-style: none`, and Safari
+                    drops the list semantics of an unstyled list unless the
+                    role is stated. */}
+                <ul role="list" aria-labelledby={headingId} className="flex flex-col gap-2.75">
+                  {column.links.map((link) => {
+                    const item = (
+                      <li key={link.label}>
+                        {link.href ? (
+                          <Link
+                            href={link.href}
+                            className="-my-1 block py-1 text-body text-ink-soft transition-colors duration-150 hover:text-ink"
+                          >
+                            {link.label}
+                          </Link>
+                        ) : (
+                          <span className="text-body text-ink-mute">{link.label}</span>
+                        )}
+                      </li>
+                    );
+                    return link.signedInOnly ? (
+                      <SignedInOnly key={link.label}>{item}</SignedInOnly>
+                    ) : (
+                      item
+                    );
+                  })}
+                </ul>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Tier 3 — baseline */}
