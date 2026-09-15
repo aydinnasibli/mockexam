@@ -18,11 +18,11 @@ Bu şərtlər Azərbaycan Respublikasının Mülki Məcəlləsinə, "İstehlakç
   {
     id: 'service',
     title: 'Xidmətin təsviri',
-    content: `Testcentre SAT, IELTS, TOEFL, DİM, GMAT, GRE imtahanlarına hazırlıq üçün rəqəmsal test platformasıdır. Xidmətlər arasında:
+    content: `Testcentre SAT, IELTS, TOEFL, GRE, Buraxılış və Qəbul (DİM), Magistratura və sürücülük vəsiqəsi imtahanlarına, həmçinin ingilis dili səviyyəsinin (CEFR) müəyyənləşdirilməsinə hazırlıq üçün rəqəmsal sınaq platformasıdır. Xidmətlər arasında:
 
-— Adaptiv test sessiyaları
-— Süni intellekt əsaslı analitika
-— Nəticə hesabatları
+— Vaxt limitli, modullara bölünmüş sınaq sessiyaları
+— Yazı (writing) tapşırıqlarının süni intellekt əsaslı qiymətləndirilməsi
+— Nəticə hesabatları və bölmələr üzrə analitika
 — Sual izahatları
 
 Xidmətlərin fasiləsiz mövcudluğuna zəmanət verilmir; texniki baxım işləri zamanı müvəqqəti dayanmalar mümkündür.`,
@@ -39,7 +39,7 @@ Xidmətlərin fasiləsiz mövcudluğuna zəmanət verilmir; texniki baxım işl�
 
 Bir şəxs yalnız bir hesab aça bilər. Hesabı başqa şəxsə vermək, satmaq, icarəyə vermək və ya ötürmək qadağandır.
 
-Hesabınızı silmək istədikdə testcentreaz@proton.me ünvanına müraciət edin. Silinmədən əvvəl aktiv imtahan girişlərindən istifadə etməyi tövsiyə edirik.`,
+Hesabınızı silmək istədikdə testcentreaz@proton.me ünvanına müraciət edin. Hesab silindikdə sınaq nəticələriniz, cavablarınız və parametrləriniz dərhal silinir, satın alınmış imtahanlara giriş də itirilir; bu əməliyyat geri qaytarıla bilməz. Ona görə silinmədən əvvəl aktiv imtahan girişlərindən istifadə etməyi tövsiyə edirik. Ödəniş qeydləri qanunvericiliyə uyğun olaraq saxlanılır — ətraflı məlumat Məxfilik Siyasətinin "Saxlanma müddətləri" bəndindədir.`,
   },
   {
     id: 'payments',
@@ -114,7 +114,7 @@ Testcentre imtahan nəticəsinin konkret hədəfə çatacağına zəmanət vermi
   {
     id: 'force-majeure',
     title: 'Fors-major',
-    content: `Testcentre-nin ağlabatan nəzarəti xaricindəki hadisələr — internet infrastrukturunun dayanması, elektrik kəsilməsi, təbii fəlakətlər, hökumət aktları, kiber hücumlar, üçüncü tərəf xidmətlərinin (Clerk, Vercel, MongoDB Atlas) nasazlıqları — nəticəsindən yaranan gecikmələr və ya xidmətin mövcud olmaması üçün məsuliyyət daşınmır.`,
+    content: `Testcentre-nin ağlabatan nəzarəti xaricindəki hadisələr — internet infrastrukturunun dayanması, elektrik kəsilməsi, təbii fəlakətlər, hökumət aktları, kiber hücumlar, üçüncü tərəf xidmətlərinin (Clerk, Vercel, Neon, Epoint) nasazlıqları — nəticəsindən yaranan gecikmələr və ya xidmətin mövcud olmaması üçün məsuliyyət daşınmır.`,
   },
   {
     id: 'general',
@@ -155,7 +155,7 @@ export default function TermsPage() {
           </div>
           <h1 className="font-display font-normal text-4xl md:text-6xl lg:text-7xl leading-none tracking-tight text-ink mb-4 rise rise-1">İstifadə Şərtləri</h1>
           <p className="font-display font-normal text-xl md:text-2xl leading-normal text-ink-soft mb-4 rise rise-2">
-            Son yenilənmə: 26 may 2026
+            Son yenilənmə: 15 sentyabr 2026
           </p>
           <p className="mb-16 max-w-160 text-base leading-[1.7] text-ink-soft rise rise-2">
             Bu şərtlər Testcentre platformasından istifadə qaydalarını müəyyən edir.
