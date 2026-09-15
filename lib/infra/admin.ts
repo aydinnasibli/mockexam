@@ -13,12 +13,13 @@ export async function checkRole(role: Roles): Promise<boolean> {
 /**
  * Page-level admin guard for Server Components.
  *
- * `proxy.ts` and `app/admin/layout.tsx` both already gate these routes. This is
- * a third, independent check placed directly in each page, so that a page can
- * never render privileged data on the strength of an outer layer alone —
- * relevant because proxy-level authorization has historically been bypassable
- * (e.g. Next.js advisory GHSA-6gpp-xcg3-4w24), and because these pages read the
- * full user list, purchase records and revenue figures.
+ * `app/admin/layout.tsx` already gates these routes. This is a second,
+ * independent check placed directly in each page, so that a page can never
+ * render privileged data on the strength of the layout alone — a layout does
+ * not always re-render when the page under it does, and these pages read the
+ * full user list, purchase records and revenue figures. (`proxy.ts` gates
+ * nothing: path-matched proxy authorization has historically been bypassable,
+ * e.g. Next.js advisory GHSA-6gpp-xcg3-4w24.)
  *
  * Signed-out users go to Clerk's sign-in URL; signed-in non-admins to /dashboard.
  */

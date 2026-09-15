@@ -13,6 +13,12 @@ interface Props {
 const PRIVATE = { robots: { index: false, follow: false } };
 
 export async function generateMetadata({ params }: Props) {
+  // `getExamByIdAdmin` reads inactive papers too, and `loading.tsx` means this
+  // page streams — so without this check a signed-out visitor would receive the
+  // title of any paper whose id they guessed, before the redirect below lands.
+  const { userId } = await auth();
+  if (!userId) return PRIVATE;
+
   const { id } = await params;
   const exam = await getExamByIdAdmin(id);
   if (!exam) return PRIVATE;
@@ -21,9 +27,9 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ExamSessionPage({ params }: Props) {
   const { id } = await params;
-  const { userId } = await auth();
+  const { userId, redirectToSignIn } = await auth();
 
-  if (!userId) redirect(`/checkout/${id}`);
+  if (!userId) return redirectToSignIn();
 
   const [exam, hasAccess] = await Promise.all([
     getExamByIdAdmin(id),

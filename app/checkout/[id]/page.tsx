@@ -20,9 +20,11 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function CheckoutPage({ params }: Props) {
   const { id } = await params;
-  const { userId } = await auth();
+  const { userId, redirectToSignIn } = await auth();
 
-  if (userId && await hasExamAccess(userId, id)) redirect('/dashboard');
+  // A purchase is recorded against an account, so collect one before the page.
+  if (!userId) return redirectToSignIn();
+  if (await hasExamAccess(userId, id)) redirect('/dashboard');
 
   const exam = await getExamById(id);
   if (!exam) notFound();

@@ -55,7 +55,7 @@ lib/
 components/
   layout/               # Navbar, Footer, Sidebar
   ui/                   # Animation wrappers (FadeUp, StaggerChildren, PageTransition)
-proxy.ts                # Route auth gating — Next.js 16 renamed Middleware to Proxy
+proxy.ts                # Clerk session resolution only; auth checks live in each page, route and action
 ```
 
 ## Node version

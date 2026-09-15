@@ -69,9 +69,9 @@ export default function PurchaseCard({ examId, price, features, promoActive }: P
   const [claiming, startClaim] = useTransition();
 
   useEffect(() => {
-    // Anonymous visitors never own the exam, and /api/purchase-status sits
-    // behind auth middleware — calling it while signed out would bounce to
-    // sign-in rather than return JSON.
+    // Anonymous visitors never own the exam, and /api/purchase-status answers a
+    // signed-out caller with a bare `{ confirmed: false }` — the request would
+    // be spent learning nothing.
     if (!isLoaded || !isSignedIn) return;
 
     const controller = new AbortController();

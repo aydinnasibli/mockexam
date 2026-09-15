@@ -1,62 +1,16 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
 /**
- * Routes that require an authenticated session.
- * Unauthenticated requests are automatically redirected to sign-in.
+ * Clerk's request handler only: it resolves the session so `auth()` works in
+ * pages, layouts, route handlers and server actions. It gates nothing.
+ *
+ * Authorization lives in each resource instead — `auth()` + `redirectToSignIn`
+ * in the page, `requireAdminPage` / `requireAdminAction` for admin surfaces,
+ * signature verification in the webhook routes. Path matching here can diverge
+ * from how Next.js actually routes a request (and server actions are resolved
+ * by id, not by URL), so a check that lived only here was never a real boundary.
  */
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/exam-session(.*)',
-  '/checkout(.*)',
-  '/analytics(.*)',
-  '/api/purchase-status(.*)',
-]);
-
-/**
- * Admin routes require both authentication and admin role.
- * Non-admin authenticated users are redirected to /dashboard.
- */
-const isAdminRoute = createRouteMatcher([
-  '/admin(.*)',
-  '/api/admin(.*)',
-  '/testpayment(.*)',
-]);
-
-/**
- * Webhook routes are intentionally public — Epoint and Clerk call them
- * server-to-server without user session cookies.
- * Each route authenticates its caller by verifying the request signature.
- */
-const isWebhookRoute = createRouteMatcher([
-  '/api/webhooks(.*)',
-]);
-
-export default clerkMiddleware(async (auth, req) => {
-  // Never gate webhooks — they're secured by signature, not session
-  if (isWebhookRoute(req)) {
-    return NextResponse.next();
-  }
-
-  if (isAdminRoute(req)) {
-    const { userId, sessionClaims, redirectToSignIn } = await auth();
-    // This app has no local /sign-in route — auth is Clerk modals plus the
-    // hosted Account Portal. redirectToSignIn() resolves the correct URL from
-    // the Clerk instance, so signed-out admins land on a real sign-in page
-    // instead of a 404.
-    if (!userId) {
-      return redirectToSignIn({ returnBackUrl: req.url });
-    }
-    if (sessionClaims?.metadata?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
