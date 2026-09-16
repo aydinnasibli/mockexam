@@ -54,7 +54,7 @@ export const SITE_NAME = 'Testcentre';
  */
 export const SITE_ALTERNATE_NAME = 'testcentre.az';
 
-const DEFAULT_OG_ALT = 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması';
+const DEFAULT_OG_ALT = 'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması';
 
 /**
  * The home page's URL, in the form a URL parser writes it:

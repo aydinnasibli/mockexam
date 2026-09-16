@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması';
+export const alt = 'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -43,7 +43,7 @@ export default function OGImage() {
             textAlign: 'center',
           }}
         >
-          Azərbaycanın akademik imtahan hazırlığı platforması
+          Azərbaycanın onlayn sınaq imtahanı platforması
         </div>
       </div>
     ),

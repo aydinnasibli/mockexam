@@ -6,7 +6,7 @@ import { ORGANIZATION_REF, jsonLd, pageMetadata, webPageSchema } from "@/lib/sha
 import { MONO_LABEL, MONO_SECTION } from '@/components/ui/type-styles';
 
 const DESCRIPTION =
-  'Testcentre tələbənin imtahan günündə heç bir sürprizlə qarşılaşmaması üçün qurulmuşdur — rəsmi format, ölçülə bilən tərəqqi və hər sualın arxasındakı izahat.';
+  'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması. Real imtahan formatı, ölçülə bilən tərəqqi və hər sualın arxasındakı izahat.';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Haqqımızda',

@@ -41,7 +41,7 @@ export default function Navbar({ showBulletin = true }: Props) {
         <div className="border-b border-rule bg-surface-2">
           <div className="shell flex h-8.5 items-center justify-between gap-4">
             <span className={`${MONO_LABEL} truncate text-ink-mute`}>
-              Akademik sınaq mərkəzi · Bakı
+              Onlayn sınaq mərkəzi · Bakı
             </span>
             <span className={`${MONO_LABEL} hidden text-ink-mute sm:block`}>
               Sual bankı həftəlik yenilənir

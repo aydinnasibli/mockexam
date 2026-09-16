@@ -26,12 +26,13 @@ export const revalidate = 3600;
  * "İmtahanlar — Testcentre" named the section, not the page: it matched no
  * query and sat beside a home title competing for the same words. The register
  * is a catalogue of practice papers, so that is what it is called, and the
- * description lists what a visitor actually finds on it — the programmes, and
- * for each paper its price, length and structure.
+ * description lists what a visitor actually finds on it — the kinds of exam,
+ * and for each paper its price, question count and length. Kinds, not
+ * programme names, so the line stays true as programmes are added.
  */
 const TITLE = 'Sınaq imtahanları kataloqu';
 const DESCRIPTION =
-  'Bütün onlayn sınaq imtahanları bir səhifədə: SAT, IELTS, TOEFL, buraxılış və magistratura. Hər sınağın qiyməti, sual sayı, müddəti və modul quruluşu.';
+  'Bütün onlayn sınaq imtahanları bir səhifədə: dil, qəbul, magistratura, sürücülük və digər imtahanlar. Hər sınağın qiyməti, sual sayı və müddəti.';
 
 export const metadata: Metadata = pageMetadata({
   title: TITLE,

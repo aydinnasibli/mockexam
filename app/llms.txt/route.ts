@@ -45,9 +45,9 @@ export async function GET() {
 
   const body = `# Testcentre
 
-> Azərbaycan dilində akademik imtahan hazırlığı platforması. SAT, IELTS, TOEFL,
-> buraxılış/qəbul, magistratura və sürücülük vəsiqəsi imtahanları üçün rəsmi
-> formata uyğun onlayn sınaq imtahanları. Hər sınaq vaxt limitli modullarla
+> Azərbaycanın onlayn sınaq imtahanı platforması. Dil, buraxılış/qəbul,
+> magistratura, sürücülük vəsiqəsi və digər imtahanlar üçün rəsmi formata uyğun
+> onlayn sınaq imtahanları. Hər sınaq vaxt limitli modullarla
 > işləyir, nəticə rəsmi çevirmə cədvəli ilə hesablanır və hər sual üçün izahat
 > verilir.
 

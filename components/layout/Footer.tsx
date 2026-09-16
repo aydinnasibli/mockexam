@@ -120,7 +120,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-10 border-t border-rule pt-10 pb-12 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr] lg:gap-10 lg:pb-14">
           <div className="col-span-2 lg:col-span-1">
             <p className="m-0 max-w-80 text-body leading-[1.65] text-ink-soft">
-              Akademik imtahan hazırlığı — rəsmi format, ölçülə bilən tərəqqi, hər sualın
+              Onlayn sınaq imtahanları — rəsmi format, ölçülə bilən tərəqqi, hər sualın
               arxasında izahat.
             </p>
           </div>

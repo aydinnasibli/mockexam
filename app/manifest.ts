@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Testcentre — Akademik imtahan hazırlığı',
+    name: 'Testcentre — Onlayn sınaq imtahanları',
     short_name: 'Testcentre',
     description:
-      'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına rəsmi formata uyğun sınaq imtahanları.',
+      'Azərbaycanın onlayn sınaq imtahanı platforması. Dil, buraxılış, qəbul, magistratura, sürücülük və digər imtahanlara real formatda hazırlaşın.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

@@ -17,29 +17,31 @@ export const revalidate = 3600;
  *
  * It used to open with "Testcentre", a name nobody searches yet on a young
  * domain, and spend the rest on a tagline — so the words that match a query
- * ("onlayn sınaq imtahanları", the exam names) were absent from the one line
- * Google weighs most. The brand does not need the lead position to be seen:
- * Google prints the site name, from the WebSite markup below, above every
- * result on its own line.
+ * ("onlayn sınaq imtahanı") were absent from the one line Google weighs most.
+ * The brand does not need the lead position to be seen: Google prints the site
+ * name, from the WebSite markup below, above every result on its own line.
  *
- * Kept under 60 characters so it is not truncated. The home page targets the
- * broad head term; each programme's own query ("IELTS sınaq imtahanı") belongs
- * to its hub, whose title leads with it.
+ * No programme names. Testcentre is a general mock-exam platform, not an
+ * IELTS/SAT/TOEFL site, and a title listing three programmes both misdescribes
+ * it and dates the moment a new one ships. Each programme's own query ("IELTS
+ * sınaq imtahanı") belongs to its hub, whose title leads with it.
+ *
+ * Kept under 60 characters so it is not truncated.
  */
-const HOME_TITLE = 'Onlayn sınaq imtahanları: IELTS, SAT, TOEFL — Testcentre';
+const HOME_TITLE = 'Azərbaycanın onlayn sınaq imtahanı platforması — Testcentre';
 
 /**
  * The tagline keeps the SOCIAL card. A share into WhatsApp or Telegram is
  * already a brand context — someone is recommending the site by name — and
  * there the statement of what Testcentre is reads better than a keyword line.
  */
-const HOME_SOCIAL_TITLE = 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması';
+const HOME_SOCIAL_TITLE = 'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması';
 
 export const metadata: Metadata = {
   ...pageMetadata({
     title: HOME_TITLE,
     description:
-      'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+      'Dil, buraxılış, qəbul, magistratura, sürücülük və digər imtahanlara onlayn hazırlaşın. Real format, vaxt limiti, dərhal nəticə və hər sual üçün izahat.',
     path: '/',
     socialTitle: HOME_SOCIAL_TITLE,
   }),

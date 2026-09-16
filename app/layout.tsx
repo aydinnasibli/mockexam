@@ -81,9 +81,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
     template: '%s — Testcentre',
-    default: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
+    default: 'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması',
   },
-  description: 'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+  description: 'Dil, buraxılış, qəbul, magistratura, sürücülük və digər imtahanlara onlayn hazırlaşın. Real format, vaxt limiti, dərhal nəticə və hər sual üçün izahat.',
   // NOTE: deliberately no `alternates.canonical` here. Metadata is inherited by
   // every segment that doesn't override it, so a canonical on the root layout
   // silently points new pages at the homepage and folds them out of the index.
@@ -93,13 +93,13 @@ export const metadata: Metadata = {
     locale: 'az_AZ',
     url: BASE_URL,
     siteName: 'Testcentre',
-    title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
-    description: 'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+    title: 'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması',
+    description: 'Dil, buraxılış, qəbul, magistratura, sürücülük və digər imtahanlara onlayn hazırlaşın. Real format, vaxt limiti, dərhal nəticə və hər sual üçün izahat.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Testcentre — Azərbaycanın akademik imtahan hazırlığı platforması',
-    description: 'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hər yerdə, hər zaman peşəkar mühitdə hazırlaşın.',
+    title: 'Testcentre — Azərbaycanın onlayn sınaq imtahanı platforması',
+    description: 'Dil, buraxılış, qəbul, magistratura, sürücülük və digər imtahanlara onlayn hazırlaşın. Real format, vaxt limiti, dərhal nəticə və hər sual üçün izahat.',
   },
   robots: {
     index: true,
@@ -162,7 +162,7 @@ const organizationSchema = {
   },
   image: `${BASE_URL}/opengraph-image`,
   description:
-    'SAT, IELTS, TOEFL, buraxılış və magistratura imtahanlarına hazırlıq üçün rəsmi formata uyğun sınaq imtahanları.',
+    'Azərbaycanın onlayn sınaq imtahanı platforması: dil, buraxılış, qəbul, magistratura, sürücülük və digər imtahanlar üçün real formatda sınaqlar.',
   email: 'testcentreaz@proton.me',
   sameAs: SAME_AS,
   knowsAbout: CONTENT_TYPES.map((type) => entitySchema(EXAM_CONTENT[type]!.entity)),
