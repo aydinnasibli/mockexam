@@ -8,7 +8,6 @@ import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { LayoutDashboard, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { MONO_SECTION as MONO_LABEL } from '@/components/ui/type-styles';
 
 const navLinks = [
   { href: "/exams",   label: "Sınaqlar" },
@@ -16,20 +15,13 @@ const navLinks = [
   { href: "/contact", label: "Əlaqə" },
 ];
 
-
-interface Props {
-  /** The bulletin strip is the top tier of the nav; pages that need the
-   *  chrome as short as possible can drop it. */
-  showBulletin?: boolean;
-}
-
 /**
- * Two stacked bars in normal flow — bulletin strip, then the 72px nav bar.
- * It is deliberately not fixed: the redesign runs an ink masthead directly
- * under the nav on several pages, and a floating bar would sit on top of it.
+ * The 72px nav bar, in normal flow. It is deliberately not fixed: the
+ * redesign runs an ink masthead directly under the nav on several pages, and
+ * a floating bar would sit on top of it.
  * Pages therefore carry no top offset for the nav.
  */
-export default function Navbar({ showBulletin = true }: Props) {
+export default function Navbar() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const pathname = usePathname();
@@ -37,19 +29,6 @@ export default function Navbar({ showBulletin = true }: Props) {
 
   return (
     <header className="w-full bg-bg">
-      {showBulletin && (
-        <div className="border-b border-rule bg-surface-2">
-          <div className="shell flex h-8.5 items-center justify-between gap-4">
-            <span className={`${MONO_LABEL} truncate text-ink-mute`}>
-              Onlayn sınaq mərkəzi · Bakı
-            </span>
-            <span className={`${MONO_LABEL} hidden text-ink-mute sm:block`}>
-              Sual bankı həftəlik yenilənir
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="border-b border-rule">
         <nav className="shell relative flex h-18 items-center justify-between">
 

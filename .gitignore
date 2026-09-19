@@ -35,6 +35,11 @@ yarn-error.log*
 .env*
 !.env.example
 
+# indexnow — the ownership file is generated into public/ at build time from
+# INDEXNOW_KEY. Its name is the key, so committing it to this public repo would
+# publish both the key and its location.
+/public/*.txt
+
 # vercel
 .vercel
 

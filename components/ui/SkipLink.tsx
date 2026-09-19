@@ -2,7 +2,7 @@
  * "Skip to content" — WCAG 2.4.1 Bypass Blocks (Level A).
  *
  * Every shell in this app puts persistent navigation ahead of the page body:
- * the public navbar is a bulletin strip plus five links and the auth controls,
+ * the public navbar is five links and the auth controls,
  * and the dashboard/admin rails are a dozen more. Without this, a keyboard or
  * screen-reader user re-tabs all of it on every single navigation.
  *

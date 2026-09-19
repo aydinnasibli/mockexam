@@ -284,7 +284,7 @@
      link's rule draws in from the left, and the bar itself settles from a
      fraction under full opacity. Deliberately far quieter than the content —
      chrome that re-animates in full is what makes a navigation feel like a
-     page reload. The bulletin strip above is left alone entirely. */
+     page reload. */
   @keyframes nav-underline-in {
     from { transform: scaleX(0); }
     to   { transform: scaleX(1); }

@@ -28,6 +28,10 @@ const MAX_URLS = 10_000;
  * A malformed key is treated as absent rather than sent: the endpoint would
  * answer 403 and the URLs would be silently dropped, which looks identical to
  * working. Failing closed makes the misconfiguration visible in logs instead.
+ *
+ * The same variable drives the ownership file that proves we control the host:
+ * `scripts/write-indexnow-key.mjs` writes it into `public/` at build time. One
+ * source, so what is served and what is submitted cannot disagree.
  */
 export function indexNowKey(): string | null {
   const key = process.env.INDEXNOW_KEY?.trim();
@@ -86,7 +90,17 @@ export async function submitToIndexNow(urls: readonly string[]): Promise<void> {
       body: JSON.stringify({
         host,
         key,
-        keyLocation: `${BASE_URL}/indexnow-key.txt`,
+        /*
+         * The protocol's own recommendation: `{key}.txt` at the root of the
+         * host, which authorises every URL on it. (A key file under a path can
+         * only submit URLs beneath that path.) Because the filename IS the key,
+         * the location is unguessable, which is what keeps someone else from
+         * submitting URLs for this domain — so it is never linked or logged,
+         * and `public/*.txt` stays out of this public repository.
+         *
+         * Kept in step with the filename in `scripts/write-indexnow-key.mjs`.
+         */
+        keyLocation: `${BASE_URL}/${key}.txt`,
         urlList,
       }),
     });

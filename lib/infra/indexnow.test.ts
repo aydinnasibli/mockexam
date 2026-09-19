@@ -53,7 +53,10 @@ describe('submitToIndexNow', () => {
     const body = sentBody(fetchMock);
     expect(body.key).toBe(KEY);
     expect(body.host).toBe(new URL(BASE_URL).host);
-    expect(body.keyLocation).toBe(`${BASE_URL}/indexnow-key.txt`);
+    // Root-hosted and named for the key itself: the location the ownership
+    // file is generated at, and the only one that authorises every URL on the
+    // host. A mismatch here is answered 403 and drops the whole batch.
+    expect(body.keyLocation).toBe(`${BASE_URL}/${KEY}.txt`);
     expect(body.urlList).toEqual([`${BASE_URL}/exams`]);
   });
 
